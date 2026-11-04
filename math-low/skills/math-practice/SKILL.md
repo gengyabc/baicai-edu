@@ -1,21 +1,10 @@
 ---
 name: math-practice
-description: 按错题类型、学生水平和偏好生成分层针对性练习（诊断、对比、变式、连接），每层 1-3 题，只给当前最需要的那一层。数学复习或纠错后需要巩固时加载。
+description: 数学针对性练习。错题复盘后需确认错误模式、会判断但独立计算仍出错、学生要求多练，或已掌握主题需连接旧知识时使用。
 user-invocable: false
 ---
 
 # Math Practice
-
-## Purpose
-
-把错题分析和学生水平变成一组“刚好够用”的练习，而不是一次给一堆题。四层练习各有不同目的，任何时刻只给当下最需要的那一层。
-
-## When To Use
-
-- 学生刚复盘完错题，需要确认错误模式是否还在。
-- `math-session` 判断某个技能“会判断但自己做还会错”，需要变式巩固。
-- 学生说“再练几道”“我想多练一点这个”。
-- 已掌握的主题需要和旧知识连起来。
 
 ## Session Gate
 
@@ -66,10 +55,3 @@ user-invocable: false
 
 - 不在本 skill 里写 `profile.json`；只产出 segment，finalize 归 `/learn` 与 `learn-data`。
 - 内部层次名、错误类型不展示给学生。
-
-## Related
-
-- `math-core`：`references/targeted-practice-rules.md`
-- `math-diagnose`：先诊断再选层
-- `math-session`：练习后回到教学主线
-- `learn-errors`：读取 `extracted/` 错题分析

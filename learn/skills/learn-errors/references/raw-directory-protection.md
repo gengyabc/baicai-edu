@@ -1,14 +1,6 @@
 # Raw Directory Protection Rules
 
-## Purpose
-
-保护学生的原始错题文件，防止写入和修改。
-
-`raw/` 存放学生的原始上传文件（手写错题照片、扫描试卷），是学习原始证据，必须保持原样。
-
-## Scope
-
-`outputs/students/<student_id>/<subject>/raw/` 下的所有原始上传文件。
+`outputs/students/<student_id>/<subject>/raw/` 下的原始上传文件保持原样。
 
 ## Rules
 

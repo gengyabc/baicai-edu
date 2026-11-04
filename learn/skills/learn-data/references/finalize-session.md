@@ -1,8 +1,6 @@
 # Finalize Session
 
-## Purpose
-
-把一次会话的 `session_segments` 汇总为五个 patch：科目档案、诊断历史、记忆、当前状态、里程碑；合并写入四个科目文件后清空日志。执行前读取本 skill 的 `references/session-retention.md` 和 `learn-core` 的 `references/feynman-skill-whitelist.md`，分别作为保留策略与技能证据规则的唯一来源。
+执行前读取本 skill 的 `references/session-retention.md` 和 `learn-core` 的 `references/feynman-skill-whitelist.md`。将 `session_segments` 汇总为科目档案、诊断历史、记忆、当前状态、里程碑五个 patch，合并写入四个科目文件后清空日志。
 
 ## Inputs
 

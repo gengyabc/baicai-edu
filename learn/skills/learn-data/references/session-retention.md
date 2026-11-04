@@ -1,9 +1,5 @@
 # Session Retention
 
-## Purpose
-
-Keep student profiles compact while preserving meaningful progress.
-
 ## Policy
 
 - `profile.json.session_history` keeps only the most recent 5 summary-level sessions.

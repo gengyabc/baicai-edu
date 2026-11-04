@@ -1,18 +1,6 @@
 # Rule: Session End Signals
 
-## Purpose
-
-统一定义学习会话的结束信号判断标准，供 `/learn`、`/feynman` 与最终保存流程共同使用。
-
-## Scope
-
-适用于：
-
-- `/learn` 会话循环
-- `/feynman` 会话循环
-- 学科 skill 在每轮结束时判断是否收束
-
-此规则只定义**何时应视为可以结束或建议结束**；真正写回由 `learn-data` 的 finalize 流程负责。
+`/learn`、`/feynman` 与学科技能按以下信号判断是否结束；写回由 `learn-data` 的 finalize 执行。
 
 ## Core Signals
 

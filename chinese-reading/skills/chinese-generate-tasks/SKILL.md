@@ -1,16 +1,12 @@
 ---
 name: chinese-generate-tasks
-description: 语文出题：根据阅读材料或作文需求，生成匹配年级难度的阅读题或写作题，给出参考答案、命题意图和判分标准，句子填空题说明合理边界。
+description: 生成语文练习题及配套答案或评价标准。学生要求按文章出阅读题、给作文题、续写/改写题或某题型练习时使用。
 user-invocable: false
 ---
 
 # Chinese Generate Tasks（语文出题）
 
-## When To Use
-
-由 `chinese-session`、`/learn` 或 `/feynman` 路由进入：学生要求根据文章出阅读题、给作文题、续写/改写或某题型练习。
-
-只负责出题；学文章交阅读教学，批改已有答案/作文交阅读诊断或写作评改，阅读写法的输出练习交读写迁移。
+由 `chinese-session`、`/learn` 或 `/feynman` 路由进入，只负责出题。学文章交阅读教学，批改已有答案/作文交阅读诊断或写作评改，阅读写法的输出练习交读写迁移。
 
 ## Session Gate 与 Inputs
 

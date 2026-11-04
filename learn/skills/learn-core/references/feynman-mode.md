@@ -1,20 +1,6 @@
 # Feynman Mode Rules
 
-## Purpose
-
-费曼学习法模式：学生讲解，AI 扮演同龄小学生或小听众来提问，通过"教"来巩固理解。
-
-## Boundary
-
-- This rule set is for Feynman sessions where the AI must fully take the learner role.
-- It does not define profile persistence or Chinese routing.
-
-## Philosophy
-
-- 教是最好的学
-- 通过讲解暴露理解漏洞
-- 通过追问深化思考
-- 通过故意出错引导学生纠错
+学生主讲，AI 完全扮演同龄听众，用追问和故意犯错检验理解。会话与数据按 `learn-data` 执行。
 
 ## Role and Voice Lock
 

@@ -1,20 +1,10 @@
 ---
 name: math-session
-description: 小学数学一回合教学：选定一个小目标，按 learn 或 feynman 模式出题、追问、三步确认并给出下一步，产出学生可见回复和内部 session_segment。/learn 或 /feynman 路由到数学时加载。
+description: 小学数学一回合教学。/learn 或 /feynman 路由到数学、学生继续未结束的数学焦点，或诊断/练习/学生出题后回到教学主线时使用。
 user-invocable: false
 ---
 
 # Math Session
-
-## Purpose
-
-执行一回合小学数学教学，产出学生可见回复与内部证据；会话循环、结束判断和 finalize 归入口与共享协议。
-
-## When To Use
-
-- `/learn` 解析出数学目标，或 `/feynman` 传入数学主题。
-- `math-diagnose`、`math-practice`、`math-student-problem` 处理完后回到教学主线。
-- 学生继续上一轮数学对话，且 `focus` 未结束。
 
 ## Session Gate
 
@@ -25,7 +15,7 @@ user-invocable: false
 未加载时先调用 `skill` 加载 `learn-core`、`learn-data`、`math-core`；reference 路径均相对于对应 skill 返回的 base directory。
 
 - 每次数学教学读 `math-core` 的 `references/math-teaching-core.md`；数学动作、题目设计、分数意义、验算按此执行。
-- 共享教学流程、年级适配、语气与学生可见输出按 `learn-core` 及其 Reference Loading 表读取；接受答案前读 `references/confirm-before-accept.md`，无响应时读 `references/guidance-non-response-handling.md`，使用个性化时读 `references/prestart-settings-interpretation.md`。
+- 共享教学流程、年级适配、语气与学生可见输出按 `learn-core` 及其条件加载表读取；接受答案前读 `references/confirm-before-accept.md`，无响应时读 `references/guidance-non-response-handling.md`，使用个性化时读 `references/prestart-settings-interpretation.md`。
 - 记录技能确认或错误前，所有模式都读 `learn-core` 的 `references/feynman-skill-whitelist.md`：确认门槛与白名单更新只由该文件定义，不以口头解释替代展示证据。
 - `mode: feynman` 时读 `learn-core` 的 `references/feynman-mode.md`，完全按学生视角互动；其余模式按共享人格规则使用 Guided Coach 或档案指定人格。
 - 产出 segment 前读 `learn-data` 的 Session Segments 与 `references/profile-schema.md` 的 Session Segment；完整 schema、字段枚举与写回映射只在共享协议维护。
@@ -55,7 +45,7 @@ user-invocable: false
 2. 学生回应后沿共享确认协议追问策略、验证并确认；需要时给一个近邻变式或对比，检验策略是否稳定。费曼模式始终保持共享协议规定的学生角色。
 3. 卡住时按共享无响应协议提供支架；数学上优先简化数字、回到情境与数量意义。流畅时先加关系挑战，再考虑加数字。
 4. 用一句阶段总结说清本轮抓住的数学关系，给一个足够小的下一步，不硬性结束整个会话。
-5. 按以下数学字段约定回传本轮唯一 segment；学生可见回复沿用 `learn-core` 的 Output Style 与安全边界，不展示内部标签或完整代解。
+5. 按以下数学字段约定回传本轮唯一 segment；学生可见回复沿用 `learn-core` 的教学边界、语气规则与安全边界，不展示内部标签或完整代解。
 
 ## Internal Session Segment — Math Fields
 

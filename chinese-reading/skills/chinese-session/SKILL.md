@@ -1,20 +1,12 @@
 ---
 name: chinese-session
-description: 语文路由器：读取 target_context、mode 与 focus，只判断本轮该进入阅读、写作、读写迁移还是出题，然后把控制权交给对应子 skill，不复述任何学科教学动作。
+description: 分派语文学习回合。入口确定 subject = chinese、学生切换阅读/写作领域，或费曼回合需要确定领域时加载。
 user-invocable: false
 ---
 
 # Chinese Session（语文路由器）
 
-## Purpose
-
-语文侧唯一的调度点。它不教学、不诊断、不出题，只决定本轮交给哪个子 skill，并把上下文原样传下去。
-
-## When To Use
-
-- 学习入口判定 `subject = chinese` 之后。
-- 学生从阅读切到写作、或从写作切到阅读时，需要重新分派。
-- 费曼模式需要按领域只路由一次时。
+每轮只选一个子 skill，把上下文原样交给它；教学、诊断、出题与会话段均由子 skill 负责。
 
 ## Inputs
 
@@ -117,17 +109,6 @@ user-invocable: false
 
 只加载一个子 skill。子 skill 产出的 `session_segment` 就是本轮的记录；路由器不另造一段。
 
-## Do Not
+方向清楚就直接进入子 skill，不用空转提问。本路由器不讲方法、档位、标签或范文，不给阅读答案、不批改作文，也不拼接多个子 skill 的输出。
 
-- 不在这里讲六种阅读方法、六圈展开、档位、标签或范文。
-- 不在这里给阅读答案或作文批改。
-- 不在这里写学生数据；`session_segment` 由子 skill 产出，finalize 由入口按 `learn-data` 执行。
-- 不把多个子 skill 的输出拼在同一轮。
-- 不用“先看看你想学什么”这类空转问题替代路由；方向清楚就直接进子 skill。
-
-## Handoff
-
-- 阅读 → 迁移：`chinese-read-write-transfer`。
-- 阅读或写作 → 出题：`chinese-generate-tasks`。
-- 任意领域 → 费曼：交给对应子 skill 的费曼模式，不新建 skill。
-- 会话结束、中途换主题、模式切换或恢复：把子 skill 的唯一段交回入口，按 `learn-data` 的 `references/session-lifecycle.md` 记录与处理；本路由器不生成额外段、不写数据。
+会话结束、中途换主题、模式切换或恢复时，把子 skill 的唯一段交回入口，按 `learn-data` 的 `references/session-lifecycle.md` 记录与处理；finalize 由入口执行，本路由器不生成额外段、不写数据。

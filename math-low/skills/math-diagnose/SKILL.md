@@ -1,21 +1,10 @@
 ---
 name: math-diagnose
-description: 数学策略诊断与错题分流：估计学生的算术/分数策略阶段，判断错误类型，给出保守的下一步目标；原始文件处理交给 learn-errors。教学前不确定学生卡在哪、或学生拿错题来时加载。
+description: 数学策略诊断与错题分流。目标起点不明、连续两轮引导卡住、学生提交错题、练习前需确认错误模式，或学生自述与表现不符时使用。
 user-invocable: false
 ---
 
 # Math Diagnose
-
-## Purpose
-
-回答两个问题：学生现在处在哪个策略阶段，这次错误说明什么。它产出内部诊断结论，不负责教学回合，也不直接持久化错题文件。
-
-## When To Use
-
-- 教学前不确定该从哪个目标开始，或连续两轮引导都卡住。
-- 学生拿来错题图片、Markdown，或说“看看我的错题”。
-- `math-practice` 生成练习前需要确认错误模式。
-- 学生自述的错误原因和实际表现对不上。
 
 ## Session Gate
 
@@ -73,10 +62,3 @@ user-invocable: false
 - 不把整道题原文写进档案，原文留在 `raw/` 与 `extracted/`。
 - `raw/` 只读；任何情况下不改原始错题内容。
 - 不展示内部阶段名、错误标签或 JSON 给学生。
-
-## Related
-
-- `learn-errors`：文件解析、改名、`extracted/` 写入、`error_history` 更新。
-- `math-core`：`references/strategy-diagnosis-rules.md`、`references/targeted-practice-rules.md`。
-- `math-practice`：按本诊断生成练习。
-- `math-session`：回到教学主线。

@@ -1,140 +1,43 @@
 ---
 name: learn-errors
-description: 错题文件处理：解析 raw/ 下的图片或 md，先备份原件，再提取题目与学生过程，规范命名，写入 extracted/，更新 error_history 与 priority_targets。数学和语文共用，学科标签由对应学科 skill 提供。
+description: 解析错题图片或 Markdown，提取题目与作答并记录错误。学生提供文件路径、要求分析图片、查看错题或扫描 raw 目录时使用。
 user-invocable: false
 ---
 
-# Learn Errors
+# 错题文件
 
-## Purpose
+加载 `learn-data`，复用有效快照。没有 `outputs/students/session.json` 或 `student_id` 为空时，引导 `/start` 并停止。当前科目日志有 `finalize_plan` 时先恢复保存，成功后再处理新文件。
 
-处理学生提供的错题图片或 Markdown，把诊断写回科目档案。只处理文件；会话内的阅读/写作诊断由学科 skill 产出 `diagnosis`，不经过这里。
+本流程只处理文件；会话内阅读、写作诊断由学科技能产出 `diagnosis`。
 
-## Session Gate
+## 1. 解析路径
 
-本 skill 只由 `/learn`、`/feynman` 或学科 skill 调用。没有 `outputs/students/session.json` 或 `student_id` 为空时，先引导学生运行 `/start`，不要开始分析。
+读取 `references/resolve-error-files.md`，将用户路径或 `scan all` 请求解析为去重的文件列表、warnings 和计数。相对路径基于当前学生科目目录；拒绝 `..`、其他学生或科目路径。只扫描指定范围，不扫描整个工作区。
 
-读写前加载 `learn-data`，复用有效快照并检查当前科目日志；有 `finalize_plan` 时先按其 finalize 协议恢复保存，成功后再处理新的错题写回。
+`scan all` 扫描当前学生、当前科目的 `raw/` 与 `extracted/`。已记录在 `error_history.raw_file` / `original_raw_file` 的文件跳过，只分析未记录项。没有新文件时告知“没有新的错题”。同题重复上传合并为一条，更新 `date`、`self_diagnosis`，不重复计数。
 
-## When To Use
+## 2. 读取与诊断
 
-- `/learn` 或 `/feynman` 的目标是一个路径、图片或“我的错题”。
-- 学生说“看看我的错题”“分析这张图”“扫描一下 raw 目录”。
-- 学科 skill 需要从错题选择下一学习目标。
+读取 `references/error-processing.md` 的文件读取、分类、领域和命名规则。第一道新题先问“你觉得这道题错在哪？”，再分析。
 
-## Inputs
+1. 图片用 `read_image` 或 `modlens_read_image`；都不可用时请学生文字描述。Markdown 用 `read`。只提取可辨认的题目、答案与过程，不猜内容。
+2. 数学加载 `math-core` 并读其 `references/strategy-diagnosis-rules.md`；语文加载 `chinese-core` 并读其 `references/chinese-error-labels.md`。学科未安装时使用通用分类（数学：计算/概念/过程/估算；语文：概括/证据/赏析/结构/审题/细节），说明专属标签不可用，不自造标签。
+3. 对照学生自述判断一个核心错误。两者不符时按学科规则复核，以证据为准，用一句话解释差异。
+4. 给一个具体、可执行的下一步。
 
-- `student_id` 与 `subject`：来自 `outputs/students/session.json`。
-- 路径列表：用户消息里的 token；或 `scan all` 模式。
-- 学生自述：先问“你觉得这道题错在哪？”再分析第一道新题。
+## 3. 备份与提取
 
-## Path Resolution
+任何改名前读取并执行 `references/raw-directory-protection.md`。`raw/` 只读，只能备份后用 `mv` 改名；备份只增不改。备份失败时停止改名并告知学生。
 
-相对路径以 `outputs/students/<student_id>/<subject>/` 为基准：
+按 `references/error-processing.md` 命名，序号取 raw 与 extracted 同主题的最大编号 + 1。在 `extracted/` 写 Markdown 分析：原题、学生过程、错误类型/标签、证据、下一步。告知学生原名、新名和核心发现。
 
-- `raw/分数-001.jpg` → `outputs/students/<id>/<subject>/raw/分数-001.jpg`
-- `extracted/分析.md` → `outputs/students/<id>/<subject>/extracted/分析.md`
-- 以 `outputs/students/` 开头的路径必须仍落在当前 `outputs/students/<id>/<subject>/` 子树内；其他学生或其他科目路径拒绝。
-- 含 `..` 的路径拒绝。
-- 目录递归展开；支持 `.jpg` `.jpeg` `.png` `.gif` `.bmp` `.webp` `.md`。
-- 不存在的文件、不支持的类型、越界路径：记录 warning 并跳过，不要中断整个流程。
+## 4. 更新科目档案
 
-## Read Raw
+按 `learn-data` 的 Write Protocol 读取、合并并写回科目 `profile.json`：
 
-- 图片：用 `read_image` 或 `modlens_read_image` 读取；两者都不可用时，请学生用文字描述题目和过程，不要编造。
-- Markdown：用 `read` 读取，尽量识别题目、答案、计算/作答过程边界。
-- `raw/` 只读：不得 `write` / `edit`；只能 `cp` 到备份、`mv` 改名。
-- 读取前确认文件确实在 `raw/` 或用户明确提供的路径；不要扫描整个工作区。
+- `error_id` 为 `err_<YYYYMMDD>_<3位序号>`；取已有同日 id 最大序号 + 1，不按历史条数计。
+- `error_history` 前插记录，保留最新 20 条。字段按 `references/error-processing.md` 的 Output Fields，并写 `date`：当前 ISO 时间。`source` 为 `file_analysis`；保留原始、新名、备份和提取文件路径，以及 `renamed`、`analyzed`、`self_diagnosis`。
+- `priority_targets` 优先使用对象形式，加入最值得练的目标，去重后最多 5 个。
+- 更新 `updated_at`。完整原题留在 raw/extracted，档案只存诊断与引用；只改科目档案，不改共享档案。
 
-## Backup Before Rename
-
-在 `mv` 之前：
-
-```bash
-mkdir -p outputs/students/<id>/<subject>/backups/raw
-cp "outputs/students/<id>/<subject>/raw/<原名>" "outputs/students/<id>/<subject>/backups/raw/<原名>"
-```
-
-- 备份只增不改；不要 `rm` 备份。
-- 备份失败时停止改名，先告诉学生“原始文件没能备份，我先不改名”。
-
-## Analyze
-
-对每个新文件：
-
-1. 提取题目与学生的作答过程。
-2. 对照学生自述，判断错误类型：
-   - 数学：加载 `math-core`，读 `references/strategy-diagnosis-rules.md`；错误类型取 `calculation` / `concept` / `process` / `estimation`。
-   - 语文：加载 `chinese-core`，读它的 `references/chinese-error-labels.md`，选择 `reading:` / `writing:` 标签。
-   - 若学科 skill 未安装，用通用分类（计算/概念/过程/估算，或概括/证据/赏析/结构/审题/细节），不要编造学科标签。
-3. 若学生自述与检测不一致，以证据为准，并用一句话说明差异。
-4. 给出一个具体、可执行的下一步。
-
-## Rename And Extract
-
-命名：`<topic>-<number>-<YYYYMMDD>`
-
-- `topic` 用简短英文/拼音 slug，避免空格。
-- `number` 取 `raw/<topic>-*` 与 `extracted/<topic>-*` 中最大编号 + 1，三位补零。
-- 日期用当天。
-
-步骤：
-
-1. 先按“Backup Before Rename”备份。
-2. 若需要改名，用 `mv` 把 raw 文件改为规范名；**只改名，不改内容**。
-3. 在 `extracted/` 写一个 Markdown 分析文件，包含：原题、学生过程、错误类型/标签、证据、下一步。
-4. 告诉学生原文件名与新文件名、核心错误、下一步建议。
-
-## Update Profile
-
-读取 `outputs/students/<id>/<subject>/profile.json`，合并后整文件写回：
-
-- `error_id` 用 `err_<YYYYMMDD>_<3位序号>`；序号取已有 `err_<同日>_` 的最大值 + 1，不要用 `error_history` 条数。
-- `error_history` 前插一条：
-
-```json
-{
-  "error_id": "err_20261004_001",
-  "source": "file_analysis",
-  "date": "2026-10-04T12:00:00Z",
-  "domain": "fractions",
-  "topic": "异分母加法",
-  "error_type": "concept",
-  "label": "fractions:denominator_confusion",
-  "raw_file": "outputs/students/<id>/<subject>/raw/fractions-001-20261004.jpg",
-  "original_raw_file": "outputs/students/<id>/<subject>/raw/分数-001.jpg",
-  "backup_file": "outputs/students/<id>/<subject>/backups/raw/分数-001.jpg",
-  "extracted_file": "outputs/students/<id>/<subject>/extracted/fractions-001-20261004.md",
-  "renamed": true,
-  "analyzed": true,
-  "self_diagnosis": "学生说自己‘忘记通分’，实际是分母乘错。"
-}
-```
-
-- `priority_targets`：优先对象形式，加入本次最值得练的目标；最多 5 个，去重。
-- `updated_at` 更新。
-- `error_history` 保留最新 20 条。
-- 不把完整题目原文写进 profile；原文留在 raw/extracted。
-- 不写共享 `profile.json`。
-
-## Duplicate Handling
-
-- 先检查 `error_history` 的 `raw_file` / `original_raw_file`；已记录的文件跳过。
-- `scan all` 模式只分析未记录项；没有新文件就告诉学生“没有新的错题”。
-- 同一题重复上传：合并为一条，更新 `date` 与 `self_diagnosis`，不要重复计数。
-
-## Output To Student
-
-- 先肯定学生愿意回看错题。
-- 说清：这题错在哪、证据是什么、下一步练什么。
-- 一次只给一个核心错误和一个下一步；不要列长清单。
-- 不展示 `error_history` JSON。
-
-## References
-
-本 skill 的所有 `references/...` 路径都相对于加载结果给出的 base directory。
-
-- `references/resolve-error-files.md`：路径解析细节。
-- `references/analyze-error.md`：分析流程与字段。
-- `references/error-processing.md`：文件类型、命名、错误类别。
-- `references/raw-directory-protection.md`：raw 只读与备份规则。
+回复先肯定学生愿意回看错题，再给一个核心错误、证据和下一步，隐藏内部 JSON。

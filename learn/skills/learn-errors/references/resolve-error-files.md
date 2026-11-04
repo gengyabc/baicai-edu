@@ -1,17 +1,6 @@
 # Resolve Error Files Workflow
 
-## Goal
-
-Resolve user-provided paths into a clean list of error files.
-
-## Inputs
-
-- 从用户消息读取路径 token，或接收预先检测的路径列表
-
-## Boundary
-
-- This workflow only resolves paths into normalized file entries.
-- Actual error analysis is owned by the main `learn-errors` skill body.
+从用户消息或传入列表解析路径，返回规范化文件条目；分析由 `learn-errors` 执行。
 
 ## Process
 

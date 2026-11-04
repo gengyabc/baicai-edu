@@ -1,8 +1,6 @@
 # Prestart Settings Interpretation
 
-## Purpose
-
-定义学生档案里的个性化信息怎么用：只影响语气、例子、阅读角度、写作题目和支架，不改学习目标，也不覆盖学生当前消息。
+个性化信息只调整语气、例子、阅读角度、写作题目和支架，不改学习目标，不覆盖学生当前消息。
 
 ## Where Each Field Lives
 

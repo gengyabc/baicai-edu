@@ -1,9 +1,5 @@
 # Feynman Skill Whitelist
 
-## Purpose
-
-Manage the confirmed skills whitelist across all learning modes (learn, practice, review, feynman). Track which skills the student has demonstrated mastery of, and strategically make mistakes only on non-whitelisted skills in Feynman mode.
-
 ## Scope
 
 - **Whitelist applies to**: All learning modes (learn, practice, review, feynman)

@@ -1,23 +1,12 @@
 ---
 name: chinese-writing-session
-description: 语文写作教学：新作文用六圈展开搭定格，改稿只做局部升格不整篇代写，评改用六步量规给档位、最值得改的 3 处和下一步，费曼模式让学生讲写作选择。
+description: 语文写作教学。学生有题目但未起草、想修改已有草稿、要求作文评改，或要用费曼模式讲清写作选择时使用。
 user-invocable: false
 ---
 
 # Chinese Writing Session（写作教学）
 
-## Purpose
-
-一轮只推进一篇作文的一步：起笔（start）、升格（revise）、评改（assess）或讲选择（feynman）。核心是让学生自己写出更具体的一句，而不是拿到一篇成人样板文。
-
-## When To Use
-
-由 `chinese-session` 路由进入：
-
-- **start**：学生给了作文题或写作方向，还没有草稿。
-- **revise**：学生给了自己的作文草稿，想改好。
-- **assess**：学生要批改、点评、看档次。
-- **feynman**：学生要讲清自己为什么这样写、为什么这样改。
+一轮只推进一篇作文的一步，让学生自己写得更具体：有题无稿用 `start`，修改草稿用 `revise`，批改看档次用 `assess`，学生讲写作或修改选择用 `feynman`。
 
 ## Inputs
 
@@ -35,7 +24,7 @@ user-invocable: false
 | 需要什么 | 加载 | 读哪个文件 |
 |---|---|---|
 | 写作规则、六圈展开、升格方法、档位 | `chinese-core` | `references/chinese-writing-core.md` |
-| 六步批改量规、档位、输出格式、示例 | `chinese-core` | `references/chinese-assessment-rubric.md` |
+| 评改作文前：六步量规、档位与输出格式 | `chinese-core` | `references/chinese-assessment-rubric.md` |
 | 反馈流程、建议怎么写、方法提炼 | `chinese-core` | `references/chinese-feedback-core.md` |
 | 写作错误标签 | `chinese-core` | `references/chinese-error-labels.md` |
 | 需要给新题或变式题 | `chinese-core` | `references/chinese-task-generation.md` |
@@ -71,11 +60,7 @@ user-invocable: false
 5. 只做局部改写：示范一句，然后请学生用同样的方法改下一句。
 6. 给一个小练习：改写指定的那一句，不重写全篇。
 
-禁止：
-
-- 不输出整篇修改稿。
-- 不把学生的口语改成书面套话。
-- 不一次列 10 条问题；一次一个主问题，最多 3 条建议。
+保留学生口语，不改成书面套话。一次一个主问题，最多 3 条建议。
 
 ## assess 模式（评改不重写）
 

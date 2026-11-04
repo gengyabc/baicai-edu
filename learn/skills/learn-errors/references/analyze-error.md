@@ -1,18 +1,6 @@
 # Analyze Error Workflow
 
-## Goal
-
-Analyze student error files, collect self-diagnosis, and update the profile.
-
-## Inputs
-
-- File list (optional): from `resolve-error-files.md`.
-
-## Boundary
-
-- This workflow analyzes error files and updates `error_history` and `priority_targets`.
-- Path resolution: `references/resolve-error-files.md`.
-- Finalize semantics: `learn-data/references/finalize-session.md`. This workflow does not write session summaries.
+接收 `references/resolve-error-files.md` 的文件列表，或扫描新文件。只更新错题历史与优先目标；会话摘要交给 `learn-data` 的 finalize。
 
 ## Rules to Load
 

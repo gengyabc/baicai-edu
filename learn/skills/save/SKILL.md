@@ -1,6 +1,6 @@
 ---
 name: save
-description: 手动保存当前会话：读取当前学生与会话日志，组装最小 session segment，按 finalize 协议写回档案、记忆、当前状态与里程碑，并告诉学生已保存。
+description: 保存当前学习会话。学生明确要求保存进度或记录本次学习时使用。
 ---
 
 # Save

@@ -1,11 +1,5 @@
 # Error Processing Rules
 
-## Purpose
-
-从错题文件（图片或 md）中提取题目、答案、错误类型/标签，并规范化文件命名。
-
-适用于数学和语文的错题/学习证据处理流程。
-
 ## Supported File Types
 
 - 图片：.jpg, .jpeg, .png, .gif, .bmp, .webp
@@ -74,7 +68,7 @@ Use the labels in `chinese-core/references/chinese-error-labels.md`:
 - `source` (`file_analysis`)
 - `topic`
 - `domain`
-- `error_type` (math) or `label` (Chinese)
+- `error_type`（数学）与具体 `label`（数学、语文均保留；语文按 `reading:` / `writing:` 标签）
 - `raw_file`
 - `original_raw_file`
 - `backup_file`

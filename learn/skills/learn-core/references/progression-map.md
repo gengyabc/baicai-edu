@@ -1,9 +1,5 @@
 # Progression Map
 
-## Purpose
-
-Provide an internal map for choosing the next small learning target.
-
 ## Arithmetic Thinking Progression
 
 1. `direct_modeling`: act out with objects, fingers, or drawings

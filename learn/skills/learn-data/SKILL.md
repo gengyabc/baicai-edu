@@ -1,20 +1,12 @@
 ---
 name: learn-data
-description: 学生数据的唯一读写协议：outputs/students/ 目录、当前会话、共享/科目档案、memory、current_state、milestones、会话日志的读取、初始化、合并写回与结束会话 finalize。入口 skill 和学科 skill 在读写学生数据前加载它。
+description: 学生数据读写协议。读取或初始化档案、恢复会话、生成学习记录、修改数据或结束保存前加载。
 user-invocable: false
 ---
 
 # Learn Data
 
-## Purpose
-
-DSH 的学生数据层。所有学生数据都是工作区 `outputs/students/` 下的 JSON，用 `read` / `write` / `glob` / `bash` 直接操作。本 skill 是路径、字段、合并规则和 finalize 的唯一来源。
-
-## When To Use
-
-- `/start`、`/learn`、`/feynman`、`/profile`、`/save` 开始前。
-- 任何需要读取或写回学生档案、记忆、当前状态、里程碑、错题历史、会话日志的学科 skill。
-- 会话结束时执行 finalize。
+用 `read` / `write` / `glob` / `bash` 操作工作区内的学生 JSON。路径、字段与合并规则按本文执行。
 
 ## Data Root
 
@@ -75,7 +67,7 @@ outputs/students/
 
 ```json
 {
-  "student_id": "stu_li_ming_a7k2",
+  "student_id": "stu_li_ming_a7b2",
   "subject": "math",
   "last_active": "2026-10-04T12:00:00Z",
   "session_started_at": "2026-10-04T11:30:00Z"
@@ -95,7 +87,7 @@ outputs/students/
 
 ```json
 {
-  "student_id": "stu_li_ming_a7k2",
+  "student_id": "stu_li_ming_a7b2",
   "name": "李明",
   "grade": 4,
   "grade_band": "upper_primary",
@@ -145,23 +137,19 @@ DSH 的 `write` 要求先读目标文件。每次写入遵循：
 - `current_state.json`：按 patch 字段覆盖；不保留旧版斜杠命令字段。
 - `milestones.json`：`milestones` 数组合并重复 focus，排序与上限按 `references/session-retention.md`。
 
-写入并发假设：单学生、单会话、本地文件；不做跨进程锁。不要并发写同一个文件。若日志有待完成的 `finalize_plan`，所有新的档案编辑或错题写回必须先恢复该保存，避免覆盖半提交文件；处理协议见 `references/finalize-session.md`。
+同一文件串行写入。日志有待完成的 `finalize_plan` 时，先按 `references/finalize-session.md` 恢复保存，再编辑档案或写回错题。
 
 ## Finalize
 
-触发结束或手动保存时，**先读取并完整执行** `references/finalize-session.md`。它是幂等、summary、五个 patch、写回顺序及失败处理的唯一流程来源；保留与压缩策略读取 `references/session-retention.md`。
+结束或手动保存时，先读取并完整执行 `references/finalize-session.md`；保留与压缩策略读取 `references/session-retention.md`。
 
-学习入口在开始/恢复、模式切换与换主题时读取 `references/session-lifecycle.md`；普通学习给下一步时读取 `references/next-step.md`。生命周期负责调度，finalize 负责持久化，不各自维护一份保存算法。
+学习入口在开始/恢复、模式切换与换主题时读取 `references/session-lifecycle.md`；普通学习给下一步时读取 `references/next-step.md`。
 
 ## Session Segments
 
 学科每个教学回合产出一个 segment，由共享生命周期追加到日志。内部子流程回传结果供外层合并，不另记一轮。
 
-**产出或消费 segment 前读取** `references/profile-schema.md` 的 Session Segment：它是完整结构、必填/可选字段与枚举的唯一来源。学科只定义专属字段或取值。未知观察为空而不编造；确认与错误记录另按 `learn-core` 的 `references/feynman-skill-whitelist.md` 判断。
-
-## Retention
-
-写入历史或里程碑前读取 `references/session-retention.md`；该文件统一定义保留上限、排序和压缩规则。
+产出或消费 segment 前读取 `references/profile-schema.md` 的 Session Segment，按其结构、必填字段与枚举填写。学科只补充专属字段或取值。未知观察留空；确认与错误证据按 `learn-core` 的 `references/feynman-skill-whitelist.md` 判断。
 
 ## Privacy
 
@@ -171,13 +159,4 @@ DSH 的 `write` 要求先读目标文件。每次写入遵循：
 - 不把学生数据写入工作区之外的位置。
 - 不删除学生档案、错题或里程碑，除非学生明确要求并再次确认。
 
-## References
-
-本 skill 的所有 `references/...` 路径都相对于加载结果给出的 base directory。
-
-- `references/session-lifecycle.md`：学习入口共用的恢复、路由、模式切换、记录与结束流程。
-- `references/next-step.md`：普通学习的下一步与菜单选择。
-- `references/target-parsing.md`：普通学习、费曼和恢复共用的目标分类与已处理文件交接。
-- `references/profile-schema.md`：完整 schema、模板、memory 消费方式；年级默认值归 `learn-core`。
-- `references/finalize-session.md`：finalize 字段、示例、幂等、保留策略。
-- `references/session-retention.md`：会话与里程碑压缩规则。
+`references/...` 相对于本技能目录。目标分类与已处理文件交接读取 `references/target-parsing.md`。
