@@ -31,6 +31,18 @@ chinese-reading/
 | `chinese-generate-tasks` | 出题。阅读题与写作题，匹配年级难度，给参考答案、命题意图、判分标准；句子填空题说明合理边界。 |
 | `experience-gap-bridging` | 经验缺口桥接。学生进不去文本情感时，用低风险的替代经验搭桥，再回到原文证据。 |
 
+## 个性化
+
+语文不是只读年级。`/start` 会把兴趣写进共享档案的 `personal.interests`，语文 skill 会用它来：
+
+- 阅读：选一个与文本情感/情境相近的具体经验打开话题，再回到原文证据。
+- 写作：从兴趣里找具体素材和题目角度，不硬塞。
+- 出题：写作题和阅读材料优先贴近兴趣；没有合适材料时用年级段默认题型。
+- 读写迁移：迁移主题优先选兴趣相关的情境。
+- 经验桥接：优先用兴趣、日常物件、熟悉角落做低风险替代经验。
+
+偏好（`profile.preferences`）和易/难（`self_report.easy_topics/hard_topics`）也参与选择呈现方式和支架。使用边界见 `learn` 包的 `learn-core/references/prestart-settings-interpretation.md`。
+
 ## 安装
 
 ```bash
@@ -68,12 +80,15 @@ outputs/students/
       memory.json
       current_state.json
       milestones.json
+      session_log.json                 # 当前会话 segment，每轮写，finalize 清空
       raw/                             # 只读原始错题
       extracted/                       # 提取出的分析 md
+      backups/raw/                     # 改名前的原件备份
 ```
 
-- 学科固定为 `chinese`；`raw/` 只读，只能 `mv` 改名。
-- 会话结束由入口按 `learn-data` 的 finalize 规则写回四个科目文件；语文子 skill 只在内存中产出 `session_segment`。
+- 学科固定为 `chinese`；`raw/` 只读，只能 `mv` 改名；改名前后备到 `backups/raw/`。
+- 每轮由入口把 `session_segment` 追加到 `session_log.json`；会话结束由入口按 `learn-data` 的 finalize 规则写回四个科目文件。
+- 诊断标签写在 `session_segment.diagnosis`（`label` + `evidence`），finalize 写成 `error_history` 诊断条目，不再塞进 `skill_errors`。
 - 协议细节见 `learn` 包的 `skills/learn-data/SKILL.md`。
 
 ## 说明

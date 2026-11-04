@@ -14,11 +14,14 @@ Provide an internal map for choosing the next small learning target.
 
 ## Fraction Progression
 
-1. Equal sharing with incomplete coordination
-2. Equal sharing with trial-and-error or repeated halving
-3. Additive coordination of sharers and shares
-4. Multiplicative coordination and fraction-as-quotient
-5. Comparison, equivalence, and operations grounded in quantity relationships
+Use the same four stage names as `profile.current_levels.fraction_strategy_stage`:
+
+1. `equal_sharing_no_coordination`: equal sharing with incomplete coordination
+2. `equal_sharing_nonanticipatory`: trial-and-error or repeated halving
+3. `equal_sharing_additive`: additive coordination of sharers and shares
+4. `equal_sharing_multiplicative`: multiplicative coordination and fraction-as-quotient
+
+After stage 4, move to comparison, equivalence, and operations grounded in quantity relationships; that is the next instructional focus, not a fifth schema value.
 
 ## Content Domains
 

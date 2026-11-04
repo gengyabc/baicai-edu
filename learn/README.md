@@ -8,7 +8,7 @@
 |---|---|
 | `/start` | 选数学/语文，识别或创建学生 |
 | `/learn` | 自适应学习主循环 |
-| `/feynman` | 费曼模式（原 Pi 的 `/teach`；`/teach` 已被全局技能占用） |
+| `/feynman` | 费曼模式：学生讲，AI 当学生 |
 | `/profile` | 查看/修改学生档案 |
 | `/save` | 手动保存当前会话 |
 
@@ -16,7 +16,7 @@
 
 - `learn-core`：中文语气、以学生为中心、年级适配、三步确认、引导无响应、结束信号、人格、费曼规则。
 - `learn-data`：`outputs/students/` JSON 数据协议、快照、建档、写回、finalize。
-- `learn-errors`：错题图片/Markdown 解析、raw 只读、extracted 写入、error_history 更新。
+- `learn-errors`：错题图片/Markdown 解析、raw 只读、备份、extracted 写入、error_history 更新。
 
 入口 skill 分两档：`start` / `learn` 设置 `disable-model-invocation: true`，只能由用户键入命令发起，不进入模型目录；`feynman` / `profile` / `save` 保留模型入口，支持对话内自动加载（“我来给你讲”“看看我的档案”“保存一下”）。上面 3 个内部 skill 保持模型可加载，只通过 `user-invocable: false` 从 `/` 菜单隐藏。
 
@@ -36,14 +36,18 @@ dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/learn
 outputs/students/
   session.json
   <student_id>/
-    profile.json
-    math/...
-    chinese/...
+    profile.json                 # 姓名、年级、personal.interests、经历
+    math/{profile,memory,current_state,milestones,session_log}.json
+    chinese/{profile,memory,current_state,milestones,session_log}.json
+    <subject>/raw/               # 只读
+    <subject>/extracted/         # 分析 md
+    <subject>/backups/raw/       # 原件备份
 ```
 
-协议见 `skills/learn-data/SKILL.md`。
+协议见 `skills/learn-data/SKILL.md`。会话进行中每轮写 `session_log.json`；`profile.json` / `memory.json` 只在 finalize 写。
 
 ## 依赖
 
 - `math-low` 与 `chinese-reading` 的 skill 会按名称加载 `learn-core`、`learn-data`、`learn-errors`。
-- 单独安装本包只能使用入口、档案、保存和错题能力，不能进行学科教学。
+- 单独安装本包只能使用入口、档案、保存和通用错题处理；学科教学需要安装 `math-low` 或 `chinese-reading`。
+- `personal.interests` 是跨学科个性化字段，语文和数学 skill 都会读取。

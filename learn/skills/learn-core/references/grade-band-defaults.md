@@ -1,11 +1,32 @@
 # Grade Band Defaults
 
-Single source of truth for grade-band defaults. All other files should reference this via `@` instead of restating these values.
+Single source of truth for grade-band defaults. Other skills point here; do not restate the mapping or the default values.
 
 ## Grade Band Mapping
 
 - grades 1-3 -> `lower_primary`
 - grades 4-6 -> `upper_primary`
+
+Within a band, use the same rules; only the concreteness of examples changes:
+
+- Grades 1-2: shorter sentences, smaller numbers, one step at a time, more drawing/acting.
+- Grade 3: same band, but can handle one small transfer or comparison.
+- Grades 4-5: explanation, comparison, and justification; still concrete first.
+- Grade 6: freer choice, longer text, multi-step reasoning; still no lecture.
+
+## Initialization Defaults
+
+When creating a missing subject profile (`learn-data` → Create Student), use this table. Do not copy the example values from `profile-schema.md`.
+
+| Subject | Grade band | `tone` | `learning_state.active_domain` |
+|---|---|---|---|
+| math | `lower_primary` | `supportive_concrete` | `addition_subtraction_word_problems` |
+| math | `upper_primary` | `concise_guiding` | `fractions` |
+| chinese | `lower_primary` | `supportive_concrete` | `writing` |
+| chinese | `upper_primary` | `concise_guiding` | `reading` |
+
+Initial `profile.preferences`: every flag `false`; `/start` sets exactly the chosen one to `true`.
+Initial `profile.current_levels`: `overall: "L1"`, `arithmetic_strategy_stage: "direct_modeling"`, `fraction_strategy_stage: "equal_sharing_no_coordination"`.
 
 ## Math Defaults
 

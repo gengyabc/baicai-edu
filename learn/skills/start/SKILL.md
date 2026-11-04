@@ -25,9 +25,13 @@ disable-model-invocation: true
 
 ## Dispatch
 
-### 1. 选科目
+### 1. 选科目与说明身份
 
-先问：
+先说明一次，不打断教学：
+
+> 我是陪你学习的 AI，不是真人。费曼模式里我会假装成同学来问你，那是在玩游戏。
+
+然后问：
 
 > 今天想学哪一个？
 > 1. 数学
@@ -57,7 +61,7 @@ disable-model-invocation: true
 
 ### 3. 识别学生
 
-用 `glob outputs/students/*/profile.json` 找已有学生，再逐个 `read` 共享档案，得到 `student_id`、`name`、`grade`。
+用 `glob outputs/students/*/profile.json` 找已有学生，再逐个 `read` 共享档案，得到 `student_id`、`name`、`grade`、`personal.interests`。
 
 - **没有学生**：直接进入第 4 步“新学生建档”。
 - **只有一个学生**：问一句确认：“我找到的是<name>，<grade>年级，对吗？”确认后进入第 5 步。
@@ -77,34 +81,29 @@ disable-model-invocation: true
 
 选问（学生愿意说才问，可跳过）：
 
-4. 平时喜欢做什么。
+4. 平时喜欢做什么、玩什么（写成 `personal.interests` 数组，例如 `["阅读", "踢足球"]`）。
 5. 最近最开心的一件事。
 6. 最近最难过的一件事（明确说“不想说可以跳过”）。
 
 收齐后：
 
 1. 先用一句话复述：“我记一下：你是<name>，<grade>年级，喜欢<偏好>。这样对吗？”确认后再写文件。
-2. 按 `learn-data` 的“Create Student”生成 `student_id`、共享档案、科目档案、memory、current_state、milestones。
+2. 按 `learn-data` 的“Create Student”生成 `student_id`、共享档案、科目档案、memory、current_state、milestones、session_log。
 3. 年级段：1-3 → `lower_primary`；4-6 → `upper_primary`。
-4. 默认领域、语气、策略阶段按 `learn-core` 的 `references/grade-band-defaults.md`。
-5. 数学偏好映射：
-   - 画一画 → `likes_visual: true`
-   - 讲一讲 → `likes_story_context: true`
-   - 直接算 → `likes_direct_calculation: true`
-6. 语文偏好映射：
-   - 读文章 → `likes_model_text: true`
-   - 讲想法 → `likes_oral_explanation: true`
-   - 写一写 → `likes_revision: true`
-7. 写 `outputs/students/session.json` 激活该学生与科目。
-8. 告诉学生：“档案建好了。接下来输入 `/learn`，我们就可以开始。”
+4. `tone`、`learning_state.active_domain`、`current_levels` 的初始值按 `learn-core` 的 `references/grade-band-defaults.md` 选，不要照抄示例的 upper_primary 值。
+5. 先把科目 `profile.preferences` 的所有布尔值写成 `false`，再把学生选中的那一项设为 `true`：
+   - 数学：画一画 → `likes_visual`；讲一讲 → `likes_story_context`；直接算 → `likes_direct_calculation`。
+   - 语文：读文章 → `likes_model_text`；讲想法 → `likes_oral_explanation`；写一写 → `likes_revision`。
+6. 写 `outputs/students/session.json` 激活该学生与科目。
+7. 告诉学生：“档案建好了。接下来输入 `/learn`，我们就可以开始。”
 
-不要在学生确认前创建文件；不要在一条消息里连问六个问题；不要把“最难过的事”设为必答。
+不要在学生确认前创建学生档案；不要在一条消息里连问六个问题；不要把“最难过的事”设为必答。
 
 ### 5. 激活已有学生
 
-1. 检查该学生当前科目的 `profile.json` 是否存在；缺失则按 `learn-data` skill 的 `references/profile-schema.md` 模板初始化。
-2. 检查 `memory.json`、`current_state.json`、`milestones.json`；缺失则按默认值创建。
-3. 用 `bash` 确保目录存在：`mkdir -p outputs/students/<id>/<subject>/raw outputs/students/<id>/<subject>/extracted`。
+1. 检查该学生当前科目的 `profile.json` 是否存在；缺失则按 `learn-data` 的 `references/profile-schema.md` 按年级段初始化。
+2. 检查 `memory.json`、`current_state.json`、`milestones.json`、`session_log.json`；缺失则按默认值创建。
+3. 用 `bash` 确保目录存在：`mkdir -p outputs/students/<id>/<subject>/raw outputs/students/<id>/<subject>/extracted outputs/students/<id>/<subject>/backups/raw`。
 4. 写 `outputs/students/session.json`：
 
 ```json
@@ -127,6 +126,7 @@ disable-model-invocation: true
 - 不展示 JSON、`student_id` 或内部字段。
 - 没有 `outputs/students/` 目录时，写入第一个文件会自动创建；不要为此报错。
 - 如果学生中途换科目，回到第 1 步重新确认，不要沿用旧科目。
+- 学生不愿意说兴趣或经历时立即跳过；不要追问。
 
 ## Related
 

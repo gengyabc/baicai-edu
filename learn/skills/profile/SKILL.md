@@ -1,6 +1,6 @@
 ---
 name: profile
-description: 查看或修改学生档案：用学生能听懂的话总结姓名、年级、当前科目、学习重点、最近 5 次会话和关键里程碑；需要时更新基础信息或科目偏好。
+description: 查看或修改学生档案：用学生能听懂的话总结姓名、年级、兴趣、当前科目、学习重点、最近 5 次会话和关键里程碑；需要时更新基础信息或科目偏好。
 ---
 
 # Profile
@@ -29,17 +29,18 @@ description: 查看或修改学生档案：用学生能听懂的话总结姓名�
 
 读：
 
-- `outputs/students/<id>/profile.json`
-- `outputs/students/<id>/<subject>/profile.json`
+- `outputs/students/<id>/profile.json`（共享：姓名、年级、`personal.interests`、经历）
+- `outputs/students/<id>/<subject>/profile.json`（科目：偏好、易/难、水平、`session_history`）
 - `outputs/students/<id>/<subject>/milestones.json`
+- `outputs/students/<id>/<subject>/current_state.json`
 
-需要最近会话时，读 `profile.json` 的 `session_history`（最新 5 条）。
+最近会话从**科目** `profile.json` 的 `session_history` 读（最新 5 条），不要从共享档案找。
 
 ### 3. 用学生的话总结
 
 按下面顺序，简短说：
 
-1. 姓名、年级。
+1. 姓名、年级；用一句“你喜欢<兴趣>”自然带过，不要像报表。
 2. 当前科目。
 3. 当前重点（`current_state.active_focus` 或 `session_history[0].focus`）。
 4. 最近 5 次会话：每一条只说“学了什么 + 一个进步/困难”，不要逐字复述。
@@ -52,9 +53,10 @@ description: 查看或修改学生档案：用学生能听懂的话总结姓名�
 
 学生要改基础信息时：
 
-- 姓名、年级、爱好、最开心/最难过的事 → 改共享 `profile.json`。
-- 学习偏好、当前水平、优先目标 → 改科目 `profile.json`。
-- 改年级时同步 `grade_band` 与默认领域；不确定是否要重置水平时，先问一句。
+- 姓名、年级、`personal.interests`、最开心/最难过的事 → 改共享 `profile.json`。
+- 学习偏好、当前水平、易/难、优先目标 → 改科目 `profile.json`。
+- 改年级时同步 `grade_band`，并按 `learn-core/references/grade-band-defaults.md` 重新选择 `tone` 与 `learning_state.active_domain`；不确定是否要重置水平时，先问一句。
+- 改兴趣时保留其他兴趣，不要整组覆盖；学生说“不喜欢了”再移除。
 - 改完告诉学生“已经更新”，不要展示 JSON。
 
 ### 5. 不展示
@@ -69,9 +71,11 @@ description: 查看或修改学生档案：用学生能听懂的话总结姓名�
 - 只显示当前科目；学生要另一个科目时，先切换会话或问清楚。
 - 档案不存在时，不要凭空编造；引导 `/start`。
 - 修改前先确认，尤其是年级、姓名这类基础信息。
+- 学生删除兴趣或经历时一次确认即可，不要反复追问。
 
 ## Related
 
 - `start`：建档或切换学生。
 - `save`：保存当前会话。
 - `learn-data`：数据协议。
+- `prestart-settings-interpretation.md`：兴趣和偏好的使用边界。

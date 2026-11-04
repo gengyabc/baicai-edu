@@ -8,7 +8,7 @@ user-invocable: false
 
 ## Purpose
 
-回答两个问题：学生现在处在哪个策略阶段，这次错误说明什么。对应 Pi 的 `diagnose-strategy.md` 与 `analyze-error.md` 的数学部分。它产出内部诊断结论，不负责教学回合，也不直接持久化错题文件。
+回答两个问题：学生现在处在哪个策略阶段，这次错误说明什么。它产出内部诊断结论，不负责教学回合，也不直接持久化错题文件。
 
 ## When To Use
 
@@ -16,6 +16,10 @@ user-invocable: false
 - 学生拿来错题图片、Markdown，或说“看看我的错题”。
 - `math-practice` 生成练习前需要确认错误模式。
 - 学生自述的错误原因和实际表现对不上。
+
+## Session Gate
+
+本 skill 只由 `/learn`、`/feynman` 或数学 skill 路由进入。没有 `session.json` 或 `student_id` 为空时，先引导学生运行 `/start`，不要开始诊断。
 
 ## Load First
 
@@ -53,10 +57,10 @@ user-invocable: false
 1. 先问学生自己的判断，再处理第一道新题；一次只分析一道。
 2. 把文件读取、改名、`extracted/` 分析写入、`error_history` / `priority_targets` 更新整体交给 `learn-errors`；本 skill 不读 `raw/` 原图、不改名、不写 `error_history`。
 3. 拿回 `learn-errors` 的结论后，判断这次错误属于哪一类：
-   - 计算类：进位/借位遗漏、口诀错误、符号错误、单位错误；
-   - 概念类：概念混淆、规则误用、分数意义错误；
-   - 过程类：跳步、漏条件、审题偏差、表达不完整；
-   - 估算类：结果数量级明显不合理但没察觉。
+   - `calculation`：进位/借位遗漏、口诀错误、符号错误、单位错误；
+   - `concept`：概念混淆、规则误用、分数意义错误；
+   - `process`：跳步、漏条件、审题偏差、表达不完整；
+   - `estimation`：结果数量级明显不合理但没察觉。
 4. 学生自述与证据不一致时，以证据为准，用一句话说明差异，不要否定学生本人。
 5. 判断这是偶发失误还是稳定模式：看 `error_history` 里同类错误是否重复、`confirmed_skills` 是否已包含该技能。
 
@@ -66,7 +70,7 @@ user-invocable: false
 
 ```json
 {
-  "strategy_estimate": {
+  "current_levels": {
     "arithmetic_strategy_stage": "counting_strategy",
     "fraction_strategy_stage": "equal_sharing_no_coordination"
   },
@@ -74,10 +78,17 @@ user-invocable: false
   "strengths": ["能主动画图表示数量"],
   "difficulties": ["进位时容易漏加 1", "听不懂“先凑十”的提示"],
   "next_target": "20 以内进位加法，先用凑十的实物操作",
+  "diagnosis": {
+    "domain": "addition_subtraction",
+    "label": "calculation:carry_omission",
+    "evidence": "9+4 写成 12，进位 1 漏加。"
+  },
   "confidence": "low"
 }
 ```
 
+- `current_levels` 是 `profile.current_levels` 的部分更新；finalize 会嵌套到 `profile` 下，不要写成顶层字段。
+- `diagnosis` 会变成一条 `error_history` 诊断条目；`label` 用具体数学错误类型，`evidence` 写证据。
 - `next_target` 取保守的一步：宁可小一点、具体一点，也不要直接跳到下一个单元。
 - `confidence` 用 `low` / `medium` / `high`；证据不足时写 `low`，并按更低阶段处理。
 - 这些标签只留在内部，学生可见的只有一句核心问题和一句下一步。

@@ -19,6 +19,10 @@ user-invocable: false
 
 通常在 `chinese-reading-session` 的 learn 模式或 diagnose 模式下触发：当见人法卡住、学生只会套情感词时，由阅读教学 skill 调用本 skill，桥接完成后交回阅读教学继续。
 
+## Session Gate
+
+本 skill 只由 `chinese-reading-session` 或语文路由调用。没有 `session.json` 或 `student_id` 为空时，先引导学生运行 `/start`，不要开始桥接。
+
 ## When Not To Use
 
 - 事实说明文、知识性文本、纯信息提取任务
@@ -34,6 +38,8 @@ user-invocable: false
 - 至少一处可回到原文验证的文本证据
 
 需要阅读规则细节时，加载 `chinese-core` 并读取其 `references/chinese-reading-core.md` 的见人法与文本层次部分；加载结果会给出 base directory，按 `<base_directory>/references/chinese-reading-core.md` 读取。
+
+需要个性化输入时，加载 `learn-core` 并读 `references/prestart-settings-interpretation.md`：优先用 `personal.interests`、日常物件、熟悉的角落；`personal.most_sad_event` 只在学生主动提起时轻度使用，不主动问。
 
 ## Process
 
@@ -52,11 +58,13 @@ user-invocable: false
 3. **情感对应**：与文本核心情感有相似的情感结构，而非仅表面相似
 4. **可回溯**：选择后能明确指出"为什么这个经验能帮助理解"
 
-优先选日常经验，如：
-- 喜欢的旧物
+优先从 `personal.interests` 和日常经验里选，如：
+- 学生喜欢的活动、物件、宠物
 - 熟悉的角落
 - 被陪伴的感觉
 - 舍不得的事物
+
+不要从 `personal.most_sad_event` 里主动取材；学生自己提起时，只用一句轻桥，马上回到文本。
 
 **不符合上述任一条件时，应停止桥接或换一个替代经验。**
 
@@ -88,6 +96,8 @@ user-invocable: false
 5. **情感结构不对应**：发现替代经验与文本情感只有表面相似，没有真正对应
 
 出现任一失败信号时，应承认桥接不成功，改用其他方法或直接讲解。
+
+如果学生提到自伤、被伤害、被欺负、家里危险或不想活，停止桥接和教学，按 `learn-core/references/llm-safety-boundaries.md` 的危机流程处理，不把细节写进学生档案。
 
 ## Non-Goals
 
@@ -129,7 +139,7 @@ user-invocable: false
   "difficulties": ["还说不清作者为什么不直接写‘舍不得’"],
   "next_step_candidate": "回到原文找两处反复出现的细节",
   "recommended_targets": ["见人法", "双层赏析"],
-  "teach_handoff_recommended": false,
+  "feynman_handoff_recommended": false,
   "confirmed_skills": [],
   "skill_errors_observed": []
 }
@@ -138,6 +148,7 @@ user-invocable: false
 字段要求：
 
 - `subject` 固定 `chinese`；`mode` 取调用时的 `learn` / `diagnose` / `feynman`；`submode` 固定 `experience_bridging`；`source` 固定 `reading`。
+- 本 skill 不单独产生诊断标签；需要落标签时交回 `chinese-reading-session`。
 - `strategy_summary` 必须写清“用了什么替代经验、桥到了什么情感、回到哪处证据”。
 - 桥接失败时，`difficulties` 写清失败信号，`next_step_candidate` 改成换方法或直接讲解，不要重复同一个替代经验。
 - 本 skill 不写学生数据；持久化由入口按 `learn-data` 的 finalize 执行。

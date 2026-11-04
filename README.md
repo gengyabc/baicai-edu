@@ -24,7 +24,7 @@ dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/chinese-read
 
 ## 使用
 
-1. `/start`：选数学或语文，识别已有学生或逐轮建档。
+1. `/start`：选数学或语文，识别已有学生或逐轮建档；会记录 `personal.interests`，供语文和数学选择例子、阅读角度和写作题目。
 2. `/learn 分数减法`：进入自适应学习；也可以直接 `/learn` 从档案选目标。
 3. `/feynman`：费曼模式，学生讲、AI 当学生提问。
 4. `/profile`：查看或修改档案。
@@ -42,12 +42,15 @@ dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/chinese-read
 outputs/students/
   session.json
   <student_id>/
-    profile.json
-    math/{profile,memory,current_state,milestones}.json
-    chinese/{profile,memory,current_state,milestones}.json
+    profile.json                 # 姓名、年级、personal.interests、经历
+    math/{profile,memory,current_state,milestones,session_log}.json
+    chinese/{profile,memory,current_state,milestones,session_log}.json
+    <subject>/raw/               # 只读原始错题
+    <subject>/extracted/         # 分析 md
+    <subject>/backups/raw/       # 原件备份
 ```
 
-`raw/` 只读，`extracted/` 放分析 Markdown。详细协议见 [`learn/skills/learn-data/SKILL.md`](./learn/skills/learn-data/SKILL.md)。
+`raw/` 只读，`extracted/` 放分析 Markdown，`backups/raw/` 放改名前的原件备份。会话进行中每轮写 `session_log.json`；`profile.json` / `memory.json` 只在 finalize 写。详细协议见 [`learn/skills/learn-data/SKILL.md`](./learn/skills/learn-data/SKILL.md)。
 
 ## 设计文档
 
@@ -63,6 +66,9 @@ cat ~/.dsh/profiles/web/package.json
 
 # 每个包的 skills 目录应被解析为独立 provider
 find learn/skills math-low/skills chinese-reading/skills -name SKILL.md
+
+# 静态检查：frontmatter、名称、内部入口、失效引用、旧字段/Pi 残留
+node scripts/check-skills.mjs
 ```
 
 当前会话已确认 20 个 skill 定义：2 个纯用户入口（`start`、`learn`）+ 3 个双开入口（`feynman`、`profile`、`save`）+ 15 个内部 skill（`user-invocable: false`，模型可加载）。

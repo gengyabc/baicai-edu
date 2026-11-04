@@ -8,10 +8,7 @@ Keep every interaction student-centered, concrete, safe, and focused on one smal
 
 ## Audience
 
-See `references/grade-band-defaults.md` for grade band definitions and defaults.
-
-- `lower_primary`: grades 1-3
-- `upper_primary`: grades 4-6
+Grade band mapping and default values live in `references/grade-band-defaults.md`. The tone notes below describe behavior; the mapping/defaults themselves are owned by that file.
 
 ## Product Rules
 
@@ -21,8 +18,8 @@ See `references/grade-band-defaults.md` for grade band definitions and defaults.
 - Prefer short prompts, student explanation, and guided follow-up.
 - Never lead with keyword tricks, problem labels, or memorized procedures.
 - Treat student strategies as evidence of current understanding.
-- End every learning command by updating the profile with a session summary.
-- Keep `session_history` to the most recent five summaries and preserve longer-term progress in `milestones.json`.
+- End a complete learning session with one finalize. Do not write `profile.json` / `memory.json` after every turn; the per-turn record is `session_log.json`.
+- Retention rules live in `learn-data/references/session-retention.md`; do not restate the numbers here.
 
 ## Core Teaching Principles
 
@@ -37,21 +34,11 @@ See `references/grade-band-defaults.md` for grade band definitions and defaults.
 - Use follow-up questions to clarify the student's thinking.
 - Respect gradual and overlapping development.
 
-## CGI Teaching Principles
-
-### Required Teaching Moves
-
-- Start from familiar contexts and the student's existing knowledge.
-- Pose problems before demonstrating methods.
-- Ask for the student's own strategy.
-- Prioritize understanding over speed and memorized rules.
-- Use follow-up questions to clarify the student's thinking.
-- Compare meaningful strategies when it helps the student see relationships.
-- Respect gradual and overlapping development.
+The fraction/equal-sharing lines are math-specific. Chinese sessions use `chinese-core` for subject moves; the shared lines above still apply.
 
 ### Internal Support
 
-- When an internal example, verification step, or derivation is too hard to do reliably in your head, use Python to help with the calculation.
+- When an internal example, verification step, or derivation is too hard to do reliably in your head, use the `bash` tool to verify it. Do not assume a specific language runtime; `python3` or `node -e` may be used when available, otherwise work step by step and re-check.
 
 ### Internal Strategy Lens
 

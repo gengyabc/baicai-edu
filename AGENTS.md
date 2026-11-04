@@ -20,5 +20,8 @@ Single-context: one `GLOSSARY.md` at the repo root plus ADRs in `docs/adr/`. See
 - Internal skills loaded by another skill must stay model-invocable: use `user-invocable: false`, never `disable-model-invocation: true`, because DSH has no separate skill-to-skill channel.
 - Skills are addressed by name; shared rules live in `learn/skills/learn-core`, the student-data protocol in `learn/skills/learn-data`, and error-file handling in `learn/skills/learn-errors`.
 - Student data is written under `outputs/students/`; the whole `outputs/` tree is gitignored. Do not commit it or expose raw student JSON to the student.
-- `raw/` under a student's subject directory is read-only; only rename via `mv`.
+- Per-turn session state goes to `session_log.json`; `profile.json` / `memory.json` / `milestones.json` are written only at finalize. `current_state.last_finalized_session_id` is the idempotency marker.
+- `personal.interests` in the shared `profile.json` is the cross-subject personalization field; Chinese and math skills must read it. Subject preferences and easy/hard topics live in the subject profile.
+- `node scripts/check-skills.mjs` is the static check for frontmatter, invocation policy, stale fields, and dangling references.
+- `raw/` under a student's subject directory is read-only; back up to `backups/raw/` before renaming with `mv`.
 - The migration mapping from Pi is in `docs/migration/pi-to-dsh-skills.md`.

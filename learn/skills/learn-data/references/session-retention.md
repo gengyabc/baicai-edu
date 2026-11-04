@@ -15,8 +15,10 @@ Keep student profiles compact while preserving meaningful progress.
 1. Keep recent sessions that help immediate follow-up.
 2. Merge repeated sessions by focus.
 3. Promote stable gains, stage changes, and topic mastery into milestones.
-4. Keep milestones compact, ordered by importance then recency.
+4. Keep milestones compact, ordered by `importance` (`high` > `medium` > `low`) then recency.
 5. Limit milestones to 20 items.
+6. Keep the per-turn record in `session_log.json`, not in `session_history`; `session_history` is written once per finalized session.
+7. Clear `session_log.json.segments` after finalize.
 
 ## Milestone Signals
 

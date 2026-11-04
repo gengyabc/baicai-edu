@@ -16,14 +16,19 @@ user-invocable: false
 
 - **learn 模式**：学生给了文章、材料或阅读题，但没有答案。
 - **diagnose 模式**：学生给了自己的阅读答案或做过的题，需要判断对错与失分原因。
-- **feynman / feynman_handoff 模式**：学生要讲清楚自己是怎么读出这个答案的。
+- **feynman 模式**：学生要讲清楚自己是怎么读出这个答案的。
+
+## Session Gate
+
+本 skill 只由 `chinese-session`、`/learn` 或 `/feynman` 路由进入。没有 `session.json` 或 `student_id` 为空时，先引导学生运行 `/start`，不要开始阅读教学。
 
 ## Inputs
 
 - 文章或材料原文、阅读题目、学生答案（可能只有其中一部分）。
 - `focus`：本轮锁定的一段、一句或一个题型。
-- `grade_band`：来自快照 `profile.json`（`lower_primary` 1-3 年级 / `upper_primary` 4-6 年级）。
+- `grade_band`：来自快照 `profile.json`；年级段规则见 `learn-core/references/grade-band-defaults.md`。
 - 快照中的 `priority_targets`、`developing_topics`、`error_history` 最近几条。
+- 个性化：`personal.interests`、`personal.most_exciting_event`、`profile.preferences`、`self_report.easy_topics/hard_topics`、`memory.preferred_scaffolds` / `recent_error_patterns` / `expression_traits` / `stable_strengths` / `stable_difficulties`。
 
 ## Load Rules
 
@@ -41,6 +46,7 @@ user-invocable: false
 | 学生连续不回应引导 | `learn-core` | `references/guidance-non-response-handling.md` |
 | 费曼模式 | `learn-core` | `references/feynman-mode.md` + `references/feynman-skill-whitelist.md` |
 | 情感、意境、人物处境进不去 | `experience-gap-bridging` | 按其流程执行 |
+| 使用兴趣、偏好、易/难 | `learn-core` | `references/prestart-settings-interpretation.md` |
 
 `chinese-core` 的加载结果会给出 base directory；参考文件按 `<base_directory>/references/<文件名>.md` 读取。
 
@@ -65,7 +71,7 @@ user-invocable: false
 ## learn 模式（文章，无答案）
 
 1. 先问“你第一遍读，最先注意到什么？”让学生先开口，不先讲。
-2. 选一个方法带学生拆文本；一次只拆一段或一句。
+2. 选一个方法带学生拆文本；一次只拆一段或一句。可以从 `personal.interests` 里选一个与文本情感/情境相近的具体经验来打开话题，但马上回到原文，不把阅读变成兴趣聊天。
 3. 让学生自己指认关键证据：“你从哪一句看出来的？”没有原文就回到原文。
 4. 讨论作者意图与深层含义，要求结论能回溯到文本。
 5. 情感或意境是核心难点、学生又缺少对应生活经验时：
@@ -73,7 +79,7 @@ user-invocable: false
    - 用可进入的替代经验搭桥，再立刻回到原文证据。
    - 先建立感受，最后才补术语和写法名称。
 6. 提炼写法，按 `chinese-core` 的 `references/chinese-writing-core.md` 的“行文技巧提取与读写迁移”执行：
-   - 每个技巧给名称 + 原文证据 + 效果；学生年级决定数量：低年级（1-2）1 个，中年级（3-4）1-2 个，高年级（5-6）2-3 个。
+   - 每个技巧给名称 + 原文证据 + 效果；学生年级决定数量：低年级（1-3）1-2 个，高年级（4-6）2-3 个。
    - 技巧必须是原文里真实存在的，不凭空引入。
 7. 用一句学生能复述的方法句收束，并留一个自然的下一步（练一道题、做读写迁移、讲给 AI 听），不要硬性结束。
 
@@ -97,9 +103,10 @@ user-invocable: false
 4. 用具体文本证据说明“分丢在哪”，不说“理解不深”这类老师话。
 5. 给一个修正版：可以示范一句，但保留学生的思路和用词，不整段代写。
 6. 给一个小练习：同一题型、换一句话或换一段，马上能做。
-7. 同一标签在 `error_history` 里反复出现时，把该标签写进本轮的 `skill_errors_observed`，按 `learn-errors` 的记录约定交给入口持久化；不要在现场向学生展示标签或 JSON。
+7. 把主标签写进本轮 `session_segment.diagnosis`：`domain: "reading"`、`label`（如 `reading:证据不足`）、`evidence`（原文 + 学生原话）。finalize 会写成 `error_history` 诊断条目；不要在现场向学生展示标签或 JSON。
+8. 同一标签在 `error_history` 里反复出现时，在 `diagnosis.evidence` 里写清是重复模式，并在 `recommended_targets` 里保留该标签对应的训练点。
 
-## feynman / feynman_handoff 模式
+## feynman 模式
 
 1. 请学生讲：“你是怎么知道这个答案是对的？”
 2. 只追证据，不追术语：“你指的是哪一句？能把那句读给我听吗？”
@@ -134,7 +141,7 @@ user-invocable: false
 
 ## Session Segment
 
-本轮结束在内存里产出一个 `session_segment`，不写文件，交给入口汇总：
+本轮结束在内存里产出一个 `session_segment`；本 skill 不直接写学生数据，入口会把它写入 `session_log.json`：
 
 ```json
 {
@@ -148,17 +155,23 @@ user-invocable: false
   "difficulties": ["赏析只停在字面", "说不清表达效果"],
   "next_step_candidate": "用双层赏析重写这一句",
   "recommended_targets": ["双层赏析", "段落作用题"],
-  "teach_handoff_recommended": true,
+  "feynman_handoff_recommended": true,
   "confirmed_skills": ["定位关键句"],
-  "skill_errors_observed": ["双层赏析"]
+  "skill_errors_observed": [],
+  "diagnosis": {
+    "domain": "reading",
+    "label": "reading:单层赏析",
+    "evidence": "学生只说‘这句话很美’，没有回到比喻句和表达效果。"
+  }
 }
 ```
 
 字段要求：
 
 - `subject` 固定 `chinese`；`source` 固定 `reading`。
-- `mode` 取 `learn` / `diagnose` / `feynman` / `feynman_handoff`；`submode` 取 `learn` / `review` / `feynman`。
-- `confirmed_skills` 只写本轮学生真的独立做到的阅读技能；`skill_errors_observed` 只写本轮真实出错、且能对应标签或技能名的项。
+- `mode` 取 `learn` / `diagnose` / `feynman`；`submode` 取 `learn` / `review` / `feynman`。
+- `confirmed_skills` 只写本轮学生真的独立做到、且达到两条独立证据（或一次讲清理由）的阅读技能；`skill_errors_observed` 只写本轮真实出错、且能对应技能名的项。
+- `diagnosis` 必填当本轮有明确主标签；没有把握时留空，不要硬贴标签。
 - 不确定的字段用空数组或空字符串，不编造。
 
 ## End-State Rule

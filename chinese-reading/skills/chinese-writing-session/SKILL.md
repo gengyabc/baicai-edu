@@ -17,13 +17,18 @@ user-invocable: false
 - **start**：学生给了作文题或写作方向，还没有草稿。
 - **revise**：学生给了自己的作文草稿，想改好。
 - **assess**：学生要批改、点评、看档次。
-- **feynman / feynman_handoff**：学生要讲清自己为什么这样写、为什么这样改。
+- **feynman**：学生要讲清自己为什么这样写、为什么这样改。
 
 ## Inputs
 
 - 作文题与要求，或学生草稿原文。
 - `focus`：本轮只改的一个点（一个定格、一个开头、一处结尾）。
 - `grade_band` 与年级；`priority_targets`、`developing_topics`、`error_history` 最近的写作标签。
+- 个性化：`personal.interests`、`personal.most_exciting_event`、`profile.preferences`、`self_report.easy_topics/hard_topics`、`memory.preferred_scaffolds` / `expression_traits`。
+
+## Session Gate
+
+本 skill 只由 `chinese-session`、`/learn` 或 `/feynman` 路由进入。没有 `session.json` 或 `student_id` 为空时，先引导学生运行 `/start`，不要开始写作教学。
 
 ## Load Rules
 
@@ -39,6 +44,7 @@ user-invocable: false
 | 学生说出选材、改法之前 | `learn-core` | `references/confirm-before-accept.md` |
 | 学生卡住、连续短答 | `learn-core` | `references/guidance-non-response-handling.md` |
 | 费曼模式 | `learn-core` | `references/feynman-mode.md` + `references/feynman-skill-whitelist.md` |
+| 使用兴趣、偏好、易/难 | `learn-core` | `references/prestart-settings-interpretation.md` |
 
 `chinese-core` 的加载结果会给出 base directory；参考文件按 `<base_directory>/references/<文件名>.md` 读取。
 
@@ -66,14 +72,13 @@ user-invocable: false
 
 使用纪律：
 
-- 低年级只走到第 1-3 圈，用短句和动作词。
-- 中年级走完第 1-5 圈，重点在定格和连续动词。
-- 高年级再用第 6 圈做角度变化或回扣。
+- 低年级（1-3）只走到第 1-3 圈，用短句和动作词。
+- 高年级（4-6）走完第 1-5 圈，重点在定格和连续动词；第 6 圈做角度变化或回扣。
 - 六圈是支架，不是填空表；不要让学生逐条填。
 
 ## start 模式（新作文）
 
-1. 先问“这个题目让你想到什么？”让学生自己说素材。
+1. 先问“这个题目让你想到什么？”让学生自己说素材。可以从 `personal.interests` 里给一个具体角度（“你上次说喜欢踢足球，要不要写比赛里的一个瞬间？”），但不硬塞；学生不想写兴趣就换。
 2. 带学生审题：题目要求写什么、限制是什么、最容易踩的坑是什么。用一句话说清，不长篇分析。
 3. 帮学生选一个具体、属于他自己的素材；拒绝“扶老奶奶过马路”这类通用素材，但也不硬塞。
 4. 找出一个“定格瞬间”：“如果只能写一个画面，你写哪一秒？”
@@ -82,9 +87,8 @@ user-invocable: false
 
 学段适配：
 
-- 1-2 年级：给主题 + 开头句 + 一个技巧提示，篇幅短。
-- 3-4 年级：给主题 + 提示 + 两三个可写方向。
-- 5-6 年级：只给主题和要求，学生自由选材。
+- 1-3 年级：给主题 + 开头句 + 一个技巧提示，篇幅短；字数少，先保护愿意写。
+- 4-6 年级：给主题 + 提示 + 两三个可写方向；高年级可只给主题和要求，学生自由选材。
 
 ## revise 模式（改稿）
 
@@ -119,11 +123,11 @@ user-invocable: false
 4. 给最值得先改的 3 处，每处写清：原文 + 问题 + 改法。
 5. 给一个下一步练习目标，必须具体、可执行、能当下一轮的学习目标。
 6. 评改结果要能直接转成下一轮练习；不要只给判断。
-7. 用统一写作标签落一个主标签（`writing:` 前缀），写进本轮 `skill_errors_observed`；不向学生展示标签。
+7. 用统一写作标签落一个主标签（`writing:` 前缀），写进本轮 `session_segment.diagnosis`：`domain: "writing"`、`label`、`evidence`（原文 + 问题）。不要只塞进 `skill_errors_observed`，也不要向学生展示标签。
 
 档位判断只写档位和理由，不写“你作文水平一般”这类评价人的话。
 
-## feynman / feynman_handoff 模式
+## feynman 模式
 
 1. 请学生讲：“这一段你想让读者看到什么？”
 2. 追选择：“为什么选这个材料/这个细节？换一个行不行？”
@@ -148,7 +152,7 @@ assess 模式改为：档位判断 → 分项分析 → 最值得改的 3 处 �
 
 ## Session Segment
 
-本轮结束在内存里产出一个 `session_segment`，不写文件：
+本轮结束在内存里产出一个 `session_segment`；本 skill 不直接写学生数据，入口会把它写入 `session_log.json`：
 
 ```json
 {
@@ -162,17 +166,23 @@ assess 模式改为：档位判断 → 分项分析 → 最值得改的 3 处 �
   "difficulties": ["动词泛泛", "结尾假抒情"],
   "next_step_candidate": "用三个精确动词改写结尾前一句",
   "recommended_targets": ["定格展开", "结尾回扣"],
-  "teach_handoff_recommended": true,
+  "feynman_handoff_recommended": true,
   "confirmed_skills": ["选定定格画面"],
-  "skill_errors_observed": ["细节缺失"]
+  "skill_errors_observed": [],
+  "diagnosis": {
+    "domain": "writing",
+    "label": "writing:细节缺失",
+    "evidence": "‘他走了’没有动作；改成‘他抓起书包，头也不回地冲下楼’后才具体。"
+  }
 }
 ```
 
 字段要求：
 
 - `subject` 固定 `chinese`；`source` 固定 `writing`。
-- `mode` 取 `start` / `revise` / `assess` / `feynman` / `feynman_handoff`；`submode` 取 `learn` / `review` / `feynman`。
-- `confirmed_skills` 写学生本轮独立做到的写作技能；`skill_errors_observed` 写本轮真实出现的写作问题，尽量对应 `writing:` 标签。
+- `mode` 取 `start` / `revise` / `assess` / `feynman`；`submode` 取 `learn` / `review` / `feynman`。
+- `confirmed_skills` 写学生本轮独立做到、且达到两条独立证据（或一次讲清理由）的写作技能；`skill_errors_observed` 写本轮真实出错、能对应技能名的项。
+- `diagnosis` 必填当本轮有明确主标签；没有把握时留空，不要硬贴。
 - 不确定的字段用空数组或空字符串，不编造。
 
 ## End-State Rule

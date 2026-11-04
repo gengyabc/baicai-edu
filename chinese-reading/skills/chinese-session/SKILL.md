@@ -26,13 +26,15 @@ user-invocable: false
   "subject": "chinese",
   "target_context": { "type": "reading_material", "intent": "learn_reading" },
   "mode": "learn",
-  "focus": "《秋天的雨》第二段赏析"
+  "focus": "《秋天的雨》第二段赏析",
+  "personal": { "interests": ["阅读", "踢足球"] },
+  "preferences": { "likes_model_text": true }
 }
 ```
 
 - `target_context.type`：`reading_material` | `writing_prompt` | `writing_draft` | `task_generation` | `assessment` | `error_files` | `profile`。
 - `target_context.intent`：`learn_reading` | `start_writing` | `revise_writing` | `assess_reading` | `assess_writing` | `generate_reading_tasks` | `generate_writing_task` | `transfer_read_write`。
-- `mode`：`learn` | `feynman` | `feynman_handoff`。
+- `mode`：`learn` | `feynman`。
 - `focus`：本轮主题字符串；为空时由子 skill 从档案或材料中确定。
 
 如果入口没有给出 `target_context`，先按 `learn` 入口的分类结果补齐；仍然无法判断时只问一个短问题，不要靠猜开始教学。
@@ -50,16 +52,17 @@ user-invocable: false
 ## Preconditions
 
 1. 读 `outputs/students/session.json`，确认 `student_id` 存在、`subject = chinese`。
-2. 按 `learn-data` 的 Read Snapshot 读取快照；缺失的科目文件按模板初始化。
-3. 本轮只路由一次；不要在一次回复里加载多个子 skill 的教学内容。
+2. 没有 `session.json` 或 `student_id` 为空时，先引导学生运行 `/start`，不要路由。
+3. 按 `learn-data` 的 Read Snapshot 读取快照；缺失的科目文件按模板初始化。
+4. 本轮只路由一次；不要在一次回复里加载多个子 skill 的教学内容。
 
 ## Routing Table
 
 | 条件 | 路由到 | 传入 mode |
 |---|---|---|
-| `mode = feynman` 或 `feynman_handoff`，目标是阅读类 | `chinese-reading-session` | 原 mode |
-| `mode = feynman` 或 `feynman_handoff`，目标是写作类 | `chinese-writing-session` | 原 mode |
-| `mode = feynman` 或 `feynman_handoff`，目标是 `profile` 或中文默认 | 先选定一个领域，再路由到对应子 skill | 原 mode |
+| `mode = feynman`，目标是阅读类 | `chinese-reading-session` | `feynman` |
+| `mode = feynman`，目标是写作类 | `chinese-writing-session` | `feynman` |
+| `mode = feynman`，目标是 `profile` 或中文默认 | 先选定一个领域，再路由到对应子 skill | `feynman` |
 | `type = task_generation` | `chinese-generate-tasks` | `learn` |
 | `type = writing_prompt` | `chinese-writing-session` | `start` |
 | `type = writing_draft` | `chinese-writing-session` | `revise` |
@@ -68,7 +71,8 @@ user-invocable: false
 | `type = reading_material` | `chinese-reading-session` | `learn` |
 | `intent = transfer_read_write`，或学生明确说“照着这篇的写法写一篇”“练一下读写迁移” | `chinese-read-write-transfer` | `learn` |
 | `type = error_files` | 先加载 `learn-errors` 解析并读内容，再按内容路由一次 | 见下 |
-| `type = profile` | 选定一个领域后路由到对应子 skill | `learn` |
+| `type = profile`，选定阅读 | `chinese-reading-session` | `learn` |
+| `type = profile`，选定写作 | `chinese-writing-session` | `start` |
 
 ## Routing Rules
 
@@ -97,7 +101,7 @@ user-invocable: false
 | 写作 revise / assess | `revise` / `assess` | `review` |
 | 读写迁移 | `learn` | `read_write_transfer` |
 | 出题 | `learn` | `generate_tasks` |
-| 费曼（阅读或写作） | `feynman` / `feynman_handoff` | `feynman` |
+| 费曼（阅读或写作） | `feynman` | `feynman` |
 
 ## Passing Control
 
@@ -108,6 +112,7 @@ user-invocable: false
 - `target_context`（原始值，不改写）
 - `focus`
 - 已读快照（不要重复读文件）
+- 个性化输入：`personal.interests`、`personal.most_exciting_event`、`profile.preferences`、`self_report.easy_topics/hard_topics`、`memory.preferred_scaffolds` / `recent_error_patterns` / `expression_traits` / `stable_strengths` / `stable_difficulties`
 - 阅读材料或草稿原文，以及学生本轮最新一句原话
 
 只加载一个子 skill。子 skill 产出的 `session_segment` 就是本轮的记录；路由器不另造一段。

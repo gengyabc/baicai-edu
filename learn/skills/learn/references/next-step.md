@@ -10,6 +10,9 @@
 - `subject`
 - `focus`
 - 本轮观察
+- `memory.recommended_next_moves`（若存在，优先采用）
+- `memory.motivation_signals`（决定表扬什么）
+- `memory.feynman_readiness`（决定是否提议“当小老师”）
 - `offer_menu`（默认 true；`/save` 时为 false）
 
 ## Process
@@ -22,14 +25,14 @@
 
 ## Menu
 
-根据科目给三个选择：
+根据科目和学生年级给选择（最多三个）：
 
 1. **继续 / 换个题**：再练一个同类型或小变式。
-2. **我来当小老师（费曼）**：学生讲给 AI 听，AI 当学生提问。
+2. **我来当小老师（费曼）**：学生讲给 AI 听，AI 当学生提问。只有 `memory.feynman_readiness` 不是 `not_ready` 时才提供这个选项。
 3. **结束**：保存这次会话。
 
 数学的“迁移练习”是 `math-student-problem`（学生出题考 AI）。
-语文阅读的“迁移练习”是 `chinese-read-write-transfer`（读写迁移）；写作的迁移是换一个角度或题目再写一小段。
+语文阅读的“迁移练习”是 `chinese-read-write-transfer`（读写迁移），由 `chinese-session` 传 `intent: transfer_read_write` 路由；写作的迁移是换一个角度或题目再写一小段。
 
 ## Current State Patch
 
@@ -46,12 +49,12 @@
 
 ```json
 {
-  "pending_teach_handoff": true,
-  "pending_teach_focus": "<focus>"
+  "pending_feynman_handoff": true,
+  "pending_feynman_focus": "<focus>"
 }
 ```
 
-选择结束时：`current_state_patch = null`。
+选择结束时：不写 `current_state_patch`；finalize 会写 `active_focus` 和 `last_finalized_session_id`。
 
 练习迁移结束后，把两个 pending transfer 字段清空并写回 `current_state.json`。
 
@@ -73,6 +76,6 @@
 ## Rules
 
 - 一次只推荐一个主要下一步；不要列一长串。
-- 低年级给两个选择就够（继续 / 结束），不要一次给三个复杂选项。
+- 低年级（1-3）给两个选择就够（继续 / 结束），不要一次给三个复杂选项；高年级（4-6）可加“当小老师”和“你出题考我”。
 - 学生说“随便”“都行”时，替他选一个最合适的，不要反复追问。
 - 不要用“你今天已经学了很多”作为结束理由；用具体达成的小目标。

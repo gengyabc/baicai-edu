@@ -10,13 +10,15 @@ user-invocable: false
 
 把语文的六份核心规则收进一个可被语文子 skill 按需加载的底座。本 skill 只提供语文专属规则；语气、确认机制、年级段、结束信号、费曼规则、数据协议仍归 `learn-core`、`learn-data`、`learn-errors`，这里不重复。
 
+本 skill 只被读取，不产生教学回合；由 `chinese-session` 路由到具体子 skill。没有 `session.json` 时先引导学生运行 `/start`。
+
 ## When To Use
 
 - 任何语文教学、诊断、出题、批改动作开始前。
 - `chinese-session` 路由完成后，被路由到的子 skill 需要语文规则时。
 - 需要选择错误标签、判断档位、提取行文技巧时。
 
-语文子 skill 只加载本 skill，不直接引用别的 skill 的 references。本 skill 的加载结果会给出 base directory，参考文件按 `<base_directory>/references/<文件名>.md` 读取；不要写跨 skill 的相对路径。
+语文子 skill 的语文规则只从本 skill 的 references 读；共享规则（语气、确认、年级、兴趣使用边界）从 `learn-core` 读。加载结果会给出 base directory，参考文件按 `<base_directory>/references/<文件名>.md` 读取；不要写跨 skill 的相对路径。
 
 ## Reference Loading
 
@@ -28,6 +30,7 @@ user-invocable: false
 | 生成阅读题或写作题 | `references/chinese-task-generation.md` |
 | 批改作文、判断档位、给最值得改的 3 处 | `references/chinese-assessment-rubric.md` |
 | 选择阅读/写作错误标签、写入错题记录 | `references/chinese-error-labels.md` |
+| 使用兴趣、偏好、易/难主题 | `learn-core` 的 `references/prestart-settings-interpretation.md` |
 
 按需读取，不要一次全部读入。至少规则：
 
@@ -46,7 +49,7 @@ user-invocable: false
 - 年级段默认值与学段适配。
 - 结束信号与人格叠加（Guided Coach / Socratic Tutor）。
 - 费曼模式与可追踪技能白名单。
-- Prestart 八字段只影响语气、例子、桥梁和支架。
+- 兴趣、偏好、易/难和经历只影响语气、例子、阅读角度、写作题目、桥梁和支架；具体字段与边界见 `learn-core/references/prestart-settings-interpretation.md`。
 - 改写、代写、学生数据展示的安全边界。
 
 ## Non-Negotiable（语文专属）
@@ -61,6 +64,8 @@ user-invocable: false
 8. 每次反馈只抓一个主问题，最多给 3 条建议，并给一个足够小的下一步。
 9. 诊断必须落统一标签：`reading:` 或 `writing:` 前缀，每条只保留一个主标签。
 10. 出题必须立足原文、匹配年级段，并提供参考答案、命题意图、判分标准。
+11. 语文必须使用 `personal.interests`：阅读角度、写作题目、迁移主题和经验桥接优先从兴趣里找一个具体细节；没有合适兴趣时用年级段默认主题，不要硬套。
+12. 诊断标签写进 `session_segment.diagnosis`（`label` + `evidence`），由 finalize 写成 `error_history` 诊断条目；不要只把标签塞进 `skill_errors_observed`。
 
 ## Ownership
 

@@ -315,3 +315,18 @@ dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/math-low lin
 5. 输入 `/save`，确认手动保存不会重复 finalize。
 6. 用一张错题图片，确认 `learn-errors` 的 raw 只读、改名、extracted 写入与 error_history 更新。
 
+
+## 8. 评审后修订（2026-10-04）
+
+以下修订在首次迁移之后完成，覆盖本文前面的旧描述：
+
+- **个性化**：共享档案用 `personal.interests`（数组）保存兴趣；语文的阅读角度、写作题目、迁移主题、经验桥接和数学情境都必须读取它。`prestart-settings-interpretation.md` 重写为“共享/科目字段在哪里”的单一来源。
+- **数据协议**：新增 `session_log.json`（每轮写 segment，finalize 清空）；subject `profile.json` 增加 `updated_at`；`current_levels` 统一嵌套在 `profile` 下；`confirmed_skills` 在 segment 里是技能名字符串，finalize 转对象。
+- **诊断历史**：语文 `reading:` / `writing:` 标签写入 `session_segment.diagnosis`，finalize 生成 `error_history` 的 `source: "diagnosis"` 条目；不再把标签塞进 `skill_errors`。`writing:意图误判` 归一化为 `writing:偏题`。
+- **幂等与恢复**：`current_state.last_finalized_session_id` 防止重复 finalize；`pending_feynman_*` / `pending_transfer_*` 在下一轮被消费并清空；Topic Switch 开新 `session_id`。
+- **初始化**：科目模板按年级段选择 `tone` 和 `active_domain`；偏好初始全 `false`，`/start` 只把选中项设 `true`。
+- **路由**：`chinese-session` 的 `type=profile` + 写作改为 `mode: start`；`/learn` 的语文迁移统一经 `chinese-session`；所有内部 skill 加 Session Gate。
+- **安全**：新增 AI 身份说明、危机/伤害处理、raw 改名前后备份、`math-student-problem` 先算对并在结束前揭示答案。
+- **清理**：移除 Pi 的 Python/plugin/`@`/`/teach` 残留；年级段统一为 1-3 / 4-6；分数阶段统一为四个 schema 值；批改量规的“技巧运用”只用于读写迁移写作。
+
+本文第 5、7 节中的旧字段名（`hobbies`、`teach_readiness`、`pending_teach_*`、无 `session_log` 的目录树）以修订后代码为准。

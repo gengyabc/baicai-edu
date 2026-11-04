@@ -16,7 +16,7 @@
 
 ## 错误标签
 
-统一标签表：`references/chinese-error-labels.md`。
+统一标签表：同一 base directory 下的 `references/chinese-error-labels.md`。
 
 阅读标签：`reading:概括偏差`、`reading:证据不足`、`reading:单层赏析`、`reading:意图误判`、`reading:空泛模板`、`reading:结构失察`、`reading:审题偏差`、`reading:细节功能忽视`。
 

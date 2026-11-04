@@ -20,12 +20,17 @@ user-invocable: false
 
 不适合：学生要学文章（交给阅读教学）、要批改已有答案或作文（交给阅读诊断或写作评改）、要读写迁移（交给读写迁移）。
 
+## Session Gate
+
+本 skill 只由 `chinese-session`、`/learn` 或 `/feynman` 路由进入。没有 `session.json` 或 `student_id` 为空时，先引导学生运行 `/start`，不要开始出题。
+
 ## Inputs
 
 - 阅读材料原文（出阅读题时必须有），或写作主题/方向。
 - `grade_band` 与具体年级。
 - `intent`：`generate_reading_tasks` 或 `generate_writing_task`。
 - 快照中的 `learning_state.priority_targets`、`developing_topics`、`error_history` 最近标签，用来定训练目标。
+- 个性化：`personal.interests`、`personal.most_exciting_event`、`profile.preferences`、`self_report.easy_topics/hard_topics`。写作题和阅读材料优先贴近兴趣；没有合适材料时用年级段默认题型。
 
 ## Load Rules
 
@@ -36,6 +41,7 @@ user-invocable: false
 | 写作技巧题、训练方向 | `chinese-core` | `references/chinese-writing-core.md` |
 | 判分标准要能转成评改 | `chinese-core` | `references/chinese-assessment-rubric.md` |
 | 标签要与错题记录一致 | `chinese-core` | `references/chinese-error-labels.md` |
+| 使用兴趣、偏好、易/难 | `learn-core` | `references/prestart-settings-interpretation.md` |
 
 `chinese-core` 的加载结果会给出 base directory；参考文件按 `<base_directory>/references/<文件名>.md` 读取。
 
@@ -44,7 +50,7 @@ user-invocable: false
 1. 读材料或需求，先判断是阅读出题还是写作出题。
 2. `intent` 已明确时直接用，不重新推断。
 3. `intent` 不清楚时只问一个短问题：“要阅读题还是作文题？”问完就出，不再展开。
-4. 读材料、标出可用考点：关键句、转折、指代词、标题、段落衔接处。
+4. 读材料、标出可用考点：关键句、转折、指代词、标题、段落衔接处。写作出题时，先从 `personal.interests` 里找一个可写的具体情境，再决定题目。
 5. 按下面的分支出题。
 6. 出完自检（见末尾检查清单），不合格的题当场改掉，不要把半成品给学生。
 7. 不讲解、不批改、不代写；学生要答案时只给参考答案与判分标准。
@@ -127,20 +133,15 @@ user-invocable: false
 
 ### 学段难度
 
-低年级（1-2 年级）：
+低年级（1-3 年级）：
 
 - 主题 + 开头句 + 一个技巧提示。
 - 题目短、指向具体，如“写一件让你开心的事”。
 
-中年级（3-4 年级）：
+高年级（4-6 年级）：
 
-- 主题 + 技巧提示 + 两三个可写方向。
-- 允许半开放，如“一个让我印象深刻的瞬间”。
-
-高年级（5-6 年级）：
-
-- 只给主题与要求，学生自由选材和运用技巧。
-- 可以用有张力的题目，如“那一次，我错了”。
+- 主题 + 技巧提示 + 两三个可写方向；高年级可只给主题与要求。
+- 允许半开放，如“一个让我印象深刻的瞬间”；也可以用有张力的题目，如“那一次，我错了”。
 
 ### 题型与要点
 
@@ -176,7 +177,7 @@ user-invocable: false
 
 ## Session Segment
 
-出题也是一段会话，本轮在内存里产出一个 `session_segment`，不写文件：
+出题也是一段会话，本轮在内存里产出一个 `session_segment`；本 skill 不直接写学生数据，入口会把它写入 `session_log.json`：
 
 ```json
 {
@@ -190,7 +191,7 @@ user-invocable: false
   "difficulties": [],
   "next_step_candidate": "让学生先做赏析题，再按判分标准自评",
   "recommended_targets": ["双层赏析"],
-  "teach_handoff_recommended": false,
+  "feynman_handoff_recommended": false,
   "confirmed_skills": [],
   "skill_errors_observed": []
 }

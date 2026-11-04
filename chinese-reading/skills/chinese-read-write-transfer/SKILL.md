@@ -20,11 +20,17 @@ user-invocable: false
 
 不适合：学生还没读懂文章、只要求出题、只要求批改已有作文。这三种分别交给阅读、出题、写作评改。
 
+## Session Gate
+
+本 skill 只由 `chinese-session`、`/learn` 或 `/feynman` 路由进入。没有 `session.json` 或 `student_id` 为空时，先引导学生运行 `/start`，不要开始迁移。
+
 ## Inputs
 
 - 已读过的阅读材料原文；本轮阅读 session 提炼出的技巧（若有）。
 - 学生年级段与 `grade_band`。
 - 快照里的 `priority_targets`、`developing_topics`，用来选迁移方向。
+- `current_state.pending_transfer_focus`（若存在）优先作为迁移方向。
+- 个性化：`personal.interests`、`personal.most_exciting_event`、`profile.preferences`、`self_report.easy_topics/hard_topics`、`memory.preferred_scaffolds` / `expression_traits`。迁移主题优先从兴趣里选一个具体情境。
 
 ## Load Rules
 
@@ -38,6 +44,7 @@ user-invocable: false
 | 学生给出想法、选材、改法前 | `learn-core` | `references/confirm-before-accept.md` |
 | 默认语气 | `learn-core` | `references/personas.md` |
 | 写作中卡住 | `learn-core` | `references/guidance-non-response-handling.md` |
+| 使用兴趣、偏好、易/难 | `learn-core` | `references/prestart-settings-interpretation.md` |
 
 `chinese-core` 的加载结果会给出 base directory；参考文件按 `<base_directory>/references/<文件名>.md` 读取。
 
@@ -48,7 +55,7 @@ user-invocable: false
 按 `chinese-core` 的 `references/chinese-writing-core.md` 的“行文技巧提取与读写迁移”执行：
 
 - 每个技巧四件套：**名称**（学生能懂，如“用动作写心情”）+ **原文证据**（引用原句）+ **效果**（这样写好在哪里）+ **迁移提示**（学生写的时候怎么用）。
-- 数量按年级：1-2 年级 1 个，3-4 年级 1-2 个，5-6 年级 2-3 个。
+- 数量按年级：1-3 年级 1-2 个，4-6 年级 2-3 个。
 - 技巧必须真实存在于原文，不可凭空引入，不可只给修辞标签。
 - 用学生的话讲，讲完请学生用自己的话说一遍，确认后再进入第 2 步。
 - 学生说不清时，带他回到原句，指着那个词读一遍，不追加术语。
@@ -59,10 +66,10 @@ user-invocable: false
 
 - 主题必须与阅读材料不同，不能换个标题照搬。
 - 明确提示用哪个技巧，但不写成填空指令。
+- 主题优先从 `personal.interests` 里选一个与阅读材料不同的具体情境；没有合适兴趣时用年级段默认主题。
 - 学段递进：
-  - 1-2 年级：主题 + 开头句 + 技巧提示。
-  - 3-4 年级：主题 + 技巧提示 + 两三个可写方向。
-  - 5-6 年级：只给主题与要求，学生自由选材和运用。
+  - 1-3 年级：主题 + 开头句 + 技巧提示。
+  - 4-6 年级：主题 + 技巧提示 + 两三个可写方向；高年级可只给主题与要求，学生自由选材和运用。
 - 题目要留出使用技巧的空间；学生一看就知道自己能写什么。
 
 ### 第 3 步：陪写
@@ -94,7 +101,7 @@ user-invocable: false
 - 第 2 轮结束后，无论学生还想不想继续，都收束并把控制权交回入口做 finalize。
 - 收束时给一句阶段总结 + 一个可带走的下一步，不用硬停止语。
 
-## 低年级简化流程（1-2 年级）
+## 低年级简化流程（1-3 年级）
 
 - 阅读材料 50-100 字即可。
 - 只提 1 个非常直观的技巧（用动作写心情、写颜色形状、用声音词）。
@@ -111,7 +118,7 @@ user-invocable: false
 
 ## Session Segment
 
-本轮在内存里产出一个 `session_segment`，不写文件：
+本轮在内存里产出一个 `session_segment`；本 skill 不直接写学生数据，入口会把它写入 `session_log.json`：
 
 ```json
 {
@@ -125,11 +132,16 @@ user-invocable: false
   "difficulties": ["结尾回退到直接抒情"],
   "next_step_candidate": "只改结尾一句，用动作暗示心情",
   "recommended_targets": ["结尾回扣", "侧面描写"],
-  "teach_handoff_recommended": true,
+  "feynman_handoff_recommended": true,
   "confirmed_skills": ["用动作写心情"],
-  "skill_errors_observed": ["空泛模板"],
+  "skill_errors_observed": [],
   "techniques_extracted": ["用动作写心情"],
-  "technique_application_quality": "中段自然，结尾生硬，属于半用对"
+  "technique_application_quality": "中段自然，结尾生硬，属于半用对",
+  "diagnosis": {
+    "domain": "writing",
+    "label": "writing:空泛模板",
+    "evidence": "结尾又写‘我很开心’，没有用动作承接前面建立的具体画面。"
+  }
 }
 ```
 
@@ -137,7 +149,8 @@ user-invocable: false
 
 - `subject` 固定 `chinese`；`mode` 固定 `learn`；`submode` 固定 `read_write_transfer`；`source` 固定 `writing`。
 - 额外必填：`techniques_extracted`（本轮真正提取的技巧名）、`technique_application_quality`（一句话，自然/半自然/生硬/未使用）。
-- 第 2 轮仍未用上技巧时，`skill_errors_observed` 保留对应标签，`next_step_candidate` 指向同一个技巧，不要换目标掩盖问题。
+- 第 2 轮仍未用上技巧时，在 `diagnosis` 里保留对应标签，`next_step_candidate` 指向同一个技巧，不要换目标掩盖问题。
+- `confirmed_skills` 只在学生独立、稳定用出技巧时写，并满足两条独立证据（或一次讲清理由）。
 
 ## End-State Rule
 

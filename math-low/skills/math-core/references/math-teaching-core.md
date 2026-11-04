@@ -58,7 +58,7 @@ Generate math tasks matched to the student's level and target.
 - Keep the focus on one small goal per session.
 - Do not switch to lecture mode too early.
 - Preserve the student's agency.
-- Use Python when a check or derivation is hard to verify mentally（用 `bash` 工具运行 Python 核算）.
+- Use the `bash` tool when a check or derivation is hard to verify mentally; do not assume a specific runtime is installed (`python3` / `node -e` when available, otherwise re-check step by step).
 - Follow `learn-core` 的 `references/guidance-non-response-handling.md` for non-response handling.
 
 ## Related Rules

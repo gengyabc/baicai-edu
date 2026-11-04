@@ -1,6 +1,6 @@
 ---
 name: learn-errors
-description: 错题文件处理：解析 raw/ 下的图片或 md，提取题目与学生过程，规范命名，写入 extracted/，更新 error_history 与 priority_targets。数学和语文共用，学科标签由对应学科 skill 提供。
+description: 错题文件处理：解析 raw/ 下的图片或 md，先备份原件，再提取题目与学生过程，规范命名，写入 extracted/，更新 error_history 与 priority_targets。数学和语文共用，学科标签由对应学科 skill 提供。
 user-invocable: false
 ---
 
@@ -8,7 +8,11 @@ user-invocable: false
 
 ## Purpose
 
-替代 Pi 的 `analyze-error` / `resolve-error-files` 工作流，处理学生提供的错题图片或 Markdown，并把诊断写回科目档案。
+处理学生提供的错题图片或 Markdown，把诊断写回科目档案。只处理文件；会话内的阅读/写作诊断由学科 skill 产出 `diagnosis`，不经过这里。
+
+## Session Gate
+
+本 skill 只由 `/learn`、`/feynman` 或学科 skill 调用。没有 `outputs/students/session.json` 或 `student_id` 为空时，先引导学生运行 `/start`，不要开始分析。
 
 ## When To Use
 
@@ -35,10 +39,22 @@ user-invocable: false
 
 ## Read Raw
 
-- 图片：用 `read_image` 或 `modlens_read_image`（当前可用的视觉/OCR 能力）读取，提取题目文本、学生书写过程、答案。
+- 图片：用 `read_image` 或 `modlens_read_image` 读取；两者都不可用时，请学生用文字描述题目和过程，不要编造。
 - Markdown：用 `read` 读取，尽量识别题目、答案、计算/作答过程边界。
-- `raw/` 只读：不得 `write` / `edit`；只能 `mv` 改名。
+- `raw/` 只读：不得 `write` / `edit`；只能 `cp` 到备份、`mv` 改名。
 - 读取前确认文件确实在 `raw/` 或用户明确提供的路径；不要扫描整个工作区。
+
+## Backup Before Rename
+
+在 `mv` 之前：
+
+```bash
+mkdir -p outputs/students/<id>/<subject>/backups/raw
+cp "outputs/students/<id>/<subject>/raw/<原名>" "outputs/students/<id>/<subject>/backups/raw/<原名>"
+```
+
+- 备份只增不改；不要 `rm` 备份。
+- 备份失败时停止改名，先告诉学生“原始文件没能备份，我先不改名”。
 
 ## Analyze
 
@@ -46,10 +62,9 @@ user-invocable: false
 
 1. 提取题目与学生的作答过程。
 2. 对照学生自述，判断错误类型：
-   - 计算类：进位/借位遗漏、口诀错误、符号错误、单位错误。
-   - 概念类：概念混淆、规则误用、分数意义错误。
-   - 过程类：跳步、漏条件、审题偏差、表达不完整。
-   - 语文：加载 `chinese-core` skill，读它的 `references/chinese-error-labels.md`，选择 `reading:` / `writing:` 标签。
+   - 数学：加载 `math-core`，读 `references/strategy-diagnosis-rules.md`；错误类型取 `calculation` / `concept` / `process` / `estimation`。
+   - 语文：加载 `chinese-core`，读它的 `references/chinese-error-labels.md`，选择 `reading:` / `writing:` 标签。
+   - 若学科 skill 未安装，用通用分类（计算/概念/过程/估算，或概括/证据/赏析/结构/审题/细节），不要编造学科标签。
 3. 若学生自述与检测不一致，以证据为准，并用一句话说明差异。
 4. 给出一个具体、可执行的下一步。
 
@@ -58,32 +73,36 @@ user-invocable: false
 命名：`<topic>-<number>-<YYYYMMDD>`
 
 - `topic` 用简短英文/拼音 slug，避免空格。
-- `number` 取 `extracted/<topic>-*.md` 中最大编号 + 1，三位补零。
+- `number` 取 `raw/<topic>-*` 与 `extracted/<topic>-*` 中最大编号 + 1，三位补零。
 - 日期用当天。
 
 步骤：
 
-1. 若需要改名，用 `mv` 把 raw 文件改为规范名；**只改名，不改内容**。
-2. 在 `extracted/` 写一个 Markdown 分析文件，包含：原题、学生过程、错误类型、证据、下一步。
-3. 告诉学生原文件名与新文件名、核心错误、下一步建议。
+1. 先按“Backup Before Rename”备份。
+2. 若需要改名，用 `mv` 把 raw 文件改为规范名；**只改名，不改内容**。
+3. 在 `extracted/` 写一个 Markdown 分析文件，包含：原题、学生过程、错误类型/标签、证据、下一步。
+4. 告诉学生原文件名与新文件名、核心错误、下一步建议。
 
 ## Update Profile
 
 读取 `outputs/students/<id>/<subject>/profile.json`，合并后整文件写回：
 
-- `error_id` 用 `err_<YYYYMMDD>_<3位序号>`，同一天按已有记录递增。
+- `error_id` 用 `err_<YYYYMMDD>_<3位序号>`；序号取已有 `err_<同日>_` 的最大值 + 1，不要用 `error_history` 条数。
 - `error_history` 前插一条：
 
 ```json
 {
-  "error_id": "err_20261104_001",
-  "date": "2026-11-04T12:00:00Z",
+  "error_id": "err_20261004_001",
+  "source": "file_analysis",
+  "date": "2026-10-04T12:00:00Z",
   "domain": "fractions",
   "topic": "异分母加法",
-  "error_type": "concept_confusion",
-  "raw_file": "outputs/students/<id>/<subject>/raw/fractions-001-20261104.jpg",
+  "error_type": "concept",
+  "label": "fractions:denominator_confusion",
+  "raw_file": "outputs/students/<id>/<subject>/raw/fractions-001-20261004.jpg",
   "original_raw_file": "outputs/students/<id>/<subject>/raw/分数-001.jpg",
-  "extracted_file": "outputs/students/<id>/<subject>/extracted/fractions-001-20261104.md",
+  "backup_file": "outputs/students/<id>/<subject>/backups/raw/分数-001.jpg",
+  "extracted_file": "outputs/students/<id>/<subject>/extracted/fractions-001-20261004.md",
   "renamed": true,
   "analyzed": true,
   "self_diagnosis": "学生说自己‘忘记通分’，实际是分母乘错。"
@@ -94,6 +113,7 @@ user-invocable: false
 - `updated_at` 更新。
 - `error_history` 保留最新 20 条。
 - 不把完整题目原文写进 profile；原文留在 raw/extracted。
+- 不写共享 `profile.json`。
 
 ## Duplicate Handling
 
@@ -110,7 +130,9 @@ user-invocable: false
 
 ## References
 
+本 skill 的所有 `references/...` 路径都相对于加载结果给出的 base directory。
+
 - `references/resolve-error-files.md`：路径解析细节。
 - `references/analyze-error.md`：分析流程与字段。
 - `references/error-processing.md`：文件类型、命名、错误类别。
-- `references/raw-directory-protection.md`：raw 只读规则。
+- `references/raw-directory-protection.md`：raw 只读与备份规则。

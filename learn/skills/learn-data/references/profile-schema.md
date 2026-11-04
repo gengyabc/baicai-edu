@@ -4,6 +4,7 @@
 
 ```
 outputs/students/
+  session.json
   <student_id>/
     profile.json
     math/
@@ -11,21 +12,26 @@ outputs/students/
       memory.json
       current_state.json
       milestones.json
+      session_log.json
       raw/
       extracted/
+      backups/raw/
     chinese/
       profile.json
       memory.json
       current_state.json
       milestones.json
+      session_log.json
       raw/
       extracted/
+      backups/raw/
 ```
 
 ## Base Profile
 
 - Path: `outputs/students/<student_id>/profile.json`
-- Shared across all subjects
+- Shared across all subjects. This is the only place for cross-subject personalization.
+- `personal.interests` is the canonical interest list. Chinese and math skills must read it when choosing examples, reading angles, writing prompts, and bridges.
 
 ```json
 {
@@ -35,29 +41,45 @@ outputs/students/
   "grade_band": "upper_primary",
   "language": "zh-CN",
   "personal": {
-    "hobbies": "阅读、绘画、踢足球",
+    "interests": ["阅读", "绘画", "踢足球"],
     "most_exciting_event": "参加学校运动会并获得第一名",
     "most_sad_event": "宠物小狗生病去世了"
   },
-  "created_at": "2026-04-10T00:00:00Z",
-  "updated_at": "2026-04-10T00:00:00Z"
+  "created_at": "2026-10-04T12:00:00Z",
+  "updated_at": "2026-10-04T12:00:00Z"
 }
 ```
+
+## Initialization Defaults By Grade Band
+
+When creating a missing subject profile, choose `tone` and `learning_state.active_domain` from this table. Do **not** copy the example values blindly; the JSON examples below show an upper-primary student.
+
+| Subject | Grade band | `tone` | default `active_domain` |
+|---|---|---|---|
+| math | `lower_primary` (1-3) | `supportive_concrete` | `addition_subtraction_word_problems` |
+| math | `upper_primary` (4-6) | `concise_guiding` | `fractions` |
+| chinese | `lower_primary` (1-3) | `supportive_concrete` | `writing` |
+| chinese | `upper_primary` (4-6) | `concise_guiding` | `reading` |
+
+`profile.preferences` always starts with every flag `false`; `start` sets exactly the one preference the student chose to `true`.
+
+`profile.current_levels` always starts at `L1` and the two math strategy stages from `learn-core/references/grade-band-defaults.md`.
 
 ## Subject Profile
 
 - Path: `outputs/students/<student_id>/<subject>/profile.json`
-- Use the exact template shape below when initializing a missing subject profile.
+- Use this shape for both subjects. Replace the values marked by the grade-band table.
 
-### Math
+### Math (example: upper_primary)
 
 ```json
 {
   "tone": "concise_guiding",
+  "updated_at": "2026-10-04T12:00:00Z",
   "profile": {
     "preferences": {
-      "likes_visual": true,
-      "likes_story_context": true,
+      "likes_visual": false,
+      "likes_story_context": false,
       "likes_direct_calculation": false
     },
     "self_report": {
@@ -81,20 +103,21 @@ outputs/students/
 }
 ```
 
-### Chinese
+### Chinese (example: upper_primary)
 
 ```json
 {
-  "tone": "student_centered",
+  "tone": "concise_guiding",
+  "updated_at": "2026-10-04T12:00:00Z",
   "profile": {
     "preferences": {
-      "likes_model_text": true,
-      "likes_oral_explanation": true,
-      "likes_revision": true
+      "likes_model_text": false,
+      "likes_oral_explanation": false,
+      "likes_revision": false
     },
     "self_report": {
-      "easy_areas": [],
-      "hard_areas": []
+      "easy_topics": [],
+      "hard_topics": []
     },
     "current_levels": {
       "reading_extraction": "L1",
@@ -117,17 +140,21 @@ outputs/students/
 ## Required Fields
 
 - `tone`
+- `updated_at`
 - `profile.preferences`
-- `profile.self_report`
+- `profile.self_report.easy_topics`
+- `profile.self_report.hard_topics`
 - `profile.current_levels`
 - `learning_state`
 - `error_history`
 - `session_history`
 
+Chinese uses the same `easy_topics` / `hard_topics` names as math. Do not use `easy_areas` / `hard_areas`.
+
 ## Subject Memory
 
 - Path: `outputs/students/<student_id>/<subject>/memory.json`
-- Stores dual-layer memory separate from `profile.json`
+- Stores dual-layer memory separate from `profile.json`.
 
 ```json
 {
@@ -144,50 +171,74 @@ outputs/students/
     "recent_modes": [],
     "recent_error_patterns": [],
     "recommended_next_moves": [],
-    "teach_readiness": "unknown",
+    "feynman_readiness": "unknown",
     "confirmed_skills": [],
     "skill_errors": [],
-    "updated_at": "2026-04-10T00:00:00Z"
+    "updated_at": "2026-10-04T12:00:00Z"
   }
 }
 ```
 
+### How Memory Is Consumed
+
+Memory is not write-only. These fields must be read at snapshot time and used:
+
+| Field | Read by | Use |
+|---|---|---|
+| `profile_memory.preferred_scaffolds` | `math-session`, `chinese-reading-session`, `chinese-writing-session` | Prefer the listed scaffolds (drawing, examples, sentence starters) before inventing new ones. |
+| `profile_memory.motivation_signals` | `learn`, `feynman`, `next-step` | Choose what to praise and how to frame the next step. |
+| `profile_memory.expression_traits` | `chinese-reading-session`, `chinese-writing-session` | Match response length and spoken/written preference. |
+| `profile_memory.stable_strengths` / `stable_difficulties` | target selection in `learn`, `math-session`, `chinese-session` | Use as a tiebreaker when `session_history` is empty. |
+| `profile_memory.preferred_persona` | `learn-core` persona selection | `guided_coach` or `socratic_tutor`. |
+| `learning_memory.recent_focus` / `recent_modes` | `learn` first turn | Open with continuity ("上次我们在…"). |
+| `learning_memory.recent_error_patterns` | `math-practice`, `chinese-reading-session` | Prefer practice layers and diagnosis targets that hit the repeated pattern. |
+| `learning_memory.recommended_next_moves` | `learn` next-step | Offer the teacher's/critic's suggested move before inventing one. |
+| `learning_memory.feynman_readiness` | `next-step` | `ready` → offer "当小老师"; `not_ready` → do not. |
+| `learning_memory.confirmed_skills` / `skill_errors` | `feynman` | Whitelist and mistake rules. |
+
+`feynman_readiness` replaces the old `feynman_readiness` name. `feynman_handoff_recommended` in a segment means "hand off to `/feynman`".
+
 ## Confirmed Skills (Whitelist)
 
 - Path: `outputs/students/<student_id>/<subject>/memory.json` → `learning_memory.confirmed_skills`
-- Records skills the student has confirmed mastery of during Feynman/teaching sessions
-- AI in learner role should NOT make mistakes on these skills
+- Records skills the student has confirmed mastery of.
+- AI in learner role must NOT make mistakes on these skills.
 
 ```json
 {
   "confirmed_skills": [
-    { "skill": "减法借位", "domain": "addition_subtraction", "confirmed_at": "2026-05-02T10:00:00Z" },
-    { "skill": "凑十策略", "domain": "addition_subtraction", "confirmed_at": "2026-05-01T09:00:00Z" }
+    { "skill": "减法借位", "domain": "addition_subtraction", "confirmed_at": "2026-10-02T10:00:00Z" },
+    { "skill": "凑十策略", "domain": "addition_subtraction", "confirmed_at": "2026-10-01T09:00:00Z" }
   ]
 }
 ```
 
-**Initialization**: Automatically populated from `profile.json` → `learning_state.mastered_topics` when memory is first created or when `mastered_topics` is updated.
+**Initialization**: On memory creation, copy `profile.learning_state.mastered_topics` into `confirmed_skills` as objects.
+
+**Promotion bar**: add a skill only after **two independent demonstrations** (different numbers or contexts), or after one demonstration plus a correct explanation of why the method works. A single correct answer is not enough.
+
+**Topic mastery**: add a topic to `learning_state.mastered_topics` only when its skills stay in `confirmed_skills` for two consecutive sessions without `skill_errors`. Do not add a topic after one correct answer.
+
+**Segment format**: in `session_segment.confirmed_skills`, write only the skill names (`["通分"]`). Finalize converts them to the object shape above with `domain` and `confirmed_at`.
 
 ## Skill Errors
 
 - Path: `outputs/students/<student_id>/<subject>/memory.json` → `learning_memory.skill_errors`
-- Tracks errors the student made on whitelisted skills during teaching sessions
+- Tracks errors the student made on whitelisted skills.
 
 ```json
 {
   "skill_errors": [
-    { "skill": "减法借位", "error_count": 1, "last_error_at": "2026-05-02T11:00:00Z" }
+    { "skill": "减法借位", "error_count": 1, "last_error_at": "2026-10-02T11:00:00Z" }
   ]
 }
 ```
 
-**Removal Rule**: When `error_count` reaches 2 for a skill, remove it from `confirmed_skills` and reset its `skill_errors` entry.
+**Removal Rule**: When `error_count` reaches 2 for a skill, remove it from `confirmed_skills` and delete its `skill_errors` entry.
 
 ## Current Learning State
 
 - Path: `outputs/students/<student_id>/<subject>/current_state.json`
-- Stores one lightweight snapshot of the current teaching state
 
 ```json
 {
@@ -195,39 +246,78 @@ outputs/students/
   "source": "profile",
   "entry_point": "learn",
   "submode": "learn",
-  "pending_teach_handoff": false,
-  "pending_teach_focus": "",
+  "pending_feynman_handoff": false,
+  "pending_feynman_focus": "",
   "pending_transfer_phase": false,
   "pending_transfer_focus": "",
-  "updated_at": "2026-04-10T00:00:00Z"
+  "last_finalized_session_id": null,
+  "updated_at": "2026-10-04T12:00:00Z"
 }
 ```
 
-## Storage Boundaries
+- `pending_*` fields are consumed at the next snapshot: the entry reads the focus, continues there, and then clears the flag.
+- `last_finalized_session_id` is the idempotency marker. Finalize refuses to run twice for the same id.
 
-- `profile.json`: stable structured subject profile plus `session_history`
-- `memory.json`: dual-layer memory for stable observations and recent learning signals
-- `current_state.json`: latest active focus and handoff-related state only
-- Session segments: kept in memory during the session, persisted as a compact summary after finalize
+## Session Log
 
-## Write Assumptions
-
-DSH 技能使用 `read` → 内存合并 → `write` 的整文件写入方式。假设：
-
-- 单学生、单会话、单进程；不提供跨进程锁或事务。
-- 每次写入前必须 read 完整文件，写入完整合法 JSON。
-- 不做隐式并发保护；同一文件不要并行写。
-- `student_id` 必须匹配 `stu_<name>_<shortid>`，并拒绝 `/`、`\`、`..` 等路径穿越字符。
-
-需要多进程并发时，后续应迁移到数据库或加文件锁；当前技能包不承诺该能力。
-
-## Session Segment
-
-Each segment is passed in memory during the session and follows this structure:
+- Path: `outputs/students/<student_id>/<subject>/session_log.json`
+- Durable copy of the in-memory `session_segments`, so a long session survives context compaction or a restart.
 
 ```json
 {
-  "focus": "fraction addition",
+  "session_id": "sess_20261004_1200",
+  "entry_point": "learn",
+  "started_at": "2026-10-04T12:00:00Z",
+  "updated_at": "2026-10-04T12:18:00Z",
+  "segments": [
+    {
+      "focus": "异分母分数加法",
+      "subject": "math",
+      "mode": "learn",
+      "submode": "practice",
+      "source": "profile",
+      "strategy_summary": "学生用画图分蛋糕理解通分",
+      "strengths": ["能主动画图表示"],
+      "difficulties": ["通分时偶尔分母乘错"],
+      "next_step_candidate": "继续练异分母加法",
+      "recommended_targets": ["异分母减法"],
+      "confirmed_skills": [],
+      "skill_errors_observed": []
+    }
+  ]
+}
+```
+
+- `/learn` and `/feynman` append one segment after each teaching turn and write the whole log.
+- Finalize reads the log, writes the four files, then clears `segments` and sets `last_finalized_session_id`.
+- If a log with segments exists at `/learn` start, resume it instead of starting a new session.
+
+## Storage Boundaries
+
+- Shared `profile.json`: identity, grade, interests, lifecycle events. Never store subject mastery here.
+- Subject `profile.json`: stable subject profile, `error_history`, `session_history`.
+- `memory.json`: stable observations and recent signals; consumed as described above.
+- `current_state.json`: latest focus, pending handoff, idempotency marker.
+- `session_log.json`: current session segments; cleared after finalize.
+- Session segments in model context are a cache, not the source of truth.
+
+## Write Assumptions
+
+DSH skills use `read` → in-memory merge → `write` of the whole file. Assumptions:
+
+- One student, one session, one process; no cross-process lock or transaction.
+- Read the complete file before writing; write complete valid JSON.
+- Do not write the same file in parallel.
+- `student_id` must match `stu_<name>_<4hex>` and must not contain `/`, `\`, or `..`.
+- Multi-process concurrency is out of scope; a database or file lock would be required.
+
+## Session Segment
+
+A segment is produced by a teaching skill and appended by `/learn` or `/feynman`:
+
+```json
+{
+  "focus": "异分母分数加法",
   "subject": "math",
   "mode": "learn",
   "submode": "practice",
@@ -239,47 +329,81 @@ Each segment is passed in memory during the session and follows this structure:
   "difficulties": ["通分时偶尔分母乘错了"],
   "next_step_candidate": "继续练异分母加法，注意分母选择",
   "recommended_targets": ["异分母减法"],
-  "teach_handoff_recommended": true
+  "confirmed_skills": ["通分"],
+  "skill_errors_observed": ["异分母加法"],
+  "feynman_handoff_recommended": true,
+  "diagnosis": {
+    "domain": "fractions",
+    "label": "fractions:denominator_confusion",
+    "evidence": "把分子分母分别相加，说明只记住了步骤。"
+  },
+  "current_levels": {
+    "fraction_strategy_stage": "equal_sharing_additive"
+  },
+  "techniques_extracted": [],
+  "technique_application_quality": null
 }
 ```
 
+Required fields: `focus`, `subject`, `mode`, `submode`, `source`, `strategy_summary`, `strengths`, `difficulties`, `next_step_candidate`, `recommended_targets`.
+
 Optional fields:
 
-- `overall_performance_code`: One of `needs_support`, `basic_independent`, `stable`, `flexible`. Omitted if performance cannot be assessed yet.
-- `overall_performance_text`: Free-text description of performance level. Omitted if code is omitted.
-- `teach_handoff_recommended`: Boolean indicating whether the segment suggests a handoff to `/teach`. Defaults to false if omitted.
-- `confirmed_skills`: List of skills the student demonstrated mastery of during this segment. Used to update whitelist.
-  Example: `["减法借位", "凑十策略"]`
-- `skill_errors_observed`: List of skills where the student made errors during this segment. Used to update error tracking.
-  Example: `["进位加法"]`
-
-Required fields:
-
-- `focus`, `subject`, `mode`, `submode`, `source`, `strategy_summary`, `strengths`, `difficulties`, `next_step_candidate`, `recommended_targets` must all be present.
+- `overall_performance_code`: `needs_support`, `basic_independent`, `stable`, `flexible`.
+- `overall_performance_text`: free text.
+- `confirmed_skills`: skill names (strings); finalize converts to objects.
+- `skill_errors_observed`: skill names (strings).
+- `feynman_handoff_recommended`: boolean; means hand off to `/feynman`.
+- `diagnosis`: one main label plus evidence. Chinese labels use the `reading:` / `writing:` prefix from `chinese-core/references/chinese-error-labels.md`. Math labels are free-form math error types.
+- `current_levels`: a partial `profile.current_levels` update; finalize nests it under `profile`.
+- `techniques_extracted` / `technique_application_quality`: transfer-writing only.
 
 ## Error History
 
-语文错误标签见 `chinese-reading` 包的 `chinese-core` skill 中的 `references/chinese-error-labels.md`。
+`error_history` is the durable record for both file-based error analysis and in-session diagnosis. It is stored in the subject `profile.json`.
 
-年级段映射、默认 active_domain 与语气默认值见 `learn-core` skill 的 `references/grade-band-defaults.md`。
+### File analysis entry
 
-## Error History Entry
+```json
+{
+  "error_id": "err_20261004_001",
+  "source": "file_analysis",
+  "date": "2026-10-04T12:00:00Z",
+  "domain": "fractions",
+  "topic": "异分母加法",
+  "error_type": "concept",
+  "label": "fractions:denominator_confusion",
+  "raw_file": "outputs/students/<id>/math/raw/fractions-001-20261004.jpg",
+  "original_raw_file": "outputs/students/<id>/math/raw/分数-001.jpg",
+  "backup_file": "outputs/students/<id>/math/backups/raw/分数-001.jpg",
+  "extracted_file": "outputs/students/<id>/math/extracted/fractions-001-20261004.md",
+  "renamed": true,
+  "analyzed": true,
+  "self_diagnosis": "学生说自己‘忘记通分’，实际是分母乘错。"
+}
+```
 
-Each record includes: `error_id`, `date`, `domain`, `topic`, `error_type`, `raw_file`, `original_raw_file`, `extracted_file`, `renamed`, `analyzed`, `self_diagnosis`.
+### Diagnosis entry
 
-## Priority Targets
+```json
+{
+  "error_id": "diag_20261004_001",
+  "source": "diagnosis",
+  "date": "2026-10-04T12:00:00Z",
+  "domain": "reading",
+  "label": "reading:证据不足",
+  "topic": "《秋天的雨》第二段赏析",
+  "evidence": "学生只说了‘很美’，没有引用原文。",
+  "next_step": "回到原文找出一句比喻，并说明它写的是什么。",
+  "analyzed": true
+}
+```
 
-`priority_targets` may be strings or objects. Prefer the object form when the target comes from error analysis.
-
-## Session History Retention
-
-- Keep `session_history` in `profile.json` with the newest summary at index 0, and keep only the first 5 items.
-- When older sessions are dropped, merge repeated focus areas into long-term milestone records.
-- Store long-term progress in `outputs/students/<student_id>/<subject>/milestones.json`.
+- `error_id` uses `err_` for file analysis and `diag_` for diagnosis.
+- `error_history` keeps the newest 20 entries.
+- `priority_targets` may be strings or objects; prefer objects from error analysis. Keep at most 5.
 
 ## Milestones
-
-Keep milestones compact and sorted by importance, then recency.
 
 `milestones.json` shape:
 
@@ -288,40 +412,44 @@ Keep milestones compact and sorted by importance, then recency.
   "milestones": [
     {
       "focus": "异分母分数加法",
-      "date": "2026-11-04T12:00:00Z",
+      "date": "2026-10-04T12:00:00Z",
       "type": "developing",
+      "importance": "medium",
       "summary": "能用画图理解通分，开始独立找公分母。"
     }
   ],
-  "updated_at": "2026-11-04T12:00:00Z"
+  "updated_at": "2026-10-04T12:00:00Z"
 }
 ```
 
-- `milestones` 最多 20 条。
-- `type` 可用 `developing` / `mastered` / `stage_change` / `breakthrough`。
-- 旧会话被挤出 `session_history` 时，把其中长期有意义的信息压缩成里程碑。
+- `milestones` keeps at most 20 entries.
+- `type`: `developing` / `mastered` / `stage_change` / `breakthrough`.
+- `importance`: `high` / `medium` / `low`. Sort by `high` → `medium` → `low`, then newest first.
+- When a session falls out of `session_history`, compress its long-term meaning into a milestone.
 
 ## Session Summary Entry
 
-Each `session_history` item includes: `session_id`, `date`, `entry_point`, `focus`, `overall_performance_code`, `overall_performance_text`, `strategy_summary`, `strengths`, `difficulties`, `next_step`, `recommended_targets`.
+Each `session_history` entry includes: `session_id`, `date`, `entry_point`, `focus`, `overall_performance_code`, `overall_performance_text`, `strategy_summary`, `strengths`, `difficulties`, `next_step`, `recommended_targets`.
 
-**Status field** (optional):
-- `status`: One of `completed` (default) or `interrupted`.
-- If `status = interrupted`, add:
-  - `interrupted_at`: timestamp when the session was interrupted.
-  - `last_topic`: the topic being studied before interruption.
+Optional status fields:
 
-Interrupted sessions retain partial progress in `strategy_summary`, `strengths`, `difficulties` for continuity when the student returns.
+- `status`: `completed` (default) or `interrupted`.
+- `interrupted_at`, `last_topic` when interrupted.
+
+Keep the newest 5 entries, newest at index 0. Full rules: `references/session-retention.md`.
 
 ## Profile Target Priority
 
-When selecting the next learning target from profile state, prefer:
+When selecting the next target from profile state, prefer:
 
-1. `session_history[0].next_step`
-2. `priority_targets`
-3. `developing_topics`
-4. recent milestones
-5. grade-band defaults
+1. `session_log.json` focus (unfinished session)
+2. `session_history[0].next_step`
+3. `pending_feynman_focus` / `pending_transfer_focus`
+4. `priority_targets`
+5. `developing_topics`
+6. `learning_memory.recommended_next_moves`
+7. recent milestones
+8. grade-band defaults
 
 ## Allowed Performance Codes
 
@@ -329,5 +457,6 @@ When selecting the next learning target from profile state, prefer:
 
 ## Persistence Rule
 
-- Every complete student-facing learning session must append one new summary record, update `updated_at`, and apply the retention policy above.
-- `learn -> teach` counts as one complete session for persistence.
+- A complete student-facing learning session appends one new summary record, updates `updated_at`, and applies the retention policy.
+- `learn -> feynman` counts as one complete session.
+- Do not write a summary per turn; the session log is the per-turn record.

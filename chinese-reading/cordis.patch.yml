@@ -1,7 +1,8 @@
 # Chinese language teaching skills for dsh-edu.
 #
 # Roots are resolved from the installed package location (baseUrl = the profile
-# dir), so link:, file:, git and registry installs all behave the same.
+# dir), so link:, file: and git installs all behave the same. Registry publish
+# additionally requires removing "private": true from package.json.
 - insert:
     - id: edu-chinese-reading-skills
       name: '@deepseek-ai/dsh-skill-filesystem'

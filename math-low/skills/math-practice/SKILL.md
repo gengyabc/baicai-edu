@@ -17,6 +17,10 @@ user-invocable: false
 - 学生说“再练几道”“我想多练一点这个”。
 - 已掌握的主题需要和旧知识连起来。
 
+## Session Gate
+
+本 skill 只由 `/learn`、`/feynman` 或数学 skill 路由进入。没有 `session.json` 或 `student_id` 为空时，先引导学生运行 `/start`，不要开始练习。
+
 ## Load First
 
 如果本会话尚未加载，先调用 `skill` 工具加载：
@@ -34,6 +38,8 @@ user-invocable: false
 - `profile.preferences`：`likes_visual`、`likes_story_context`、`likes_direct_calculation`
 - `error_history` 最近记录与对应 `extracted/` 分析
 - `learning_state.active_domain`、`priority_targets`
+- `personal.interests`：用来选情境（披萨、足球、画画等）
+- `self_report.easy_topics` / `hard_topics`：用来决定起点和支架
 - 学生本轮的表现与自述
 
 ## Choose One Layer
@@ -58,8 +64,8 @@ user-invocable: false
 
 - 错误类型：计算错误、概念混淆、过程遗漏各用不同题型和支架，不要把三种错误塞进同一组题。
 - 水平：`direct_modeling` 多给情境和可画图的题；`flexible_relational` 可以用更大的数字和关系比较。
-- 偏好：`story_context` 用生活情境，`visual` 用图或线段，`direct_calculation` 用纯算式；偏好只影响呈现方式，不降低目标。
-- 年级：低年级句子短、数字小、一次一题；高年级可以多步、可以要求说明理由。
+- 偏好：`story_context` 用生活情境，`visual` 用图或线段，`direct_calculation` 用纯算式；情境优先从 `personal.interests` 里选一个具体细节。偏好只影响呈现方式，不降低目标。
+- 年级：低年级（1-3）句子短、数字小、一次一题；高年级（4-6）可以多步、可以要求说明理由。
 
 ## Deliver
 
@@ -87,7 +93,7 @@ user-invocable: false
   "difficulties": ["独立计算时仍会先加分母"],
   "next_step_candidate": "下一轮做变式层，换情境但保持异分母加法",
   "recommended_targets": ["异分母减法"],
-  "teach_handoff_recommended": false,
+  "feynman_handoff_recommended": false,
   "confirmed_skills": [],
   "skill_errors_observed": ["异分母加法"]
 }

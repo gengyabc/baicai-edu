@@ -35,6 +35,7 @@ When a student's `outputs/students/<student_id>/<subject>/memory.json` is first 
 When the skill is NOT in the whitelist:
 - Make mistakes on key conceptual steps (not just calculation errors)
 - Mistakes should be realistic for a learner slightly below the student's level
+- Never make a mistake on a skill in `confirmed_skills`, and never present a wrong answer as correct at the end of a turn
 - Common mistake types:
   - Misapplying a rule
   - Skipping a step
@@ -46,11 +47,11 @@ When the skill is NOT in the whitelist:
 When the student successfully corrects AI's mistake or explains a concept clearly:
 
 1. Check if the skill is already in `confirmed_skills`
-2. If not, add it:
+2. If not, and the skill has **two independent demonstrations** (different numbers/contexts) or one demonstration plus a correct explanation of why it works, add its name to the current `session_segment.confirmed_skills`:
    ```json
-   { "skill": "<skill_name>", "domain": "<domain>", "confirmed_at": "<now>" }
+   ["<skill_name>"]
    ```
-3. Save to `outputs/students/<student_id>/<subject>/memory.json`
+3. Do not write `memory.json` now. Finalize converts the names to objects and writes memory once.
 
 ## Error Tracking
 
@@ -80,9 +81,11 @@ At the end of each Feynman/teaching session:
 
 1. Check `skill_errors` for any skills reaching `error_count >= 2`
 2. Remove those skills from `confirmed_skills`
-3. Add newly confirmed skills to `confirmed_skills`
-4. Save updated `outputs/students/<student_id>/<subject>/memory.json`
+3. Add newly confirmed skills that meet the two-evidence bar
+4. Leave the actual `memory.json` write to `learn-data` finalize; the session log already carries the names
 
-## Concurrency Note
+## Write Timing
 
-Updates to `confirmed_skills` and `skill_errors` should be atomic with `outputs/students/<student_id>/<subject>/memory.json` writes to prevent race conditions.
+- During a turn: only append to `session_log.json`; do not write `memory.json`.
+- At finalize: merge `confirmed_skills` and `skill_errors` once, in the same write as the other memory fields.
+- There is no cross-process lock; do not write the same file from two turns in parallel.

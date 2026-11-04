@@ -25,7 +25,8 @@ Resolve user-provided paths into a clean list of error files.
 ### Path Rules
 
 Follow `references/raw-directory-protection.md`:
-- Only read from `raw/`, never write or modify
+- Only read from `raw/`; never write or modify
+- Back up to `backups/raw/` before any `mv` rename
 - Rename via `mv` only when needed
 
 - `raw/`, `extracted/`, and `./` are relative to `outputs/students/<student_id>/<subject>/`.

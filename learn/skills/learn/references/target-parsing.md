@@ -105,7 +105,7 @@
 
 ## Source Values
 
-`profile`、`manual_topic`、`error_analysis`、`reading`、`writing`。
+`profile`、`manual_topic`、`error_analysis`、`diagnosis`、`practice`、`reading`、`writing`、`save`、`focus`。
 
 ## Routing Summary
 
