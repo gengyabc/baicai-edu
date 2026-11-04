@@ -21,7 +21,7 @@ user-invocable: false
 
 ## Session Gate
 
-本 skill 只由 `chinese-reading-session` 或语文路由调用。没有 `session.json` 或 `student_id` 为空时，先引导学生运行 `/start`，不要开始桥接。
+本 skill 仅作为 `chinese-reading-session` 的内部子流程，复用其已验证的会话与快照，不从语文路由独立进入。若被单独加载，交回阅读教学先确定目标与会话；没有 `session.json` 或 `student_id` 为空时先引导 `/start`。
 
 ## When Not To Use
 
@@ -123,32 +123,14 @@ user-invocable: false
 
 调用方据此继续阅读教学（回到见人法或双层赏析），并把这些内容并入它自己的 `session_segment`，不要重复记录。
 
-## Session Segment
+### 桥接结果契约
 
-若本 skill 被单独调用、需要独立记录，产出一个最小段：
+只向阅读调用方返回内存结果，不生成 `session_segment`、独立诊断或独立会话记录，不写学生数据：
 
-```json
-{
-  "focus": "《XX》中离别的不舍",
-  "subject": "chinese",
-  "mode": "learn",
-  "submode": "experience_bridging",
-  "source": "reading",
-  "strategy_summary": "用‘舍不得扔掉的旧物’搭桥，学生说出‘扔了就像少了一个人’，再回到文中反复写的那把椅子。",
-  "strengths": ["能用自己的话说出不舍的感觉"],
-  "difficulties": ["还说不清作者为什么不直接写‘舍不得’"],
-  "next_step_candidate": "回到原文找两处反复出现的细节",
-  "recommended_targets": ["见人法", "双层赏析"],
-  "feynman_handoff_recommended": false,
-  "confirmed_skills": [],
-  "skill_errors_observed": []
-}
-```
+- `status`：`bridged` / `stopped` / `safety_stop`。
+- `bridge_summary`：替代经验与情感结构的简述；仅保留必要教学信息，不复述隐私。
+- `student_feeling`：学生已说出的感受原话；未说出留空。
+- `text_evidence`：学生指认的原文证据；未找到留空，不以类比替代。
+- `stop_reason` / `next_action`：失败时给具体失败信号与换方法/直接讲解建议；危机仅回传需安全处理，不传创伤细节。
 
-字段要求：
-
-- `subject` 固定 `chinese`；`mode` 取调用时的 `learn` / `diagnose` / `feynman`；`submode` 固定 `experience_bridging`；`source` 固定 `reading`。
-- 本 skill 不单独产生诊断标签；需要落标签时交回 `chinese-reading-session`。
-- `strategy_summary` 必须写清“用了什么替代经验、桥到了什么情感、回到哪处证据”。
-- 桥接失败时，`difficulties` 写清失败信号，`next_step_candidate` 改成换方法或直接讲解，不要重复同一个替代经验。
-- 本 skill 不写学生数据；持久化由入口按 `learn-data` 的 finalize 执行。
+只有学生能自行表达感受并指出至少一处原文证据才算 `bridged`。调用方在自己的唯一阅读段中合并有效证据，判断诊断与技能追踪；失败不算掌握，需停止教学的安全信号优先处理。

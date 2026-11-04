@@ -20,6 +20,31 @@
 
 入口 skill 分两档：`start` / `learn` 设置 `disable-model-invocation: true`，只能由用户键入命令发起，不进入模型目录；`feynman` / `profile` / `save` 保留模型入口，支持对话内自动加载（“我来给你讲”“看看我的档案”“保存一下”）。上面 3 个内部 skill 保持模型可加载，只通过 `user-invocable: false` 从 `/` 菜单隐藏。
 
+## 规则所有权
+
+- `learn-core`：跨学科教学行为；年级默认、费曼角色与白名单分别由其 references 定义。
+- `learn-data/references/session-lifecycle.md`：`/learn` 与 `/feynman` 的唯一会话循环。模式切换沿用日志与 entry_point，不重开会话。
+- `learn-data/references/profile-schema.md`：数据与 segment 结构；学科只定义字段增量。
+- `learn-data/references/finalize-session.md`：统一保存流程；保留策略归 `session-retention.md`。
+- 学科 references：方法、量规、标签与题型的唯一正文；学科 SKILL 保留分流、执行步骤和独有输出。
+
+验证：`node scripts/check-skills.mjs`；协议回归检查：`node --test scripts/skill-contracts.test.mjs`。这些是静态检查，不替代真实对话验证。
+
+日志新增可选 `context`（目标、材料引用、模式与当前动作）及临时 `finalize_plan`（部分保存失败重放），旧日志仍可恢复，无需迁移学生档案。提交顺序和清理以 finalize reference 为准；同一学生/科目有待完成保存时先恢复，再编辑档案或处理新错题。
+
+### 对话验收场景（需实际运行）
+
+| 场景 | 验收结果 |
+|---|---|
+| `/learn` 中选择当小老师，再结束 | 同一 session_id 与 entry_point，仅模式改变；只写一条会话 summary |
+| 直接 `/feynman`，给出作文或阅读答案 | 保留写作/阅读意图，AI 用学生角色追写作选择/原文证据 |
+| 已解析语文错题后重启会话 | 从 extracted 引用恢复材料，不重复改名、分析或问自我诊断 |
+| pending 费曼/迁移后中断 | 恢复对应动作和进度，不仅恢复 focus；迁移不重置轮数 |
+| 学生拒绝经验桥接或出现危机信号 | 失败不记掌握；危机停止教学、不落危机细节 |
+| 保存中途失败后重复 `/save` | 重放同一计划，错误计数/历史不重复；已提交仅清理日志 |
+| 连续保存两次、随后学习新主题 | 第二次不重复累计，新主题使用新 session_id |
+
+
 ## 安装
 
 ```bash

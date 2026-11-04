@@ -14,6 +14,8 @@ user-invocable: false
 
 本 skill 只由 `/learn`、`/feynman` 或学科 skill 调用。没有 `outputs/students/session.json` 或 `student_id` 为空时，先引导学生运行 `/start`，不要开始分析。
 
+读写前加载 `learn-data`，复用有效快照并检查当前科目日志；有 `finalize_plan` 时先按其 finalize 协议恢复保存，成功后再处理新的错题写回。
+
 ## When To Use
 
 - `/learn` 或 `/feynman` 的目标是一个路径、图片或“我的错题”。

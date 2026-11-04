@@ -47,8 +47,7 @@ user-invocable: false
 8. `outputs/students/<id>/<subject>/raw/` 只读；任何情况下不修改原始错题文件。
 9. 个性化信息分两处读：共享档案的 `name`、`grade`、`personal.interests`、`personal.most_exciting_event`、`personal.most_sad_event`，科目档案的 `profile.preferences`、`profile.self_report.easy_topics/hard_topics`。它们只影响语气、例子、阅读角度、写作题目、桥梁和支架，不得改写学习目标、学生当前消息或显式教学指令。
 10. 语文和数学都必须使用 `personal.interests`：语文用在阅读角度、写作题目、迁移主题和经验桥接；数学用在情境和呈现方式。不要只收集不使用，也不要把兴趣变成刻板判断。
-11. 每轮把 `session_segment` 追加到 `session_log.json`；`profile.json` / `memory.json` / `milestones.json` 只在 finalize、缺失初始化或 `/profile` 显式修改时写。
-12. 结束会话前必须走 `learn-data` 的 finalize 流程；中途换主题先以 `interrupted` 保存当前段。
+11. 学科只产出 segment；逐轮日志、模式切换、换主题和结束保存统一按 `learn-data` 的 `references/session-lifecycle.md`，写入例外与权限以 `learn-data` 为准。
 
 ## Persona Defaults
 
@@ -58,15 +57,7 @@ user-invocable: false
 
 ## Session Rhythm
 
-1. 读快照（`learn-data`）。
-2. 选一个小目标。
-3. 用一个具体情境或问题开场。
-4. 等学生回应；追问思路；必要时给支架。
-5. 用三步确认判断是否真的理解。
-6. 做一个小变式或迁移。
-7. 判断结束信号；未结束则给一个下一步，等学生继续。
-8. 每轮把 segment 写入 `session_log.json`。
-9. 结束时走 finalize，写回四个科目文件并清空日志。
+教学动作按 `references/pedagogy-core.md`；会话循环按 `learn-data` 的 `references/session-lifecycle.md`。前者负责怎样教，后者负责何时路由、记录与保存。
 
 ## Output Style
 

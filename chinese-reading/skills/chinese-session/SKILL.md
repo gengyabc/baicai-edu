@@ -37,7 +37,7 @@ user-invocable: false
 - `mode`：`learn` | `feynman`。
 - `focus`：本轮主题字符串；为空时由子 skill 从档案或材料中确定。
 
-如果入口没有给出 `target_context`，先按 `learn` 入口的分类结果补齐；仍然无法判断时只问一个短问题，不要靠猜开始教学。
+如果入口没有给出 `target_context`，按 `learn-data` 的 `references/target-parsing.md` 补齐；仍然无法判断时只问一个短问题，不要靠猜开始教学。
 
 ## Load First
 
@@ -51,9 +51,9 @@ user-invocable: false
 
 ## Preconditions
 
-1. 读 `outputs/students/session.json`，确认 `student_id` 存在、`subject = chinese`。
-2. 没有 `session.json` 或 `student_id` 为空时，先引导学生运行 `/start`，不要路由。
-3. 按 `learn-data` 的 Read Snapshot 读取快照；缺失的科目文件按模板初始化。
+1. 优先复用入口已读的 `session.json` 与学生快照，确认 `student_id` 存在且 `subject = chinese`；已提供的部分不重复读取。
+2. 仅当必要会话信息或快照字段缺失时，按 `learn-data` 的 Read Snapshot 补读缺失部分；会话不存在或 `student_id` 为空则引导 `/start`，停止路由。科目不匹配则交回入口确认，不在这里切换或写回。
+3. 科目文件缺失时交回入口按 `learn-data` 初始化，再使用入口返回快照；本路由器不创建、初始化或修改任何学生数据。
 4. 本轮只路由一次；不要在一次回复里加载多个子 skill 的教学内容。
 
 ## Routing Table
@@ -63,25 +63,25 @@ user-invocable: false
 | `mode = feynman`，目标是阅读类 | `chinese-reading-session` | `feynman` |
 | `mode = feynman`，目标是写作类 | `chinese-writing-session` | `feynman` |
 | `mode = feynman`，目标是 `profile` 或中文默认 | 先选定一个领域，再路由到对应子 skill | `feynman` |
+| `intent = transfer_read_write`，或学生明确要求沿用本文技巧写作（非费曼） | `chinese-read-write-transfer` | `learn` |
 | `type = task_generation` | `chinese-generate-tasks` | `learn` |
 | `type = writing_prompt` | `chinese-writing-session` | `start` |
 | `type = writing_draft` | `chinese-writing-session` | `revise` |
 | `type = assessment` 且 `intent = assess_writing` | `chinese-writing-session` | `assess` |
 | `type = assessment` 且 `intent = assess_reading` | `chinese-reading-session` | `diagnose` |
 | `type = reading_material` | `chinese-reading-session` | `learn` |
-| `intent = transfer_read_write`，或学生明确说“照着这篇的写法写一篇”“练一下读写迁移” | `chinese-read-write-transfer` | `learn` |
-| `type = error_files` | 先加载 `learn-errors` 解析并读内容，再按内容路由一次 | 见下 |
+| `type = error_files` | 仅未处理文件交入口解析；已处理时复用提取内容并归类 | 见下 |
 | `type = profile`，选定阅读 | `chinese-reading-session` | `learn` |
 | `type = profile`，选定写作 | `chinese-writing-session` | `start` |
 
 ## Routing Rules
 
 1. 费曼模式只在开头路由一次；随后不再因为学生的新句子反复切换领域。
-2. `error_files` 必须先解析文件再路由：
-   - 内容是阅读文章、阅读题或阅读答案 → `chinese-reading-session`。
-   - 内容是作文题或作文草稿 → `chinese-writing-session`。
-   - 是图片或 Markdown 错题文件 → 先按 `learn-errors` 提取题目与学生作答，再按上面两条判断。
-   - 仍不清楚 → 问一个短问题（“这是阅读题还是作文？”），不要同时展开两条教学线。
+2. 文件目标遵循 `learn-data` 的 `references/target-parsing.md` 的 After File Processing：
+   - 入口已归类并传 `files_processed: true` 时，直接使用其阅读/写作类别、intent、提取内容和 material_refs；不再加载 `learn-errors` 或追问自我诊断。
+   - 兼容仍为 `error_files` 但已处理的目标：读取 material_refs 指向的 extracted 内容，归为阅读/写作类别；不再分析旧 raw 路径。
+   - 尚未处理时交回共享生命周期调用一次 `learn-errors`，取得结果后再路由；本路由器不进行文件持久化。
+   - 阅读答案用 `assessment + assess_reading`；作文批改用 `assessment + assess_writing`，其余按材料归类。仍不清楚只问“这是阅读题还是作文？”。
 3. `type = profile` 选定领域的顺序：
    1. `session_history[0].next_step` 明确指向阅读或写作时，用它。
    2. 否则用科目档案 `learning_state.active_domain`。
@@ -111,7 +111,7 @@ user-invocable: false
 - `mode`、`submode`
 - `target_context`（原始值，不改写）
 - `focus`
-- 已读快照（不要重复读文件）
+- 入口已读会话与快照，以及按 Preconditions 补读的缺失部分（子 skill 复用，不重复读文件）
 - 个性化输入：`personal.interests`、`personal.most_exciting_event`、`profile.preferences`、`self_report.easy_topics/hard_topics`、`memory.preferred_scaffolds` / `recent_error_patterns` / `expression_traits` / `stable_strengths` / `stable_difficulties`
 - 阅读材料或草稿原文，以及学生本轮最新一句原话
 
@@ -130,4 +130,4 @@ user-invocable: false
 - 阅读 → 迁移：`chinese-read-write-transfer`。
 - 阅读或写作 → 出题：`chinese-generate-tasks`。
 - 任意领域 → 费曼：交给对应子 skill 的费曼模式，不新建 skill。
-- 会话结束或中途换主题：交回入口，按 `learn-data` 的 finalize 规则以 `completed` 或 `interrupted` 保存。
+- 会话结束、中途换主题、模式切换或恢复：把子 skill 的唯一段交回入口，按 `learn-data` 的 `references/session-lifecycle.md` 记录与处理；本路由器不生成额外段、不写数据。

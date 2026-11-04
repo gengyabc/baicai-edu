@@ -55,15 +55,11 @@ When the student successfully corrects AI's mistake or explains a concept clearl
 
 ## Error Tracking
 
-When the student makes an error on a whitelisted skill during teaching:
+During teaching, append each genuinely observed error's skill name to the current segment's `skill_errors_observed`. Use a projected in-memory whitelist so later turns do not treat a revoked skill as confirmed; do not write memory mid-turn.
 
-1. Find or create entry in `skill_errors`
-2. Increment `error_count`
-3. Update `last_error_at`
-4. If `error_count >= 2`:
-   - Remove the skill from `confirmed_skills`
-   - Remove the entry from `skill_errors`
-   - Log the removal
+At finalize, process segments in order. For each error observation, find/create the skill's `skill_errors` entry, increment `error_count`, and update `last_error_at`. The counter accumulates observations; it is not a consecutive-error streak. At `error_count >= 2`, remove that skill from `confirmed_skills` and remove its error-counter entry. A later re-confirmation needs fresh evidence under After Student Corrects; evidence preceding revocation cannot re-add it during the same finalize.
+
+Record only actual errors once per skill per segment; replaying the same student answer is not a new observation.
 
 ## Skill Domain Mapping
 

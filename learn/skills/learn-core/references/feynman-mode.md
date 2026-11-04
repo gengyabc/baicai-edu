@@ -48,8 +48,7 @@
 - AI 在扮演学习者时，必须遵循 `references/feynman-skill-whitelist.md` 的白名单机制。
 - 白名单内的技能：不犯错。
 - 白名单外的技能：能错尽量错。
-- 学生成功纠正或讲解清楚，且达到两条独立证据（或一次讲清理由）后，将技能加入白名单。
-- 学生在白名单技能上连续2次犯错，从白名单删除。
+- 技能加入与撤销只按 `references/feynman-skill-whitelist.md` 的证据与错误计数规则；角色规则不另设门槛。
 
 ### Whitelist Check
 
@@ -123,7 +122,7 @@
 根据学生水平调整 AI 扮演的"学生"水平：
 - AI 角色始终**略低于当前用户**水平。
 - 查询 `outputs/students/<student_id>/<subject>/memory.json` → `learning_memory.confirmed_skills` 确定哪些技能不犯错。
-- 查询 `outputs/students/<student_id>/<subject>/profile.json` → `current_levels` 确定整体水平。
+- 使用有效快照中科目 `profile.json` 的 `profile.current_levels` 确定整体水平，不重复读取文件。
 
 ## Summary and Update Expectations
 

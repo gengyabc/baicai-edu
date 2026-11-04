@@ -7,6 +7,7 @@ Keep student profiles compact while preserving meaningful progress.
 ## Policy
 
 - `profile.json.session_history` keeps only the most recent 5 summary-level sessions.
+- `profile.json.error_history` keeps the most recent 20 entries, newest first.
 - Older sessions are condensed into milestones, not kept verbatim.
 - Long-term progress lives in `outputs/students/<student_id>/<subject>/milestones.json`.
 

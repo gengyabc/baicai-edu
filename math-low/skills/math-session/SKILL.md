@@ -8,128 +8,71 @@ user-invocable: false
 
 ## Purpose
 
-执行一回合小学数学教学：选一个小目标，用一个具体问题开场，等学生思考，追问策略，做三步确认，留一个下一步。它不负责整个会话循环，也不负责 finalize。
+执行一回合小学数学教学，产出学生可见回复与内部证据；会话循环、结束判断和 finalize 归入口与共享协议。
 
 ## When To Use
 
-- `/learn` 解析出数学目标后，调用 `skill` 工具加载本 skill。
-- `/feynman` 传入数学主题（`mode: "feynman"`）。
+- `/learn` 解析出数学目标，或 `/feynman` 传入数学主题。
 - `math-diagnose`、`math-practice`、`math-student-problem` 处理完后回到教学主线。
-- 学生继续上一轮数学对话，且 `focus` 未结束时。
+- 学生继续上一轮数学对话，且 `focus` 未结束。
 
 ## Session Gate
 
-本 skill 只由 `/learn`、`/feynman` 或数学内部 skill 路由进入。没有 `outputs/students/session.json` 或 `student_id` 为空时，先引导学生运行 `/start`，不要开始教学，也不要凭空建档案。
+本 skill 只由 `/learn`、`/feynman` 或数学内部 skill 路由进入。会话与缺失文件检查按 `learn-data`：没有 `outputs/students/session.json` 或 `student_id` 为空时，先引导 `/start`，不开始教学、不凭空建档。
 
 ## Load First
 
-如果本会话尚未加载，先调用 `skill` 工具加载：
+未加载时先调用 `skill` 加载 `learn-core`、`learn-data`、`math-core`；reference 路径均相对于对应 skill 返回的 base directory。
 
-1. `learn-core`（需要时读它的 `references/pedagogy-core.md`、`references/grade-band-defaults.md`、`references/confirm-before-accept.md`、`references/guidance-non-response-handling.md`、`references/prestart-settings-interpretation.md`）
-2. `learn-data`（直接进入或快照缺失时）
-3. `math-core`
-
-然后读 `math-core` 的 `references/math-teaching-core.md`。`mode` 为 `feynman` 时，再读 `learn-core` 的 `references/feynman-mode.md` 与 `references/feynman-skill-whitelist.md`；其余情况读 `learn-core` 的 `references/personas.md` 的 Guided Coach 部分。
+- 每次数学教学读 `math-core` 的 `references/math-teaching-core.md`；数学动作、题目设计、分数意义、验算按此执行。
+- 共享教学流程、年级适配、语气与学生可见输出按 `learn-core` 及其 Reference Loading 表读取；接受答案前读 `references/confirm-before-accept.md`，无响应时读 `references/guidance-non-response-handling.md`，使用个性化时读 `references/prestart-settings-interpretation.md`。
+- 记录技能确认或错误前，所有模式都读 `learn-core` 的 `references/feynman-skill-whitelist.md`：确认门槛与白名单更新只由该文件定义，不以口头解释替代展示证据。
+- `mode: feynman` 时读 `learn-core` 的 `references/feynman-mode.md`，完全按学生视角互动；其余模式按共享人格规则使用 Guided Coach 或档案指定人格。
+- 产出 segment 前读 `learn-data` 的 Session Segments 与 `references/profile-schema.md` 的 Session Segment；完整 schema、字段枚举与写回映射只在共享协议维护。
 
 ## Inputs
 
-调用方（`/learn` 或 `/feynman`）已经读过快照，并把下面内容交给你：
+调用方（`/learn` 或 `/feynman`）交付：
 
-- `student_id`、`subject: math`
-- 学生本轮最新消息
-- `target_context`：`type`、`topic`、`source`、`files`、`intent`
-- `focus`、`mode`（`learn` 或 `feynman`）
-- 快照：`outputs/students/<student_id>/profile.json`、`outputs/students/<student_id>/math/{profile,memory,current_state,milestones}.json`
-- 个性化：`personal.interests`、`profile.preferences`、`self_report.easy_topics/hard_topics`、`memory.preferred_scaffolds` / `recent_error_patterns` / `recommended_next_moves`
+- `student_id`、`subject: math`、学生本轮最新消息。
+- `target_context`：`type`、`topic`、`source`、`files`、`intent`；当前 `focus`、`mode`（`learn` 或 `feynman`）。
+- 共享与数学快照：`outputs/students/<student_id>/profile.json`、`outputs/students/<student_id>/math/{profile,memory,current_state,milestones}.json`。
+- 个性化：`personal.interests`、`profile.preferences`、`profile.self_report.easy_topics/hard_topics`，以及 memory 的偏好支架、近期错误与推荐下一步。
 
-直接使用调用方已读的快照，不要为本回合重复读取；只有本轮写回过文件时才重读。缺少学生或科目文件时，按 `learn-data` 的规则处理，不要凭空生成。
+复用已读快照；缺失、重读、初始化按 `learn-data` 的 Read Snapshot。兴趣必须用于合适的数学情境或呈现细节，使用边界按共享个性化协议，不覆盖当前消息或学习目标。
 
-## Target Selection
+## Target Selection And Routing
 
-1. 优先使用 `target_context` 的 `topic`。
-2. 没有显式目标时，依次看 `session_history[0].next_step`、`priority_targets`、`developing_topics`、`learning_memory.recommended_next_moves`、`profile_memory.stable_strengths` / `stable_difficulties`、最近 milestones、年级段默认领域。
-   先检查 `current_state.pending_transfer_focus` / `pending_feynman_focus`；有 pending 时优先接上。
-   字段细节见 `learn-data` 的 `references/profile-schema.md`，年级默认见 `learn-core` 的 `references/grade-band-defaults.md`。
-3. 目标是错题文件时，先让 `learn-errors` 完成解析与写回，再把最值得练的错误类型作为焦点。
-4. 有多个错误时按顺序取：最近发生的 → 最贴合当前 `active_domain` 的 → 学生自己说难的。
-
-一次只选一个焦点，不要同时推进两个知识点。
-
-## Submode
-
-内部先定 `submode`，不要告诉学生：
-
-- 新主题或新概念起步 → `learn`
-- 巩固与近邻变式 → `practice`
-- 纠错或回看错题 → `review`
-- `mode` 为 `feynman` → `feynman`
+1. 优先使用 `target_context.topic`。
+2. 没有显式目标时先使用共享生命周期恢复的 focus 与动作；仅对应 pending 布尔值为 true 时接 `current_state.pending_transfer_focus` / `pending_feynman_focus`。没有恢复目标时依次看 `session_history[0].next_step`、`priority_targets`、`developing_topics`、`learning_memory.recommended_next_moves`、`profile_memory.stable_strengths` / `stable_difficulties`、最近 milestones、年级默认领域。字段见 `learn-data` 的 `references/profile-schema.md`，年级默认见 `learn-core` 的 `references/grade-band-defaults.md`。
+3. 目标是错题文件时交给 `learn-errors` 解析与写回，再取值得练的错误类型；需判断阶段或错因时交给 `math-diagnose`。多个错误按最近发生 → 最贴合 `active_domain` → 学生自述难点排序。
+4. 一次只选一个焦点。新主题起步用 `submode: learn`，巩固/近邻变式用 `practice`，纠错用 `review`，`mode: feynman` 时用 `feynman`；这些分流名只留在内部。
+5. 需要分层巩固时交给 `math-practice`；学生要出题考 AI 时交给 `math-student-problem`，回传后接回当前焦点，合并本轮证据而非重复产出。
 
 ## One Turn
 
-1. 选一个小目标，用学生熟悉的情境或一个具体问题开场；先出题，不先讲方法。情境优先从 `personal.interests` 里选一个具体细节；没有合适的兴趣时用普通生活情境。
-2. `mode` 为 `feynman` 时，完全按 `learn-core` 的 `references/feynman-mode.md` 扮演学生视角：第一人称表达困惑、问小而具体的问题、不说老师话术。
-3. 等学生回应；学生给出答案后先问“你是怎么想的？”，追问策略而不是只要结果。
-4. 按 `learn-core` 的 `references/confirm-before-accept.md` 走三步确认：追问思路 → 换角度验证 → 最终确认。简单事实回忆、纯感受、学生主动提问可跳过。
-5. 需要时给一个近邻变式或对比，检验刚发现的策略是否稳定。
-6. 学生连续不回应引导时，按 `learn-core` 的 `references/guidance-non-response-handling.md` 先给支架（改说法、举例、拆步骤、画图），最多 3 次，再考虑换题或降难度。
-7. 本回合收尾：用一句阶段总结说清这轮抓住的关系，再给一个足够小的下一步；不要用“今天就到这里”这类硬性收尾。
+1. 按数学 teaching reference，用熟悉情境或具体问题开场，先出题、等学生思考，不先讲方法。
+2. 学生回应后沿共享确认协议追问策略、验证并确认；需要时给一个近邻变式或对比，检验策略是否稳定。费曼模式始终保持共享协议规定的学生角色。
+3. 卡住时按共享无响应协议提供支架；数学上优先简化数字、回到情境与数量意义。流畅时先加关系挑战，再考虑加数字。
+4. 用一句阶段总结说清本轮抓住的数学关系，给一个足够小的下一步，不硬性结束整个会话。
+5. 按以下数学字段约定回传本轮唯一 segment；学生可见回复沿用 `learn-core` 的 Output Style 与安全边界，不展示内部标签或完整代解。
 
-## Required Moves
+## Internal Session Segment — Math Fields
 
-- 要解释，不要只对答案。
-- 情境先于符号；先让学生说自己的方法，再考虑更规范的表示。
-- 学生卡住时降难度或简化数字；学生流畅时先加关系挑战，再考虑加数字。
-- 个性化信息（`personal.interests`、`personal.most_exciting_event`、`profile.preferences`、`easy_topics` / `hard_topics`）只用于语气、例子、桥梁和支架，不改学习目标，不覆盖学生当前消息。使用边界见 `learn-core/references/prestart-settings-interpretation.md`。
-- 只有达到“两条独立证据（不同数字/情境）或一次讲清理由”才把技能记入 `session_segment.confirmed_skills`；学生在某技能上出错时记入 `skill_errors_observed`。
-- 内部判断、算例或推导难以心算时，先用 `bash` 工具验算（`python3` 或 `node -e`，不可用时分步手算并复核），再继续追问。
+完整结构采用已加载的 `learn-data` schema；本 skill 只定义数学字段的增量语义：
 
-## Student-Facing Reply
-
-- 中文，短、具体、可以开口回答。
-- 一次一个主要问题，不连续抛多个问题。
-- 先肯定具体做得好的地方，再指出一个可改的点。
-- 不展示 `session_segment`、JSON、错误标签、内部阶段名。
-- 不替学生写出完整解答；示例只给局部。
-
-## Internal Session Segment
-
-本回合在内部产出**一个** `session_segment`，追加到调用方的 `session_segments`；本 skill 不直接写学生数据，入口会把它写入 `session_log.json`：
-
-```json
-{
-  "focus": "异分母分数加法",
-  "subject": "math",
-  "mode": "learn",
-  "submode": "practice",
-  "source": "profile",
-  "strategy_summary": "学生用画图分蛋糕理解通分",
-  "strengths": ["能主动画图表示"],
-  "difficulties": ["通分时偶尔分母乘错"],
-  "next_step_candidate": "继续练异分母加法，先估分母再通分",
-  "recommended_targets": ["异分母减法"],
-  "feynman_handoff_recommended": true,
-  "confirmed_skills": ["通分"],
-  "skill_errors_observed": ["异分母加法"]
-}
-```
-
-- `mode` 取 `learn` 或 `feynman`，与调用方传入的一致。
-- `source` 取 `profile`、`manual_topic`、`error_analysis`、`diagnosis`、`practice`、`focus` 之一，与 `target_context.source` 对齐。
-- `confirmed_skills` / `skill_errors_observed` 写技能名字符串，只在有证据时填写；没有就给空数组。finalize 会转成 memory 对象。
-- 可选 `overall_performance_code`（`needs_support` / `basic_independent` / `stable` / `flexible`）与 `overall_performance_text`。
-- 可选 `current_levels`：如果本回合有足够证据判断策略阶段，写一个部分对象，finalize 会嵌套到 `profile.current_levels`。
-- 可选 `diagnosis`：数学错误类型 + 证据，finalize 会写一条 `error_history` 诊断条目。
+| 字段 | 数学约定 |
+|---|---|
+| `subject` / `mode` / `submode` / `source` | `subject: math`，`mode` 沿用调用方；`submode` 按上述分流，`source` 对齐 `target_context.source` |
+| `strategy_summary` | 学生实际使用的数学策略，如画图等分、接着数、凑十、通分；不只记录答案对错 |
+| `strengths` / `difficulties` | 描述数量关系、表示、计算、验证与支架响应的证据 |
+| `next_step_candidate` / `recommended_targets` | 保守、具体的下一步与近邻目标；`feynman_handoff_recommended` 表示是否适合转费曼讲解 |
+| `confirmed_skills` / `skill_errors_observed` | 按白名单协议记录学生技能名，无证据为空数组；AI 故意犯错不算学生错误 |
+| `overall_performance_code` / `overall_performance_text`（可选） | 数学表现：`needs_support` 需支架，`basic_independent` 基本独立但个别步骤需提示，`stable` 稳定运用策略，`flexible` 灵活迁移/比较关系；文字写清本轮证据，不由速度或单题答对定档 |
+| `current_levels`（可选） | 有足够策略证据时给 `arithmetic_strategy_stage` / `fraction_strategy_stage` 部分更新；阶段解释归 `learn-core` 的 `references/progression-map.md`，诊断证据归 `math-core` 的 `references/strategy-diagnosis-rules.md` |
+| `diagnosis`（可选） | 数学领域 `domain`、一个具体错误 `label` 与关键步骤 `evidence`；分类归同一诊断 reference，不复述整题 |
 
 ## Boundary
 
-- 只做一回合；结束信号判断与 finalize 由 `/learn` 和 `learn-data` 负责。
-- 不在每轮写 `profile.json` / `memory.json`；本回合只产出 segment，由入口追加到 `session_log.json`。
-- 不一次讲一个单元，不把学习变成对答案。
-- 不自行结束整个会话，不重复 finalize 已保存的会话。
-
-## Related
-
-- `math-core` 与它的 `references/math-teaching-core.md`
-- `learn-core/references/prestart-settings-interpretation.md`：兴趣与偏好的使用边界
-- `math-diagnose`、`math-practice`、`math-student-problem`
-- `learn-core`、`learn-data`、`learn-errors`
+- 只做一回合，回传一个 `session_segment`，由调用方追加到 `session_segments` 与 `session_log.json`；不直接写学生档案。
+- 结束信号、主题切换、finalize、幂等与持久化完全使用 `learn-core` / `learn-data`，不在数学层另建协议，不自行结束会话或重复 finalize。

@@ -43,39 +43,15 @@ user-invocable: false
 | 评改回合叠加追问 | `learn-core` | `references/personas.md` 的 Socratic Tutor 部分 |
 | 学生说出选材、改法之前 | `learn-core` | `references/confirm-before-accept.md` |
 | 学生卡住、连续短答 | `learn-core` | `references/guidance-non-response-handling.md` |
-| 费曼模式 | `learn-core` | `references/feynman-mode.md` + `references/feynman-skill-whitelist.md` |
+| 输出技能追踪字段前（所有模式） | `learn-core` | `references/feynman-skill-whitelist.md` |
+| 费曼模式 | `learn-core` | `references/feynman-mode.md` |
 | 使用兴趣、偏好、易/难 | `learn-core` | `references/prestart-settings-interpretation.md` |
 
 `chinese-core` 的加载结果会给出 base directory；参考文件按 `<base_directory>/references/<文件名>.md` 读取。
 
-## 写作原则（每一轮都遵守）
+## 教学边界
 
-- 先具体，后抽象。
-- 先定格，再展开。
-- 优先细节密度，不堆辞藻。
-- 删除空话、套话、大话、假抒情。
-- 优先精确动词和可观察细节。
-- 升格靠意义、视角、回扣，不靠形容词堆叠。
-- 保留学生原意和可写性；不把作文改成成人样板文。
-- 不整篇代写。示范最多一句到一小段，且必须标明“这是示范，不是替你写”。
-
-## 六圈展开法（定格展开）
-
-先锁定一个画面，再按六圈往外展开。一次只问一圈，不一次问完。
-
-1. **主要描写对象**：这个画面里最核心的是谁或什么？
-2. **正面描写**：他/它此刻的动作、表情、声音、样子是什么？
-3. **侧面描写**：旁边的人有什么反应？别人的反应说明了什么？
-4. **环境描写**：当时的光线、声音、天气、周围的东西是什么样？
-5. **场面描写**：这一瞬间整体是什么气氛？大家在做什么？
-6. **修辞与深度**：哪个地方可以打个比方？这个画面让你想到什么？
-
-使用纪律：
-
-- 低年级（1-3）只走到第 1-3 圈，用短句和动作词。
-- 高年级（4-6）走完第 1-5 圈，重点在定格和连续动词；第 6 圈做角度变化或回扣。
-- 六圈是支架，不是填空表；不要让学生逐条填。
-
+按 `references/chinese-writing-core.md` 的核心原则、六圈展开与升格规则执行。保留学生原意和可写性；只做局部示范（一句到一小段），标明“这是示范，不是替你写”，不输出整篇修改稿。
 ## start 模式（新作文）
 
 1. 先问“这个题目让你想到什么？”让学生自己说素材。可以从 `personal.interests` 里给一个具体角度（“你上次说喜欢踢足球，要不要写比赛里的一个瞬间？”），但不硬塞；学生不想写兴趣就换。
@@ -85,26 +61,13 @@ user-invocable: false
 5. 用六圈展开这个画面，一次一圈，学生说，AI 只追问和补一个更精确的词。
 6. 用一个小练习或阶段小结收尾，留一个自然的下一步；不要硬性结束。
 
-学段适配：
-
-- 1-3 年级：给主题 + 开头句 + 一个技巧提示，篇幅短；字数少，先保护愿意写。
-- 4-6 年级：给主题 + 提示 + 两三个可写方向；高年级可只给主题和要求，学生自由选材。
-
+起笔支架按 `references/chinese-task-generation.md` 的“写作题出题”学段规则提供；六圈推进范围按 `references/chinese-writing-core.md`，先保护低年级愿意写。
 ## revise 模式（改稿）
 
 1. 先确认题目与中心：“这篇你最想让读者记住哪一句/哪个画面？”
 2. 找定格：有，就守住它；没有，就先补一个，不先改语言。
-3. 指出主要问题，只挑一个主问题：
-   - 空话、套话、大话
-   - 没有具体细节
-   - 动词太弱、形容词太多
-   - 没有定格或视角混乱
-   - 假抒情（说感受但没有事件支撑）
-4. 给升格建议，必须可执行：
-   - 加精确动词（“走进” → “踮着脚尖溜进”）。
-   - 用可观察细节替换抽象（“妈妈很辛苦” → “妈妈下班第一件事是帮我热饭”）。
-   - 换角度（正面说“我很害怕” → 侧面写“我抓住书包带，不敢看巷口”）。
-   - 加回扣（结尾回扣开头或定格）。
+3. 对照 `references/chinese-writing-core.md` 的“常见写作问题”锁定一个主问题。
+4. 从该文件“升格规则 / 修改方法”选择与主问题匹配的一项，给可执行建议；学生能指出要改的原句才进入示范。
 5. 只做局部改写：示范一句，然后请学生用同样的方法改下一句。
 6. 给一个小练习：改写指定的那一句，不重写全篇。
 
@@ -116,16 +79,9 @@ user-invocable: false
 
 ## assess 模式（评改不重写）
 
-1. 按 `chinese-core` 的 `references/chinese-assessment-rubric.md` 执行，顺序固定：
-   切题 → 技巧运用 → 内容 → 结构 → 语言 → 表达深度。
-2. 技巧运用一步：非读写迁移写作跳过；读写迁移写作必填。
-3. 给档位判断，不给精确分数：一档（优秀）/ 二档（良好）/ 三档（合格）/ 四档（待改进）。
-4. 给最值得先改的 3 处，每处写清：原文 + 问题 + 改法。
-5. 给一个下一步练习目标，必须具体、可执行、能当下一轮的学习目标。
-6. 评改结果要能直接转成下一轮练习；不要只给判断。
-7. 用统一写作标签落一个主标签（`writing:` 前缀），写进本轮 `session_segment.diagnosis`：`domain: "writing"`、`label`、`evidence`（原文 + 问题）。不要只塞进 `skill_errors_observed`，也不要向学生展示标签。
-
-档位判断只写档位和理由，不写“你作文水平一般”这类评价人的话。
+1. 读取 `references/chinese-assessment-rubric.md`，按六步流程及普通作文 / 迁移作文差异评改，使用其档位与输出格式；评价作品而非学生本人。
+2. 把评改产出的下一步交给入口，作为下一轮练习候选。
+3. 按 `references/chinese-error-labels.md` 选一个写作主标签，输出到本轮 `session_segment.diagnosis`：`domain: "writing"`、`label`、`evidence`（原文 + 问题）；标签不向学生展示。
 
 ## feynman 模式
 
@@ -181,7 +137,7 @@ assess 模式改为：档位判断 → 分项分析 → 最值得改的 3 处 �
 
 - `subject` 固定 `chinese`；`source` 固定 `writing`。
 - `mode` 取 `start` / `revise` / `assess` / `feynman`；`submode` 取 `learn` / `review` / `feynman`。
-- `confirmed_skills` 写学生本轮独立做到、且达到两条独立证据（或一次讲清理由）的写作技能；`skill_errors_observed` 写本轮真实出错、能对应技能名的项。
+- `confirmed_skills` 与 `skill_errors_observed` 的技能名、独立性和确认门槛统一读取 `learn-core` 的 `references/feynman-skill-whitelist.md`；只返回本轮真实写作证据，不另设阈值。
 - `diagnosis` 必填当本轮有明确主标签；没有把握时留空，不要硬贴。
 - 不确定的字段用空数组或空字符串，不编造。
 

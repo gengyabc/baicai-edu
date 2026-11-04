@@ -24,8 +24,9 @@ user-invocable: false
 
 如果本会话尚未加载，先调用 `skill` 工具加载：
 
-1. `learn-core`（读 `references/confirm-before-accept.md`；需要时读 `references/personas.md` 的 Guided Coach）
-2. `math-core`；用它给出的 base directory 读 `references/math-student-problem-design.md`（不要写跨 skill 的相对路径）
+1. `learn-core`：读 `references/confirm-before-accept.md` 与 `references/feynman-skill-whitelist.md`；后者是所有模式确认门槛与白名单更新的唯一来源。需要时读 `references/personas.md` 的 Guided Coach。
+2. `math-core`；用它给出的 base directory 读 `references/math-student-problem-design.md`（不要写跨 skill 的相对路径）。
+3. `learn-data`：复用已有快照，产出 segment 前读 Session Segments 与 `references/profile-schema.md` 的 Session Segment，完整 schema 与写入协议以此为准。
 
 `outputs/students/<student_id>/math/memory.json` 的 `learning_memory.confirmed_skills` 决定 AI 可以犯哪些错：已确认的技能上 AI 不犯错。
 
@@ -95,29 +96,16 @@ user-invocable: false
 
 ## Output
 
-学生可见的只有出题引导、AI 的答案、判断追问和收尾那一句方法。
+学生可见：出题引导、AI 答案、判断追问、Step 4 的正确答案与实际对错揭示、一个检查方法。
 
-内部产出**一个** `session_segment`，`submode` 固定为 `student_problem`：
+按已加载的 `learn-data` schema 回传**一个** `session_segment`，只补本分支字段：
 
-```json
-{
-  "focus": "异分母分数加法",
-  "subject": "math",
-  "mode": "learn",
-  "submode": "student_problem",
-  "source": "practice",
-  "strategy_summary": "学生出题时改对了数字，但判断 AI 的 4/8 时先说对，后来自己发现分母没通",
-  "strengths": ["能自己发现分母相加的错误"],
-  "difficulties": ["第一眼容易只看分子"],
-  "next_step_candidate": "再做一次判断，先估结果大概多大",
-  "recommended_targets": ["异分母减法"],
-  "feynman_handoff_recommended": false,
-  "confirmed_skills": [],
-  "skill_errors_observed": ["异分母加法"]
-}
-```
+- `subject: math`、`submode: student_problem`、`source: practice`，`mode` 沿用调用方。
+- `strategy_summary` 记录学生出题、判断与纠正的过程，区分首次判断与支架后的发现；`strengths` / `difficulties` 只写学生证据。
+- `next_step_candidate` 写一个检查或迁移小目标；`recommended_targets` 与 `feynman_handoff_recommended` 按实际表现填写。
+- `confirmed_skills` 严格使用白名单 reference 的确认门槛；`skill_errors_observed` 只记录学生真实判断错误或未发现错误的技能，不记录 AI 故意答错。无证据为空数组。
 
-`confirmed_skills` 只记学生讲清楚、判断正确、且达到两条独立证据（或一次讲清理由）的技能；`skill_errors_observed` 记学生这次没判断出来的技能。没有证据就给空数组。
+可选的数学表现、阶段与诊断字段沿用 `math-session` 的数学字段约定；调用方追加日志，finalize 归 `learn-data`。
 
 ## Boundary
 

@@ -52,14 +52,7 @@ outputs/students/
 
 ## Initialization Defaults By Grade Band
 
-When creating a missing subject profile, choose `tone` and `learning_state.active_domain` from this table. Do **not** copy the example values blindly; the JSON examples below show an upper-primary student.
-
-| Subject | Grade band | `tone` | default `active_domain` |
-|---|---|---|---|
-| math | `lower_primary` (1-3) | `supportive_concrete` | `addition_subtraction_word_problems` |
-| math | `upper_primary` (4-6) | `concise_guiding` | `fractions` |
-| chinese | `lower_primary` (1-3) | `supportive_concrete` | `writing` |
-| chinese | `upper_primary` (4-6) | `concise_guiding` | `reading` |
+When creating a missing subject profile, load `learn-core` and read its `references/grade-band-defaults.md` for grade mapping, `tone`, `learning_state.active_domain`, and initial levels. That file owns the defaults. The JSON examples below illustrate the schema, not initialization values.
 
 `profile.preferences` always starts with every flag `false`; `start` sets exactly the one preference the student chose to `true`.
 
@@ -234,7 +227,7 @@ Memory is not write-only. These fields must be read at snapshot time and used:
 }
 ```
 
-**Removal Rule**: When `error_count` reaches 2 for a skill, remove it from `confirmed_skills` and delete its `skill_errors` entry.
+**Evidence And Revocation**: Load `learn-core` and read `references/feynman-skill-whitelist.md` before updating these fields; the schema does not define another threshold.
 
 ## Current Learning State
 
@@ -255,7 +248,7 @@ Memory is not write-only. These fields must be read at snapshot time and used:
 }
 ```
 
-- `pending_*` fields are consumed at the next snapshot: the entry reads the focus, continues there, and then clears the flag.
+- `pending_*` fields request a focus and an action. Resume the corresponding mode/transfer through `references/session-lifecycle.md`, persist that action in log context, and clear only the consumed pair after handoff.
 - `last_finalized_session_id` is the idempotency marker. Finalize refuses to run twice for the same id.
 
 ## Session Log
@@ -269,6 +262,14 @@ Memory is not write-only. These fields must be read at snapshot time and used:
   "entry_point": "learn",
   "started_at": "2026-10-04T12:00:00Z",
   "updated_at": "2026-10-04T12:18:00Z",
+  "context": {
+    "focus": "异分母分数加法",
+    "mode": "learn",
+    "activity": "teaching",
+    "target_context": { "type": "topic", "topic": "异分母分数加法", "source": "manual_topic", "files": [], "intent": null },
+    "materials": {},
+    "turn_state": {}
+  },
   "segments": [
     {
       "focus": "异分母分数加法",
@@ -288,9 +289,12 @@ Memory is not write-only. These fields must be read at snapshot time and used:
 }
 ```
 
-- `/learn` and `/feynman` append one segment after each teaching turn and write the whole log.
-- Finalize reads the log, writes the four files, then clears `segments` and sets `last_finalized_session_id`.
-- If a log with segments exists at `/learn` start, resume it instead of starting a new session.
+- `context` is optional for compatibility with existing logs. New/resumed sessions persist it after target resolution, mode/activity changes, and each turn. `mode` here is the interaction mode (`learn` / `feynman`), distinct from a subject segment's start/revise/assess mode.
+- `activity`: `teaching` / `transfer`; transfer uses `turn_state` for source domain, extracted techniques, current phase, round count, and any pending question. Do not restart a persisted transfer phase on resume.
+- `target_context` shape and file-processing flags/references are defined by `references/target-parsing.md`. `materials` stores only necessary pasted text/draft/answer when no durable file exists; prefer workspace references for existing files. Never store crisis or private experience details here.
+- Legacy logs without context restore their last segment and ask for missing material/intent rather than infer it; existing error_history extracted references may be read, without reprocessing raw.
+- `finalize_plan` is optional recovery metadata, defined only by `references/finalize-session.md`. A pending plan must finish before new teaching, profile edits, or error-file writes for that student/subject.
+- Both entries execute `references/session-lifecycle.md` to append the single subject segment and update context; they do not implement separate log loops. Finalize commits the four files before clearing segments/context/plan.
 
 ## Storage Boundaries
 
@@ -347,12 +351,20 @@ A segment is produced by a teaching skill and appended by `/learn` or `/feynman`
 
 Required fields: `focus`, `subject`, `mode`, `submode`, `source`, `strategy_summary`, `strengths`, `difficulties`, `next_step_candidate`, `recommended_targets`.
 
+Enums:
+
+- `subject`: `math` / `chinese`.
+- `mode`: `learn` / `feynman` / `diagnose` / `start` / `revise` / `assess`.
+- `submode`: `learn` / `practice` / `review` / `feynman` / `student_problem` / `read_write_transfer` / `generate_tasks` / `experience_bridging` (legacy; bridging now merges into the reading segment).
+- `source`: `profile` / `manual_topic` / `error_analysis` / `diagnosis` / `practice` / `reading` / `writing` / `save` / `focus`.
+- `error_history.source` is separate: `file_analysis` / `diagnosis`.
+
 Optional fields:
 
 - `overall_performance_code`: `needs_support`, `basic_independent`, `stable`, `flexible`.
 - `overall_performance_text`: free text.
-- `confirmed_skills`: skill names (strings); finalize converts to objects.
-- `skill_errors_observed`: skill names (strings).
+- `confirmed_skills`: skill names (strings); finalize converts to objects. Before recording confirmations or errors, load `learn-core` and read `references/feynman-skill-whitelist.md`; that file owns evidence and revocation rules.
+- `skill_errors_observed`: actual student error skill names (strings), not AI's intentional mistakes.
 - `feynman_handoff_recommended`: boolean; means hand off to `/feynman`.
 - `diagnosis`: one main label plus evidence. Chinese labels use the `reading:` / `writing:` prefix from `chinese-core/references/chinese-error-labels.md`. Math labels are free-form math error types.
 - `current_levels`: a partial `profile.current_levels` update; finalize nests it under `profile`.
@@ -442,9 +454,9 @@ Keep the newest 5 entries, newest at index 0. Full rules: `references/session-re
 
 When selecting the next target from profile state, prefer:
 
-1. `session_log.json` focus (unfinished session)
-2. `session_history[0].next_step`
-3. `pending_feynman_focus` / `pending_transfer_focus`
+1. Explicit user target; unfinished session focus is preserved when no new target is given.
+2. `pending_feynman_focus` / `pending_transfer_focus` only when their corresponding boolean is true.
+3. `session_history[0].next_step`
 4. `priority_targets`
 5. `developing_topics`
 6. `learning_memory.recommended_next_moves`

@@ -52,20 +52,13 @@ user-invocable: false
 - 兴趣、偏好、易/难和经历只影响语气、例子、阅读角度、写作题目、桥梁和支架；具体字段与边界见 `learn-core/references/prestart-settings-interpretation.md`。
 - 改写、代写、学生数据展示的安全边界。
 
-## Non-Negotiable（语文专属）
+## 执行边界
 
-1. 阅读先证据、后结论；没有原文依据的结论不成立。
-2. 赏析默认双层：先说本义，再说语境义与表达效果；不接受“生动形象”这类单层答案。
-3. 作用题必须绑定本文对象、情境、主题；不接受“承上启下”空话。
-4. 区分文本事实与推断；作者意图必须可回溯。
-5. 写作先具体、后抽象；先定格、再展开；优先细节密度，不堆辞藻。
-6. 删除空话、套话、大话、假抒情；升格靠意义、视角、回扣，不靠形容词。
-7. 不替学生写完整作文或完整答案；只给局部改写、示范句和可执行建议。
-8. 每次反馈只抓一个主问题，最多给 3 条建议，并给一个足够小的下一步。
-9. 诊断必须落统一标签：`reading:` 或 `writing:` 前缀，每条只保留一个主标签。
-10. 出题必须立足原文、匹配年级段，并提供参考答案、命题意图、判分标准。
-11. 语文必须使用 `personal.interests`：阅读角度、写作题目、迁移主题和经验桥接优先从兴趣里找一个具体细节；没有合适兴趣时用年级段默认主题，不要硬套。
-12. 诊断标签写进 `session_segment.diagnosis`（`label` + `evidence`），由 finalize 写成 `error_history` 诊断条目；不要只把标签塞进 `skill_errors_observed`。
+- 阅读证据、方法与纠偏以 `references/chinese-reading-core.md` 为准；六圈、升格与迁移技巧标准以 `references/chinese-writing-core.md` 为准。
+- 出题的原文依据、学段、答案和判分检查以 `references/chinese-task-generation.md` 为准；作文档位与分项以 `references/chinese-assessment-rubric.md` 为准。
+- 反馈聚焦与建议数量以 `references/chinese-feedback-core.md` 为准；标签定义与诊断落库以 `references/chinese-error-labels.md` 为准。
+- 阅读角度、写作题目、迁移主题与桥接优先从 `personal.interests` 取合适具体细节；不合适则用年级默认主题，不硬套。
+- 保留学生自主表达：只给局部示范，不代写完整作文或完整作答；出题配套参考答案按出题标准提供，不与教学中的代答混淆。
 
 ## Ownership
 

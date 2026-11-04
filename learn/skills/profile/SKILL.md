@@ -51,7 +51,9 @@ description: 查看或修改学生档案：用学生能听懂的话总结姓名�
 
 ### 4. 修改
 
-学生要改基础信息时：
+学生要改基础信息时，先检查当前科目日志是否有 `finalize_plan`；有则按 `learn-data` 的 finalize 恢复保存，完成后才编辑，避免与半提交文件交错。
+
+修改字段：
 
 - 姓名、年级、`personal.interests`、最开心/最难过的事 → 改共享 `profile.json`。
 - 学习偏好、当前水平、易/难、优先目标 → 改科目 `profile.json`。

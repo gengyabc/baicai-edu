@@ -41,63 +41,34 @@ user-invocable: false
 
 ## Mode A：策略诊断
 
-不读错题文件，只根据本轮对话和已有证据判断。观察：
-
-- 学生是否直接摆出数量、画图、用手指；
-- 是否从一个数接着数、倒着数；
-- 是否用已知事实或拆数（凑十、凑整、分解）；
-- 是否用关系重新表述问题（“这是几倍”“差多少”）；
-- 分数推理停在等分、重复分割，还是已经到商的意义；
-- 学生是否听懂了引导。
-
-引导反复无响应本身就是诊断信号：目标概念可能高于当前阶段，记为困难，并把阶段估计下调。
+不读错题文件，根据本轮对话和已有证据执行 `math-core` 的 `references/strategy-diagnosis-rules.md`：逐项检查 What To Observe，处理引导理解信号，再形成 Conservative Conclusion。观察信号与阶段估计原则只在该 reference 维护。
 
 ## Mode B：错题分流
 
 1. 先问学生自己的判断，再处理第一道新题；一次只分析一道。
 2. 把文件读取、改名、`extracted/` 分析写入、`error_history` / `priority_targets` 更新整体交给 `learn-errors`；本 skill 不读 `raw/` 原图、不改名、不写 `error_history`。
-3. 拿回 `learn-errors` 的结论后，判断这次错误属于哪一类：
-   - `calculation`：进位/借位遗漏、口诀错误、符号错误、单位错误；
-   - `concept`：概念混淆、规则误用、分数意义错误；
-   - `process`：跳步、漏条件、审题偏差、表达不完整；
-   - `estimation`：结果数量级明显不合理但没察觉。
-4. 学生自述与证据不一致时，以证据为准，用一句话说明差异，不要否定学生本人。
-5. 判断这是偶发失误还是稳定模式：看 `error_history` 里同类错误是否重复、`confirmed_skills` 是否已包含该技能。
+3. 拿回 `learn-errors` 的结论后，按 `references/strategy-diagnosis-rules.md` 的 Error Interpretation 分类，核对学生自述，区分偶发失误与稳定模式；该路径相对于 `math-core` 的 base directory。
+4. 按同一 reference 的 Conservative Conclusion 形成下一步：需要巩固时交给 `math-practice`；需要继续教学时把诊断交回 `math-session`。
 
 ## Output
 
-内部诊断结论，至少包含：
+内部回传诊断结论（不是另一个完整教学 segment）：
 
-```json
-{
-  "current_levels": {
-    "arithmetic_strategy_stage": "counting_strategy",
-    "fraction_strategy_stage": "equal_sharing_no_coordination"
-  },
-  "strategy_summary": "学生靠逐个摆小棒算加法，还没有用凑十",
-  "strengths": ["能主动画图表示数量"],
-  "difficulties": ["进位时容易漏加 1", "听不懂“先凑十”的提示"],
-  "next_target": "20 以内进位加法，先用凑十的实物操作",
-  "diagnosis": {
-    "domain": "addition_subtraction",
-    "label": "calculation:carry_omission",
-    "evidence": "9+4 写成 12，进位 1 漏加。"
-  },
-  "confidence": "low"
-}
-```
+| 字段 | 契约 |
+|---|---|
+| `current_levels` | 算术/分数策略阶段的部分更新，只包含本次有证据的字段 |
+| `strategy_summary` | 简短描述学生实际推理方式 |
+| `strengths` / `difficulties` | 证据支持的优势与困难列表，包括引导理解情况 |
+| `next_target` | 下一步具体小目标 |
+| `diagnosis` | 有错误证据时填 `domain`、具体数学 `label`、`evidence` |
+| `confidence` | 按 canonical reference 给出置信度 |
 
-- `current_levels` 是 `profile.current_levels` 的部分更新；finalize 会嵌套到 `profile` 下，不要写成顶层字段。
-- `diagnosis` 会变成一条 `error_history` 诊断条目；`label` 用具体数学错误类型，`evidence` 写证据。
-- `next_target` 取保守的一步：宁可小一点、具体一点，也不要直接跳到下一个单元。
-- `confidence` 用 `low` / `medium` / `high`；证据不足时写 `low`，并按更低阶段处理。
-- 这些标签只留在内部，学生可见的只有一句核心问题和一句下一步。
+字段判定规则使用已加载的 `references/strategy-diagnosis-rules.md`。调用方将结论并入本轮唯一 `session_segment`：`next_target` 映射为 `next_step_candidate`，`confidence` 是诊断结论元信息；完整 segment schema 与 finalize 映射归 `learn-data`。`current_levels` 最终嵌入 `profile.current_levels`，`diagnosis` 最终进入 `error_history`；本 skill 不自行写入。
+
+学生可见的只有一句核心问题和一句下一步。
 
 ## Constraints
 
-- 依据推理，不只看速度和对错。
-- 不确定时选更保守的阶段。
-- 画图、手势、学生自己的说法都算证据。
 - 不重复分析 `error_history` 里已记录的文件；重复上传合并为一条。
 - 不把整道题原文写进档案，原文留在 `raw/` 与 `extracted/`。
 - `raw/` 只读；任何情况下不改原始错题内容。

@@ -44,62 +44,28 @@ user-invocable: false
 | 诊断回合叠加追问语气（Socratic Tutor） | `learn-core` | `references/personas.md` 的 Socratic Tutor 部分 |
 | 学生给出答案或解释前 | `learn-core` | `references/confirm-before-accept.md` |
 | 学生连续不回应引导 | `learn-core` | `references/guidance-non-response-handling.md` |
-| 费曼模式 | `learn-core` | `references/feynman-mode.md` + `references/feynman-skill-whitelist.md` |
+| 输出技能追踪字段前（所有模式） | `learn-core` | `references/feynman-skill-whitelist.md` |
+| 费曼模式 | `learn-core` | `references/feynman-mode.md` |
 | 情感、意境、人物处境进不去 | `experience-gap-bridging` | 按其流程执行 |
 | 使用兴趣、偏好、易/难 | `learn-core` | `references/prestart-settings-interpretation.md` |
 
 `chinese-core` 的加载结果会给出 base directory；参考文件按 `<base_directory>/references/<文件名>.md` 读取。
 
-## 六个深读方法（薛法根文本解读法）
-
-一次只选一个方法，不要六个一起上。用学生能听懂的话说，不先报方法名。
-
-1. **提领法**：找“文眼”。问“如果全文只能留一个词或一句话，你留哪句？为什么？”
-2. **还原法**：把文中形象和生活真实比。问“生活里通常是这样吗？作者写的哪里不一样？”
-3. **原型法**：看故事骨架。问“他想要什么？卡在哪？怎么试的？最后怎样？”
-4. **见人法**：透过人、事、景、物看背后的“人”。问“写这些的时候，作者是个什么样的人？他心里在想什么？”
-5. **降维法**：拿作者的写法和平常写法比。问“如果换我来写，我会怎么写？作者这样写高明在哪？”
-6. **要素法**：找统编教材语文要素的落点。问“这一段里，哪个地方正好在练我们这个单元的语文要素？”
-
-方法选择：
-
-- 抓不住重点 → 提领法。
-- 只觉得“写了什么”说不出“为什么这样写” → 还原法或降维法。
-- 概括或结构题失分 → 原型法或要素法。
-- 情感、人物、意境题失分 → 见人法，必要时接 `experience-gap-bridging`。
-
 ## learn 模式（文章，无答案）
 
 1. 先问“你第一遍读，最先注意到什么？”让学生先开口，不先讲。
-2. 选一个方法带学生拆文本；一次只拆一段或一句。可以从 `personal.interests` 里选一个与文本情感/情境相近的具体经验来打开话题，但马上回到原文，不把阅读变成兴趣聊天。
+2. 按已读 `references/chinese-reading-core.md` 的“薛法根文本解读法”选择一个方法，一次只拆一段或一句。可从 `personal.interests` 选相近经验开场，随后回到原文。
 3. 让学生自己指认关键证据：“你从哪一句看出来的？”没有原文就回到原文。
 4. 讨论作者意图与深层含义，要求结论能回溯到文本。
-5. 情感或意境是核心难点、学生又缺少对应生活经验时：
-   - 调用 `skill` 工具加载 `experience-gap-bridging`。
-   - 用可进入的替代经验搭桥，再立刻回到原文证据。
-   - 先建立感受，最后才补术语和写法名称。
-6. 提炼写法，按 `chinese-core` 的 `references/chinese-writing-core.md` 的“行文技巧提取与读写迁移”执行：
-   - 每个技巧给名称 + 原文证据 + 效果；学生年级决定数量：低年级（1-3）1-2 个，高年级（4-6）2-3 个。
-   - 技巧必须是原文里真实存在的，不凭空引入。
+5. 情感或意境是核心难点、学生又缺少对应生活经验时，加载 `experience-gap-bridging` 作为内部子流程；接回桥接结果后继续本轮阅读。只把必要的文本理解证据并入本轮段，不另造桥接段；失败则换方法，危机则遵循其安全边界。
+6. 按 `references/chinese-writing-core.md` 的“行文技巧提取与读写迁移”提炼写法；复用已有提取结果，完成该处的原文证据、效果、迁移提示与学段检查。
 7. 用一句学生能复述的方法句收束，并留一个自然的下一步（练一道题、做读写迁移、讲给 AI 听），不要硬性结束。
 
 ## diagnose 模式（有答案要评）
 
 1. 先判断题型：概括、赏析、作用、主旨/意图、开放探究、填空、细节理解。
 2. 找到学生答案的原句，与原文证据逐点对照；先问“你自己觉得哪一句最没底？”再给判断。
-3. 从统一阅读标签中只选一个主标签：
-
-| 标签 | 什么时候用 |
-|---|---|
-| `reading:概括偏差` | 信息不全或太啰嗦，没击中要点 |
-| `reading:证据不足` | 观点没有原文支撑，或支撑不明确 |
-| `reading:单层赏析` | 只说字面本义，没有语境义和表达效果 |
-| `reading:意图误判` | 作者意图判反或偏离 |
-| `reading:空泛模板` | 套“生动形象”“承上启下”，不结合本文 |
-| `reading:结构失察` | 没看出线索、顺序、段落作用 |
-| `reading:审题偏差` | 没按题目要求答，答非所问 |
-| `reading:细节功能忽视` | 漏掉指代词、标题多重作用、标点与关联词逻辑 |
-
+3. 读取 `references/chinese-error-labels.md` 的“阅读标签”，按定义选择一个主标签；把常见问题的纠偏方式交给 `references/chinese-reading-core.md`，不凭模糊印象归类。
 4. 用具体文本证据说明“分丢在哪”，不说“理解不深”这类老师话。
 5. 给一个修正版：可以示范一句，但保留学生的思路和用词，不整段代写。
 6. 给一个小练习：同一题型、换一句话或换一段，马上能做。
@@ -126,18 +92,6 @@ user-invocable: false
 5. 参考修正版（示范句，不是整篇代写）
 6. 方法提炼（1 句可复用的话）
 7. 一个小练习
-
-## Common Pitfalls
-
-按 `chinese-core` 的 `references/chinese-reading-core.md` 处理：
-
-- 单层赏析陷阱：只答本义。
-- 空泛模板陷阱：只给公式。
-- 概括偏差陷阱：太细或太全。
-- 作者意图误判陷阱：脱离文本谈感受。
-- 细节功能忽视陷阱：跳过指代词、标题、标点。
-- 死记硬背误区：只多读多写，没有工具。
-- 诊断缺失陷阱：不落标签，同类问题反复出现。
 
 ## Session Segment
 
@@ -170,7 +124,7 @@ user-invocable: false
 
 - `subject` 固定 `chinese`；`source` 固定 `reading`。
 - `mode` 取 `learn` / `diagnose` / `feynman`；`submode` 取 `learn` / `review` / `feynman`。
-- `confirmed_skills` 只写本轮学生真的独立做到、且达到两条独立证据（或一次讲清理由）的阅读技能；`skill_errors_observed` 只写本轮真实出错、且能对应技能名的项。
+- `confirmed_skills` 与 `skill_errors_observed` 的可追踪技能名、独立性和确认门槛统一读取 `learn-core` 的 `references/feynman-skill-whitelist.md`；只返回本轮可核实的阅读证据，不在这里另设阈值。
 - `diagnosis` 必填当本轮有明确主标签；没有把握时留空，不要硬贴标签。
 - 不确定的字段用空数组或空字符串，不编造。
 

@@ -45,7 +45,7 @@ outputs/students/
 
 ## Read Snapshot
 
-每轮开始按顺序读取：
+会话开始、上下文恢复后快照缺失、或切换学生/科目时，由入口按顺序读取一次；学科复用入口传入的有效快照：
 
 1. `outputs/students/session.json`
 2. `outputs/students/<student_id>/profile.json`（共享档案）
@@ -65,7 +65,7 @@ outputs/students/
 
 读取后：
 
-- 在内存中保留快照；只有本轮写回过文件或切换学生/科目时才重读。
+- 在内存中保留快照。已成功写回的对象同步更新缓存；不确定缓存是否有效时仅重读受影响文件。普通对话轮次和模式切换不重新读取整份快照。
 - 把共享档案的 `personal.interests`、`personal.most_exciting_event` 和科目档案的 `profile.preferences`、`profile.self_report.easy_topics/hard_topics` 作为个性化输入交给教学 skill。
 - 读 `memory.json` 的字段并按 `references/profile-schema.md` 的“How Memory Is Consumed”使用：`preferred_scaffolds`、`motivation_signals`、`recent_error_patterns`、`recommended_next_moves`、`feynman_readiness`。不要只写不读。
 
@@ -119,12 +119,7 @@ outputs/students/
 5. 用 `bash` 创建目录：`mkdir -p outputs/students/<id>/<subject>/raw outputs/students/<id>/<subject>/extracted outputs/students/<id>/<subject>/backups/raw`。
 6. 告诉学生建档完成，下一步用 `/learn`。
 
-年级段：
-
-- 1-3 年级 → `lower_primary`
-- 4-6 年级 → `upper_primary`
-
-默认领域、语气、策略阶段以 `learn-core/references/grade-band-defaults.md` 为准。
+年级段、默认领域、语气、策略阶段统一读取 `learn-core` 的 `references/grade-band-defaults.md`。
 
 ## Write Protocol
 
@@ -144,85 +139,29 @@ DSH 的 `write` 要求先读目标文件。每次写入遵循：
 合并规则：
 
 - **共享** `profile.json`：保留未提及字段；不改 `student_id`、`created_at`。
-- **科目** `profile.json`：保留未提及字段；`session_history` 前插最新一条，截断到 5 条；`error_history` 前插最新记录，截断到 20 条。
+- **科目** `profile.json`：保留未提及字段；`session_history` / `error_history` 前插新记录，按 `references/session-retention.md` 截断。
 - `profile.current_levels`：嵌套在 `profile` 下，不要写成顶层 `current_levels`。
 - `memory.json`：`profile_memory` 与 `learning_memory` 分别合并；`confirmed_skills` / `skill_errors` 按 `skill` 去重；`updated_at` 更新。
 - `current_state.json`：按 patch 字段覆盖；不保留旧版斜杠命令字段。
-- `milestones.json`：`milestones` 数组合并重复 focus 后按 `importance`、再按时间排序，最多 20 条。
+- `milestones.json`：`milestones` 数组合并重复 focus，排序与上限按 `references/session-retention.md`。
 
-写入并发假设：单学生、单会话、本地文件；不做跨进程锁。不要并发写同一个文件。
+写入并发假设：单学生、单会话、本地文件；不做跨进程锁。不要并发写同一个文件。若日志有待完成的 `finalize_plan`，所有新的档案编辑或错题写回必须先恢复该保存，避免覆盖半提交文件；处理协议见 `references/finalize-session.md`。
 
 ## Finalize
 
-会话结束（显式结束、目标达成、AI 判断、中途换主题）时执行。详细字段与示例见 `references/finalize-session.md`。
+触发结束或手动保存时，**先读取并完整执行** `references/finalize-session.md`。它是幂等、summary、五个 patch、写回顺序及失败处理的唯一流程来源；保留与压缩策略读取 `references/session-retention.md`。
 
-1. **幂等检查**：读 `current_state.json` 的 `last_finalized_session_id`；与本次 `session_id` 相同则返回 `already_finalized: true`，不写文件，告诉学生“这次已经保存过了”。
-2. 汇总 `session_segments`（优先读 `session_log.json`）；为空则告诉学生没有可保存的内容，停止。
-3. 生成 `final_summary`：`session_id`、`date`、`entry_point`、`focus`、`overall_performance_code/text`、`strategy_summary`、`strengths`、`difficulties`、`next_step`、`recommended_targets`、`status`；中断时加 `interrupted_at`、`last_topic`。
-4. 生成五个 patch：
-   - `subject_profile_patch`：`updated_at`、`profile.current_levels`（如有）、`learning_state.active_domain`、`developing_topics`、`priority_targets`、`session_history` 前插。
-   - `error_history_patch`：把每个 segment 的 `diagnosis` 转成 `error_history` 诊断条目（`source: "diagnosis"`）。
-   - `memory_patch`：`recent_focus`、`recent_modes`、`recent_error_patterns`、`recommended_next_moves`、`feynman_readiness`、`confirmed_skills`、`skill_errors`。
-   - `current_state_patch`：`active_focus`、`source`、`submode`、`entry_point`、`last_finalized_session_id`，清空四个 pending 字段。
-   - `milestones_patch`：把被挤出的旧 session 信息压缩进里程碑，带 `importance`。
-5. 读完整文件 → 合并 → 写回四个科目文件。
-6. 不写共享 `profile.json` 的姓名、年级、兴趣、经历字段；不生成 `shared_profile_patch`。
-7. 保留 `session_history` 最新 5 条、`error_history` 最新 20 条、`milestones` 最多 20 条。
-8. 清空 `session_log.json` 的 `segments`，写入新的 `updated_at`。
-9. 给学生一句简短总结，并说明已保存。
-
-中途换主题：
-
-- 先以 `status: "interrupted"`、`interrupted_at`、`last_topic` finalize 当前段。
-- 生成新的 `session_id` 和新的 `session_log.json`，再开始新主题。
-- 不要丢掉旧段的 `strengths` / `difficulties`。
+学习入口在开始/恢复、模式切换与换主题时读取 `references/session-lifecycle.md`；普通学习给下一步时读取 `references/next-step.md`。生命周期负责调度，finalize 负责持久化，不各自维护一份保存算法。
 
 ## Session Segments
 
-会话进行中，每轮把 segment 追加到内存和 `session_log.json`；profile/memory 只在 finalize 写。每个 segment 至少包含：
+学科每个教学回合产出一个 segment，由共享生命周期追加到日志。内部子流程回传结果供外层合并，不另记一轮。
 
-```json
-{
-  "focus": "异分母分数加法",
-  "subject": "math",
-  "mode": "learn",
-  "submode": "practice",
-  "source": "profile",
-  "strategy_summary": "学生用画图分蛋糕理解通分",
-  "strengths": ["能主动画图表示"],
-  "difficulties": ["通分时偶尔分母乘错"],
-  "next_step_candidate": "继续练异分母加法",
-  "recommended_targets": ["异分母减法"],
-  "feynman_handoff_recommended": true,
-  "confirmed_skills": ["通分"],
-  "skill_errors_observed": ["异分母加法"],
-  "diagnosis": {
-    "domain": "fractions",
-    "label": "fractions:denominator_confusion",
-    "evidence": "把分子分母分别相加。"
-  },
-  "current_levels": {
-    "fraction_strategy_stage": "equal_sharing_additive"
-  }
-}
-```
-
-- `mode` 取 `learn` / `feynman` / `diagnose` / `start` / `revise` / `assess`。
-- `submode` 取 `learn` / `practice` / `review` / `feynman` / `student_problem` / `read_write_transfer` / `generate_tasks` / `experience_bridging`。
-- `source` 取 `profile` / `manual_topic` / `error_analysis` / `diagnosis` / `practice` / `reading` / `writing` / `save` / `focus`。
-- `error_history.source` 另取 `file_analysis` / `diagnosis`。
-- `confirmed_skills` / `skill_errors_observed` 写技能名字符串；finalize 转成 memory 对象。
-- `diagnosis` 是可选字段；有它时 finalize 写一条 `error_history` 诊断条目。
-- `current_levels` 是可选的部分更新；finalize 嵌套到 `profile.current_levels`。
+**产出或消费 segment 前读取** `references/profile-schema.md` 的 Session Segment：它是完整结构、必填/可选字段与枚举的唯一来源。学科只定义专属字段或取值。未知观察为空而不编造；确认与错误记录另按 `learn-core` 的 `references/feynman-skill-whitelist.md` 判断。
 
 ## Retention
 
-- `session_history`：最新 5 条，最新在前。
-- `error_history`：最新 20 条。
-- `milestones`：最多 20 条，按 `importance` 再按时间。
-- 旧会话不要原样保留；合并重复 focus，把稳定进步、阶段变化、主题掌握提升写入 milestones。
-
-详细规则见 `references/session-retention.md`。
+写入历史或里程碑前读取 `references/session-retention.md`；该文件统一定义保留上限、排序和压缩规则。
 
 ## Privacy
 
@@ -236,6 +175,9 @@ DSH 的 `write` 要求先读目标文件。每次写入遵循：
 
 本 skill 的所有 `references/...` 路径都相对于加载结果给出的 base directory。
 
-- `references/profile-schema.md`：完整 schema、默认值、模板、memory 消费方式。
+- `references/session-lifecycle.md`：学习入口共用的恢复、路由、模式切换、记录与结束流程。
+- `references/next-step.md`：普通学习的下一步与菜单选择。
+- `references/target-parsing.md`：普通学习、费曼和恢复共用的目标分类与已处理文件交接。
+- `references/profile-schema.md`：完整 schema、模板、memory 消费方式；年级默认值归 `learn-core`。
 - `references/finalize-session.md`：finalize 字段、示例、幂等、保留策略。
 - `references/session-retention.md`：会话与里程碑压缩规则。

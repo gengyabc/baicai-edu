@@ -44,6 +44,7 @@ user-invocable: false
 | 学生给出想法、选材、改法前 | `learn-core` | `references/confirm-before-accept.md` |
 | 默认语气 | `learn-core` | `references/personas.md` |
 | 写作中卡住 | `learn-core` | `references/guidance-non-response-handling.md` |
+| 输出技能追踪字段前 | `learn-core` | `references/feynman-skill-whitelist.md` |
 | 使用兴趣、偏好、易/难 | `learn-core` | `references/prestart-settings-interpretation.md` |
 
 `chinese-core` 的加载结果会给出 base directory；参考文件按 `<base_directory>/references/<文件名>.md` 读取。
@@ -54,23 +55,13 @@ user-invocable: false
 
 按 `chinese-core` 的 `references/chinese-writing-core.md` 的“行文技巧提取与读写迁移”执行：
 
-- 每个技巧四件套：**名称**（学生能懂，如“用动作写心情”）+ **原文证据**（引用原句）+ **效果**（这样写好在哪里）+ **迁移提示**（学生写的时候怎么用）。
-- 数量按年级：1-3 年级 1-2 个，4-6 年级 2-3 个。
-- 技巧必须真实存在于原文，不可凭空引入，不可只给修辞标签。
-- 用学生的话讲，讲完请学生用自己的话说一遍，确认后再进入第 2 步。
-- 学生说不清时，带他回到原句，指着那个词读一遍，不追加术语。
+复用阅读已提取的技巧，并按该处标准校验后补缺，不再重新提取一遍。请学生用自己的话说出技巧如何起作用，确认后进入第 2 步；说不清则回原句指词朗读，不追加术语。
 
 ### 第 2 步：生成写作任务
 
 按 `chinese-core` 的 `references/chinese-task-generation.md` 的“基于行文技巧的写作题出题”执行：
 
-- 主题必须与阅读材料不同，不能换个标题照搬。
-- 明确提示用哪个技巧，但不写成填空指令。
-- 主题优先从 `personal.interests` 里选一个与阅读材料不同的具体情境；没有合适兴趣时用年级段默认主题。
-- 学段递进：
-  - 1-3 年级：主题 + 开头句 + 技巧提示。
-  - 4-6 年级：主题 + 技巧提示 + 两三个可写方向；高年级可只给主题与要求，学生自由选材和运用。
-- 题目要留出使用技巧的空间；学生一看就知道自己能写什么。
+优先从 `personal.interests` 选择具体情境，没有合适兴趣则用年级默认主题。按该处不同主题、技巧空间与学段支架标准生成任务，通过其检查后进入陪写。
 
 ### 第 3 步：陪写
 
@@ -83,16 +74,7 @@ user-invocable: false
 
 ### 第 4 步：评改
 
-按 `chinese-core` 的 `references/chinese-assessment-rubric.md` 执行完整六步：
-
-切题 → 技巧运用 → 内容 → 结构 → 语言 → 深度。
-
-- **技巧运用必查**，这是迁移写作和普通作文最大的区别：
-  - 有没有用？没用就是三档以下。
-  - 用得自然还是生硬？生硬套用要指出“像贴上去的”。
-  - 效果达到了吗？“用动作写心情”有没有真的让读者感到那个心情？
-- 输出：档位判断（一/二/三/四档）+ 分项分析 + 最值得改的 3 处（原文 + 问题 + 改法）+ 下一步练习目标。
-- 给一个 `technique_application_quality` 的短判断，一句话说清自然还是生硬。
+按 `references/chinese-assessment-rubric.md` 的六步与档位评改，采用其迁移分支，**技巧运用必查**。输出遵循该量规格式，并形成一句 `technique_application_quality`；低年级使用该量规的简化分支，不铺开长评。
 
 ### 第 5 步：最多两轮
 
@@ -101,19 +83,11 @@ user-invocable: false
 - 第 2 轮结束后，无论学生还想不想继续，都收束并把控制权交回入口做 finalize。
 - 收束时给一句阶段总结 + 一个可带走的下一步，不用硬停止语。
 
-## 低年级简化流程（1-3 年级）
-
-- 阅读材料 50-100 字即可。
-- 只提 1 个非常直观的技巧（用动作写心情、写颜色形状、用声音词）。
-- 写作任务给主题 + 开头句。
-- 评改从轻：只看“有没有试着用” + 一处具体可改，不铺开六步长评。
-- 不要求结构完整，先保护愿意写的劲头。
-
 ## Expected Output Shape
 
 1. 提炼的技巧（名称 + 原文证据 + 效果 + 怎么用）
 2. 写作任务（题目 + 提示 + 可写方向，按年级给）
-3. 写后评改：档位 → 分项（技巧运用必填）→ 最值得改的 3 处 → 下一步
+3. 写后评改：按量规输出（技巧运用必填）；低年级简化分支优先
 4. 一句阶段总结
 
 ## Session Segment
@@ -150,7 +124,7 @@ user-invocable: false
 - `subject` 固定 `chinese`；`mode` 固定 `learn`；`submode` 固定 `read_write_transfer`；`source` 固定 `writing`。
 - 额外必填：`techniques_extracted`（本轮真正提取的技巧名）、`technique_application_quality`（一句话，自然/半自然/生硬/未使用）。
 - 第 2 轮仍未用上技巧时，在 `diagnosis` 里保留对应标签，`next_step_candidate` 指向同一个技巧，不要换目标掩盖问题。
-- `confirmed_skills` 只在学生独立、稳定用出技巧时写，并满足两条独立证据（或一次讲清理由）。
+- `confirmed_skills` 与 `skill_errors_observed` 的技能名、独立性与确认门槛读取 `learn-core` 的 `references/feynman-skill-whitelist.md`；只记录本轮可验证的技巧应用，不另设阈值。
 
 ## End-State Rule
 
