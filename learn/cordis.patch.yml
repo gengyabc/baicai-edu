@@ -1,0 +1,11 @@
+# Shared learning skills for dsh-edu.
+#
+# Roots are resolved from the installed package location (baseUrl = the profile
+# dir), so link:, file:, git and registry installs all behave the same.
+- insert:
+    - id: edu-learn-skills
+      name: '@deepseek-ai/dsh-skill-filesystem'
+      config:
+        providerName: edu-learn
+        includeDefaultRoots: false
+        bundledSkillDir: !!js process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('dsh-edu-learn/package.json')), 'skills')

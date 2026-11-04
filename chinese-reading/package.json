@@ -1,0 +1,18 @@
+{
+  "name": "dsh-edu-chinese-reading",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Chinese language teaching skills for dsh-edu: reading, writing, read-write transfer, task generation, assessment, and experience-gap bridging.",
+  "files": [
+    "cordis.patch.yml",
+    "skills",
+    "README.md"
+  ],
+  "dsh": {
+    "manifestVersion": 1,
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

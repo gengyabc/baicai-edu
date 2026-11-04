@@ -1,0 +1,11 @@
+# Elementary math teaching skills for dsh-edu.
+#
+# Roots are resolved from the installed package location (baseUrl = the profile
+# dir), so link:, file:, git and registry installs all behave the same.
+- insert:
+    - id: edu-math-low-skills
+      name: '@deepseek-ai/dsh-skill-filesystem'
+      config:
+        providerName: edu-math-low
+        includeDefaultRoots: false
+        bundledSkillDir: !!js process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('dsh-edu-math-low/package.json')), 'skills')

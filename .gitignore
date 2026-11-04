@@ -24,3 +24,6 @@ venv/
 node_modules/
 dist/
 .build/
+
+# Generated/private outputs (student data and future teaching artifacts)
+outputs/
