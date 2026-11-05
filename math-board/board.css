@@ -34,7 +34,9 @@
 .eb-shape-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
 .eb-workbench .eb-shape-tool{flex-direction:column;gap:4px;padding:7px 3px;min-height:62px;font-size:10px;border-radius:12px}
 .eb-legend{display:grid;gap:3px;margin:12px 0 10px}
-.eb-legend-row{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--dsw-alias-label-secondary)}
+.eb-workbench .eb-legend-row{display:flex;align-items:center;gap:8px;min-height:36px;padding:6px;border:1px solid transparent;border-radius:8px;font-size:11px;color:var(--dsw-alias-label-secondary);cursor:pointer}
+.eb-legend-row:has(:checked){border-color:var(--dsw-alias-brand-primary);background:color-mix(in srgb,var(--dsw-alias-brand-primary) 10%,transparent)}
+.eb-workbench .eb-legend-row input[type=radio]{width:14px;height:14px;min-height:0;margin:0;padding:0;flex:0 0 14px;accent-color:var(--dsw-alias-brand-primary)}
 .eb-color-dot{width:14px;height:14px;border-radius:999px;flex:0 0 14px;border:1px solid #1E293B22}
 .eb-canvas-tools{display:flex;align-items:center;flex-wrap:wrap;gap:5px;padding:2px 2px 0}
 .eb-workbench .eb-chip{min-height:38px;font-size:12px;padding:6px 10px;border-radius:999px}

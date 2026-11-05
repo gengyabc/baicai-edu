@@ -26,7 +26,7 @@
   ],
   "scripts": {
     "build": "node build.mjs",
-    "test": "node --test model.test.js config-bridge.test.js view.test.js",
+    "test": "node --test model.test.js merge-split.test.js config-bridge.test.js view.test.js",
     "preview": "node preview.mjs"
   },
   "dsh": {

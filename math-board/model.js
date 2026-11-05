@@ -20,6 +20,7 @@ export function createBoardModel() {
   const idValid = (v) => text(v, 100) && v.trim().length > 0;
   const positive = (v) => Number.isSafeInteger(v) && v > 0;
   const validColor = (v) => Number.isInteger(v) && v >= 0 && v < palette.length;
+  const customColorIndex = palette.length;
   const clamp = (v, min, max) => {
     if (typeof v !== 'number' || !Number.isFinite(v)) fail('Invalid coordinate');
     return Math.max(min, Math.min(max, v));
@@ -166,7 +167,7 @@ export function createBoardModel() {
     function object(o, depth, live) {
       if (depth > 8 || ++nodes > 2000 || ancestors.has(o)) fail('Provenance limit exceeded');
       keys(o, ['id', 'shape', 'value', 'color', 'alias', 'x', 'y', 'groupId', 'removed', 'sources']);
-      if (!idValid(o.id) || (live && ids.has(o.id)) || !shapes.includes(o.shape) || !positive(o.value) || !validColor(o.color)
+      if (!idValid(o.id) || (live && ids.has(o.id)) || !shapes.includes(o.shape) || !positive(o.value) || !(validColor(o.color) || o.color === customColorIndex)
         || !text(o.alias, 30) || typeof o.removed !== 'boolean' || typeof o.x !== 'number' || !Number.isFinite(o.x) || o.x < 30 || o.x > 770
         || typeof o.y !== 'number' || !Number.isFinite(o.y) || o.y < 30 || o.y > 330
         || (o.groupId !== null && (!idValid(o.groupId) || (live && !groupIds.has(o.groupId))))
@@ -225,13 +226,13 @@ export function createBoardModel() {
     const total = BigInt(first.value) * BigInt(members.length);
     if (total > BigInt(Number.MAX_SAFE_INTEGER)) return { allowed: false, reason: 'Merged value exceeds safe integer range' };
     const value = Number(total); const level = board.settings.levels.find((l) => l.value === value);
-    if (!level) return { allowed: false, reason: 'Configure the merged value level first' };
+
     const depth = (o) => o.sources.length ? 1 + Math.max(...o.sources.map(depth)) : 0;
     if (members.some((o) => depth(o) >= 8)) return { allowed: false, reason: 'Provenance depth limit exceeded' };
     // Merging adds one tree node while preserving all selected history.
     const count = (o) => 1 + o.sources.reduce((n, s) => n + count(s), 0);
     if (board.objects.reduce((n, o) => n + count(o), 0) >= 2000) return { allowed: false, reason: 'Provenance node limit exceeded' };
-    return { allowed: true, reason: '', value, color: level.color };
+    return { allowed: true, reason: '', value, color: level ? level.color : customColorIndex };
   }
   const mergeCandidate = (board, ids) => candidate(validate(board), ids);
   function reduce(board, action) {
@@ -329,15 +330,26 @@ export function createBoardModel() {
       }
       case 'split': {
         const parent = objectById(action.id);
-        if (!parent.sources.length) fail('Object has no merge sources');
-        if (next.objects.length - 1 + parent.sources.length > 200) fail('Object limit exceeded');
+        if (parent.value <= 1 || parent.removed) fail('Select an active object greater than one');
+        const lower = Math.max(1, ...next.settings.levels.filter((l) => l.value < parent.value).map((l) => l.value));
+        const count = Math.floor(parent.value / lower);
+        const remainder = parent.value % lower;
+        if (next.objects.length - 1 + count + Number(remainder > 0) > 200) fail('Object limit exceeded');
+        const values = [...Array(count).fill(lower), ...(remainder ? [remainder] : [])];
         const allocator = { ...next, objects: next.objects.slice() };
         next.objects = next.objects.filter((o) => o.id !== parent.id);
+        const reusable = parent.sources.length === values.length && parent.sources.every((s, i) => s.value === values[i]);
         const used = new Set([...next.objects, ...next.groups].map((o) => o.id));
-        for (const source of parent.sources) {
-          const restored = cloneObject(source);
-          if (used.has(restored.id)) restored.id = nextId(allocator, 'object');
-          used.add(restored.id); restored.groupId = parent.groupId; Object.assign(restored, freePosition(next.objects));
+        for (const [i, value] of values.entries()) {
+          const level = next.settings.levels.find((l) => l.value === value);
+          const restored = { ...cloneObject(parent), id: nextId(allocator, 'object'), value,
+            color: level ? level.color : customColorIndex, sources: [], ...freePosition(next.objects) };
+          if (reusable) {
+            const source = cloneObject(parent.sources[i]);
+            if (used.has(source.id)) source.id = restored.id;
+            Object.assign(restored, source, { groupId: parent.groupId, x: restored.x, y: restored.y });
+          }
+          used.add(restored.id);
           next.objects.push(restored); allocator.objects.push(restored);
         }
         break;
@@ -365,7 +377,7 @@ export function createBoardModel() {
     return validate(next);
   }
   const serialize = (board) => { const canonical = validate(board); return JSON.stringify({ kind: 'math-board', ...canonical, summary: summarize(canonical) }); };
-  const color = (index) => { if (!validColor(index)) fail('Invalid color index'); return palette[index]; };
+  const color = (index) => { if (index === customColorIndex) return '#78909C'; if (!validColor(index)) fail('Invalid color index'); return palette[index]; };
   return { empty, defaultSettings, validateSettings, validate, reduce, summary, digest, serialize, color, mergeCandidate,
     shapes: [...shapes], defaultVisibleShapes: [...defaultVisible] };
 }

@@ -31,7 +31,7 @@ test('v3 defaults show the ten legacy patterns, including basic geometry, and ke
   assert.deepEqual(empty.settings.defaults.map((d) => d.shape), M.shapes);
   assert.ok(empty.settings.defaults.every((d) => d.value === 1 && d.alias === ''));
   assert.deepEqual(Array.from({ length: 9 }, (_, i) => M.color(i)), ['#4CAF50', '#42A5F5', '#AB47BC', '#26A69A', '#FF7043', '#F4511E', '#E53935', '#D81B60', '#8E24AA']);
-  for (const color of [-1, 9, 0.5, '1', null]) assert.throws(() => M.color(color));
+  for (const color of [-1, 10, 0.5, '1', null]) assert.throws(() => M.color(color));
   empty.settings.levels[0].value = 99; assert.equal(M.empty().settings.levels[0].value, 1);
 });
 
@@ -77,7 +77,7 @@ test('3 green circles worth2 merge into one SAME blue circle worth6 with preserv
 
 test('mergeCandidate returns ordinary incompatibility instead of throwing; merge failure is atomic', () => {
   const b = freeze(add(configured(), { count: 3 }));
-  for (const selected of [[], ['object-1'], ['missing'], ['object-1', 'object-1'], null, ['object-1', 'object-2']]) {
+  for (const selected of [[], ['object-1'], ['missing'], ['object-1', 'object-1'], null]) {
     assert.equal(M.mergeCandidate(b, selected).allowed, false);
     assert.throws(() => M.reduce(b, { type: 'merge', ids: selected }));
   }
@@ -281,7 +281,7 @@ test('schemaVersion 2 settings migrate to v3: ten old patterns stay visible and 
 test('strict v3 validation rejects malformed state, sources, links and untrusted totals', () => {
   const b = add(M.empty());
   const cases = [null, [], '{}', { ...b, schemaVersion: 4 }, { ...b, operation: 'add' }, { ...b, settings: {} }, { ...b, note: 1 }, { ...b, objects: {} }, { ...b, groups: [{ id: 'g', alias: 1 }] }];
-  for (const patch of [{ id: '' }, { shape: 'catfish' }, { value: 0 }, { color: 9 }, { alias: null }, { x: NaN }, { y: Infinity }, { x: 29 }, { y: 331 }, { removed: 1 }, { groupId: 'missing' }, { sources: [{}] }, { extra: 1 }]) cases.push({ ...b, objects: [{ ...b.objects[0], ...patch }] });
+  for (const patch of [{ id: '' }, { shape: 'catfish' }, { value: 0 }, { color: 10 }, { alias: null }, { x: NaN }, { y: Infinity }, { x: 29 }, { y: 331 }, { removed: 1 }, { groupId: 'missing' }, { sources: [{}] }, { extra: 1 }]) cases.push({ ...b, objects: [{ ...b.objects[0], ...patch }] });
   cases.push({ ...b, objects: [b.objects[0], b.objects[0]] });
   for (const input of cases) assert.throws(() => M.validate(input));
   for (const patch of [{ id: 'changed' }, { shape: 'square' }, { color: 1 }, { value: 2 }, { removed: 'yes' }]) assert.throws(() => M.reduce(b, { type: 'update', id: 'object-1', patch }));

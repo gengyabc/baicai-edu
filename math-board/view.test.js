@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { createBoardDescription, createShapeArt, colorIndexForValue } from './view.js';
+import { createBoardDescription, createShapeArt, colorIndexForValue, createBoardView } from './view.js';
 import { createBoardModel } from './model.js';
 
 const M = createBoardModel();
@@ -11,6 +11,42 @@ const zh = JSON.parse(await readFile(new URL('./locale/zh.json', import.meta.url
 const t = (key, params = {}) => zh[key].replace(/\{(\w+)\}/g, (match, name) =>
   Object.hasOwn(params, name) ? String(params[name]) : match);
 const describeBoard = createBoardDescription(M);
+
+test('tool value radios default to 1 and synchronize previews and new objects', () => {
+  const states = []; let cursor = 0;
+  const hooks = { ...React,
+    useState(initial) {
+      const index = cursor++;
+      if (!(index in states)) states[index] = typeof initial === 'function' ? initial() : initial;
+      return [states[index], (next) => { states[index] = typeof next === 'function' ? next(states[index]) : next; }];
+    },
+    useRef: (current) => ({ current }), useEffect() {}, useSyncExternalStore() {},
+  };
+  const previousWindow = globalThis.window;
+  globalThis.window = { matchMedia: () => ({ matches: true }) };
+  try {
+    const Board = createBoardView(hooks, M, {}, t, '', art, describeBoard, () => null);
+    const render = () => {
+      cursor = 0;
+      const tree = Board({ sessionId: 'test', useProjection: () => null, useInput: () => 'plain' });
+      const nodes = [];
+      const walk = (node) => { if (!node || typeof node !== 'object') return; nodes.push(node); node.children?.flat(Infinity).forEach(walk); };
+      walk(tree); return nodes;
+    };
+    let nodes = render();
+    assert.equal(nodes.find((n) => n.props.type === 'radio' && n.props.checked).props.value, 1);
+    nodes.find((n) => n.props.type === 'radio' && n.props.value === 10).props.onChange();
+    nodes = render();
+    assert.equal(nodes.find((n) => n.props.type === 'radio' && n.props.checked).props.value, 10);
+    const tool = nodes.find((n) => n.props.className === 'eb-shape-tool');
+    assert.ok(tool.props.title.endsWith('10'));
+    const svg = tool.children.flat(Infinity)[0].children[0];
+    assert.deepEqual(svg.children[0], art.node(M.empty().settings.shapes[0], 17, { fill: M.color(colorIndexForValue(M.empty().settings.levels, 10)), stroke: '#1E293B', strokeWidth: 1.1 }));
+    tool.props.onClick();
+    assert.equal(states[1].objects[0].value, 10);
+    assert.equal(states[1].objects[0].color, colorIndexForValue(states[1].settings.levels, 10));
+  } finally { globalThis.window = previousWindow; }
+});
 
 test('every library pattern renders artwork, and the custom patterns use the level fill', () => {
   const expected = ['apple', 'butterfly', 'car', 'cat', 'dog', 'fish', 'flower', 'house', 'icecream', 'person', 'rocket'];

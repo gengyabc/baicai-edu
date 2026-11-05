@@ -292,6 +292,9 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
     const [settingsView, setSettingsView] = React.useState(false);
     const [settingsDraft, setSettingsDraft] = React.useState(null);
     const [dragShape, setDragShape] = React.useState(null);
+    const [toolValue, setToolValue] = React.useState(1);
+    const toolLevel = board.settings.levels.find((level) => level.value === toolValue)
+      || board.settings.levels.find((level) => level.value === 1) || board.settings.levels[0];
     const config = props.useProjection('eduBoardConfig');
     const watermark = React.useRef(-1);
     const dialog = React.useRef(null), fileInput = React.useRef(null), downloadAnchor = React.useRef(null);
@@ -383,7 +386,7 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
     function add(shape, point) {
       const before = new Set(boardRef.current.objects.map((o) => o.id));
       const extra = point ? { x: point.x, y: point.y } : {};
-      const next = action({ type: 'add', shape, ...extra });
+      const next = action({ type: 'add', shape, value: toolLevel.value, ...extra });
       if (next) selectIds(next.objects.filter((o) => !before.has(o.id)).map((o) => o.id));
     }
     function updateSelected(patch) { batch(selected.map((o) => ({ type: 'update', id: o.id, patch }))); }
@@ -651,7 +654,7 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
 
     const modeHint = group ? t('hintGrouped') : selected.length ? t('hintSelected') : t('hintEmpty');
     const canMerge = activeSelected.length >= 2;
-    const canSplit = Boolean(single && single.sources.length > 0 && !single.removed);
+    const canSplit = Boolean(single && single.value > 1 && !single.removed);
     const header = h('header', { className: 'eb-top' },
       h('div', { className: 'eb-identity' }, swatch('star', 1, 32),
         h('div', null, h('strong', null, t('title')), h('small', null, t('workspaceSubtitle')))));
@@ -660,18 +663,19 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
       h('div', { className: 'eb-tools-body' },
         h('div', { className: 'eb-section-label' }, t('shapes')),
         h('div', { className: 'eb-shape-grid' }, visibleShapes.map((shape) => {
-          const def = settings.defaults.find((item) => item.shape === shape);
-          const colorIndex = colorIndexForValue(levels, def.value);
+          const colorIndex = toolLevel.color;
           return button(h(React.Fragment, null, swatch(shape, colorIndex, 28), h('span', null, t(shape))),
             () => add(shape),
             { className: 'eb-shape-tool', key: shape, draggable: true, disabled: board.objects.length >= 200,
-              title: `${t(shape)} · ${t('value')} ${def.value}`,
+              title: `${t(shape)} · ${t('value')} ${toolLevel.value}`,
               onDragStart: () => setDragShape(shape), onDragEnd: () => setDragShape(null) });
         }),
         button(h(React.Fragment, null, icon('plus', 15), h('span', null, t('morePatterns'))),
           () => { setSettingsView(true); setSettingsDraft(null); },
           { className: 'eb-shape-tool eb-shape-more', key: 'more-patterns', title: t('patternsHint') })),
-        h('div', { className: 'eb-legend' }, levels.map((level, index) => h('div', { className: 'eb-legend-row', key: index },
+        h('div', { className: 'eb-legend', role: 'group', 'aria-label': t('value') }, board.settings.levels.map((level) => h('label', { className: 'eb-legend-row', key: level.value },
+          h('input', { type: 'radio', name: `${key}:tool-value`, value: level.value,
+            checked: toolLevel.value === level.value, onChange: () => setToolValue(level.value) }),
           h('span', { className: 'eb-color-dot', style: { background: paletteColor(level.color) } }),
           h('span', null, String(level.value))))),
         button(h(React.Fragment, null, icon('gear', 15), t('settings')),
