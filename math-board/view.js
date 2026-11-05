@@ -244,7 +244,7 @@ export function colorIndexForValue(levels, value) {
   return level ? level.color : 0;
 }
 
-export function createBoardView(React, M, ctx, t, css, art, describeBoard, applyHostConfig) {
+export function createBoardView(React, M, ctx, t, css, art, describeBoard, applyHostConfig, T) {
   const h = React.createElement;
   const paletteColor = (index) => M.color(index);
   function icon(name, size = 18) {
@@ -281,6 +281,12 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
     const [ready, setReady] = React.useState(false);
     const [storageBlocked, setStorageBlocked] = React.useState(false);
     const [history, setHistory] = React.useState({ past: [], future: [] });
+    const [trace, setTrace] = React.useState(() => T.empty());
+    const traceRef = React.useRef(trace);
+    const [attachTrace, setAttachTrace] = React.useState(true);
+    const [traceView, setTraceView] = React.useState(false);
+    const [resetTraceConfirm, setResetTraceConfirm] = React.useState(false);
+    const traceKey = `${key}:trace-v1`;
     const [selection, setSelection] = React.useState([]);
     const [multi, setMulti] = React.useState(false);
     const [focus, setFocus] = React.useState(false);
@@ -297,6 +303,7 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
       || board.settings.levels.find((level) => level.value === 1) || board.settings.levels[0];
     const config = props.useProjection('eduBoardConfig');
     const watermark = React.useRef(-1);
+    const pendingWatermark = React.useRef(null);
     const dialog = React.useRef(null), fileInput = React.useRef(null), downloadAnchor = React.useRef(null);
     const url = React.useRef(null), gesture = React.useRef(null), revision = React.useRef(0);
     const svgRef = React.useRef(null);
@@ -305,7 +312,10 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
     const single = selected.length === 1 ? selected[0] : null;
     const activeSelected = selected.filter((o) => !o.removed);
     const touchedGroups = [...new Set(selected.map((o) => o.groupId).filter(Boolean))];
-    const group = touchedGroups.length === 1 ? board.groups.find((g) => g.id === touchedGroups[0]) : null;
+    const completeGroup = touchedGroups.length === 1 && selected.length > 0
+      && selected.every((o) => o.groupId === touchedGroups[0])
+      && board.objects.every((o) => o.groupId !== touchedGroups[0] || selection.includes(o.id))
+      ? board.groups.find((g) => g.id === touchedGroups[0]) : null;
     const dense = board.objects.length > 60;
     const radius = dense ? 13 : 19;
     const mergeInfo = activeSelected.length >= 2 ? M.mergeCandidate(board, activeSelected.map((o) => o.id)) : null;
@@ -319,9 +329,18 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
         const raw = current ?? previous;
         const next = raw ? M.validate(JSON.parse(raw)) : M.empty();
         boardRef.current = next; setBoard(next);
+        let restored = T.empty(raw !== null);
+        try {
+          const saved = JSON.parse(localStorage.getItem(traceKey) || 'null');
+          if (saved && typeof saved.attach === 'boolean') setAttachTrace(saved.attach);
+          if (saved && saved.board === JSON.stringify(next)) restored = T.validate(saved.trace);
+        } catch { setStatus(t('traceLoadError')); }
+        traceRef.current = restored; setTrace(restored);
+        setHistory({ past: [], future: [] });
         const mark = localStorage.getItem(watermarkKey) ?? (previous === null ? null : localStorage.getItem(`${legacyKey}:config`));
         const parsed = mark === null ? -1 : Number(mark);
         watermark.current = Number.isFinite(parsed) ? parsed : -1;
+        pendingWatermark.current = null;
       } catch { setStorageBlocked(true); setStatus(t('loadError')); }
       setReady(true);
       return () => { revision.current++; gesture.current = null; if (url.current) URL.revokeObjectURL(url.current); };
@@ -329,18 +348,46 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
 
     React.useEffect(() => {
       if (!ready || storageBlocked) return;
-      try { localStorage.setItem(key, JSON.stringify(board)); } catch { setStatus(t('storageError')); }
-    }, [board, ready, storageBlocked, key]);
+      try {
+        const serialized = JSON.stringify(board);
+        localStorage.setItem(key, serialized);
+        // Bind the sidecar to the exact draft; interrupted writes never invent history.
+        localStorage.setItem(traceKey, JSON.stringify({ board: serialized, trace, attach: attachTrace }));
+        // The settings watermark advances only together with the board it describes,
+        // so a failed or interrupted write cannot skip a host configuration forever.
+        if (pendingWatermark.current !== null) {
+          localStorage.setItem(watermarkKey, String(pendingWatermark.current));
+          pendingWatermark.current = null;
+        }
+      } catch { setStatus(t('storageError')); }
+    }, [board, trace, attachTrace, ready, storageBlocked, key]);
 
     // Host settings changes (typed by the student in chat or via /math-board-settings).
     React.useEffect(() => {
       if (!ready || !config) return;
-      const result = applyHostConfig(M, boardRef.current, config, watermark.current);
+      if ((config.floorRevision ?? 0) > 0 && watermark.current < config.floorRevision) {
+        publishTrace({ ...traceRef.current, priorUnknown: true });
+      }
+      const applied = [];
+      let recordFailed = false;
+      const result = applyHostConfig(M, boardRef.current, config, watermark.current,
+        (before, after, change) => {
+          applied.push(change);
+          if (!recordChange(before, after, change, 'system')) recordFailed = true;
+        });
       if (!result) return;
+      // Apply before any in-flight async import resolves; its revision check then drops it.
+      revision.current++;
       publish(result.board);
+      if (applied.length) {
+        const replay = (snapshot) => applied.reduce((state, action) => {
+          try { return M.reduce(state, action); } catch { return state; }
+        }, snapshot);
+        setHistory((old) => ({ past: old.past.map(replay), future: old.future.map(replay) }));
+      }
       watermark.current = result.watermark;
-      try { localStorage.setItem(watermarkKey, String(result.watermark)); } catch {}
-      setStatus(t(result.status));
+      pendingWatermark.current = result.watermark;
+      setStatus(recordFailed ? t('traceRecordError') : t(result.status));
     }, [config, ready]);
 
     React.useEffect(() => {
@@ -355,15 +402,33 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
       if (active && dialog.current.contains(active) && active.matches('input,textarea,select')) active.blur();
     }
     function publish(next) { boardRef.current = next; setBoard(next); }
-    function commit(next) {
+    function publishTrace(next) { traceRef.current = next; setTrace(next); }
+    function recordChange(before, after, change, origin = 'student') {
+      try { publishTrace(T.record(traceRef.current, before, after, change, origin)); return true; }
+      catch {
+        // Keep every known fact; only the process after this point becomes unknown.
+        let kept;
+        try { kept = { ...traceRef.current, priorUnknown: true }; T.validate(kept); } catch { kept = T.empty(true); }
+        publishTrace(kept);
+        setStatus(t('traceRecordError'));
+        return false;
+      }
+    }
+    function commit(next, change) {
       const before = boardRef.current;
-      if (JSON.stringify(next) === JSON.stringify(before)) return;
+      if (JSON.stringify(next) === JSON.stringify(before)) {
+        if (change?.type === 'import') recordChange(before, next, change);
+        return;
+      }
       gesture.current = null; setPreview(null); revision.current++;
       setHistory((old) => ({ past: [...old.past.slice(-39), before], future: [] }));
-      publish(next); setStatus(''); setClearConfirm(false);
+      const recorded = recordChange(before, next, change);
+      publish(next);
+      if (recorded) setStatus('');
+      setClearConfirm(false);
     }
     function action(a) {
-      try { const next = M.reduce(boardRef.current, a); commit(next); return next; }
+      try { const next = M.reduce(boardRef.current, a); commit(next, a); return next; }
       catch (error) { setStatus(`${t('failed')}: ${error.message}`); return null; }
     }
     function batch(actions) { return action({ type: 'batch', actions }); }
@@ -372,13 +437,15 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
       const prev = history.past.at(-1); if (!prev) return;
       gesture.current = null; setPreview(null); revision.current++;
       setHistory({ past: history.past.slice(0, -1), future: [boardRef.current, ...history.future].slice(0, 40) });
-      publish(prev); selectIds([]); setStatus('');
+      const recorded = recordChange(boardRef.current, prev, { type: 'undo' });
+      publish(prev); selectIds([]); if (recorded) setStatus('');
     }
     function redo() {
       const next = history.future[0]; if (!next) return;
       gesture.current = null; setPreview(null); revision.current++;
       setHistory({ past: [...history.past, boardRef.current].slice(-40), future: history.future.slice(1) });
-      publish(next); selectIds([]); setStatus('');
+      const recorded = recordChange(boardRef.current, next, { type: 'redo' });
+      publish(next); selectIds([]); if (recorded) setStatus('');
     }
     function button(label, handler, extra = {}) { return h('button', { type: 'button', onClick: handler, ...extra }, label); }
     function toolButton(name, handler, extra = {}) { return button(icon(name), handler, { title: t(name), 'aria-label': t(name), className: 'eb-icon-button', ...extra }); }
@@ -391,14 +458,17 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
     }
     function updateSelected(patch) { batch(selected.map((o) => ({ type: 'update', id: o.id, patch }))); }
     function groupSelection() {
-      const before = new Set(boardRef.current.groups.map((item) => item.id));
-      const alias = group ? group.alias : t('defaultGroup');
+      const current = boardRef.current;
+      const before = new Set(current.groups.map((item) => item.id));
+      const touched = [...new Set(current.objects.filter((item) => selection.includes(item.id)).map((item) => item.groupId).filter(Boolean))];
+      const previous = touched.length === 1 ? current.groups.find((item) => item.id === touched[0]) : null;
+      const alias = previous ? previous.alias : t('defaultGroup');
       const next = action({ type: 'groupSelected', ids: selected.map((item) => item.id), alias });
       if (!next) return;
       const created = next.groups.find((item) => !before.has(item.id));
       if (created) setSelection(next.objects.filter((item) => item.groupId === created.id).map((item) => item.id));
     }
-    function ungroup() { if (group) { action({ type: 'deleteGroup', id: group.id }); setSelection([]); } }
+    function ungroup() { if (completeGroup) { action({ type: 'deleteGroup', id: completeGroup.id }); setSelection([]); } }
     function duplicate() {
       const before = new Set(boardRef.current.objects.map((o) => o.id));
       const next = action({ type: 'duplicateSelected', ids: selection });
@@ -432,7 +502,7 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
         const whole = expandGroup([objectId]);
         let ids = selection;
         if (e.shiftKey || multi) {
-          ids = selection.includes(objectId) ? selection.filter((id) => !whole.some((w) => w === id)) : [...new Set([...selection, ...whole])];
+          ids = selection.includes(objectId) ? selection.filter((id) => id !== objectId) : [...selection, objectId];
           selectIds(ids); return;
         }
         if (!ids.includes(objectId)) ids = whole;
@@ -465,15 +535,16 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
         if (!g.moved) { selectIds([]); return; }
         const p = g.current, x1 = Math.min(p.x, g.start.x), x2 = Math.max(p.x, g.start.x), y1 = Math.min(p.y, g.start.y), y2 = Math.max(p.y, g.start.y);
         const hit = g.base.objects.filter((o) => o.x + radius >= x1 && o.x - radius <= x2 && o.y + radius >= y1 && o.y - radius <= y2).map((o) => o.id);
-        selectIds(expandGroup([...new Set([...g.initial, ...hit])]));
+        selectIds([...new Set([...g.initial, ...hit])]);
       }
     }
     function objectKey(e, o) {
       const arrows = { ArrowLeft: [-10, 0], ArrowRight: [10, 0], ArrowUp: [0, -10], ArrowDown: [0, 10] };
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
-        const whole = expandGroup([o.id]);
-        selectIds(e.shiftKey ? (selection.includes(o.id) ? selection.filter((id) => !whole.includes(id)) : [...new Set([...selection, ...whole])]) : whole);
+        selectIds(e.shiftKey
+          ? (selection.includes(o.id) ? selection.filter((id) => id !== o.id) : [...selection, o.id])
+          : expandGroup([o.id]));
       } else if (arrows[e.key]) {
         e.preventDefault(); const [dx, dy] = arrows[e.key];
         action({ type: 'moveMany', ids: selection.includes(o.id) ? selection : [o.id], dx, dy });
@@ -499,11 +570,16 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
         if (!conversation?.createDrafts) throw Error();
         const span = props.inputActions.captureInsertion();
         const text = '\n' + describeBoard(boardRef.current, t) + '\n';
-        const file = new File([M.serialize(boardRef.current)], t('attachmentName'), { type: 'application/json' });
-        drafts = conversation.createDrafts(props.sessionId, [file]);
+        const files = [new File([M.serialize(boardRef.current)], t('attachmentName'), { type: 'application/json' })];
+        let traceSkipped = false;
+        if (attachTrace) {
+          try { files.push(new File([T.serialize(traceRef.current)], t('traceAttachmentName'), { type: 'application/json' })); }
+          catch { traceSkipped = true; }
+        }
+        drafts = conversation.createDrafts(props.sessionId, files);
         if (!props.inputActions.addAttachments(drafts.map((draft) => draft.id))) throw Error();
         if (!props.inputActions.insertText(text, span)) throw Error();
-        props.inputActions.persistDraft(); setStatus(t('inserted')); close();
+        props.inputActions.persistDraft(); setStatus(t(traceSkipped ? 'traceSkipped' : 'inserted')); close();
       } catch {
         discard();
         setStatus(t('insertFailed'));
@@ -522,7 +598,7 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
         if (file.size > 262144) throw Error(t('fileTooLarge'));
         const next = M.validate(JSON.parse(await file.text()));
         if (rev !== revision.current) return;
-        commit(next); setStorageBlocked(false); selectIds([]); setStatus(t('imported'));
+        commit(next, { type: 'import' }); setStorageBlocked(false); selectIds([]); setStatus(t('imported'));
       } catch (error) { setStatus(`${t('failed')}: ${error.message}`); }
     }
 
@@ -652,7 +728,7 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
           button(t('cancel'), () => { setSettingsView(false); setSettingsDraft(null); })));
     }
 
-    const modeHint = group ? t('hintGrouped') : selected.length ? t('hintSelected') : t('hintEmpty');
+    const modeHint = completeGroup ? t('hintGrouped') : selected.length ? t('hintSelected') : t('hintEmpty');
     const canMerge = activeSelected.length >= 2;
     const canSplit = Boolean(single && single.value > 1 && !single.removed);
     const header = h('header', { className: 'eb-top' },
@@ -683,8 +759,8 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
           { className: 'eb-new-group', 'aria-pressed': settingsView })));
     const selectionBar = selected.length > 0 && !settingsView && h('div', { className: 'eb-floating', role: 'toolbar', 'aria-label': t('selectionActions') },
       h('small', null, `${t('selectedCount')} ${selected.length}`),
-      !group && button(h(React.Fragment, null, icon('group', 15), t('makeGroup')), groupSelection, { disabled: board.groups.length >= 12 }),
-      group && button(h(React.Fragment, null, icon('ungroup', 15), t('ungroup')), ungroup),
+      !completeGroup && button(h(React.Fragment, null, icon('group', 15), t('makeGroup')), groupSelection, { disabled: board.groups.length - touchedGroups.length >= 12 }),
+      completeGroup && button(h(React.Fragment, null, icon('ungroup', 15), t('ungroup')), ungroup),
       canMerge && button(h(React.Fragment, null, icon('merge', 15), t('merge')), mergeSelection,
         { disabled: !(mergeInfo && mergeInfo.allowed), title: mergeInfo && !mergeInfo.allowed ? mergeInfo.reason : '' }),
       canSplit && button(h(React.Fragment, null, icon('split', 15), t('split')), splitSelection),
@@ -730,8 +806,7 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
             onDrop: (event) => {
               if (!dragShape) return;
               event.preventDefault();
-              const rect = svgRef.current.getBoundingClientRect();
-              add(dragShape, { x: (event.clientX - rect.left) * (800 / rect.width), y: (event.clientY - rect.top) * (400 / rect.height) });
+              add(dragShape, point(event));
               setDragShape(null);
             },
           },
@@ -739,27 +814,27 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
           stageTools),
       h('div', { className: 'eb-stage-caption' }, h('span', null, modeHint)));
     const inspectorSections = [];
-    if (selected.length > 0 && group) inspectorSections.push(h('section', { key: 'group' },
+    if (selected.length > 0 && completeGroup) inspectorSections.push(h('section', { key: 'group' },
       h('label', null, t('groupAlias'), h('input', {
-        key: `g:${group.id}:${group.alias}`, type: 'text', maxLength: 30, defaultValue: group.alias, placeholder: t('groupHint'),
-        onBlur: (event) => { if (event.target.value !== group.alias) action({ type: 'renameGroup', id: group.id, alias: event.target.value }); },
+        key: `g:${completeGroup.id}:${completeGroup.alias}`, type: 'text', maxLength: 30, defaultValue: completeGroup.alias, placeholder: t('groupHint'),
+        onBlur: (event) => { if (event.target.value !== completeGroup.alias) action({ type: 'renameGroup', id: completeGroup.id, alias: event.target.value }); },
         onKeyDown: (event) => { if (event.key === 'Enter') event.currentTarget.blur(); },
       })),
       h('p', { className: 'eb-muted' }, t('groupedNoAlias')),
       h('div', { className: 'eb-inspector-actions' },
         button(t('ungroup'), ungroup),
         button(t('duplicateGroup'), () => { action({ type: 'duplicateSelected', ids: selected.map((item) => item.id) }); }))));
-    if (selected.length > 0 && !group && single) inspectorSections.push(h('section', { key: 'single' },
+    if (selected.length > 0 && !completeGroup && single) inspectorSections.push(h('section', { key: 'single' },
       h('label', null, t('alias'), h('input', {
         key: `n:${single.id}:${single.alias}`, type: 'text', maxLength: 30, defaultValue: single.alias, placeholder: t('aliasHint'),
         onBlur: (event) => { if (event.target.value !== single.alias) updateSelected({ alias: event.target.value }); },
         onKeyDown: (event) => { if (event.key === 'Enter') event.currentTarget.blur(); },
       })),
       h('p', { className: 'eb-muted' }, `${t('value')}: ${single.value}${single.sources.length ? ` · ${t('mergedFrom')} ${single.sources.length}` : ''}`)));
-    if (selected.length > 0 && !group && !single) inspectorSections.push(h('div', { className: 'eb-hint-card', key: 'many' }, `${t('selectedCount')} ${selected.length}`));
+    if (selected.length > 0 && !completeGroup && !single) inspectorSections.push(h('div', { className: 'eb-hint-card', key: 'many' }, `${t('selectedCount')} ${selected.length}`));
     const inspectorPanel = h('aside', { className: 'eb-panel eb-inspector', 'aria-label': t('myObjects') },
       h('div', { className: 'eb-panel-head' },
-        h('h3', null, group ? t('myGroup') : t('myObjects')),
+        h('h3', null, completeGroup ? t('myGroup') : t('myObjects')),
         h('p', null, t('inspectorHint'))),
       h('div', { className: 'eb-inspector-body' },
         !selected.length && h('div', { className: 'eb-hint-card' }, t('noSelection')),
@@ -769,18 +844,56 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
           key: `note:${board.note}`, defaultValue: board.note, maxLength: 500, placeholder: t('noteHint'),
           onBlur: (event) => { if (event.target.value !== boardRef.current.note) action({ type: 'note', value: event.target.value }); },
         }))));
+    const traceControls = h('section', { className: 'eb-trace', 'aria-label': t('traceTitle') },
+      h('div', { className: 'eb-trace-controls' },
+        h('label', null, h('input', { type: 'checkbox', checked: attachTrace,
+          onChange: (event) => setAttachTrace(event.target.checked) }), t('traceAttach')),
+        button(t(traceView ? 'traceHide' : 'tracePreview'), () => { flushEditor(); setTraceView(!traceView); }),
+        button(t('traceNewAttempt'), () => { flushEditor(); setResetTraceConfirm(true); })),
+      h('p', { className: 'eb-muted' }, t('traceNotice')),
+      resetTraceConfirm && h('div', { className: 'eb-confirm' },
+        h('span', null, t('traceResetQuestion')),
+        button(t('traceResetConfirm'), () => {
+          revision.current++; gesture.current = null; setPreview(null);
+          const baseline = boardRef.current;
+          publishTrace(T.empty(Boolean(baseline.objects.length || baseline.groups.length || baseline.note)));
+          setHistory({ past: [], future: [] });
+          setResetTraceConfirm(false); setStatus(t('traceResetDone'));
+        }),
+        button(t('cancel'), () => setResetTraceConfirm(false))),
+      traceView && h('div', { className: 'eb-trace-preview' },
+        h('p', null, t('traceScope')),
+        trace.priorUnknown && h('p', null, t('tracePriorUnknown')),
+        h('p', null, t('traceTotals', { count: trace.totalChanges, omitted: trace.omittedChanges })),
+        !trace.entries.length && h('p', null, t('traceEmpty')),
+        h('ol', null, trace.entries.map((entry, index) => h('li', { key: entry.seq, value: entry.seq },
+          index > 0 && entry.seq > trace.entries[index - 1].seq + trace.entries[index - 1].repeats
+            && h('p', null, t('traceGap')),
+          h('strong', null, `${t(`traceType_${entry.type}`)} · ${t(`traceOrigin_${entry.origin}`)} × ${entry.repeats}`),
+          h('ul', null, entry.facts.map((fact) => h('li', { key: fact.field },
+            `${t(`traceField_${fact.field.replaceAll('.', '_')}`)}: ${traceValue(fact.before, fact.field)} → ${traceValue(fact.after, fact.field)}`))))))));
+    function traceValue(value, field) {
+      if (Array.isArray(value)) return value.map((item) => traceValue(item, field)).join(' / ');
+      if (typeof value !== 'string') return String(value ?? '—');
+      if (['objects', 'settings.defaults', 'settings.shapes'].includes(field)) {
+        const shape = M.shapes.find((name) => value === name || value.startsWith(`${name}:`));
+        if (shape) value = t(shape) + value.slice(shape.length);
+        value = value.replaceAll(':crossed-out', `:${t('removed')}`).replaceAll(':merged', `:${t('merge')}`);
+      }
+      return value;
+    }
     const footer = h('footer', { className: 'eb-footer' },
       h('div', { className: 'eb-status', role: 'status', 'aria-live': 'polite' }, status || t('localDraft')),
       clearConfirm
         ? h('div', { className: 'eb-confirm' },
             h('span', null, t('clearQuestion')),
-            button(t('confirmClear'), () => { commit(M.empty()); selectIds([]); setStorageBlocked(false); }),
+            button(t('confirmClear'), () => { commit(M.empty(), { type: 'clear' }); selectIds([]); setStorageBlocked(false); }),
             button(t('cancel'), () => setClearConfirm(false)))
         : h('div', { className: 'eb-file-actions' },
             button(t('export'), exportFile),
             button(t('import'), () => fileInput.current.click()),
             button(t('clear'), () => setClearConfirm(true))),
-      button(t('insert'), insert, { className: 'eb-primary', disabled: !board.objects.length || phase !== 'plain' }),
+      button(t('insert'), insert, { className: 'eb-primary', disabled: (!board.objects.length && !board.note && !(attachTrace && trace.totalChanges)) || phase !== 'plain' }),
       button(h(React.Fragment, null, icon('close'), h('span', null, t('backToChat'))), close, { className: 'eb-close', 'aria-label': t('backToChat') }),
       h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: fileInput, onChange: importFile }),
       h('a', { hidden: true, ref: downloadAnchor, download: 'math-board.json' }));
@@ -801,6 +914,7 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
       h('div', { className: 'eb-workbench' },
         header,
         h('main', { className: 'eb-layout', 'data-focus': focus }, toolboxPanel, stagePanel, inspectorPanel),
+        traceControls,
         footer)));
   };
 }

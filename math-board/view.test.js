@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createBoardDescription, createShapeArt, colorIndexForValue, createBoardView } from './view.js';
 import { createBoardModel } from './model.js';
+import { createBoardTrace } from './trace.js';
 
 const M = createBoardModel();
 const React = { createElement(type, props, ...children) { return { type, props: props || {}, children }; } };
@@ -25,7 +26,7 @@ test('tool value radios default to 1 and synchronize previews and new objects', 
   const previousWindow = globalThis.window;
   globalThis.window = { matchMedia: () => ({ matches: true }) };
   try {
-    const Board = createBoardView(hooks, M, {}, t, '', art, describeBoard, () => null);
+    const Board = createBoardView(hooks, M, {}, t, '', art, describeBoard, () => null, createBoardTrace(M));
     const render = () => {
       cursor = 0;
       const tree = Board({ sessionId: 'test', useProjection: () => null, useInput: () => 'plain' });

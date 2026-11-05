@@ -1,4 +1,12 @@
 /* Workbench layout reimplemented for DSH; teaching artwork keeps the prescribed palette. */
+.eb-trace{padding:4px 8px;min-height:0;max-height:30dvh;overflow:auto;border-top:1px solid var(--dsw-alias-border-l1)}
+.eb-trace-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.eb-workbench .eb-trace-controls label{display:flex;align-items:center;gap:6px;font-weight:400}
+.eb-workbench .eb-trace-controls input[type=checkbox]{width:18px;min-height:18px;padding:0}
+.eb-workbench .eb-trace-controls button{min-height:32px;padding:4px 8px;font-size:12px}
+.eb-trace-preview{max-height:18dvh;overflow:auto;font-size:12px;overflow-wrap:anywhere}
+.eb-trace-preview ol{padding-left:32px}.eb-trace-preview ul{padding-left:20px}
+
 /* Compact composer-toolbar launcher, sized like the shipped model selector. */
 .edu-board-launch{display:inline-flex;align-items:center;gap:6px;flex:none;height:28px;padding:0 8px;border:0;border-radius:var(--dsw-radius-sm);background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:13px;font-weight:500;line-height:20px;white-space:nowrap;cursor:pointer}
 .edu-board-launch svg{flex:none;display:block}
@@ -8,7 +16,7 @@
 .edu-board-launch,.eb-workbench button{font:inherit;cursor:pointer}
 .eb-dialog{box-sizing:border-box;width:min(1450px,96vw);height:min(920px,92dvh);max-width:96vw;max-height:94dvh;padding:0;border:1px solid var(--dsw-alias-border-l1);border-radius:24px;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-base);box-shadow:0 24px 80px #0f172a33;overflow:hidden}
 .eb-dialog::backdrop{background:#0f172a66;backdrop-filter:blur(5px)}
-.eb-workbench{box-sizing:border-box;height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:12px;padding:14px;font-family:inherit;font-size:14px}
+.eb-workbench{box-sizing:border-box;height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;gap:12px;padding:14px;font-family:inherit;font-size:14px}
 .eb-workbench *{box-sizing:border-box}.eb-workbench button,.eb-workbench input,.eb-workbench select,.eb-workbench textarea{font:inherit;color:inherit}
 .eb-workbench button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:8px 12px;border:1px solid var(--dsw-alias-border-l1);border-radius:12px;background:var(--dsw-alias-bg-layer-1);transition:background .14s,box-shadow .14s}
 .eb-workbench button:hover:not(:disabled){background:var(--dsw-alias-bg-layer-2);border-color:var(--dsw-alias-border-l2)}.eb-workbench button:disabled{opacity:.4;cursor:default}

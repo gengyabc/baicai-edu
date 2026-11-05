@@ -11,7 +11,7 @@ const MAX_PENDING = 256;
  * Retained history always keeps each change's real scope (including after a
  * watermark gap). A failed configure aborts the rest of the batch.
  */
-export function applyHostConfig(M, board, config, watermark) {
+export function applyHostConfig(M, board, config, watermark, onChange) {
   if (!config || !Array.isArray(config.changes)) return null;
   const mark = Number.isFinite(watermark) ? watermark : -1;
   const pending = config.changes.filter((change) => change.revision > mark);
@@ -24,7 +24,10 @@ export function applyHostConfig(M, board, config, watermark) {
   let last = mark;
   for (const change of pending) {
     try {
-      next = M.reduce(next, { type: 'configure', settings: change.settings, scope: change.scope });
+      const action = { type: 'configure', settings: change.settings, scope: change.scope };
+      const before = next;
+      next = M.reduce(next, action);
+      onChange?.(before, next, action);
     } catch {
       return { board: next, watermark: last, status: 'configError' };
     }

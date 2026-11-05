@@ -303,7 +303,11 @@ export function createBoardModel() {
         groupById(action.id); next.groups = next.groups.filter((g) => g.id !== action.id);
         for (const o of next.objects) if (o.groupId === action.id) o.groupId = null; break;
       }
-      case 'delete': objectById(action.id); next.objects = next.objects.filter((o) => o.id !== action.id); break;
+      case 'delete': {
+        objectById(action.id); next.objects = next.objects.filter((o) => o.id !== action.id);
+        const occupied = new Set(next.objects.map((o) => o.groupId).filter((id) => id !== null));
+        next.groups = next.groups.filter((g) => occupied.has(g.id)); break;
+      }
       case 'duplicateSelected': {
         const members = membersOf(next, action.ids);
         if (next.objects.length + members.length > 200) fail('Object limit exceeded');
@@ -358,10 +362,10 @@ export function createBoardModel() {
         const settings = validateSettings(action.settings);
         if (!['future', 'existing'].includes(action.scope)) fail('Choose future or existing settings scope');
         next.settings = settings;
-        // A colour always means "this level". Remap every object whose value still has a level,
-        // so adding or removing a level never silently changes what an existing shape means.
+        // A colour means "this level" for an unmerged shape. A merged shape keeps the
+        // value and colour recorded at merge time, including when that value is still a level.
         const levelOf = (value) => settings.levels.find((l) => l.value === value);
-        for (const o of next.objects) {
+        for (const o of next.objects) if (!o.sources.length) {
           const level = levelOf(o.value);
           if (level) o.color = level.color;
         }

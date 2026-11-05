@@ -307,7 +307,11 @@ window.__ModuleLoader__.load({
         groupById(action.id); next.groups = next.groups.filter((g) => g.id !== action.id);
         for (const o of next.objects) if (o.groupId === action.id) o.groupId = null; break;
       }
-      case 'delete': objectById(action.id); next.objects = next.objects.filter((o) => o.id !== action.id); break;
+      case 'delete': {
+        objectById(action.id); next.objects = next.objects.filter((o) => o.id !== action.id);
+        const occupied = new Set(next.objects.map((o) => o.groupId).filter((id) => id !== null));
+        next.groups = next.groups.filter((g) => occupied.has(g.id)); break;
+      }
       case 'duplicateSelected': {
         const members = membersOf(next, action.ids);
         if (next.objects.length + members.length > 200) fail('Object limit exceeded');
@@ -362,10 +366,10 @@ window.__ModuleLoader__.load({
         const settings = validateSettings(action.settings);
         if (!['future', 'existing'].includes(action.scope)) fail('Choose future or existing settings scope');
         next.settings = settings;
-        // A colour always means "this level". Remap every object whose value still has a level,
-        // so adding or removing a level never silently changes what an existing shape means.
+        // A colour means "this level" for an unmerged shape. A merged shape keeps the
+        // value and colour recorded at merge time, including when that value is still a level.
         const levelOf = (value) => settings.levels.find((l) => l.value === value);
-        for (const o of next.objects) {
+        for (const o of next.objects) if (!o.sources.length) {
           const level = levelOf(o.value);
           if (level) o.color = level.color;
         }
@@ -385,6 +389,220 @@ window.__ModuleLoader__.load({
   return { empty, defaultSettings, validateSettings, validate, reduce, summary, digest, serialize, color, mergeCandidate,
     shapes: [...shapes], defaultVisibleShapes: [...defaultVisible] };
 })();
+    const T = (function createBoardTrace(M) {
+  const KIND = 'math-board-trace';
+  const MAX_BYTES = 65536;
+  const FACT_BYTES = 850;
+  const types = ['add', 'batch', 'group', 'merge', 'split', 'delete', 'note', 'configure', 'move',
+    'undo', 'redo', 'clear', 'import', 'update', 'duplicate'];
+  const fields = ['count', 'activeCount', 'removedCount', 'value', 'removedValue', 'groupCount',
+    'groupedCount', 'mergedCount', 'objects', 'aliases', 'colors', 'groups', 'note',
+    'settings.levels', 'settings.defaults', 'settings.shapes', 'movedCount', 'changedCount', 'detailsOmitted'];
+  const fail = () => { throw new Error('Invalid math-board trace'); };
+  const plain = (v) => v !== null && typeof v === 'object' && !Array.isArray(v)
+    && (Object.getPrototypeOf(v) === Object.prototype || Object.getPrototypeOf(v) === null);
+  const keys = (v, names) => {
+    if (!plain(v) || Object.keys(v).length !== names.length || names.some((k) => !Object.hasOwn(v, k))) fail();
+  };
+  const integer = (v) => Number.isSafeInteger(v) && v >= 0;
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const bytes = (text) => {
+    let size = 0;
+    for (const c of text) { const n = c.codePointAt(0); size += n < 128 ? 1 : n < 2048 ? 2 : n < 65536 ? 3 : 4; }
+    return size;
+  };
+  const short = (s, limit = 60) => {
+    const chars = [...s];
+    return chars.length > limit ? chars.slice(0, limit - 1).join('') + '…' : s;
+  };
+  const list = (items) => {
+    const result = items.slice(0, 5).map((v) => short(v));
+    if (items.length > 5) result.push(`… +${items.length - 5}`);
+    return result;
+  };
+  const empty = (priorUnknown = false) => {
+    if (typeof priorUnknown !== 'boolean') fail();
+    return { kind: KIND, schemaVersion: 1, priorUnknown, totalChanges: 0, omittedChanges: 0, entries: [] };
+  };
+  const validValue = (field, v) => {
+    if (field === 'note') return typeof v === 'string' && [...v].length <= 60;
+    if (['objects', 'aliases', 'colors', 'groups', 'settings.levels', 'settings.defaults', 'settings.shapes'].includes(field)) {
+      return Array.isArray(v) && v.length <= 6 && v.every((s) => typeof s === 'string' && [...s].length <= 60);
+    }
+    if (['value', 'removedValue'].includes(field) && typeof v === 'string') return /^[1-9][0-9]{15,20}$/.test(v)
+      && BigInt(v) > BigInt(Number.MAX_SAFE_INTEGER);
+    return integer(v);
+  };
+  /** Strict validation returns a detached canonical value; malformed persisted data throws. */
+  function validate(trace) {
+    keys(trace, ['kind', 'schemaVersion', 'priorUnknown', 'totalChanges', 'omittedChanges', 'entries']);
+    if (trace.kind !== KIND || trace.schemaVersion !== 1 || typeof trace.priorUnknown !== 'boolean'
+      || !integer(trace.totalChanges) || !integer(trace.omittedChanges) || !Array.isArray(trace.entries)
+      || trace.entries.length > 60) fail();
+    let retained = 0; let previousEnd = 0;
+    for (let index = 0; index < trace.entries.length; index++) {
+      const entry = trace.entries[index];
+      keys(entry, ['seq', 'type', 'origin', 'repeats', 'facts']);
+      if (!integer(entry.seq) || entry.seq < 1 || !integer(entry.repeats) || entry.repeats < 1
+        || !integer(entry.seq + entry.repeats - 1) || !types.includes(entry.type)
+        || !['student', 'system'].includes(entry.origin) || !Array.isArray(entry.facts)
+        || entry.facts.length < 1 || entry.facts.length > 20 || bytes(JSON.stringify(entry.facts)) > FACT_BYTES) fail();
+      const gap = entry.seq - previousEnd - 1;
+      // The sole possible gap is between the retained first twenty and final thirty entries.
+      if ((index === 20 && trace.omittedChanges > 0) ? gap !== trace.omittedChanges : gap !== 0) fail();
+      const seen = new Set();
+      for (const fact of entry.facts) {
+        keys(fact, ['field', 'before', 'after']);
+        if (!fields.includes(fact.field) || seen.has(fact.field) || !validValue(fact.field, fact.before)
+          || !validValue(fact.field, fact.after) || same(fact.before, fact.after)) fail();
+        seen.add(fact.field);
+      }
+      const previous = trace.entries[index - 1];
+      if (gap === 0 && previous && previous.type === entry.type && previous.origin === entry.origin
+        && same(previous.facts, entry.facts)) fail();
+      retained += entry.repeats;
+      previousEnd = entry.seq + entry.repeats - 1;
+    }
+    if (!integer(retained) || retained + trace.omittedChanges !== trace.totalChanges
+      || previousEnd !== trace.totalChanges
+      || (trace.omittedChanges > 0 && trace.entries.length !== 50)
+      || bytes(JSON.stringify(trace)) > MAX_BYTES) fail();
+    return JSON.parse(JSON.stringify(trace));
+  }
+  const normalizeType = (action) => {
+    if (!plain(action) || typeof action.type !== 'string') fail();
+    const aliases = { groupSelected: 'group', renameGroup: 'group', deleteGroup: 'group',
+      moveMany: 'move', arrange: 'move', duplicateSelected: 'duplicate', systemConfigure: 'configure' };
+    const type = aliases[action.type] || action.type;
+    if (!types.includes(type)) fail();
+    return type;
+  };
+  const exact = (v) => v <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(v) : v.toString();
+  const countKinds = (board) => {
+    const counts = new Map();
+    for (const o of board.objects) {
+      const key = `${o.shape}:${o.value}${o.removed ? ':crossed-out' : ''}${o.sources.length ? ':merged' : ''}`;
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+    return list([...counts].sort(([a], [b]) => a.localeCompare(b)).map(([k, n]) => `${k} ×${n}`));
+  };
+  const aliasCounts = (board) => {
+    const counts = new Map();
+    for (const o of board.objects) if (o.alias) counts.set(o.alias, (counts.get(o.alias) || 0) + 1);
+    return list([...counts].sort(([a], [b]) => a.localeCompare(b)).map(([k, n]) => `${k} ×${n}`));
+  };
+  const groupFacts = (board) => list(board.groups.map((g) => {
+    const members = board.objects.filter((o) => o.groupId === g.id);
+    const value = members.reduce((sum, o) => sum + BigInt(o.value), 0n);
+    // Membership composition distinguishes group rewrites that share the same
+    // count and total; without it two different regroupings collapse as equal.
+    const kinds = new Map();
+    for (const o of members) {
+      const key = `${o.shape}:${o.value}${o.removed ? ':crossed-out' : ''}`;
+      kinds.set(key, (kinds.get(key) || 0) + 1);
+    }
+    const makeup = [...kinds].sort(([a], [b]) => a.localeCompare(b)).slice(0, 4)
+      .map(([key, count]) => `${key}×${count}`).join('+')
+      + (kinds.size > 4 ? `+…${kinds.size - 4}` : '');
+    return `${g.alias || '(unnamed)'}: ${makeup || 'empty'} / ${value}`;
+  }).sort());
+  const colorFacts = (board) => {
+    const counts = new Map();
+    for (const o of board.objects) counts.set(o.color, (counts.get(o.color) || 0) + 1);
+    return list([...counts].sort(([a], [b]) => a - b).map(([color, n]) => `${color} ×${n}`));
+  };
+  const metrics = (board) => ({
+    count: board.objects.length,
+    activeCount: board.objects.filter((o) => !o.removed).length,
+    removedCount: board.objects.filter((o) => o.removed).length,
+    value: exact(board.objects.reduce((n, o) => n + (o.removed ? 0n : BigInt(o.value)), 0n)),
+    removedValue: exact(board.objects.reduce((n, o) => n + (o.removed ? BigInt(o.value) : 0n), 0n)),
+    groupCount: board.groups.length,
+    groupedCount: board.objects.filter((o) => o.groupId !== null).length,
+    mergedCount: board.objects.filter((o) => o.sources.length > 0).length,
+  });
+  /** Record one successful user-visible transition; neither inputs nor board history are modified. */
+  function record(trace, before, after, action, origin = 'student') {
+    const next = validate(trace);
+    const type = normalizeType(action);
+    if (!['student', 'system'].includes(origin)) fail();
+    const a = M.validate(before); const b = M.validate(after);
+    if (same(a, b)) {
+      if (type === 'import') next.priorUnknown = true;
+      return next;
+    }
+    const facts = [];
+    const add = (field, oldValue, newValue) => {
+      if (same(oldValue, newValue)) return;
+      const fact = { field, before: oldValue, after: newValue };
+      // Keep any single list fact small enough to survive the overall facts budget,
+      // including settings aliases containing four-byte Unicode characters.
+      if (Array.isArray(oldValue) && Array.isArray(newValue)) {
+        let limit = 5;
+        const compact = (values) => values.length <= limit ? values
+          : [...values.slice(0, limit), `… +${values.length - limit} details`];
+        while (bytes(JSON.stringify(fact)) > 600 && limit > 1) {
+          limit--;
+          fact.before = compact(oldValue); fact.after = compact(newValue);
+        }
+        if (bytes(JSON.stringify(fact)) > 600) {
+          fact.before = fact.before.map((v) => short(v, 24));
+          fact.after = fact.after.map((v) => short(v, 24));
+        }
+      }
+      if (!same(fact.before, fact.after)) facts.push(fact);
+    };
+    const oldMetrics = metrics(a); const newMetrics = metrics(b);
+    for (const field of Object.keys(oldMetrics)) add(field, oldMetrics[field], newMetrics[field]);
+    // Long notes show bounded excerpts around the first difference, not an equal prefix.
+    if (a.note !== b.note) {
+      const oldChars = [...a.note]; const newChars = [...b.note];
+      let difference = 0;
+      while (difference < Math.min(oldChars.length, newChars.length)
+        && oldChars[difference] === newChars[difference]) difference++;
+      const start = Math.max(0, difference - 15);
+      const excerpt = (chars) => (start ? '…' : '') + short(chars.slice(start).join(''), start ? 59 : 60);
+      add('note', excerpt(oldChars), excerpt(newChars));
+    }
+    // Settings precede optional composition details to retain the principal change.
+    add('settings.levels', list(a.settings.levels.map((l) => `${l.value}:${l.color}`)),
+      list(b.settings.levels.map((l) => `${l.value}:${l.color}`)));
+    add('settings.defaults', list(a.settings.defaults.filter((d, i) => !same(d, b.settings.defaults[i]))
+      .map((d) => `${d.shape}:${d.value}:${d.alias}`)),
+    list(b.settings.defaults.filter((d, i) => !same(d, a.settings.defaults[i]))
+      .map((d) => `${d.shape}:${d.value}:${d.alias}`)));
+    add('settings.shapes', list(a.settings.shapes), list(b.settings.shapes));
+    add('objects', countKinds(a), countKinds(b));
+    add('aliases', aliasCounts(a), aliasCounts(b));
+    add('groups', groupFacts(a), groupFacts(b));
+    add('colors', colorFacts(a), colorFacts(b));
+    const priorObjects = new Map(a.objects.map((o) => [o.id, o]));
+    const moved = b.objects.filter((o) => {
+      const old = priorObjects.get(o.id);
+      return old && (old.x !== o.x || old.y !== o.y);
+    }).length;
+    if (moved) add('movedCount', 0, moved);
+    // Truncated text or equal aggregate compositions can hide a real edit. Do not lose the event.
+    if (!facts.length) add('changedCount', 0, 1);
+    let omitted = 0;
+    while (bytes(JSON.stringify(facts)) > FACT_BYTES - 65) { facts.pop(); omitted++; }
+    if (omitted) facts.push({ field: 'detailsOmitted', before: 0, after: omitted });
+    if (!Number.isSafeInteger(next.totalChanges + 1)) fail();
+    const last = next.entries[next.entries.length - 1];
+    next.totalChanges++;
+    if (last && last.type === type && last.origin === origin && same(last.facts, facts)) last.repeats++;
+    else next.entries.push({ seq: next.totalChanges, type, origin, repeats: 1, facts });
+    if (next.entries.length > 60 || (next.omittedChanges > 0 && next.entries.length > 50)) {
+      const discarded = next.entries.splice(20, next.entries.length - 50);
+      next.omittedChanges += discarded.reduce((n, entry) => n + entry.repeats, 0);
+    }
+    // An imported final board says nothing about the process which produced it.
+    if (type === 'import') next.priorUnknown = true;
+    return validate(next);
+  }
+  const serialize = (trace) => JSON.stringify(validate(trace));
+  return { empty, validate, record, serialize };
+})(M);
     const createArt = function createShapeArt(React) {
   const h = React.createElement;
   const INK = '#1E293B';
@@ -622,7 +840,7 @@ window.__ModuleLoader__.load({
   const level = levels.find((entry) => entry.value === value);
   return level ? level.color : 0;
 };
-    const applyHostConfig = function applyHostConfig(M, board, config, watermark) {
+    const applyHostConfig = function applyHostConfig(M, board, config, watermark, onChange) {
   if (!config || !Array.isArray(config.changes)) return null;
   const mark = Number.isFinite(watermark) ? watermark : -1;
   const pending = config.changes.filter((change) => change.revision > mark);
@@ -635,7 +853,10 @@ window.__ModuleLoader__.load({
   let last = mark;
   for (const change of pending) {
     try {
-      next = M.reduce(next, { type: 'configure', settings: change.settings, scope: change.scope });
+      const action = { type: 'configure', settings: change.settings, scope: change.scope };
+      const before = next;
+      next = M.reduce(next, action);
+      onChange?.(before, next, action);
     } catch {
       return { board: next, watermark: last, status: 'configError' };
     }
@@ -643,7 +864,7 @@ window.__ModuleLoader__.load({
   }
   return { board: next, watermark: last, status: gapped ? 'configGap' : 'configApplied' };
 };
-    const createView = function createBoardView(React, M, ctx, t, css, art, describeBoard, applyHostConfig) {
+    const createView = function createBoardView(React, M, ctx, t, css, art, describeBoard, applyHostConfig, T) {
   const h = React.createElement;
   const paletteColor = (index) => M.color(index);
   function icon(name, size = 18) {
@@ -680,6 +901,12 @@ window.__ModuleLoader__.load({
     const [ready, setReady] = React.useState(false);
     const [storageBlocked, setStorageBlocked] = React.useState(false);
     const [history, setHistory] = React.useState({ past: [], future: [] });
+    const [trace, setTrace] = React.useState(() => T.empty());
+    const traceRef = React.useRef(trace);
+    const [attachTrace, setAttachTrace] = React.useState(true);
+    const [traceView, setTraceView] = React.useState(false);
+    const [resetTraceConfirm, setResetTraceConfirm] = React.useState(false);
+    const traceKey = `${key}:trace-v1`;
     const [selection, setSelection] = React.useState([]);
     const [multi, setMulti] = React.useState(false);
     const [focus, setFocus] = React.useState(false);
@@ -696,6 +923,7 @@ window.__ModuleLoader__.load({
       || board.settings.levels.find((level) => level.value === 1) || board.settings.levels[0];
     const config = props.useProjection('eduBoardConfig');
     const watermark = React.useRef(-1);
+    const pendingWatermark = React.useRef(null);
     const dialog = React.useRef(null), fileInput = React.useRef(null), downloadAnchor = React.useRef(null);
     const url = React.useRef(null), gesture = React.useRef(null), revision = React.useRef(0);
     const svgRef = React.useRef(null);
@@ -704,7 +932,10 @@ window.__ModuleLoader__.load({
     const single = selected.length === 1 ? selected[0] : null;
     const activeSelected = selected.filter((o) => !o.removed);
     const touchedGroups = [...new Set(selected.map((o) => o.groupId).filter(Boolean))];
-    const group = touchedGroups.length === 1 ? board.groups.find((g) => g.id === touchedGroups[0]) : null;
+    const completeGroup = touchedGroups.length === 1 && selected.length > 0
+      && selected.every((o) => o.groupId === touchedGroups[0])
+      && board.objects.every((o) => o.groupId !== touchedGroups[0] || selection.includes(o.id))
+      ? board.groups.find((g) => g.id === touchedGroups[0]) : null;
     const dense = board.objects.length > 60;
     const radius = dense ? 13 : 19;
     const mergeInfo = activeSelected.length >= 2 ? M.mergeCandidate(board, activeSelected.map((o) => o.id)) : null;
@@ -718,9 +949,18 @@ window.__ModuleLoader__.load({
         const raw = current ?? previous;
         const next = raw ? M.validate(JSON.parse(raw)) : M.empty();
         boardRef.current = next; setBoard(next);
+        let restored = T.empty(raw !== null);
+        try {
+          const saved = JSON.parse(localStorage.getItem(traceKey) || 'null');
+          if (saved && typeof saved.attach === 'boolean') setAttachTrace(saved.attach);
+          if (saved && saved.board === JSON.stringify(next)) restored = T.validate(saved.trace);
+        } catch { setStatus(t('traceLoadError')); }
+        traceRef.current = restored; setTrace(restored);
+        setHistory({ past: [], future: [] });
         const mark = localStorage.getItem(watermarkKey) ?? (previous === null ? null : localStorage.getItem(`${legacyKey}:config`));
         const parsed = mark === null ? -1 : Number(mark);
         watermark.current = Number.isFinite(parsed) ? parsed : -1;
+        pendingWatermark.current = null;
       } catch { setStorageBlocked(true); setStatus(t('loadError')); }
       setReady(true);
       return () => { revision.current++; gesture.current = null; if (url.current) URL.revokeObjectURL(url.current); };
@@ -728,18 +968,46 @@ window.__ModuleLoader__.load({
 
     React.useEffect(() => {
       if (!ready || storageBlocked) return;
-      try { localStorage.setItem(key, JSON.stringify(board)); } catch { setStatus(t('storageError')); }
-    }, [board, ready, storageBlocked, key]);
+      try {
+        const serialized = JSON.stringify(board);
+        localStorage.setItem(key, serialized);
+        // Bind the sidecar to the exact draft; interrupted writes never invent history.
+        localStorage.setItem(traceKey, JSON.stringify({ board: serialized, trace, attach: attachTrace }));
+        // The settings watermark advances only together with the board it describes,
+        // so a failed or interrupted write cannot skip a host configuration forever.
+        if (pendingWatermark.current !== null) {
+          localStorage.setItem(watermarkKey, String(pendingWatermark.current));
+          pendingWatermark.current = null;
+        }
+      } catch { setStatus(t('storageError')); }
+    }, [board, trace, attachTrace, ready, storageBlocked, key]);
 
     // Host settings changes (typed by the student in chat or via /math-board-settings).
     React.useEffect(() => {
       if (!ready || !config) return;
-      const result = applyHostConfig(M, boardRef.current, config, watermark.current);
+      if ((config.floorRevision ?? 0) > 0 && watermark.current < config.floorRevision) {
+        publishTrace({ ...traceRef.current, priorUnknown: true });
+      }
+      const applied = [];
+      let recordFailed = false;
+      const result = applyHostConfig(M, boardRef.current, config, watermark.current,
+        (before, after, change) => {
+          applied.push(change);
+          if (!recordChange(before, after, change, 'system')) recordFailed = true;
+        });
       if (!result) return;
+      // Apply before any in-flight async import resolves; its revision check then drops it.
+      revision.current++;
       publish(result.board);
+      if (applied.length) {
+        const replay = (snapshot) => applied.reduce((state, action) => {
+          try { return M.reduce(state, action); } catch { return state; }
+        }, snapshot);
+        setHistory((old) => ({ past: old.past.map(replay), future: old.future.map(replay) }));
+      }
       watermark.current = result.watermark;
-      try { localStorage.setItem(watermarkKey, String(result.watermark)); } catch {}
-      setStatus(t(result.status));
+      pendingWatermark.current = result.watermark;
+      setStatus(recordFailed ? t('traceRecordError') : t(result.status));
     }, [config, ready]);
 
     React.useEffect(() => {
@@ -754,15 +1022,33 @@ window.__ModuleLoader__.load({
       if (active && dialog.current.contains(active) && active.matches('input,textarea,select')) active.blur();
     }
     function publish(next) { boardRef.current = next; setBoard(next); }
-    function commit(next) {
+    function publishTrace(next) { traceRef.current = next; setTrace(next); }
+    function recordChange(before, after, change, origin = 'student') {
+      try { publishTrace(T.record(traceRef.current, before, after, change, origin)); return true; }
+      catch {
+        // Keep every known fact; only the process after this point becomes unknown.
+        let kept;
+        try { kept = { ...traceRef.current, priorUnknown: true }; T.validate(kept); } catch { kept = T.empty(true); }
+        publishTrace(kept);
+        setStatus(t('traceRecordError'));
+        return false;
+      }
+    }
+    function commit(next, change) {
       const before = boardRef.current;
-      if (JSON.stringify(next) === JSON.stringify(before)) return;
+      if (JSON.stringify(next) === JSON.stringify(before)) {
+        if (change?.type === 'import') recordChange(before, next, change);
+        return;
+      }
       gesture.current = null; setPreview(null); revision.current++;
       setHistory((old) => ({ past: [...old.past.slice(-39), before], future: [] }));
-      publish(next); setStatus(''); setClearConfirm(false);
+      const recorded = recordChange(before, next, change);
+      publish(next);
+      if (recorded) setStatus('');
+      setClearConfirm(false);
     }
     function action(a) {
-      try { const next = M.reduce(boardRef.current, a); commit(next); return next; }
+      try { const next = M.reduce(boardRef.current, a); commit(next, a); return next; }
       catch (error) { setStatus(`${t('failed')}: ${error.message}`); return null; }
     }
     function batch(actions) { return action({ type: 'batch', actions }); }
@@ -771,13 +1057,15 @@ window.__ModuleLoader__.load({
       const prev = history.past.at(-1); if (!prev) return;
       gesture.current = null; setPreview(null); revision.current++;
       setHistory({ past: history.past.slice(0, -1), future: [boardRef.current, ...history.future].slice(0, 40) });
-      publish(prev); selectIds([]); setStatus('');
+      const recorded = recordChange(boardRef.current, prev, { type: 'undo' });
+      publish(prev); selectIds([]); if (recorded) setStatus('');
     }
     function redo() {
       const next = history.future[0]; if (!next) return;
       gesture.current = null; setPreview(null); revision.current++;
       setHistory({ past: [...history.past, boardRef.current].slice(-40), future: history.future.slice(1) });
-      publish(next); selectIds([]); setStatus('');
+      const recorded = recordChange(boardRef.current, next, { type: 'redo' });
+      publish(next); selectIds([]); if (recorded) setStatus('');
     }
     function button(label, handler, extra = {}) { return h('button', { type: 'button', onClick: handler, ...extra }, label); }
     function toolButton(name, handler, extra = {}) { return button(icon(name), handler, { title: t(name), 'aria-label': t(name), className: 'eb-icon-button', ...extra }); }
@@ -790,14 +1078,17 @@ window.__ModuleLoader__.load({
     }
     function updateSelected(patch) { batch(selected.map((o) => ({ type: 'update', id: o.id, patch }))); }
     function groupSelection() {
-      const before = new Set(boardRef.current.groups.map((item) => item.id));
-      const alias = group ? group.alias : t('defaultGroup');
+      const current = boardRef.current;
+      const before = new Set(current.groups.map((item) => item.id));
+      const touched = [...new Set(current.objects.filter((item) => selection.includes(item.id)).map((item) => item.groupId).filter(Boolean))];
+      const previous = touched.length === 1 ? current.groups.find((item) => item.id === touched[0]) : null;
+      const alias = previous ? previous.alias : t('defaultGroup');
       const next = action({ type: 'groupSelected', ids: selected.map((item) => item.id), alias });
       if (!next) return;
       const created = next.groups.find((item) => !before.has(item.id));
       if (created) setSelection(next.objects.filter((item) => item.groupId === created.id).map((item) => item.id));
     }
-    function ungroup() { if (group) { action({ type: 'deleteGroup', id: group.id }); setSelection([]); } }
+    function ungroup() { if (completeGroup) { action({ type: 'deleteGroup', id: completeGroup.id }); setSelection([]); } }
     function duplicate() {
       const before = new Set(boardRef.current.objects.map((o) => o.id));
       const next = action({ type: 'duplicateSelected', ids: selection });
@@ -831,7 +1122,7 @@ window.__ModuleLoader__.load({
         const whole = expandGroup([objectId]);
         let ids = selection;
         if (e.shiftKey || multi) {
-          ids = selection.includes(objectId) ? selection.filter((id) => !whole.some((w) => w === id)) : [...new Set([...selection, ...whole])];
+          ids = selection.includes(objectId) ? selection.filter((id) => id !== objectId) : [...selection, objectId];
           selectIds(ids); return;
         }
         if (!ids.includes(objectId)) ids = whole;
@@ -864,15 +1155,16 @@ window.__ModuleLoader__.load({
         if (!g.moved) { selectIds([]); return; }
         const p = g.current, x1 = Math.min(p.x, g.start.x), x2 = Math.max(p.x, g.start.x), y1 = Math.min(p.y, g.start.y), y2 = Math.max(p.y, g.start.y);
         const hit = g.base.objects.filter((o) => o.x + radius >= x1 && o.x - radius <= x2 && o.y + radius >= y1 && o.y - radius <= y2).map((o) => o.id);
-        selectIds(expandGroup([...new Set([...g.initial, ...hit])]));
+        selectIds([...new Set([...g.initial, ...hit])]);
       }
     }
     function objectKey(e, o) {
       const arrows = { ArrowLeft: [-10, 0], ArrowRight: [10, 0], ArrowUp: [0, -10], ArrowDown: [0, 10] };
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
-        const whole = expandGroup([o.id]);
-        selectIds(e.shiftKey ? (selection.includes(o.id) ? selection.filter((id) => !whole.includes(id)) : [...new Set([...selection, ...whole])]) : whole);
+        selectIds(e.shiftKey
+          ? (selection.includes(o.id) ? selection.filter((id) => id !== o.id) : [...selection, o.id])
+          : expandGroup([o.id]));
       } else if (arrows[e.key]) {
         e.preventDefault(); const [dx, dy] = arrows[e.key];
         action({ type: 'moveMany', ids: selection.includes(o.id) ? selection : [o.id], dx, dy });
@@ -898,11 +1190,16 @@ window.__ModuleLoader__.load({
         if (!conversation?.createDrafts) throw Error();
         const span = props.inputActions.captureInsertion();
         const text = '\n' + describeBoard(boardRef.current, t) + '\n';
-        const file = new File([M.serialize(boardRef.current)], t('attachmentName'), { type: 'application/json' });
-        drafts = conversation.createDrafts(props.sessionId, [file]);
+        const files = [new File([M.serialize(boardRef.current)], t('attachmentName'), { type: 'application/json' })];
+        let traceSkipped = false;
+        if (attachTrace) {
+          try { files.push(new File([T.serialize(traceRef.current)], t('traceAttachmentName'), { type: 'application/json' })); }
+          catch { traceSkipped = true; }
+        }
+        drafts = conversation.createDrafts(props.sessionId, files);
         if (!props.inputActions.addAttachments(drafts.map((draft) => draft.id))) throw Error();
         if (!props.inputActions.insertText(text, span)) throw Error();
-        props.inputActions.persistDraft(); setStatus(t('inserted')); close();
+        props.inputActions.persistDraft(); setStatus(t(traceSkipped ? 'traceSkipped' : 'inserted')); close();
       } catch {
         discard();
         setStatus(t('insertFailed'));
@@ -921,7 +1218,7 @@ window.__ModuleLoader__.load({
         if (file.size > 262144) throw Error(t('fileTooLarge'));
         const next = M.validate(JSON.parse(await file.text()));
         if (rev !== revision.current) return;
-        commit(next); setStorageBlocked(false); selectIds([]); setStatus(t('imported'));
+        commit(next, { type: 'import' }); setStorageBlocked(false); selectIds([]); setStatus(t('imported'));
       } catch (error) { setStatus(`${t('failed')}: ${error.message}`); }
     }
 
@@ -1051,7 +1348,7 @@ window.__ModuleLoader__.load({
           button(t('cancel'), () => { setSettingsView(false); setSettingsDraft(null); })));
     }
 
-    const modeHint = group ? t('hintGrouped') : selected.length ? t('hintSelected') : t('hintEmpty');
+    const modeHint = completeGroup ? t('hintGrouped') : selected.length ? t('hintSelected') : t('hintEmpty');
     const canMerge = activeSelected.length >= 2;
     const canSplit = Boolean(single && single.value > 1 && !single.removed);
     const header = h('header', { className: 'eb-top' },
@@ -1082,8 +1379,8 @@ window.__ModuleLoader__.load({
           { className: 'eb-new-group', 'aria-pressed': settingsView })));
     const selectionBar = selected.length > 0 && !settingsView && h('div', { className: 'eb-floating', role: 'toolbar', 'aria-label': t('selectionActions') },
       h('small', null, `${t('selectedCount')} ${selected.length}`),
-      !group && button(h(React.Fragment, null, icon('group', 15), t('makeGroup')), groupSelection, { disabled: board.groups.length >= 12 }),
-      group && button(h(React.Fragment, null, icon('ungroup', 15), t('ungroup')), ungroup),
+      !completeGroup && button(h(React.Fragment, null, icon('group', 15), t('makeGroup')), groupSelection, { disabled: board.groups.length - touchedGroups.length >= 12 }),
+      completeGroup && button(h(React.Fragment, null, icon('ungroup', 15), t('ungroup')), ungroup),
       canMerge && button(h(React.Fragment, null, icon('merge', 15), t('merge')), mergeSelection,
         { disabled: !(mergeInfo && mergeInfo.allowed), title: mergeInfo && !mergeInfo.allowed ? mergeInfo.reason : '' }),
       canSplit && button(h(React.Fragment, null, icon('split', 15), t('split')), splitSelection),
@@ -1129,8 +1426,7 @@ window.__ModuleLoader__.load({
             onDrop: (event) => {
               if (!dragShape) return;
               event.preventDefault();
-              const rect = svgRef.current.getBoundingClientRect();
-              add(dragShape, { x: (event.clientX - rect.left) * (800 / rect.width), y: (event.clientY - rect.top) * (400 / rect.height) });
+              add(dragShape, point(event));
               setDragShape(null);
             },
           },
@@ -1138,27 +1434,27 @@ window.__ModuleLoader__.load({
           stageTools),
       h('div', { className: 'eb-stage-caption' }, h('span', null, modeHint)));
     const inspectorSections = [];
-    if (selected.length > 0 && group) inspectorSections.push(h('section', { key: 'group' },
+    if (selected.length > 0 && completeGroup) inspectorSections.push(h('section', { key: 'group' },
       h('label', null, t('groupAlias'), h('input', {
-        key: `g:${group.id}:${group.alias}`, type: 'text', maxLength: 30, defaultValue: group.alias, placeholder: t('groupHint'),
-        onBlur: (event) => { if (event.target.value !== group.alias) action({ type: 'renameGroup', id: group.id, alias: event.target.value }); },
+        key: `g:${completeGroup.id}:${completeGroup.alias}`, type: 'text', maxLength: 30, defaultValue: completeGroup.alias, placeholder: t('groupHint'),
+        onBlur: (event) => { if (event.target.value !== completeGroup.alias) action({ type: 'renameGroup', id: completeGroup.id, alias: event.target.value }); },
         onKeyDown: (event) => { if (event.key === 'Enter') event.currentTarget.blur(); },
       })),
       h('p', { className: 'eb-muted' }, t('groupedNoAlias')),
       h('div', { className: 'eb-inspector-actions' },
         button(t('ungroup'), ungroup),
         button(t('duplicateGroup'), () => { action({ type: 'duplicateSelected', ids: selected.map((item) => item.id) }); }))));
-    if (selected.length > 0 && !group && single) inspectorSections.push(h('section', { key: 'single' },
+    if (selected.length > 0 && !completeGroup && single) inspectorSections.push(h('section', { key: 'single' },
       h('label', null, t('alias'), h('input', {
         key: `n:${single.id}:${single.alias}`, type: 'text', maxLength: 30, defaultValue: single.alias, placeholder: t('aliasHint'),
         onBlur: (event) => { if (event.target.value !== single.alias) updateSelected({ alias: event.target.value }); },
         onKeyDown: (event) => { if (event.key === 'Enter') event.currentTarget.blur(); },
       })),
       h('p', { className: 'eb-muted' }, `${t('value')}: ${single.value}${single.sources.length ? ` · ${t('mergedFrom')} ${single.sources.length}` : ''}`)));
-    if (selected.length > 0 && !group && !single) inspectorSections.push(h('div', { className: 'eb-hint-card', key: 'many' }, `${t('selectedCount')} ${selected.length}`));
+    if (selected.length > 0 && !completeGroup && !single) inspectorSections.push(h('div', { className: 'eb-hint-card', key: 'many' }, `${t('selectedCount')} ${selected.length}`));
     const inspectorPanel = h('aside', { className: 'eb-panel eb-inspector', 'aria-label': t('myObjects') },
       h('div', { className: 'eb-panel-head' },
-        h('h3', null, group ? t('myGroup') : t('myObjects')),
+        h('h3', null, completeGroup ? t('myGroup') : t('myObjects')),
         h('p', null, t('inspectorHint'))),
       h('div', { className: 'eb-inspector-body' },
         !selected.length && h('div', { className: 'eb-hint-card' }, t('noSelection')),
@@ -1168,18 +1464,56 @@ window.__ModuleLoader__.load({
           key: `note:${board.note}`, defaultValue: board.note, maxLength: 500, placeholder: t('noteHint'),
           onBlur: (event) => { if (event.target.value !== boardRef.current.note) action({ type: 'note', value: event.target.value }); },
         }))));
+    const traceControls = h('section', { className: 'eb-trace', 'aria-label': t('traceTitle') },
+      h('div', { className: 'eb-trace-controls' },
+        h('label', null, h('input', { type: 'checkbox', checked: attachTrace,
+          onChange: (event) => setAttachTrace(event.target.checked) }), t('traceAttach')),
+        button(t(traceView ? 'traceHide' : 'tracePreview'), () => { flushEditor(); setTraceView(!traceView); }),
+        button(t('traceNewAttempt'), () => { flushEditor(); setResetTraceConfirm(true); })),
+      h('p', { className: 'eb-muted' }, t('traceNotice')),
+      resetTraceConfirm && h('div', { className: 'eb-confirm' },
+        h('span', null, t('traceResetQuestion')),
+        button(t('traceResetConfirm'), () => {
+          revision.current++; gesture.current = null; setPreview(null);
+          const baseline = boardRef.current;
+          publishTrace(T.empty(Boolean(baseline.objects.length || baseline.groups.length || baseline.note)));
+          setHistory({ past: [], future: [] });
+          setResetTraceConfirm(false); setStatus(t('traceResetDone'));
+        }),
+        button(t('cancel'), () => setResetTraceConfirm(false))),
+      traceView && h('div', { className: 'eb-trace-preview' },
+        h('p', null, t('traceScope')),
+        trace.priorUnknown && h('p', null, t('tracePriorUnknown')),
+        h('p', null, t('traceTotals', { count: trace.totalChanges, omitted: trace.omittedChanges })),
+        !trace.entries.length && h('p', null, t('traceEmpty')),
+        h('ol', null, trace.entries.map((entry, index) => h('li', { key: entry.seq, value: entry.seq },
+          index > 0 && entry.seq > trace.entries[index - 1].seq + trace.entries[index - 1].repeats
+            && h('p', null, t('traceGap')),
+          h('strong', null, `${t(`traceType_${entry.type}`)} · ${t(`traceOrigin_${entry.origin}`)} × ${entry.repeats}`),
+          h('ul', null, entry.facts.map((fact) => h('li', { key: fact.field },
+            `${t(`traceField_${fact.field.replaceAll('.', '_')}`)}: ${traceValue(fact.before, fact.field)} → ${traceValue(fact.after, fact.field)}`))))))));
+    function traceValue(value, field) {
+      if (Array.isArray(value)) return value.map((item) => traceValue(item, field)).join(' / ');
+      if (typeof value !== 'string') return String(value ?? '—');
+      if (['objects', 'settings.defaults', 'settings.shapes'].includes(field)) {
+        const shape = M.shapes.find((name) => value === name || value.startsWith(`${name}:`));
+        if (shape) value = t(shape) + value.slice(shape.length);
+        value = value.replaceAll(':crossed-out', `:${t('removed')}`).replaceAll(':merged', `:${t('merge')}`);
+      }
+      return value;
+    }
     const footer = h('footer', { className: 'eb-footer' },
       h('div', { className: 'eb-status', role: 'status', 'aria-live': 'polite' }, status || t('localDraft')),
       clearConfirm
         ? h('div', { className: 'eb-confirm' },
             h('span', null, t('clearQuestion')),
-            button(t('confirmClear'), () => { commit(M.empty()); selectIds([]); setStorageBlocked(false); }),
+            button(t('confirmClear'), () => { commit(M.empty(), { type: 'clear' }); selectIds([]); setStorageBlocked(false); }),
             button(t('cancel'), () => setClearConfirm(false)))
         : h('div', { className: 'eb-file-actions' },
             button(t('export'), exportFile),
             button(t('import'), () => fileInput.current.click()),
             button(t('clear'), () => setClearConfirm(true))),
-      button(t('insert'), insert, { className: 'eb-primary', disabled: !board.objects.length || phase !== 'plain' }),
+      button(t('insert'), insert, { className: 'eb-primary', disabled: (!board.objects.length && !board.note && !(attachTrace && trace.totalChanges)) || phase !== 'plain' }),
       button(h(React.Fragment, null, icon('close'), h('span', null, t('backToChat'))), close, { className: 'eb-close', 'aria-label': t('backToChat') }),
       h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: fileInput, onChange: importFile }),
       h('a', { hidden: true, ref: downloadAnchor, download: 'math-board.json' }));
@@ -1200,18 +1534,19 @@ window.__ModuleLoader__.load({
       h('div', { className: 'eb-workbench' },
         header,
         h('main', { className: 'eb-layout', 'data-focus': focus }, toolboxPanel, stagePanel, inspectorPanel),
+        traceControls,
         footer)));
   };
 };
     const art = createArt(React);
-    const dictionaries = {"en":{"title":"Math board","workspaceSubtitle":"Place shapes · group them · name the amounts","toolbox":"Toolbox","tapToAdd":"Tap to place, or drag one in","shapes":"Patterns","circle":"Circle","square":"Square","triangle":"Triangle","star":"Star","hexagon":"Hexagon","diamond":"Diamond","heart":"Heart","oval":"Oval","cat":"Cat","dog":"Dog","car":"Car","person":"Person","apple":"Apple","fish":"Fish","rocket":"Rocket","flower":"Flower","butterfly":"Butterfly","house":"House","icecream":"Ice cream","settings":"Settings","settingsIntro":"You choose which patterns sit in the toolbox, what each stands for, and which colour marks which amount.","patterns":"Pattern library","patternsHint":"Tap a pattern to put it in the toolbox; tap again to tuck it away. Shapes already on the canvas stay.","addPattern":"Add to toolbox","removePattern":"Tuck away","morePatterns":"More patterns","levelLadder":"Value ladder","level":"Level","colorName":"Colour","removeLevel":"Remove level","addLevel":"Add level","resetSettings":"Reset","shapeDefaults":"What these patterns stand for","applyFuture":"New shapes only","applyExisting":"Also change existing","settingsFutureDone":"Saved. New shapes use the new value.","settingsExistingDone":"Saved. Existing unmerged shapes also use the new value.","cancel":"Cancel","value":"Standing for","alias":"Name","aliasHint":"For example: apple","canvas":"Shape canvas","canvasEmpty":"Pick a shape on the left to begin","canvasEmptyHint":"Drag to arrange · box-select · Shift-click to add","gestureHint":"Drag to arrange · box-select · Shift-click to add","multiSelect":"Multi-select","focusMode":"Canvas only","zoomIn":"Zoom in","zoomOut":"Zoom out","fitView":"Fit","selectionActions":"Selected shape actions","selectedCount":"Selected","makeGroup":"Group","ungroup":"Ungroup","merge":"Merge","split":"Split","copy":"Copy","crossOut":"Cross out","restore":"Restore","trash":"Delete selected","group":"Group","defaultGroup":"My group","groupAlias":"Group name","groupHint":"For example: Rabbit's share","groupedNoAlias":"Shapes in a group share its name instead of having their own.","duplicateGroup":"Duplicate group","mergedFrom":"Merged from","noSelection":"Select one shape or box-select several to name, group, or merge them.","mergeReason":"Merging needs the same shape, the same value, the same name, the same group, and a total that matches one of your levels.","hintGrouped":"A whole group is selected: renaming changes the group.","hintSelected":"Name, group or merge the selection.","hintEmpty":"Drag shapes to arrange; drag on empty space to select several.","myObjects":"My thinking","myGroup":"My group","inspectorHint":"Select shapes to name them here","note":"My explanation","noteHint":"What do these shapes mean? How did you think about it?","undo":"Undo","redo":"Redo","group2":"Group","close":"Close","gear":"Settings","minus":"Remove","plus":"Add","cross":"Cross out","multi":"Multi-select","focus":"Focus","export":"Save JSON","import":"Open JSON","clear":"Clear","clearQuestion":"Clear the canvas? You can undo this.","confirmClear":"Confirm clear","insert":"Add to answer","inserted":"Added the board note and file to the composer. Review it and send it yourself.","insertFailed":"Cannot insert now. Wait until the composer is editable and try again.","attachmentName":"my-math-board.json","summaryIntro":"Here is what I put on the math board:","summaryUngroupedLine":"Not grouped: {parts}","summaryGroup":"Group “{name}”: {parts} — {total} altogether","summaryRemovedLine":"Crossed out: {parts}","summaryItem":"{name} × {count}, each standing for {value}","summaryMerged":"{name} merged from {sources} shapes, standing for {value}","summaryJoin":", ","summaryUnnamedGroup":"an unnamed group","summaryNote":"What I mean: {note}","backToChat":"Back to chat","localDraft":"Your draft stays here until you send it.","failed":"Action not completed","fileTooLarge":"Choose a board JSON smaller than 256 KB.","imported":"Board opened.","storageError":"Cannot save this browser draft. Save JSON to keep your work.","loadError":"Cannot read the draft. Original data was not overwritten.","configApplied":"Your spoken values and colours are now applied.","configGap":"Settings history had a gap; retained changes were replayed with their original scopes.","configError":"A settings update could not be applied; earlier successful changes were kept.","removed":"Crossed out","active":"Kept"},"zh":{"title":"数学画板","workspaceSubtitle":"摆图形 · 圈一组 · 自己说数量","toolbox":"工具箱","tapToAdd":"点一下放到画布；也可以拖进来","shapes":"图案","circle":"圆形","square":"方块","triangle":"三角形","star":"星形","hexagon":"六边形","diamond":"菱形","heart":"爱心","oval":"椭圆","cat":"小猫","dog":"小狗","car":"汽车","person":"人","apple":"苹果","fish":"小鱼","rocket":"火箭","flower":"小花","butterfly":"蝴蝶","house":"房子","icecream":"冰淇淋","settings":"设置","settingsIntro":"你来决定工具箱里有哪些图案、每个图案代表多少，以及哪个数值用哪种颜色。","patterns":"图案库","patternsHint":"点一下图案就放进工具箱，再点一下收起来；已经摆好的图形不会消失。","addPattern":"添加到工具箱","removePattern":"从工具箱收起","morePatterns":"更多图案","levelLadder":"数值阶梯","level":"第几级","colorName":"颜色","removeLevel":"删除这一级","addLevel":"增加一级","resetSettings":"恢复默认","shapeDefaults":"这些图案默认代表多少","applyFuture":"只用于新图形","applyExisting":"也改已有图形","settingsFutureDone":"已保存设置，新添加的图形按新数值。","settingsExistingDone":"已保存设置，未合并的已有图形也改成新数值。","cancel":"取消","value":"代表","alias":"名字","aliasHint":"例如：苹果","canvas":"图形画布","canvasEmpty":"从左边选一个图形，开始摆一摆","canvasEmptyHint":"拖动摆放 · 空白处框选 · Shift 点击加选","gestureHint":"拖动摆放 · 空白处框选 · Shift 点击加选","multiSelect":"多选","focusMode":"只看画布","zoomIn":"放大画布","zoomOut":"缩小画布","fitView":"全图","selectionActions":"所选图形操作","selectedCount":"已选","makeGroup":"圈为一组","ungroup":"解散组","merge":"合并","split":"拆开","copy":"复制","crossOut":"划去","restore":"恢复","trash":"删除所选","group":"组","defaultGroup":"我的一组","groupAlias":"这一组的名字","groupHint":"例如：小兔的一份","groupedNoAlias":"组里的图形不单独起名字；改名后整组一起变。","duplicateGroup":"复制这一组","mergedFrom":"由这些图形合并而来","noSelection":"点一个图形，或框选几个，就能起名字、圈组、合并。","mergeReason":"合并需要同一形状、同一数值、同一个名字、同属一组，而且总量正好是你设定的一级。","hintGrouped":"已选中一整组：改名只影响这一组。","hintSelected":"选中后可起名字、圈组或合并。","hintEmpty":"拖动摆放图形；空白处拖框可一次选中多个。","myObjects":"我的想法","myGroup":"我的一组","inspectorHint":"选中图形后在这里起名字","note":"我想说","noteHint":"这些图形代表什么？你是怎么想的？","undo":"撤销","redo":"重做","group2":"圈组","close":"关闭","gear":"设置","minus":"减少","plus":"增加","cross":"划去","multi":"多选","focus":"专注","export":"保存 JSON","import":"打开 JSON","clear":"清空","clearQuestion":"要清空画布吗？可以撤销。","confirmClear":"确认清空","insert":"放入回答","inserted":"已把画板说明放进输入框，画板文件也附上了；请检查后自己发送。","insertFailed":"暂时无法放入回答，请等输入框可编辑后重试。","attachmentName":"我的画板.json","summaryIntro":"我在数学画板上摆好了：","summaryUngroupedLine":"没圈组的：{parts}","summaryGroup":"一组「{name}」：{parts}，一共 {total}","summaryRemovedLine":"划去的：{parts}","summaryItem":"{name} {count} 个，每个代表 {value}","summaryMerged":"由 {sources} 个图形合并成的{name}，代表 {value}","summaryJoin":"、","summaryUnnamedGroup":"还没起名的一组","summaryNote":"我想说：{note}","backToChat":"返回对话","localDraft":"草稿还没发送，老师看不到；发送前随时可以改。","failed":"操作未完成","fileTooLarge":"文件太大，请选择小于 256 KB 的画板 JSON。","imported":"已打开画板。","storageError":"浏览器无法保存草稿，请保存 JSON 以免丢失。","loadError":"草稿无法读取，原数据未覆盖。","configApplied":"已按你刚才说的，更新了图形数值和颜色。","configGap":"设置历史有缺口；已按保留记录的作用范围回放。","configError":"有一条设置更新未能应用；更早成功的修改已保留。","removed":"已划去","active":"保留"}};
+    const dictionaries = {"en":{"title":"Math board","workspaceSubtitle":"Place shapes · group them · name the amounts","toolbox":"Toolbox","tapToAdd":"Tap to place, or drag one in","shapes":"Patterns","circle":"Circle","square":"Square","triangle":"Triangle","star":"Star","hexagon":"Hexagon","diamond":"Diamond","heart":"Heart","oval":"Oval","cat":"Cat","dog":"Dog","car":"Car","person":"Person","apple":"Apple","fish":"Fish","rocket":"Rocket","flower":"Flower","butterfly":"Butterfly","house":"House","icecream":"Ice cream","settings":"Settings","settingsIntro":"You choose which patterns sit in the toolbox, what each stands for, and which colour marks which amount.","patterns":"Pattern library","patternsHint":"Tap a pattern to put it in the toolbox; tap again to tuck it away. Shapes already on the canvas stay.","addPattern":"Add to toolbox","removePattern":"Tuck away","morePatterns":"More patterns","levelLadder":"Value ladder","level":"Level","colorName":"Colour","removeLevel":"Remove level","addLevel":"Add level","resetSettings":"Reset","shapeDefaults":"What these patterns stand for","applyFuture":"New shapes only","applyExisting":"Also change existing","settingsFutureDone":"Saved. New shapes use the new value.","settingsExistingDone":"Saved. Existing unmerged shapes also use the new value.","cancel":"Cancel","value":"Standing for","alias":"Name","aliasHint":"For example: apple","canvas":"Shape canvas","canvasEmpty":"Pick a shape on the left to begin","canvasEmptyHint":"Drag to arrange · box-select · Shift-click to add","gestureHint":"Drag to arrange · box-select · Shift-click to add","multiSelect":"Multi-select","focusMode":"Canvas only","zoomIn":"Zoom in","zoomOut":"Zoom out","fitView":"Fit","selectionActions":"Selected shape actions","selectedCount":"Selected","makeGroup":"Group","ungroup":"Ungroup","merge":"Merge","split":"Split","copy":"Copy","crossOut":"Cross out","restore":"Restore","trash":"Delete selected","group":"Group","defaultGroup":"My group","groupAlias":"Group name","groupHint":"For example: Rabbit's share","groupedNoAlias":"Shapes in a group share its name instead of having their own.","duplicateGroup":"Duplicate group","mergedFrom":"Merged from","noSelection":"Select one shape or box-select several to name, group, or merge them.","mergeReason":"Merging needs the same shape, the same value, the same name, the same group, and a total that matches one of your levels.","hintGrouped":"A whole group is selected: renaming changes the group.","hintSelected":"Name, group or merge the selection.","hintEmpty":"Drag shapes to arrange; drag on empty space to select several.","myObjects":"My thinking","myGroup":"My group","inspectorHint":"Select shapes to name them here","note":"My explanation","noteHint":"What do these shapes mean? How did you think about it?","undo":"Undo","redo":"Redo","group2":"Group","close":"Close","gear":"Settings","minus":"Remove","plus":"Add","cross":"Cross out","multi":"Multi-select","focus":"Focus","export":"Save JSON","import":"Open JSON","clear":"Clear","clearQuestion":"Clear the canvas? You can undo this.","confirmClear":"Confirm clear","insert":"Add to answer","inserted":"Added the board note and file to the composer. Review it and send it yourself.","insertFailed":"Cannot insert now. Wait until the composer is editable and try again.","attachmentName":"my-math-board.json","summaryIntro":"Here is what I put on the math board:","summaryUngroupedLine":"Not grouped: {parts}","summaryGroup":"Group “{name}”: {parts} — {total} altogether","summaryRemovedLine":"Crossed out: {parts}","summaryItem":"{name} × {count}, each standing for {value}","summaryMerged":"{name} merged from {sources} shapes, standing for {value}","summaryJoin":", ","summaryUnnamedGroup":"an unnamed group","summaryNote":"What I mean: {note}","backToChat":"Back to chat","localDraft":"Your draft stays here until you send it.","failed":"Action not completed","fileTooLarge":"Choose a board JSON smaller than 256 KB.","imported":"Board opened.","storageError":"Cannot save this browser draft. Save JSON to keep your work.","loadError":"Cannot read the draft. Original data was not overwritten.","configApplied":"Your spoken values and colours are now applied.","configGap":"Settings history had a gap; retained changes were replayed with their original scopes.","configError":"A settings update could not be applied; earlier successful changes were kept.","removed":"Crossed out","active":"Kept","traceTitle":"Modification record","traceAttach":"Attach modification record (optional)","tracePreview":"View modifications","traceHide":"Hide modifications","traceNewAttempt":"Start a new attempt","traceNotice":"Changes stay in this browser, without times or drag paths. Your teacher sees them only if attached and sent; sent files remain with the conversation.","traceScope":"Retained modifications to this draft so far, not necessarily one continuous sitting. These are observations, not correctness judgments; omitted details are marked.","tracePriorUnknown":"Earlier process unknown: the starting board may have content, or history has a gap.","traceTotals":"{count} changes recorded; {omitted} changes omitted in the middle.","traceEmpty":"No modifications recorded yet.","traceGap":"… Intermediate modifications omitted …","traceResetQuestion":"Keep the board and delete its local modification record to start anew? Existing draft/sent attachments remain. Undo history will also be cleared.","traceResetConfirm":"Confirm new attempt","traceResetDone":"New attempt started; board kept, earlier process marked unknown.","traceLoadError":"Earlier modifications could not be restored and are marked unknown. The board remains usable.","traceRecordError":"This change could not be added to the modification record; later process is marked unknown. The board itself is saved.","traceSkipped":"Modification record unavailable. Only the board note and snapshot were added; review and send yourself.","traceAttachmentName":"my-modifications.json","traceOrigin_student":"My action","traceOrigin_system":"Chat settings sync","traceType_add":"Add","traceType_batch":"Batch change","traceType_group":"Change groups","traceType_merge":"Merge","traceType_split":"Split","traceType_delete":"Delete","traceType_note":"Edit explanation","traceType_configure":"Change settings","traceType_move":"Move or arrange","traceType_undo":"Undo","traceType_redo":"Redo","traceType_clear":"Clear board","traceType_import":"Open board file","traceType_update":"Edit shape","traceType_duplicate":"Duplicate","traceField_count":"Shape count","traceField_activeCount":"Kept shapes","traceField_removedCount":"Crossed-out shapes","traceField_value":"Kept total value","traceField_removedValue":"Crossed-out value","traceField_groupCount":"Group count","traceField_groupedCount":"Grouped shapes","traceField_mergedCount":"Merged shapes","traceField_objects":"Composition (pattern:value ×count)","traceField_aliases":"Shape names","traceField_colors":"Level colour indices","traceField_groups":"Groups (name:count/value)","traceField_note":"My explanation (excerpt)","traceField_settings_levels":"Levels (value:colour index)","traceField_settings_defaults":"Default meanings (pattern:value:name)","traceField_settings_shapes":"Toolbox patterns","traceField_movedCount":"Shapes moved in this step","traceField_changedCount":"Other changes","traceField_detailsOmitted":"Details omitted in this step"},"zh":{"title":"数学画板","workspaceSubtitle":"摆图形 · 圈一组 · 自己说数量","toolbox":"工具箱","tapToAdd":"点一下放到画布；也可以拖进来","shapes":"图案","circle":"圆形","square":"方块","triangle":"三角形","star":"星形","hexagon":"六边形","diamond":"菱形","heart":"爱心","oval":"椭圆","cat":"小猫","dog":"小狗","car":"汽车","person":"人","apple":"苹果","fish":"小鱼","rocket":"火箭","flower":"小花","butterfly":"蝴蝶","house":"房子","icecream":"冰淇淋","settings":"设置","settingsIntro":"你来决定工具箱里有哪些图案、每个图案代表多少，以及哪个数值用哪种颜色。","patterns":"图案库","patternsHint":"点一下图案就放进工具箱，再点一下收起来；已经摆好的图形不会消失。","addPattern":"添加到工具箱","removePattern":"从工具箱收起","morePatterns":"更多图案","levelLadder":"数值阶梯","level":"第几级","colorName":"颜色","removeLevel":"删除这一级","addLevel":"增加一级","resetSettings":"恢复默认","shapeDefaults":"这些图案默认代表多少","applyFuture":"只用于新图形","applyExisting":"也改已有图形","settingsFutureDone":"已保存设置，新添加的图形按新数值。","settingsExistingDone":"已保存设置，未合并的已有图形也改成新数值。","cancel":"取消","value":"代表","alias":"名字","aliasHint":"例如：苹果","canvas":"图形画布","canvasEmpty":"从左边选一个图形，开始摆一摆","canvasEmptyHint":"拖动摆放 · 空白处框选 · Shift 点击加选","gestureHint":"拖动摆放 · 空白处框选 · Shift 点击加选","multiSelect":"多选","focusMode":"只看画布","zoomIn":"放大画布","zoomOut":"缩小画布","fitView":"全图","selectionActions":"所选图形操作","selectedCount":"已选","makeGroup":"圈为一组","ungroup":"解散组","merge":"合并","split":"拆开","copy":"复制","crossOut":"划去","restore":"恢复","trash":"删除所选","group":"组","defaultGroup":"我的一组","groupAlias":"这一组的名字","groupHint":"例如：小兔的一份","groupedNoAlias":"组里的图形不单独起名字；改名后整组一起变。","duplicateGroup":"复制这一组","mergedFrom":"由这些图形合并而来","noSelection":"点一个图形，或框选几个，就能起名字、圈组、合并。","mergeReason":"合并需要同一形状、同一数值、同一个名字、同属一组，而且总量正好是你设定的一级。","hintGrouped":"已选中一整组：改名只影响这一组。","hintSelected":"选中后可起名字、圈组或合并。","hintEmpty":"拖动摆放图形；空白处拖框可一次选中多个。","myObjects":"我的想法","myGroup":"我的一组","inspectorHint":"选中图形后在这里起名字","note":"我想说","noteHint":"这些图形代表什么？你是怎么想的？","undo":"撤销","redo":"重做","group2":"圈组","close":"关闭","gear":"设置","minus":"减少","plus":"增加","cross":"划去","multi":"多选","focus":"专注","export":"保存 JSON","import":"打开 JSON","clear":"清空","clearQuestion":"要清空画布吗？可以撤销。","confirmClear":"确认清空","insert":"放入回答","inserted":"已把画板说明放进输入框，画板文件也附上了；请检查后自己发送。","insertFailed":"暂时无法放入回答，请等输入框可编辑后重试。","attachmentName":"我的画板.json","summaryIntro":"我在数学画板上摆好了：","summaryUngroupedLine":"没圈组的：{parts}","summaryGroup":"一组「{name}」：{parts}，一共 {total}","summaryRemovedLine":"划去的：{parts}","summaryItem":"{name} {count} 个，每个代表 {value}","summaryMerged":"由 {sources} 个图形合并成的{name}，代表 {value}","summaryJoin":"、","summaryUnnamedGroup":"还没起名的一组","summaryNote":"我想说：{note}","backToChat":"返回对话","localDraft":"草稿还没发送，老师看不到；发送前随时可以改。","failed":"操作未完成","fileTooLarge":"文件太大，请选择小于 256 KB 的画板 JSON。","imported":"已打开画板。","storageError":"浏览器无法保存草稿，请保存 JSON 以免丢失。","loadError":"草稿无法读取，原数据未覆盖。","configApplied":"已按你刚才说的，更新了图形数值和颜色。","configGap":"设置历史有缺口；已按保留记录的作用范围回放。","configError":"有一条设置更新未能应用；更早成功的修改已保留。","removed":"已划去","active":"保留","traceTitle":"修改记录","traceAttach":"回答时附上修改记录（可取消）","tracePreview":"查看修改记录","traceHide":"收起修改记录","traceNewAttempt":"开始新的尝试","traceNotice":"修改记录保存在这个浏览器，不记时间和拖动轨迹。附上并发送后，老师才能看到；会随对话保留。","traceScope":"这是这份草稿到目前为止保留的修改，不一定来自一次连续操作。数字与文字是修改事实，不是对错结论；省略的细节以省略标记说明。","tracePriorUnknown":"此前过程未知：起点可能已有内容，或记录有缺口。","traceTotals":"共记录 {count} 次变更，中间省略 {omitted} 次。","traceEmpty":"还没有记录到修改。","traceGap":"……中间修改已省略……","traceResetQuestion":"保留当前画板，删去本地修改记录并开始新的尝试？已放入回答或发送的附件不会删除，撤销历史也将清空。","traceResetConfirm":"确认重新开始","traceResetDone":"已开始新的尝试，画板保留，此前过程标为未知。","traceLoadError":"此前修改记录无法恢复，已标为未知；画板仍可使用。","traceRecordError":"这次修改没能记进修改记录，此后的过程标为未知；画板本身已保存。","traceSkipped":"修改记录不可用，只放入画板说明和快照；请检查后自己发送。","traceAttachmentName":"我的修改记录.json","traceOrigin_student":"我的操作","traceOrigin_system":"对话设置同步","traceType_add":"添加","traceType_batch":"批量修改","traceType_group":"修改分组","traceType_merge":"合并","traceType_split":"拆开","traceType_delete":"删除","traceType_note":"修改说明","traceType_configure":"修改设置","traceType_move":"移动或整理","traceType_undo":"撤销","traceType_redo":"重做","traceType_clear":"清空画板","traceType_import":"打开画板文件","traceType_update":"修改图形","traceType_duplicate":"复制","traceField_count":"图形数","traceField_activeCount":"保留图形数","traceField_removedCount":"划去图形数","traceField_value":"保留图形代表的总量","traceField_removedValue":"划去图形代表的总量","traceField_groupCount":"组数","traceField_groupedCount":"已分组图形数","traceField_mergedCount":"合并图形数","traceField_objects":"图形组成（图案:代表值 ×个数）","traceField_aliases":"图形名字","traceField_colors":"量级颜色编号","traceField_groups":"各组（名字:个数/代表总量）","traceField_note":"我想说（节选）","traceField_settings_levels":"量级（数值:颜色编号）","traceField_settings_defaults":"默认含义（图案:数值:名字）","traceField_settings_shapes":"工具箱图案","traceField_movedCount":"本步移动的图形数","traceField_changedCount":"其他变更数","traceField_detailsOmitted":"本步省略细节数"}};
     return {
       inject: ['slots', 'locale'],
       apply(ctx) {
         ctx.effect(() => ctx.locale.register('edu-math-board', 'en', dictionaries.en));
         ctx.effect(() => ctx.locale.register('edu-math-board', 'zh', dictionaries.zh));
         const t = ctx.locale.bind('edu-math-board');
-        const Board = createView(React, M, ctx, t, "/* Workbench layout reimplemented for DSH; teaching artwork keeps the prescribed palette. */\n/* Compact composer-toolbar launcher, sized like the shipped model selector. */\n.edu-board-launch{display:inline-flex;align-items:center;gap:6px;flex:none;height:28px;padding:0 8px;border:0;border-radius:var(--dsw-radius-sm);background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:13px;font-weight:500;line-height:20px;white-space:nowrap;cursor:pointer}\n.edu-board-launch svg{flex:none;display:block}\n.edu-board-launch:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}\n.edu-board-launch:disabled{opacity:.5;cursor:default}\n@container (width<=560px){.edu-board-launch span{display:none}}\n.edu-board-launch,.eb-workbench button{font:inherit;cursor:pointer}\n.eb-dialog{box-sizing:border-box;width:min(1450px,96vw);height:min(920px,92dvh);max-width:96vw;max-height:94dvh;padding:0;border:1px solid var(--dsw-alias-border-l1);border-radius:24px;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-base);box-shadow:0 24px 80px #0f172a33;overflow:hidden}\n.eb-dialog::backdrop{background:#0f172a66;backdrop-filter:blur(5px)}\n.eb-workbench{box-sizing:border-box;height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:12px;padding:14px;font-family:inherit;font-size:14px}\n.eb-workbench *{box-sizing:border-box}.eb-workbench button,.eb-workbench input,.eb-workbench select,.eb-workbench textarea{font:inherit;color:inherit}\n.eb-workbench button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:8px 12px;border:1px solid var(--dsw-alias-border-l1);border-radius:12px;background:var(--dsw-alias-bg-layer-1);transition:background .14s,box-shadow .14s}\n.eb-workbench button:hover:not(:disabled){background:var(--dsw-alias-bg-layer-2);border-color:var(--dsw-alias-border-l2)}.eb-workbench button:disabled{opacity:.4;cursor:default}\n.eb-workbench :is(button,input,select,textarea,a):focus-visible,.edu-board-launch:focus-visible{outline:3px solid var(--dsw-alias-brand-primary);outline-offset:3px}\n.eb-workbench button[aria-pressed=true]{background:color-mix(in srgb,var(--dsw-alias-brand-primary) 12%,var(--dsw-alias-bg-layer-1));border-color:var(--dsw-alias-brand-primary)}\n.eb-top{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:8px 12px;background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l1);border-radius:18px;box-shadow:0 4px 18px #0f172a08}\n.eb-identity{display:flex;align-items:center;gap:10px;margin-right:auto}.eb-identity strong{font-size:16px;white-space:nowrap}.eb-identity small{display:block;color:var(--dsw-alias-label-secondary);font-size:11px;margin-top:3px}\n.eb-top-actions{display:flex;gap:5px;align-items:center}.eb-top .eb-icon-button{width:40px;padding:8px}.eb-workbench .eb-primary{background:var(--dsw-alias-brand-primary);color:var(--dsw-alias-bg-base);border-color:var(--dsw-alias-brand-primary);font-weight:700}.eb-workbench .eb-primary:hover:not(:disabled){background:var(--dsw-alias-brand-primary);filter:brightness(.95)}\n.eb-layout{display:grid;grid-template-columns:178px minmax(0,1fr) 236px;gap:12px;min-height:0}.eb-panel{background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l1);border-radius:20px;min-height:0;overflow:auto}.eb-panel-head{padding:16px 14px 12px;border-bottom:1px solid var(--dsw-alias-border-l1)}.eb-panel-head h3{font-size:14px;margin:0 0 5px}.eb-panel-head p{font-size:11px;color:var(--dsw-alias-label-secondary);line-height:1.5;margin:0}\n.eb-tools-body{padding:12px}.eb-section-label{font-size:11px;color:var(--dsw-alias-label-secondary);font-weight:650;margin:10px 0 8px}.eb-palette{display:grid;gap:7px}.eb-workbench .eb-tool{justify-content:flex-start;min-height:62px;padding:10px;text-align:left;gap:10px;border-radius:14px}.eb-tool svg{flex:0 0 32px}.eb-tool span{font-size:13px;font-weight:650}.eb-tool small{display:block;font-weight:400;font-size:10px;color:var(--dsw-alias-label-secondary);margin-top:4px}.eb-workbench .eb-shape-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.eb-workbench .eb-shape-tool{padding:8px 3px;min-height:68px;flex-direction:column;gap:4px;font-size:10px}.eb-tool:active,.eb-shape-tool:active{transform:scale(.97)}\n.eb-stage-wrap{min-width:0;min-height:0;display:flex;flex-direction:column;gap:10px}.eb-stage-frame{flex:1;position:relative;display:flex;flex-direction:column;gap:8px;min-height:220px;border:1.5px dashed var(--dsw-alias-border-l2);border-radius:20px;padding:10px;background:var(--dsw-alias-bg-layer-2);overflow:hidden}.eb-artboard{width:100%;height:100%;border:1px solid #E3E8EF;border-radius:14px;background:#fff;display:block;touch-action:none;user-select:none}.eb-artboard [data-object]{cursor:grab}.eb-artboard [data-object]:active{cursor:grabbing}.eb-artboard [data-object]:focus-visible{outline:none}.eb-artboard [data-object]:focus-visible .eb-focus-ring{stroke:#2563EB;stroke-width:3}\n.eb-canvas-area{position:relative;flex:1;min-height:0}.eb-floating{position:absolute;z-index:2;left:50%;bottom:14px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:5px;max-width:calc(100% - 28px);padding:6px 8px;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-overlay);border-radius:16px;box-shadow:0 8px 24px #0f172a24;flex-wrap:wrap}.eb-floating small{padding:0 6px;white-space:nowrap}.eb-floating button{padding:7px 10px;min-height:36px;font-size:12px}.eb-stage-caption{display:flex;justify-content:space-between;gap:8px;padding:0 5px;color:var(--dsw-alias-label-secondary);font-size:11px;line-height:1.5}.eb-stage-caption span:last-child{white-space:nowrap}\n.eb-inspector-body{padding:14px;display:grid;gap:14px}.eb-workbench label{display:grid;gap:7px;font-size:12px;font-weight:600}.eb-workbench input:not([type=file]),.eb-workbench select,.eb-workbench textarea{width:100%;min-width:0;padding:10px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-base);min-height:42px;font-size:13px}.eb-workbench textarea{resize:vertical;min-height:76px;max-height:140px;font-weight:400;line-height:1.5}.eb-workbench [hidden]{display:none!important}.eb-workbench p{margin:0;line-height:1.6}.eb-muted{color:var(--dsw-alias-label-secondary);font-size:12px}.eb-hint-card{border:1px dashed var(--dsw-alias-border-l2);border-radius:14px;padding:14px;font-size:12px;color:var(--dsw-alias-label-secondary);line-height:1.7}.eb-inspector-actions{display:flex;gap:6px;flex-wrap:wrap}.eb-inspector-actions button{font-size:12px;flex:1}.eb-group-list{display:grid;gap:7px}.eb-workbench .eb-group-chip{justify-content:space-between;width:100%;text-align:left;font-size:12px}.eb-group-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.eb-group-chip small{font-size:11px;color:var(--dsw-alias-label-secondary);white-space:nowrap}.eb-workbench .eb-new-group{width:100%;border-style:dashed;font-size:12px}.eb-group-edit{display:grid;gap:8px;padding:10px;border:1px solid var(--dsw-alias-border-l1);border-radius:12px}\n.eb-footer{display:flex;gap:10px;align-items:center;padding:6px 4px;min-height:36px}.eb-status{flex:1;color:var(--dsw-alias-label-secondary);font-size:11px;line-height:1.4}.eb-file-actions{display:flex;align-items:center;gap:6px}.eb-file-actions button,.eb-file-actions a{font-size:11px;padding:5px 8px;min-height:32px}.eb-file-actions a{color:var(--dsw-alias-brand-primary)}.eb-workbench .eb-confirm{font-size:12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}.eb-confirm span{margin-right:auto}\n.eb-layout[data-focus=true]{grid-template-columns:minmax(0,1fr)}.eb-layout[data-focus=true]>.eb-panel{display:none}\n@media(max-width:1050px){.eb-layout{grid-template-columns:140px minmax(0,1fr) 200px}.eb-tools-body{padding:9px}.eb-workbench{padding:10px;gap:9px}.eb-layout{gap:9px}.eb-tool small{font-size:9px}.eb-top{padding:7px 10px}.eb-identity small{display:none}}\n@media(max-width:760px){.eb-dialog{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0;border:0}.eb-layout{grid-template-columns:92px minmax(0,1fr);grid-template-rows:minmax(230px,1fr) auto}.eb-inspector{grid-column:1/-1;max-height:28dvh}.eb-inspector .eb-panel-head{display:none}.eb-inspector-body{display:flex;flex-wrap:wrap;gap:10px;padding:10px}.eb-inspector-body>section,.eb-inspector-body>label,.eb-inspector-body>.eb-hint-card{flex:1;min-width:150px}.eb-inspector-body>.eb-group-section{min-width:180px}.eb-palette{gap:5px}.eb-workbench .eb-tool{padding:7px;min-height:54px;gap:4px}.eb-tool svg{flex-basis:24px;width:24px}.eb-tool span{font-size:11px}.eb-tool small{display:none}.eb-shape-grid{grid-template-columns:1fr!important}.eb-workbench .eb-shape-tool{min-height:42px;flex-direction:row;gap:5px}.eb-panel-head{padding:10px 8px}.eb-panel-head p{display:none}.eb-panel-head h3{font-size:12px}.eb-stage-frame{padding:5px;border-radius:14px}.eb-stage-caption{font-size:10px}.eb-stage-caption span:first-child{max-width:65%}.eb-file-actions{flex-wrap:wrap}.eb-footer{align-items:flex-start}.eb-identity strong{font-size:14px}.eb-identity>svg{width:25px}.eb-top-actions{margin-left:auto}.eb-workbench .eb-top .eb-close{padding:8px}.eb-workbench .eb-top .eb-close span{display:none}.eb-workbench .eb-primary{font-size:12px}.eb-status{max-width:60%}}\n.eb-canvas-scroll{width:100%;height:100%;overflow:auto;overscroll-behavior:contain;border-radius:14px;background:#FFFFFF}.eb-artboard{max-width:none;flex:none}.eb-zoom{display:flex;align-items:center;gap:3px;flex-shrink:0}.eb-workbench .eb-zoom button{font-size:11px;padding:3px 7px;min-height:32px;border-radius:8px}.eb-workbench .eb-top button,.eb-workbench .eb-shape-tool,.eb-workbench .eb-group-chip{min-height:44px}.eb-stage-caption{align-items:center}.eb-workbench .eb-floating button{min-height:44px}.eb-stage-wrap{min-height:300px}\n@media(max-height:620px){.eb-layout{overflow:auto;align-items:start}.eb-stage-wrap{min-height:320px}.eb-panel{max-height:100%}.eb-inspector{max-height:230px}}\n@media(prefers-reduced-motion:reduce){.eb-workbench *{transition:none!important;animation:none!important}}\n\n/* Expression board v3: shape palette, canvas tools and the student-owned value ladder. */\n.eb-shape-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}\n.eb-workbench .eb-shape-tool{flex-direction:column;gap:4px;padding:7px 3px;min-height:62px;font-size:10px;border-radius:12px}\n.eb-legend{display:grid;gap:3px;margin:12px 0 10px}\n.eb-workbench .eb-legend-row{display:flex;align-items:center;gap:8px;min-height:36px;padding:6px;border:1px solid transparent;border-radius:8px;font-size:11px;color:var(--dsw-alias-label-secondary);cursor:pointer}\n.eb-legend-row:has(:checked){border-color:var(--dsw-alias-brand-primary);background:color-mix(in srgb,var(--dsw-alias-brand-primary) 10%,transparent)}\n.eb-workbench .eb-legend-row input[type=radio]{width:14px;height:14px;min-height:0;margin:0;padding:0;flex:0 0 14px;accent-color:var(--dsw-alias-brand-primary)}\n.eb-color-dot{width:14px;height:14px;border-radius:999px;flex:0 0 14px;border:1px solid #1E293B22}\n.eb-canvas-tools{display:flex;align-items:center;flex-wrap:wrap;gap:5px;padding:2px 2px 0}\n.eb-workbench .eb-chip{min-height:38px;font-size:12px;padding:6px 10px;border-radius:999px}\n.eb-workbench .eb-icon-button{width:38px;padding:6px}\n.eb-settings-wrap{flex:1;min-height:0;overflow:auto;padding:14px;border:1px solid var(--dsw-alias-border-l1);border-radius:20px;background:var(--dsw-alias-bg-layer-1)}\n.eb-settings{display:grid;gap:8px;max-width:620px}\n.eb-settings-title{font-size:15px;margin:0 0 2px}\n.eb-level-row{display:grid;grid-template-columns:auto 96px 1fr auto;align-items:center;gap:8px}\n.eb-workbench .eb-level-row button{min-height:38px;width:38px;padding:4px}\n.eb-default-row{display:grid;grid-template-columns:auto 1fr 86px;align-items:center;gap:8px}\n.eb-default-shape{display:flex;align-items:center;gap:6px;font-size:12px;white-space:nowrap}\n.eb-inline-actions{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}\n.eb-inline-actions button{font-size:12px}\n.eb-workbench .eb-settings :is(input,select){min-height:38px;padding:6px 8px;font-size:12px}\n.eb-workbench .eb-shape-more{border-style:dashed;color:var(--dsw-alias-label-secondary);font-weight:600}\n.eb-library-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:2px 0 4px}\n.eb-workbench .eb-library-tile{flex-direction:column;gap:5px;min-height:62px;padding:6px 3px;font-size:10px;border-radius:12px}\n.eb-library-tile span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}\n@media(max-width:760px){.eb-shape-grid{grid-template-columns:repeat(2,1fr)}.eb-library-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.eb-default-row{grid-template-columns:1fr 76px}.eb-default-shape{font-size:11px}.eb-settings-wrap{padding:10px}}\n", art, describeBoard, applyHostConfig);
+        const Board = createView(React, M, ctx, t, "/* Workbench layout reimplemented for DSH; teaching artwork keeps the prescribed palette. */\n.eb-trace{padding:4px 8px;min-height:0;max-height:30dvh;overflow:auto;border-top:1px solid var(--dsw-alias-border-l1)}\n.eb-trace-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}\n.eb-workbench .eb-trace-controls label{display:flex;align-items:center;gap:6px;font-weight:400}\n.eb-workbench .eb-trace-controls input[type=checkbox]{width:18px;min-height:18px;padding:0}\n.eb-workbench .eb-trace-controls button{min-height:32px;padding:4px 8px;font-size:12px}\n.eb-trace-preview{max-height:18dvh;overflow:auto;font-size:12px;overflow-wrap:anywhere}\n.eb-trace-preview ol{padding-left:32px}.eb-trace-preview ul{padding-left:20px}\n\n/* Compact composer-toolbar launcher, sized like the shipped model selector. */\n.edu-board-launch{display:inline-flex;align-items:center;gap:6px;flex:none;height:28px;padding:0 8px;border:0;border-radius:var(--dsw-radius-sm);background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:13px;font-weight:500;line-height:20px;white-space:nowrap;cursor:pointer}\n.edu-board-launch svg{flex:none;display:block}\n.edu-board-launch:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}\n.edu-board-launch:disabled{opacity:.5;cursor:default}\n@container (width<=560px){.edu-board-launch span{display:none}}\n.edu-board-launch,.eb-workbench button{font:inherit;cursor:pointer}\n.eb-dialog{box-sizing:border-box;width:min(1450px,96vw);height:min(920px,92dvh);max-width:96vw;max-height:94dvh;padding:0;border:1px solid var(--dsw-alias-border-l1);border-radius:24px;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-base);box-shadow:0 24px 80px #0f172a33;overflow:hidden}\n.eb-dialog::backdrop{background:#0f172a66;backdrop-filter:blur(5px)}\n.eb-workbench{box-sizing:border-box;height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;gap:12px;padding:14px;font-family:inherit;font-size:14px}\n.eb-workbench *{box-sizing:border-box}.eb-workbench button,.eb-workbench input,.eb-workbench select,.eb-workbench textarea{font:inherit;color:inherit}\n.eb-workbench button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:8px 12px;border:1px solid var(--dsw-alias-border-l1);border-radius:12px;background:var(--dsw-alias-bg-layer-1);transition:background .14s,box-shadow .14s}\n.eb-workbench button:hover:not(:disabled){background:var(--dsw-alias-bg-layer-2);border-color:var(--dsw-alias-border-l2)}.eb-workbench button:disabled{opacity:.4;cursor:default}\n.eb-workbench :is(button,input,select,textarea,a):focus-visible,.edu-board-launch:focus-visible{outline:3px solid var(--dsw-alias-brand-primary);outline-offset:3px}\n.eb-workbench button[aria-pressed=true]{background:color-mix(in srgb,var(--dsw-alias-brand-primary) 12%,var(--dsw-alias-bg-layer-1));border-color:var(--dsw-alias-brand-primary)}\n.eb-top{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:8px 12px;background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l1);border-radius:18px;box-shadow:0 4px 18px #0f172a08}\n.eb-identity{display:flex;align-items:center;gap:10px;margin-right:auto}.eb-identity strong{font-size:16px;white-space:nowrap}.eb-identity small{display:block;color:var(--dsw-alias-label-secondary);font-size:11px;margin-top:3px}\n.eb-top-actions{display:flex;gap:5px;align-items:center}.eb-top .eb-icon-button{width:40px;padding:8px}.eb-workbench .eb-primary{background:var(--dsw-alias-brand-primary);color:var(--dsw-alias-bg-base);border-color:var(--dsw-alias-brand-primary);font-weight:700}.eb-workbench .eb-primary:hover:not(:disabled){background:var(--dsw-alias-brand-primary);filter:brightness(.95)}\n.eb-layout{display:grid;grid-template-columns:178px minmax(0,1fr) 236px;gap:12px;min-height:0}.eb-panel{background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l1);border-radius:20px;min-height:0;overflow:auto}.eb-panel-head{padding:16px 14px 12px;border-bottom:1px solid var(--dsw-alias-border-l1)}.eb-panel-head h3{font-size:14px;margin:0 0 5px}.eb-panel-head p{font-size:11px;color:var(--dsw-alias-label-secondary);line-height:1.5;margin:0}\n.eb-tools-body{padding:12px}.eb-section-label{font-size:11px;color:var(--dsw-alias-label-secondary);font-weight:650;margin:10px 0 8px}.eb-palette{display:grid;gap:7px}.eb-workbench .eb-tool{justify-content:flex-start;min-height:62px;padding:10px;text-align:left;gap:10px;border-radius:14px}.eb-tool svg{flex:0 0 32px}.eb-tool span{font-size:13px;font-weight:650}.eb-tool small{display:block;font-weight:400;font-size:10px;color:var(--dsw-alias-label-secondary);margin-top:4px}.eb-workbench .eb-shape-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.eb-workbench .eb-shape-tool{padding:8px 3px;min-height:68px;flex-direction:column;gap:4px;font-size:10px}.eb-tool:active,.eb-shape-tool:active{transform:scale(.97)}\n.eb-stage-wrap{min-width:0;min-height:0;display:flex;flex-direction:column;gap:10px}.eb-stage-frame{flex:1;position:relative;display:flex;flex-direction:column;gap:8px;min-height:220px;border:1.5px dashed var(--dsw-alias-border-l2);border-radius:20px;padding:10px;background:var(--dsw-alias-bg-layer-2);overflow:hidden}.eb-artboard{width:100%;height:100%;border:1px solid #E3E8EF;border-radius:14px;background:#fff;display:block;touch-action:none;user-select:none}.eb-artboard [data-object]{cursor:grab}.eb-artboard [data-object]:active{cursor:grabbing}.eb-artboard [data-object]:focus-visible{outline:none}.eb-artboard [data-object]:focus-visible .eb-focus-ring{stroke:#2563EB;stroke-width:3}\n.eb-canvas-area{position:relative;flex:1;min-height:0}.eb-floating{position:absolute;z-index:2;left:50%;bottom:14px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:5px;max-width:calc(100% - 28px);padding:6px 8px;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-overlay);border-radius:16px;box-shadow:0 8px 24px #0f172a24;flex-wrap:wrap}.eb-floating small{padding:0 6px;white-space:nowrap}.eb-floating button{padding:7px 10px;min-height:36px;font-size:12px}.eb-stage-caption{display:flex;justify-content:space-between;gap:8px;padding:0 5px;color:var(--dsw-alias-label-secondary);font-size:11px;line-height:1.5}.eb-stage-caption span:last-child{white-space:nowrap}\n.eb-inspector-body{padding:14px;display:grid;gap:14px}.eb-workbench label{display:grid;gap:7px;font-size:12px;font-weight:600}.eb-workbench input:not([type=file]),.eb-workbench select,.eb-workbench textarea{width:100%;min-width:0;padding:10px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-base);min-height:42px;font-size:13px}.eb-workbench textarea{resize:vertical;min-height:76px;max-height:140px;font-weight:400;line-height:1.5}.eb-workbench [hidden]{display:none!important}.eb-workbench p{margin:0;line-height:1.6}.eb-muted{color:var(--dsw-alias-label-secondary);font-size:12px}.eb-hint-card{border:1px dashed var(--dsw-alias-border-l2);border-radius:14px;padding:14px;font-size:12px;color:var(--dsw-alias-label-secondary);line-height:1.7}.eb-inspector-actions{display:flex;gap:6px;flex-wrap:wrap}.eb-inspector-actions button{font-size:12px;flex:1}.eb-group-list{display:grid;gap:7px}.eb-workbench .eb-group-chip{justify-content:space-between;width:100%;text-align:left;font-size:12px}.eb-group-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.eb-group-chip small{font-size:11px;color:var(--dsw-alias-label-secondary);white-space:nowrap}.eb-workbench .eb-new-group{width:100%;border-style:dashed;font-size:12px}.eb-group-edit{display:grid;gap:8px;padding:10px;border:1px solid var(--dsw-alias-border-l1);border-radius:12px}\n.eb-footer{display:flex;gap:10px;align-items:center;padding:6px 4px;min-height:36px}.eb-status{flex:1;color:var(--dsw-alias-label-secondary);font-size:11px;line-height:1.4}.eb-file-actions{display:flex;align-items:center;gap:6px}.eb-file-actions button,.eb-file-actions a{font-size:11px;padding:5px 8px;min-height:32px}.eb-file-actions a{color:var(--dsw-alias-brand-primary)}.eb-workbench .eb-confirm{font-size:12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}.eb-confirm span{margin-right:auto}\n.eb-layout[data-focus=true]{grid-template-columns:minmax(0,1fr)}.eb-layout[data-focus=true]>.eb-panel{display:none}\n@media(max-width:1050px){.eb-layout{grid-template-columns:140px minmax(0,1fr) 200px}.eb-tools-body{padding:9px}.eb-workbench{padding:10px;gap:9px}.eb-layout{gap:9px}.eb-tool small{font-size:9px}.eb-top{padding:7px 10px}.eb-identity small{display:none}}\n@media(max-width:760px){.eb-dialog{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0;border:0}.eb-layout{grid-template-columns:92px minmax(0,1fr);grid-template-rows:minmax(230px,1fr) auto}.eb-inspector{grid-column:1/-1;max-height:28dvh}.eb-inspector .eb-panel-head{display:none}.eb-inspector-body{display:flex;flex-wrap:wrap;gap:10px;padding:10px}.eb-inspector-body>section,.eb-inspector-body>label,.eb-inspector-body>.eb-hint-card{flex:1;min-width:150px}.eb-inspector-body>.eb-group-section{min-width:180px}.eb-palette{gap:5px}.eb-workbench .eb-tool{padding:7px;min-height:54px;gap:4px}.eb-tool svg{flex-basis:24px;width:24px}.eb-tool span{font-size:11px}.eb-tool small{display:none}.eb-shape-grid{grid-template-columns:1fr!important}.eb-workbench .eb-shape-tool{min-height:42px;flex-direction:row;gap:5px}.eb-panel-head{padding:10px 8px}.eb-panel-head p{display:none}.eb-panel-head h3{font-size:12px}.eb-stage-frame{padding:5px;border-radius:14px}.eb-stage-caption{font-size:10px}.eb-stage-caption span:first-child{max-width:65%}.eb-file-actions{flex-wrap:wrap}.eb-footer{align-items:flex-start}.eb-identity strong{font-size:14px}.eb-identity>svg{width:25px}.eb-top-actions{margin-left:auto}.eb-workbench .eb-top .eb-close{padding:8px}.eb-workbench .eb-top .eb-close span{display:none}.eb-workbench .eb-primary{font-size:12px}.eb-status{max-width:60%}}\n.eb-canvas-scroll{width:100%;height:100%;overflow:auto;overscroll-behavior:contain;border-radius:14px;background:#FFFFFF}.eb-artboard{max-width:none;flex:none}.eb-zoom{display:flex;align-items:center;gap:3px;flex-shrink:0}.eb-workbench .eb-zoom button{font-size:11px;padding:3px 7px;min-height:32px;border-radius:8px}.eb-workbench .eb-top button,.eb-workbench .eb-shape-tool,.eb-workbench .eb-group-chip{min-height:44px}.eb-stage-caption{align-items:center}.eb-workbench .eb-floating button{min-height:44px}.eb-stage-wrap{min-height:300px}\n@media(max-height:620px){.eb-layout{overflow:auto;align-items:start}.eb-stage-wrap{min-height:320px}.eb-panel{max-height:100%}.eb-inspector{max-height:230px}}\n@media(prefers-reduced-motion:reduce){.eb-workbench *{transition:none!important;animation:none!important}}\n\n/* Expression board v3: shape palette, canvas tools and the student-owned value ladder. */\n.eb-shape-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}\n.eb-workbench .eb-shape-tool{flex-direction:column;gap:4px;padding:7px 3px;min-height:62px;font-size:10px;border-radius:12px}\n.eb-legend{display:grid;gap:3px;margin:12px 0 10px}\n.eb-workbench .eb-legend-row{display:flex;align-items:center;gap:8px;min-height:36px;padding:6px;border:1px solid transparent;border-radius:8px;font-size:11px;color:var(--dsw-alias-label-secondary);cursor:pointer}\n.eb-legend-row:has(:checked){border-color:var(--dsw-alias-brand-primary);background:color-mix(in srgb,var(--dsw-alias-brand-primary) 10%,transparent)}\n.eb-workbench .eb-legend-row input[type=radio]{width:14px;height:14px;min-height:0;margin:0;padding:0;flex:0 0 14px;accent-color:var(--dsw-alias-brand-primary)}\n.eb-color-dot{width:14px;height:14px;border-radius:999px;flex:0 0 14px;border:1px solid #1E293B22}\n.eb-canvas-tools{display:flex;align-items:center;flex-wrap:wrap;gap:5px;padding:2px 2px 0}\n.eb-workbench .eb-chip{min-height:38px;font-size:12px;padding:6px 10px;border-radius:999px}\n.eb-workbench .eb-icon-button{width:38px;padding:6px}\n.eb-settings-wrap{flex:1;min-height:0;overflow:auto;padding:14px;border:1px solid var(--dsw-alias-border-l1);border-radius:20px;background:var(--dsw-alias-bg-layer-1)}\n.eb-settings{display:grid;gap:8px;max-width:620px}\n.eb-settings-title{font-size:15px;margin:0 0 2px}\n.eb-level-row{display:grid;grid-template-columns:auto 96px 1fr auto;align-items:center;gap:8px}\n.eb-workbench .eb-level-row button{min-height:38px;width:38px;padding:4px}\n.eb-default-row{display:grid;grid-template-columns:auto 1fr 86px;align-items:center;gap:8px}\n.eb-default-shape{display:flex;align-items:center;gap:6px;font-size:12px;white-space:nowrap}\n.eb-inline-actions{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}\n.eb-inline-actions button{font-size:12px}\n.eb-workbench .eb-settings :is(input,select){min-height:38px;padding:6px 8px;font-size:12px}\n.eb-workbench .eb-shape-more{border-style:dashed;color:var(--dsw-alias-label-secondary);font-weight:600}\n.eb-library-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:2px 0 4px}\n.eb-workbench .eb-library-tile{flex-direction:column;gap:5px;min-height:62px;padding:6px 3px;font-size:10px;border-radius:12px}\n.eb-library-tile span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}\n@media(max-width:760px){.eb-shape-grid{grid-template-columns:repeat(2,1fr)}.eb-library-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.eb-default-row{grid-template-columns:1fr 76px}.eb-default-shape{font-size:11px}.eb-settings-wrap{padding:10px}}\n", art, describeBoard, applyHostConfig, T);
         function SessionBoard(props) { return React.createElement(Board, {...props, key: props.sessionId}); }
         ctx.slots.inject('conversation.input.right', () => ctx.slots.register({
           name: 'conversation.input.right', id: 'edu-math-board-launch-v3', order: 50,

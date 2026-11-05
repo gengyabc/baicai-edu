@@ -1,5 +1,6 @@
 import { writeFile, readFile } from 'node:fs/promises';
 import { createBoardModel } from './model.js';
+import { createBoardTrace } from './trace.js';
 import { applyHostConfig } from './config-bridge.js';
 import { createBoardDescription, createBoardView, createShapeArt, colorIndexForValue } from './view.js';
 
@@ -18,6 +19,7 @@ window.__ModuleLoader__.load({
   factory(require) {
     const React = require('react');
     const M = (${createBoardModel.toString()})();
+    const T = (${createBoardTrace.toString()})(M);
     const createArt = ${createShapeArt.toString()};
     const describeBoard = (${createBoardDescription.toString()})(M);
     const colorIndexForValue = ${colorIndexForValue.toString()};
@@ -31,7 +33,7 @@ window.__ModuleLoader__.load({
         ctx.effect(() => ctx.locale.register('edu-math-board', 'en', dictionaries.en));
         ctx.effect(() => ctx.locale.register('edu-math-board', 'zh', dictionaries.zh));
         const t = ctx.locale.bind('edu-math-board');
-        const Board = createView(React, M, ctx, t, ${JSON.stringify(stylesheet)}, art, describeBoard, applyHostConfig);
+        const Board = createView(React, M, ctx, t, ${JSON.stringify(stylesheet)}, art, describeBoard, applyHostConfig, T);
         function SessionBoard(props) { return React.createElement(Board, {...props, key: props.sessionId}); }
         ctx.slots.inject('conversation.input.right', () => ctx.slots.register({
           name: 'conversation.input.right', id: 'edu-math-board-launch-v3', order: 50,

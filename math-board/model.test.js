@@ -336,6 +336,35 @@ test('digest keeps group composition, cross-outs and merge provenance for the fr
   assert.equal(item.merged, 3); assert.equal(item.value, 6); assert.equal(item.count, 1); assert.equal(item.total, 6);
 });
 
+test('deleting the last member drops the empty group and keeps groups that still have members', () => {
+  let paired = group(add(M.empty(), { count: 3 }), ['object-1', 'object-2'], '甲');
+  paired = group(paired, ['object-3'], '乙');
+  const oneLeft = M.reduce(paired, { type: 'delete', id: 'object-1' });
+  assert.deepEqual(oneLeft.groups.map((item) => item.alias), ['甲', '乙']);
+  assert.equal(oneLeft.objects.find((item) => item.id === 'object-2').groupId, 'group-1');
+  const emptied = M.reduce(oneLeft, { type: 'delete', id: 'object-2' });
+  assert.deepEqual(emptied.groups.map((item) => item.alias), ['乙']);
+  assert.equal(emptied.objects[0].groupId, 'group-2');
+  assert.equal(M.summary(emptied).groups.length, 1);
+});
+
+test('configure recolours unmerged shapes on a changed level and keeps a merged shape at its recorded colour', () => {
+  const levels = [{ value: 2, color: 0 }, { value: 6, color: 1 }];
+  let board = add(configured(M.empty(), 'future', levels), { count: 4 });
+  board = M.reduce(board, { type: 'merge', ids: ['object-1', 'object-2', 'object-3'] });
+  const settings = { ...board.settings, levels: [{ value: 2, color: 3 }, { value: 6, color: 4 }] };
+  for (const scope of ['future', 'existing']) {
+    const next = M.reduce(board, { type: 'configure', settings, scope });
+    assert.equal(next.objects[0].value, 6, scope);
+    assert.equal(next.objects[0].color, 1, scope);
+    assert.equal(next.objects[1].value, 2, scope);
+    assert.equal(next.objects[1].color, 3, scope);
+  }
+  const plain = add(configured(M.empty(), 'future', levels), { value: 6 });
+  const painted = M.reduce(plain, { type: 'configure', settings, scope: 'future' });
+  assert.equal(painted.objects[0].color, 4);
+});
+
 test('factory has no runtime imports or external bindings, source states and actions remain immutable', () => {
   const source = freeze(add(configured(), { count: 3 })); const snapshot = JSON.stringify(source);
   const actions = [{ type: 'merge', ids: ids(source) }, { type: 'groupSelected', ids: ids(source), alias: '组' },
