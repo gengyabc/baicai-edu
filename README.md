@@ -9,6 +9,7 @@
 | [`learn/`](./learn/README.md) | `dsh-edu-learn` | 共享入口（`/start` `/learn` `/feynman` `/profile` `/save`）、教学底座、学生数据协议、错题处理 |
 | [`math-low/`](./math-low/README.md) | `dsh-edu-math-low` | 小学数学：一回合教学、策略诊断、分层练习、学生出题考 AI |
 | [`chinese-reading/`](./chinese-reading/README.md) | `dsh-edu-chinese-reading` | 完整语文：阅读、写作、读写迁移、出题、评改、经验桥接 |
+| [数学画板](<./math-board/README.md>) | `dsh-edu-math-board` | 可选 Web 教具：猫、汽车等可切换图案、可变分组、同形合并、学生自定义量级颜色，以 JSON 表达回答 |
 
 `math-low` 与 `chinese-reading` 依赖 `learn` 提供的 `learn-core`、`learn-data`、`learn-errors`。
 
