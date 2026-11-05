@@ -787,10 +787,13 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard) {
       h('a', { hidden: true, ref: downloadAnchor, download: 'math-board.json' }));
     return h(React.Fragment, null,
       h('style', null, css),
-      h('section', { className: 'edu-board-entry', 'aria-label': t('title') },
-        swatch('star', 1, 28),
-        h('div', { className: 'eb-entry-copy' }, h('strong', null, t('title')), h('small', null, status || t('entryHint'))),
-        button(t('openWorkbench'), () => setOpened(true), { className: 'eb-launch', disabled: !ready })),
+      h('button', {
+        type: 'button', className: 'edu-board-launch', title: t('title'),
+        'aria-label': t('title'), 'aria-haspopup': 'dialog',
+        disabled: !ready, onClick: () => setOpened(true),
+      },
+      swatch('star', 1, 18),
+      h('span', null, t('title'))),
       h('dialog', {
         ref: dialog, className: 'eb-dialog', 'aria-label': t('title'),
         onCancel: (event) => { event.preventDefault(); close(); },

@@ -4,8 +4,6 @@
     "description": "用图案与可命名分组表达数量想法，量级颜色由学生自己设定，并把画板说明和文件放进回答。"
   },
   "title": "数学画板",
-  "openWorkbench": "打开工作台",
-  "entryHint": "摆一摆图形，把你的想法说清楚",
   "workspaceSubtitle": "摆图形 · 圈一组 · 自己说数量",
   "toolbox": "工具箱",
   "tapToAdd": "点一下放到画布；也可以拖进来",

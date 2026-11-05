@@ -30,8 +30,8 @@ window.__ModuleLoader__.load({
         const t = ctx.locale.bind('edu-math-board');
         const Board = createView(React, M, ctx, t, ${JSON.stringify(stylesheet)}, art, describeBoard);
         function SessionBoard(props) { return React.createElement(Board, {...props, key: props.sessionId}); }
-        ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({
-          name: 'conversation.input.dock', id: 'edu-math-board-workbench-v3', order: 30,
+        ctx.slots.inject('conversation.input.right', () => ctx.slots.register({
+          name: 'conversation.input.right', id: 'edu-math-board-launch-v3', order: 50,
           label: () => t('title'),
         }, SessionBoard));
       },

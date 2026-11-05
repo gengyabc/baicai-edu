@@ -4,8 +4,6 @@
     "description": "Express quantity ideas with kid-friendly patterns and named groups; students set their own level colours and share a board note with a file."
   },
   "title": "Math board",
-  "openWorkbench": "Open workspace",
-  "entryHint": "Arrange shapes and say what you mean",
   "workspaceSubtitle": "Place shapes · group them · name the amounts",
   "toolbox": "Toolbox",
   "tapToAdd": "Tap to place, or drag one in",
