@@ -23,6 +23,9 @@ user-invocable: false
 | 条件 | 读取 |
 |---|---|
 | 所有数学教学分支，包括诊断、练习与学生出题 | `references/math-teaching-core.md` |
+| 选题、改题、变式或教学加减乘除、位值与多位数 | `references/problem-design.md` |
+| 分数意义、等分、等值、比较、分数运算或小数 | `references/fraction-relations.md` |
+| 准备给提示、学生嫌麻烦、请求新办法或已有提示无效 | `references/scaffold-calibration.md` |
 | 学生消息带画板附件（`我的画板.json`）或需要引导使用数学画板 | `references/structured-drawing.md` |
 | 判断算术/分数策略阶段或分析错因 | `references/strategy-diagnosis-rules.md` |
 | 学生出题考 AI，设计 AI 的回答 | `references/math-student-problem-design.md` |

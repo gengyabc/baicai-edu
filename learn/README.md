@@ -14,7 +14,7 @@
 
 ## 共享内部技能
 
-- `learn-core`：中文语气、以学生为中心、年级适配、三步确认、引导无响应、结束信号、人格、费曼规则。
+- `learn-core`：中文语气、以学生为中心、年级适配、按需确认、引导无响应、结束信号、人格、费曼规则。
 - `learn-data`：`outputs/students/` JSON 数据协议、快照、建档、写回、finalize。
 - `learn-errors`：用户投放文件解析、`data/.../raw/` 只读、备份、extracted 写入、error_history 更新。
 

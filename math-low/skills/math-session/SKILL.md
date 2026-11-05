@@ -27,7 +27,7 @@ user-invocable: false
 
 1. 优先采用 `target_context.topic`；没有显式目标时采用共享生命周期恢复的 focus 与动作。只有 `pending_transfer_phase: true` / `pending_feynman_handoff: true` 时才消费对应 `pending_transfer_focus` / `pending_feynman_focus`。
 2. 仍无目标时，依次看 `session_history[0].next_step`、`learning_state.priority_targets`、`learning_state.developing_topics`、memory 的 `learning_memory.recommended_next_moves`、`profile_memory.stable_strengths` / `stable_difficulties`、最近 milestones、年级默认领域。字段见 `learn-data` 的 `references/profile-schema.md`，年级默认见 `learn-core` 的 `references/grade-band-defaults.md`。
-3. 错题文件先交给 `learn-errors`，复用已有分析或取得新分析后选值得练的错误类型。多个错误按最近发生 → 最贴合 `learning_state.active_domain` → 学生自述难点排序。起点/错因不明、连续两轮引导卡住或自述与表现不符时，交给 `math-diagnose` 获取证据。
+3. 错题文件先交给 `learn-errors`，复用已有分析或取得新分析后选值得练的关系。多个错误按最近发生 → 最贴合当前领域 → 学生自述难点排序。焦点宽泛时先选一题可进入的问题，起点判断确需补证、连续两轮引导卡住或自述与表现不符时，再交给 `math-diagnose`，不把所有新主题都变成先测阶段。
 4. 确定一个焦点后选 `submode`：新主题为 `learn`，巩固/近邻变式为 `practice`，纠错为 `review`；`mode: feynman` 时为 `feynman`。这些分流名留在内部。
 5. 需要分层巩固时调用 `math-practice`；学生要出题考 AI 或已选定出题迁移时调用 `math-student-problem`。拿回证据并合入本轮记录；当前子流程仍在等学生回应时保持该步骤，返回主线后再接当前焦点。
 
@@ -38,8 +38,9 @@ user-invocable: false
 按 `math-core` 的 `references/math-teaching-core.md` 执行教学动作与题目设计：
 
 - 尚无学生作答时，提出一个具体问题并等待；已有题目与回答时，从该证据继续。
-- 学生回应后按共享确认协议追问策略、换角度验证并确认；近邻变式或对比用于检验策略是否稳定。
-- 卡住时按共享无响应协议给支架；数学上优先简化数字、回到情境与数量意义。流畅时先加关系挑战，再考虑加数字。
+- 学生回应后沿其已有表示与解释，按共享确认协议补缺口；验证可检查同一办法中的关系，近邻题检验能否独立使用，不为验收强制换算法。
+- 选题先辨数量角色与未知量，按核心规则的条件指针加载专题参考；策略阶段与年级默认不作为内容准入门槛。
+- 准备介入时按「最小介入」及其校准参考选择强度；完成一次邀请或提示后等待新回应。流畅时从证据选一个关系挑战或数字变化，而非固定加大题量。
 
 完成条件：已提出一个待答问题，或已处理当前回答并给出下一动作。需要学生新回应的步骤在此等待；只在有相应证据后确认理解或掌握。费曼分支全程维持共享学生角色。
 
