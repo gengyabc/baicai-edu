@@ -15,11 +15,11 @@
 | 分数推理 | 等分、重复分割，或商的意义 |
 | 是否听懂引导 | 能否沿提示行动，而非只说“知道了” |
 
-推理比速度和单次对错重要；稳定理解比偶然答对重要。学生自己的语言、画图、手势和选择的表示方式都算证据。
+推理比速度和单次对错重要；稳定理解比偶然答对重要。学生自己的语言、画图、手势和选择的表示方式都算证据。逐项核对观察表，将未涉及的项目留作未知；只为当前焦点补必要证据，无需为填满表而逐项出题。
 
 ## Guidance Understanding Check
 
-引导反复无响应是诊断信号：先按 `learn-core` 的 `references/guidance-non-response-handling.md` 检查并提供支架；仍无响应时记为困难，考虑目标概念是否高于当前阶段，并保守下调阶段估计。
+引导反复无响应时，先按 `learn-core` 的 `references/guidance-non-response-handling.md` 探查并分流。只有实际操作、解释或作答暴露的卡点才作为困难和阶段调整的证据；尚未收到这些证据时，策略与原因保留未知。
 
 ## Error Interpretation
 
@@ -38,5 +38,6 @@
 
 - 输出保守的阶段估计、简短 `strategy_summary`、`strengths` / `difficulties` 和一步可执行的 `next_target`；目标宁小勿跳单元。
 - `current_levels` 仅提供有证据的 `arithmetic_strategy_stage` / `fraction_strategy_stage` 部分更新；字段与取值沿用 `learn-data` 的 `references/profile-schema.md`，阶段解释按 `learn-core` 的 `references/progression-map.md`。
-- `confidence` 用 `low` / `medium` / `high`；证据不足取 `low` 并按更低阶段安排下一步。
-- 内部阶段名、错误标签与 JSON 留在内部，学生只看到核心问题与下一步。
+- `confidence` 用 `low` / `medium` / `high`：仅有自述或单次含混证据取 `low`；有清楚策略展示但稳定性尚待验证取 `medium`；多个独立任务/表示中的证据一致取 `high`。证据不足时按更低阶段安排下一步；这只是教学起点，阶段字段仍只更新有证据的部分。
+- 完成条件：结论逐项有证据或明确未知，置信度与证据范围相符，且下一目标是可立即执行的一小步。
+- 内部阶段名、错误标签与 JSON 留在内部，学生可见的诊断收束只有核心问题与下一步。

@@ -18,7 +18,7 @@ user-invocable: false
 
 ## 2. 读取与诊断
 
-读取 `references/error-processing.md` 的文件读取、分类、领域和命名规则。第一道新题先问“你觉得这道题错在哪？”，再分析。
+读取 `references/error-processing.md` 的文件读取、分类、领域和命名规则。第一道新题先问“你觉得这道题错在哪？”，等待学生自述（包括“不知道”）后再分析；自述仅作为它所对应题目的证据。
 
 1. 图片用 `read_image` 或 `modlens_read_image`；都不可用时请学生文字描述。Markdown 用 `read`。只提取可辨认的题目、答案与过程，不猜内容。
 2. 数学加载 `math-core` 并读其 `references/strategy-diagnosis-rules.md`；语文加载 `chinese-core` 并读其 `references/chinese-error-labels.md`。学科未安装时使用通用分类（数学：计算/概念/过程/估算；语文：概括/证据/赏析/结构/审题/细节），说明专属标签不可用，不自造标签。

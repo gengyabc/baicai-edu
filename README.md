@@ -34,6 +34,8 @@ dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/chinese-read
 
 `/teach` 已被本机全局 `teach` 技能占用，因此费曼入口使用 `/feynman`。
 
+需要学生做一个流程选择时（选科目、确认学生、年级、学习偏好、继续/结束、费曼或迁移），技能用 `ask_user_question` 在 DSH Web 中弹出可点击的选项卡片；卡片也允许学生自己填写或跳过。教学中的追问和思考题仍是普通文字，不把“你是怎么想的？”做成按钮。
+
 ## 数据
 
 系统写出的学生状态在**当前工作区**的 `outputs/students/`；用户投放的持久原件在 `data/students/<id>/<subject>/raw/`。`outputs/` 与 `data/` 均 gitignored，不把教学产物或用户原件混进代码目录。
@@ -73,5 +75,7 @@ find learn/skills math-low/skills chinese-reading/skills -name SKILL.md
 # 静态检查：frontmatter、名称、内部入口、失效引用、旧字段/Pi 残留
 node scripts/check-skills.mjs
 ```
+
+交互检查：新开会话输入 `/start`，第一步应在输入区出现「数学」「语文」选项卡片；点选一个再按「提交」，模型才能收到回答。卡片也允许直接输入或跳过。
 
 当前会话已确认 20 个 skill 定义：2 个纯用户入口（`start`、`learn`）+ 3 个双开入口（`feynman`、`profile`、`save`）+ 15 个内部 skill（`user-invocable: false`，模型可加载）。

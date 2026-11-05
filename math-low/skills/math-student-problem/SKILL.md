@@ -1,6 +1,6 @@
 ---
 name: math-student-problem
-description: 带学生出题考 AI。学生想出题、学完知识点需迁移检验，或需要从“会做”走向“会判断”时使用。
+description: 学生出题考 AI。学生主动要出数学题考 AI，或已选定用出题与判断来检验刚学知识的迁移时使用。
 user-invocable: false
 ---
 
@@ -8,56 +8,58 @@ user-invocable: false
 
 ## 开始前
 
-本 skill 只由 `/learn`、`/feynman` 或数学 skill 路由进入。没有 `session.json` 或 `student_id` 为空时，先引导 `/start`，不开始。
+未加载时调用 `skill` 加载 `math-core`、`learn-core`、`learn-data`，通过 `math-core` 的开始门槛后执行。读取它的 `references/math-teaching-core.md` 与 `references/math-student-problem-design.md`；出题引导、有效性检查、验算、回答比例、错误轮换、已确认技能避错与学段适配只在设计 reference 维护。reference 路径相对于对应 skill 的 base directory。
 
-未加载时调用 `skill` 加载以下技能；reference 路径相对于对应 skill 返回的 base directory：
-
-- `learn-core`：判断学生答案前读 `references/confirm-before-accept.md`；记录技能确认或错误前读 `references/feynman-skill-whitelist.md`，所有模式的确认门槛与白名单更新以它为准。需要 Guided Coach 时读 `references/personas.md`。
-- `math-core`：出题和 AI 回答前读 `references/math-student-problem-design.md`；学段引导、题目要求、验算、答题比例、错误轮换与已确认技能的避错规则只在该 reference 维护。
-- `learn-data`：复用快照；产出 segment 前读 Session Segments 与 `references/profile-schema.md` 的 Session Segment，完整 schema 与写入协议以此为准。
+学生判断按 `learn-core` 的确认协议执行；先读其 `references/llm-safety-boundaries.md`，故意错误的揭示受回合结束前纠正的硬边界约束。`mode: feynman` 时读取其 `references/feynman-mode.md`，保持学生角色。这个分支的 AI 回答设计在两种模式下均按数学设计 reference 执行。
 
 使用以下输入：
 
-- 刚学主题：当前 `focus`；若 `current_state.pending_transfer_focus` 存在则优先。
-- 年级：`profile.json` 的 `grade` / `grade_band`。
-- `error_history` / `skill_errors`：选择 AI 错误类型。
-- 数学 `memory.json` 的 `learning_memory.confirmed_skills`：限制 AI 可犯的错误。
+- 刚学主题：当前 `focus`；只有 `current_state.pending_transfer_phase: true` 时才优先对应 `pending_transfer_focus`，交接动作按共享生命周期执行。
+- 共享档案的 `grade` / `grade_band`、`personal.interests`；数学档案的 `profile.preferences`，用于情境、呈现与支架。
+- 数学 `error_history`、memory 的 `learning_memory.skill_errors`：选择 AI 错误类型。
+- 数学 memory 的 `learning_memory.confirmed_skills`：限制 AI 可犯的错误。
 
 ## 1. 学生出题
 
-按设计 reference 的出题引导让学生编题，等学生说完并检查完整性、同类性与数字范围；有问题时由学生修改。题目有效后才回答。
+按设计 reference 的出题引导让学生编题，等学生说完并检查；有问题时给轻量提示让学生修改。
+
+完成条件：学生给出的题目完整能解、内容同类、数字合理且不超纲。条件未齐时继续等待修改；有效后才进入 AI 回答。
 
 ## 2. AI 回答
 
-按设计 reference 先正确解题并验算，再选择并呈现本次回答。保留正确答案和具体错误点供收尾使用；此时让学生判断，不提前揭示对错。
+按设计 reference 在内部先正确解题并验算，再选择并呈现本次回答。将正确答案、AI 实际对错和具体错误点保留给揭示步骤；学生可见内容先让其自行判断。
+
+完成条件：正确解与复核结果一致，呈现的回答符合避错与轮换规则，且有可检查的答案/步骤。让学生判断后进入第 4 步；等待判断也受其回合结束安全门槛约束。
 
 ## 3. 学生判断
 
 问“我的答案对吗？你帮我检查一下”，按共享确认协议追问思路、换角度验证并确认。判断比编题本身更重要。
 
-学生没发现 AI 错误时，温和提示重新计算或定位可疑步骤，不直接揭晓。同一道题连续两轮判断不出（1-3 年级三轮），换更小数字或更明显的错误，再让学生判断。
+学生没发现 AI 错误时，温和提示重新计算或定位可疑步骤，给学生发现的机会。同一道题连续两轮判断不出（1-3 年级三轮），换更小数字或更明显的错误，再让学生判断。
+
+完成条件：学生已给出判断及可核验依据；若按上述轮数简化后仍无法判断，可如实记录“支架后仍未发现”并进入揭示。正确或错误判断都要经过收尾。
 
 ## 4. 揭示与收尾
 
-无论判断结果如何，回合结束前明确说出正确答案、AI 的实际对错（答错则指出具体步骤），以及学生判断的对错和依据。
+无论判断结果如何，回合结束前明确说出正确答案、AI 的实际对错（答错则指出具体步骤），以及学生已有判断的对错和依据。学生尚未判断时如实保留待判断状态；故意错答的纠正仍须在当前回合完成，保证学生带着正确结论结束。
 
 - 正确指出 AI 错了：表扬判断，让学生指出错误步骤。
 - 正确确认 AI 对了：让学生用自己的话解释理由。
 - 判断错或未发现错误：明确正确答案和错误点，再问“现在你能看出哪一步不一样吗？”
 
-最后只提炼一个检查方法，问学生继续出题还是回到刚才的学习，不硬性结束会话。
+最后只提炼一个检查方法，用 `ask_user_question` 问学生「继续出题」还是「回到刚才的学习」；跳过时回到刚才的学习，不硬性结束会话。
 
-## 回传
+完成条件：正确答案、AI 实际对错、学生判断及其依据均已揭示，已给一个检查方法并处理继续/返回选择。继续时重新进入学生出题；返回时把教学交回 `math-session`。
 
-学生可见内容为上述引导、AI 答案、判断追问、真相揭示与一个检查方法。
+## 回传与续接
 
-按已加载的 `learn-data` schema 回传**一个** `session_segment`，补本分支字段：
+跨消息等待出题或判断时，续接服从第 4 步的回合结束安全门槛。调用方按 `learn-data` 的共享日志 context/turn_state 协议保留当前步骤、题目、已呈现回答与纠正结论、待答问题及支架次数，恢复后从待答步骤继续。
+
+读取 `math-core` 的 `references/math-segment-fields.md`，按其引用的共享 schema 回传本轮 segment；作为 `math-session` 子流程时回传证据供外层合并。补本分支字段：
 
 - `subject: math`、`submode: student_problem`、`source: practice`，`mode` 沿用调用方。
 - `strategy_summary` 记录出题、判断与纠正过程，区分首次判断与支架后的发现；`strengths` / `difficulties` 只写学生证据。
 - `next_step_candidate` 写一个检查或迁移小目标；`recommended_targets` 与 `feynman_handoff_recommended` 按实际表现填写。
-- `confirmed_skills` 严格按白名单确认门槛；`skill_errors_observed` 只记学生真实判断错误或未发现错误的技能，不记 AI 故意答错。无证据为空数组。
+- `skill_errors_observed` 只记学生真实判断错误或未发现错误所涉及的技能，AI 故意答错与学生尚未作答都不是学生错误证据。
 
-可选的数学表现、阶段与诊断字段沿用 `math-session` 的数学字段约定；调用方追加日志，finalize 归 `learn-data`。
-
-只做这一轮出题、回答、判断与收尾；知识点教学交回 `math-session`，不在此重讲，也不写 `profile.json`。
+学生可见内容为引导、AI 答案、判断追问、真相揭示与一个检查方法；完整代解与档案写入仍受共享边界约束。

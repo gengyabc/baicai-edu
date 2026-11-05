@@ -22,6 +22,7 @@ Single-context: one `GLOSSARY.md` at the repo root plus ADRs in `docs/adr/`. See
 - Student system state is written under `outputs/students/`; user-provided originals live under `data/students/<id>/<subject>/raw/`. Both `outputs/` and `data/` trees are gitignored. Do not commit them or expose raw student JSON to the student.
 - Per-turn session state goes to `session_log.json`; `profile.json` / `memory.json` / `milestones.json` are written only at finalize. `current_state.last_finalized_session_id` is the idempotency marker.
 - `personal.interests` in the shared `profile.json` is the cross-subject personalization field; Chinese and math skills must read it. Subject preferences and easy/hard topics live in the subject profile.
+- Process branches (subject, student identity, grade, preference, continue/end, feynman or transfer) present choices with `ask_user_question` so the Web card is clickable; teaching prompts that ask the student to think stay as plain text, never as options.
 - `node scripts/check-skills.mjs` is the static check for frontmatter, invocation policy, stale fields, and dangling references.
 - `data/.../raw/` is read-only; back up to `outputs/.../backups/raw/` before renaming with `mv`.
 - The migration mapping from Pi is in `docs/migration/pi-to-dsh-skills.md`.

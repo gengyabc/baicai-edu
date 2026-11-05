@@ -7,17 +7,26 @@
 按 `learn-data` 的 Read Snapshot 获取当前学生与科目；缺少当前学生时引导 `/start` 并停止。复用有效快照，学科 skill 不重复读取。
 
 - 已有活跃循环：保留 `session_id`、`entry_point`、全部 segments 与快照；没有新目标时保留 focus 和目标材料。显式模式请求按第 4 步切换，不新建会话或 finalize。无参数 `/learn` 的恢复不是显式退出费曼，沿用日志模式。
-- 无活跃循环，但日志有非空 segments、有效 context 或待完成的 finalize_plan 且尚未 finalize：先恢复日志中的身份与 context（结构见 `references/profile-schema.md` 的 Session Log），其中保存 focus、mode、target_context、材料与迁移进度；旧日志无 context 时用最后一段的 focus/mode，按 `references/target-parsing.md` 重建目标，缺少语文材料/意图只问一句，不能猜原文或重跑已处理文件。存在 finalize_plan 时先完成保存重试：失败则停止；成功即结束旧身份并丢弃旧 context 缓存，本条有 `/learn`、`/feynman` 或显式新教学请求则回到新建日志分支，否则只报告保存结果，不接续旧循环。没有计划需要恢复时，`/learn` 默认接续；直接 `/feynman` 先问是否接着上次。拒绝接续时先按第 5 步以 `interrupted` 保存旧主题，成功后才开新会话。
+- 无活跃循环，但日志有非空 segments、有效 context 或待完成的 finalize_plan 且尚未 finalize：执行下方“恢复未完成日志”。
 - 无待恢复记录：新建空日志。`session_id` 用 `sess_<YYYYMMDD>_<HHmmss>_<随机hex>`，并核对不等于 `last_finalized_session_id`；记录入口指定的 `entry_point`、`started_at`、`updated_at`、`segments: []`。
 
 恢复后的显式模式请求优先于最后一段的 mode；显式新主题走第 5 步，不把旧证据归到新主题。日志是 segments 的事实来源，上下文副本只是缓存。
+
+### 恢复未完成日志
+
+1. 从日志恢复身份与已有 context，结构见 `references/profile-schema.md` 的 Session Log：focus、mode、target_context、材料与迁移进度。
+2. 有 `finalize_plan` 时，先恢复保存：失败即停止；成功则结束旧身份、丢弃旧 context 缓存。本条含 `/learn`、`/feynman` 或显式新教学请求时新建日志，否则只报告保存结果；此分支不接续旧循环，也无需为教学补齐材料。
+3. 没有 plan 且旧日志无 context 时，采用最后一段的 focus/mode，按 `references/target-parsing.md` 重建目标；缺少语文材料/意图时只问一个问题并等待补充，沿用已提取材料。
+4. 无待提交 plan 时，`/learn` 默认接续；直接 `/feynman` 用 `ask_user_question` 给「接着上次」「开新的」。选择接续后保留旧身份；选择开新则先按第 5 步以 `interrupted` 保存旧主题，成功后才新建。
+
+进入目标解析前，必须已得到一个身份明确、无待提交 plan 的日志；材料尚待补充或选择尚待回答时，停在当前步骤。
 
 ## 2. Resolve Target
 
 只在新会话、首次补充目标或明确换主题时运行入口的目标解析规则。后续消息默认是对当前问题的回应，不逐轮重新分类。
 
 - 目标类别与文件交接必须读取 `references/target-parsing.md`。显式目标优先；没有时恢复日志 context，其次为 true 的 pending，再用入口的档案候选顺序选一个小目标。
-- pending 恢复的是动作，不只是焦点：`pending_feynman_handoff` → 加载 `feynman`，设置 `mode: feynman` 并使用对应 focus；`pending_transfer_phase` → 设置 `context.activity: transfer`，使用对应 focus，按第 3 步执行学科迁移。两者同时为 true 且日志没有可判定的最新选择时问一句，不猜优先级。用户本条显式模式/动作请求优先于 context 和 pending；pending 不能覆盖显式选择，清理已被替代的 pending。
+- pending 恢复的是动作，不只是焦点：`pending_feynman_handoff` → 加载 `feynman`，设置 `mode: feynman` 并使用对应 focus；`pending_transfer_phase` → 设置 `context.activity: transfer`，使用对应 focus，按第 3 步执行学科迁移。两者同时为 true 且日志没有可判定的最新选择时用 `ask_user_question` 问一句，选项为「当小老师」「迁移」，不猜优先级。用户本条显式模式/动作请求优先于 context 和 pending；pending 不能覆盖显式选择，清理已被替代的 pending。
 - 消费 pending 时先把对应动作、目标和材料写进日志 context，真正接上后才清空该对 pending 字段；后续恢复以 context.activity/mode 保持动作，不回到普通教学。迁移完成后 activity 回到 teaching。
 - 文件目标由 `learn-errors` 处理一次。它负责自我诊断问答、文件安全与写回；入口不重复提问或分析。处理后按共享分类器归为具体学科目标，设置 `files_processed: true`，保留当前 extracted 引用与原意图；不把未处理的旧路径再次传给路由器。
 - 把快照中的个性化输入交给学科：共享 `personal`，科目 `profile.preferences` / `profile.self_report`，以及 memory 的相关支架、动机、困难和下一步。使用边界遵循 `learn-core`。
@@ -42,7 +51,7 @@
 - 显式回到普通学习：设置 `mode: learn`、`context.activity: teaching`，同样退出当前迁移动作并清理专属进度/pending。无参数 `/learn` 恢复已有日志时沿用日志模式/动作，不视为显式退出。
 - 显式选择迁移：设置 `mode: learn`、activity 为 transfer，并记下来源领域与阶段；清理已替代的 pending_feynman_*，写对应迁移 pending 供中断恢复，按第 3 步路由，完成后清空。
 
-普通学习的下一步菜单按本 skill 的 `references/next-step.md`；费曼保持学生视角，只问继续讲、换一个点或结束，不在后台另造菜单或 segment。费曼角色与白名单规则由 `learn-core` 对应 references 定义。
+普通学习的下一步菜单按本 skill 的 `references/next-step.md`；费曼保持学生视角，用 `ask_user_question` 只给「继续讲」「换一个点」「结束」三个选项，不在后台另造菜单或 segment。费曼角色与白名单规则由 `learn-core` 对应 references 定义。
 
 ## 5. Finalize Or Switch Topic
 

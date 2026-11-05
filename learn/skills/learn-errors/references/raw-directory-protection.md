@@ -1,25 +1,18 @@
-# Raw Directory Protection Rules
+# 原件保护
 
-`data/students/<student_id>/<subject>/raw/` 下的用户投放原件保持原样。
+`data/students/<student_id>/<subject>/raw/` 保存用户原件：内容只读；唯一允许的变更是完成备份后在同一 raw 目录内改名。备份只增不改，提取结果写入 `outputs/.../extracted/`。
 
-## Rules
+## 备份后改名
 
-- 不允许 `write` / `edit` 修改 raw 内容。
-- 不允许 `rm`、`touch`、`echo >` 或任何写入重定向。
-- 只允许 `mv` 重命名，不允许改内容。
-- 允许 `cp` **从** `data/.../raw/` 到 `outputs/.../backups/raw/` 做备份；不允许 `cp` 覆盖 raw 里的文件。
-- 读取只在文件处理流程中发生，用 `read` / `read_image` / `modlens_read_image`。
+每次改名按顺序执行：
 
-## Backup Before Rename
+1. 解析并核对原件、备份和新文件的绝对路径；原件与新文件必须在当前学生、当前科目的 raw 目录，备份必须在对应 `outputs/.../backups/raw/`。确认变量已赋值并引用含空格的路径。
+2. 确保备份目录存在。备份目标或改名目标已存在时停止并说明冲突，保留现有文件。
+3. 将原件复制到 `outputs/.../backups/raw/<原文件名>`；确认复制成功且备份存在。
+4. 使用 `mv` 在原 raw 目录内改名，确认命令成功后才记录 `renamed: true`；通知学生原名和新名。
 
-每次 `mv` 前必须：
+备份失败时保留原名，告诉学生“原始文件没能备份，我先不改名”。改名失败时保留备份与原件，报告未完成；按实际结果记录路径与状态。
 
-1. `mkdir -p outputs/students/<id>/<subject>/backups/raw`
-2. `cp "<raw 原文件>" "outputs/students/<id>/<subject>/backups/raw/<原文件名>"`
-3. 确认备份存在后，再 `mv`（仍在 `data/.../raw/` 内改名）。
+## 内容边界
 
-备份失败时停止，不要改名，先告诉学生“原始文件没能备份，我先不改名”。
-
-## Note
-
-流程本身无法强制文件系统只读；调用方必须遵守上面的顺序。宿主若支持路径级只读策略，应把 `data/.../raw/` 设为只读。
+读取使用当前环境支持的文本或图片工具。禁止覆盖、编辑、删除 raw 内容，禁止以复制、重定向或创建空文件的方式替换原件。宿主支持路径级保护时保留内容只读；改名权限仍受上述流程约束。

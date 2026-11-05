@@ -5,13 +5,12 @@ description: 查看学习进展或修改学生档案。学生询问当前重点�
 
 # 学生档案
 
-加载尚未加载的 `learn-core`、`learn-data`。
+加载尚未加载的 `learn-core`、`learn-data`。先读取 `outputs/students/session.json` 与共享档案，确定学生及当前科目；缺少当前学生或共享档案时，引导 `/start` 并停止。随后只执行学生请求的查看或修改分支。
 
 ## 查看
 
-1. 读取 `outputs/students/session.json`，确定 `student_id`、`subject`。没有当前学生或共享档案时，引导 `/start` 并停止。
-2. 读取共享 `outputs/students/<id>/profile.json`，以及当前科目的 `profile.json`、`milestones.json`、`current_state.json`。
-3. 用学生能听懂的话简短回顾：
+1. 读取当前科目的 `profile.json`、`milestones.json`、`current_state.json`。
+2. 用学生能听懂的话简短回顾：
    - 姓名、年级、兴趣和当前科目。
    - 当前重点：`current_state.active_focus`，其次 `session_history[0].focus`。
    - 科目档案 `session_history` 的最新 5 次会话，每次只说“学了什么 + 一个进步或困难”。
@@ -29,4 +28,4 @@ description: 查看学习进展或修改学生档案。学生询问当前重点�
    - 学习偏好、当前水平、易/难主题、优先目标 → 科目 `profile.json`。
    - 改年级时同步 `grade_band`，按 `learn-core` 的 `references/grade-band-defaults.md` 重选 `tone`、`learning_state.active_domain`；是否重置水平不明确时先问。
    - 新增兴趣时保留其他兴趣；学生明确不再喜欢时才移除。
-4. 告诉学生“已经更新”，不展示原始数据。
+4. 所有请求字段写入成功且有效快照同步更新后，告诉学生“已经更新”。部分写入失败时说明哪些修改尚未保存，保留成功部分供重试；回复只展示结果摘要。

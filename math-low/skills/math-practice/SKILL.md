@@ -1,57 +1,40 @@
 ---
 name: math-practice
-description: 数学针对性练习。错题复盘后需确认错误模式、会判断但独立计算仍出错、学生要求多练，或已掌握主题需连接旧知识时使用。
+description: 数学分层练习。需用同类题确认错误模式、用对比解释错因、稳定独立计算、按学生要求多练，或连接已掌握知识时使用。
 user-invocable: false
 ---
 
 # Math Practice
 
-## Session Gate
+## 开始前
 
-本 skill 只由 `/learn`、`/feynman` 或数学 skill 路由进入。没有 `session.json` 或 `student_id` 为空时，先引导学生运行 `/start`，不要开始练习。
+未加载时调用 `skill` 加载 `math-core`、`learn-core`、`learn-data`，通过 `math-core` 的开始门槛后练习。读取它的 `references/math-teaching-core.md` 与 `references/targeted-practice-rules.md`；选层、题量、适配、出题与调整的唯一来源是后者。reference 路径相对于对应 skill 的 base directory。
 
-## Load First
+来自错题文件时加载 `learn-errors`，复用 `outputs/students/<student_id>/math/extracted/<error_file>.md` 的已有分析。接受答案、个性化与费曼角色按 `learn-core` 的条件表执行。
 
-如果本会话尚未加载，先调用 `skill` 工具加载：
+## 输入
 
-1. `learn-data`（读 `outputs/students/<student_id>/math/profile.json` 的 `profile.current_levels`、`profile.preferences`、`error_history`）
-2. `math-core`，并读它的 `references/targeted-practice-rules.md`
-3. `learn-core`：接受答案前读 `references/confirm-before-accept.md`；记录技能确认或错误前读 `references/feynman-skill-whitelist.md`，以它为确认门槛的唯一来源（所有模式适用）
-4. 练习来自某道错题时，加载 `learn-errors` 读取 `outputs/students/<student_id>/math/extracted/<error_file>.md` 的分析
+复用调用方传入的 `student_id`、`mode`、`focus`、本轮表现、自述及快照：
 
-`math-diagnose` 已经给出诊断结论时直接用，不要重复诊断。
+- 数学档案的 `profile.current_levels`（算术/分数策略阶段与 `overall`）。
+- `profile.preferences`（`likes_visual`、`likes_story_context`、`likes_direct_calculation`），`profile.self_report.easy_topics/hard_topics`。
+- `error_history` 与对应分析，`learning_state.active_domain` / `priority_targets`，memory 的 `learning_memory.recent_error_patterns`。
+- 共享档案的 `personal.interests`，用于情境或呈现细节。
+- 已有 `math-diagnose` 结论（如有）。
 
-## Inputs
+## 执行
 
-- `profile.current_levels`：`arithmetic_strategy_stage`、`fraction_strategy_stage`、`overall`
-- `profile.preferences`：`likes_visual`、`likes_story_context`、`likes_direct_calculation`
-- `error_history` 最近记录与对应 `extracted/` 分析
-- `learning_state.active_domain`、`priority_targets`
-- `personal.interests`：用来选情境（披萨、足球、画画等）
-- `self_report.easy_topics` / `hard_topics`：用来决定起点和支架
-- 学生本轮的表现与自述
+1. **定起点**：复用已有诊断。需要识别是否重复同一错误时可选 Layer 1；需要估计策略阶段或解释不明错因时交给 `math-diagnose`。完成条件：已明确当前练习要检验或巩固的一个模式，而非重新分析已确定的结论。
+2. **选一层**：按练习 reference 的选层表与适配规则设计当前练习。完成条件：层次与学生证据相符，目标单一，题量符合该层限制；四层是分支而非必做顺序。
+3. **逐题推进**：按同一 reference 的 Delivery And Adaptation 出题、等待、确认与调整。完成条件：当前题已等待学生回应，或已取得策略与验证证据并决定下一题/换层/回教学主线；后续题与确认留待学生回应后继续。
+4. **收束当前层**：达到该层观察目的或需要更小支架时，以一个可复述的方法句收束，交回 `math-session` 或保留下一练习动作。完成条件：能指出本层实际观察到的模式及一个具体下一步；题量耗尽本身不代表掌握。
 
-## Steps
+## 回传
 
-1. 复用已有诊断；错误模式仍不清楚且需要策略估计时交给 `math-diagnose`，拿回结论后继续。
-2. 按 `math-core` 的 `references/targeted-practice-rules.md` 选层表与适配规则生成当前练习。选层、题量、年级/偏好适配的唯一来源是该 reference。
-3. 按同一 reference 的 Delivery And Adaptation 执行出题、等待、确认和调整；完成当前层后根据新证据决定继续、换层或回到 `math-session`。
-4. 用一个方法句收束本次练习，按下面契约回传本轮证据。
-
-## Output
-
-学生可见：练习说明、当前题目、确认追问与方法句，不展示内部层次。
-
-内部回传**一个** `session_segment`；产出前读取 `learn-data` 的 Session Segments 和 `references/profile-schema.md` 的 Session Segment，完整 schema 与写入协议以此为准，只补本分支字段：
+读取 `math-core` 的 `references/math-segment-fields.md`，按其引用的共享 schema 回传本轮 segment；作为 `math-session` 子流程时回传证据供外层合并。补本分支语义：
 
 - `subject: math`、`submode: practice`；`mode` 沿用调用方，`source` 对齐实际来源（错题练习为 `error_analysis`）。
-- `strategy_summary` 区分对比判断与独立计算表现，记录本层证据；`strengths` / `difficulties` 反映学生实际策略。
-- `next_step_candidate` 写下一层或更小支架的具体建议，`recommended_targets` 保持近邻目标；`feynman_handoff_recommended` 按实际需要填写。
-- `confirmed_skills` / `skill_errors_observed` 按已加载的白名单协议填技能名；无证据为空数组。
+- `strategy_summary` 区分对比判断与独立计算，记录当前层已观察证据。
+- `next_step_candidate` 是继续本层、换层或更小支架的具体建议；`recommended_targets` 保持近邻目标，`feynman_handoff_recommended` 按实际需要填写。
 
-由调用方追加日志，数学表现、策略阶段与诊断的可选字段语义沿用 `math-session` 的数学字段约定。
-
-## Constraints
-
-- 不在本 skill 里写 `profile.json`；只产出 segment，finalize 归 `/learn` 与 `learn-data`。
-- 内部层次名、错误类型不展示给学生。
+学生可见：练习说明、当前题目、确认追问与阶段方法句；内部层次、错误类型与 JSON 留在内部。调用方负责日志，档案写入与 finalize 按共享协议。

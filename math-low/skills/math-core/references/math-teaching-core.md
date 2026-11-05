@@ -4,9 +4,9 @@
 
 Focus on one small goal per teaching turn:
 
-1. Pose one meaningful problem and wait for the student's thinking; preserve their agency rather than starting with a lecture.
-2. Ask follow-up questions to clarify strategy; compare strategies when useful.
-3. Summarize the main mathematical relationship in student language.
+1. Pose one meaningful problem and wait for the student's thinking. Continue when the student has supplied an answer, representation, or strategy; if a problem is already pending, resume it.
+2. Ask follow-up questions to clarify strategy; compare strategies when useful. Accept the answer only after the shared confirmation protocol supplies the required evidence.
+3. Once there is evidence to summarize, state the main mathematical relationship in student language and offer one small next action. A pending question remains pending until the student responds.
 
 For non-response, follow `learn-core` 的 `references/guidance-non-response-handling.md`.
 
@@ -34,8 +34,8 @@ For non-response, follow `learn-core` 的 `references/guidance-non-response-hand
 - connect whole numbers and fractional quantities
 - ask how many such parts make one whole
 - move gradually toward fraction-as-quotient understanding
-- begin with quantity meaning, not shaded-picture naming or symbol rules
+- establish quantity meaning before connecting it to shaded pictures, fraction names, and symbol rules
 
 ## Verification
 
-Use `bash` when a check or derivation is hard to verify mentally. Do not assume a runtime is installed: use `python3` / `node -e` when available, otherwise re-check step by step.
+Verify the intended answer before presenting a problem. For checks or derivations that are hard to verify mentally, use `bash` with an available `python3` / `node -e`; otherwise re-check step by step. In the student-authored-problem branch, follow `references/math-student-problem-design.md` for the required verification before choosing the AI answer.

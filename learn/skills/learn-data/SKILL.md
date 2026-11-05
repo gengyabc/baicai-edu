@@ -6,11 +6,11 @@ user-invocable: false
 
 # Learn Data
 
-用 `read` / `write` / `glob` / `bash` 操作工作区内的学生 JSON。路径、字段与合并规则按本文执行。
+学生数据的读取、初始化与保存协议。路径、字段与合并规则按本文执行。
 
 ## Data Root
 
-所有路径相对于**当前工作区根目录**。学生系统状态在 `outputs/students/`；用户投放的持久原件在 `data/students/`。
+所有路径相对于**当前工作区根目录**，分隔符按本机系统处理。学生系统状态在 `outputs/students/`；用户投放的持久原件在 `data/students/`。文件操作使用当前环境可用的工具；需终端时，按实际操作系统和 shell 选择命令。
 
 ```
 data/students/
@@ -34,8 +34,8 @@ outputs/students/
 ```
 
 - `student_id` 形如 `stu_<slug>_<4hex>`；`slug` 只含 `[a-z0-9_]`，`4hex` 是 4 位 `[0-9a-f]`。
-- 不使用索引文件；用 `glob outputs/students/*/profile.json` 发现学生，再读每个 `profile.json`。
-- `data/.../raw/` 是用户投放区：只读，只能 `mv` 改名；不得 `write` / `edit` / 删除内容。
+- 不使用索引文件；按 `outputs/students/*/profile.json` 匹配文件发现学生，再读取各档案。
+- `data/.../raw/` 是用户投放区：内容只读；按 `learn-errors` 的备份规则备份成功后才可改名，目标已存在时停止，避免覆盖；不得覆盖、编辑或删除内容。
 - `outputs/.../backups/raw/` 是原件的写前备份，只增不改；`extracted/` 是系统写出的分析 Markdown。
 
 ## Read Snapshot
@@ -83,47 +83,16 @@ outputs/students/
 
 ## Create Student
 
-在 `/start` 的入学问答收齐信息后执行：
-
-1. 生成唯一 `student_id`：姓名转小写拼音或英文 slug，加 4 位随机 hex；用 `glob outputs/students/*/profile.json` 取出已有 id 检查不重复（`glob` 只返回文件，不要用 `outputs/students/*` 列目录）。
-2. 写共享档案 `outputs/students/<id>/profile.json`：
-
-```json
-{
-  "student_id": "stu_li_ming_a7b2",
-  "name": "李明",
-  "grade": 4,
-  "grade_band": "upper_primary",
-  "language": "zh-CN",
-  "personal": {
-    "interests": ["阅读", "绘画", "踢足球"],
-    "most_exciting_event": "参加学校运动会并获得第一名",
-    "most_sad_event": "宠物小狗生病去世了"
-  },
-  "created_at": "2026-10-04T12:00:00Z",
-  "updated_at": "2026-10-04T12:00:00Z"
-}
-```
-
-3. 写当前科目的 `profile.json`、`memory.json`、`current_state.json`、`milestones.json`、`session_log.json`：
-   - 模板见 `references/profile-schema.md`。
-   - `tone` 与 `learning_state.active_domain` 按 `learn-core` 的 `references/grade-band-defaults.md` 按年级段选择，不要照抄示例里的 upper_primary 值。
-   - `profile.preferences` 全部先写 `false`，由 `/start` 把学生选中的那一项设为 `true`。
-   - `profile.self_report.easy_topics` / `hard_topics` 两个科目统一用这组字段名。
-4. 写 `outputs/students/session.json` 激活该学生与科目。
-5. 用 `bash` 创建目录：`mkdir -p data/students/<id>/<subject>/raw outputs/students/<id>/<subject>/extracted outputs/students/<id>/<subject>/backups/raw`。
-6. 告诉学生建档完成，下一步用 `/learn`。
-
-年级段、默认领域、语气、策略阶段统一读取 `learn-core` 的 `references/grade-band-defaults.md`。
+`/start` 收齐并确认新生信息后，读取并执行 `references/create-student.md`。已有学生只补齐 Read Snapshot 指定的缺失文件，保留已有学习证据。
 
 ## Write Protocol
 
-DSH 的 `write` 要求先读目标文件。每次写入遵循：
+每次写入遵循：
 
-1. `read` 完整文件（不存在则用模板）。
+1. 读取完整文件（不存在则用模板）。
 2. 在内存中按字段合并；对象递归合并，数组按流程要求替换或前插，不做隐式去重。
 3. 更新 `updated_at` 为当前 ISO 时间。
-4. `write` 完整 JSON；不要写片段、不要留下注释、不要写非法 JSON。
+4. 写入完整、合法的 JSON，不含注释。
 5. 写完在回复中只告诉学生“已保存”或摘要，不展示原始 JSON。
 
 文件区分（不要混）：

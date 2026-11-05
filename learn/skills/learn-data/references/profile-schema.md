@@ -2,33 +2,7 @@
 
 ## Directory Structure
 
-```
-data/students/
-  <student_id>/
-    math/raw/
-    chinese/raw/
-
-outputs/students/
-  session.json
-  <student_id>/
-    profile.json
-    math/
-      profile.json
-      memory.json
-      current_state.json
-      milestones.json
-      session_log.json
-      extracted/
-      backups/raw/
-    chinese/
-      profile.json
-      memory.json
-      current_state.json
-      milestones.json
-      session_log.json
-      extracted/
-      backups/raw/
-```
+路径布局与 raw/备份权限以 `learn-data` 的 Data Root 为准；本文件定义字段、模板和消费方式。初始化时同时执行 Initialization Defaults By Grade Band，保留已有文件。
 
 ## Base Profile
 
@@ -38,7 +12,7 @@ outputs/students/
 
 ```json
 {
-  "student_id": "stu_li_ming_a7k2",
+  "student_id": "stu_li_ming_a7b2",
   "name": "李明",
   "grade": 4,
   "grade_band": "upper_primary",
@@ -310,7 +284,7 @@ Memory is not write-only. These fields must be read at snapshot time and used:
 
 ## Write Assumptions
 
-DSH skills use `read` → in-memory merge → `write` of the whole file. Assumptions:
+Skills read the complete file, merge in memory, then write the whole file. Assumptions:
 
 - One student, one session, one process; no cross-process lock or transaction.
 - Read the complete file before writing; write complete valid JSON.

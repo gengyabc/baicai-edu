@@ -21,13 +21,13 @@
 
 - 错误类型：计算错误、概念混淆、过程遗漏分别匹配题型和支架，一组题只针对当前错误模式。
 - 水平：`direct_modeling` 多用情境和可画图的题；`flexible_relational` 可加关系比较和更大的数字。
-- 偏好：`story_context` 用生活情境，`visual` 用图或线段，`direct_calculation` 用纯算式。读取 `profile.preferences` 的对应偏好，情境优先取 `personal.interests` 的一个具体细节；偏好只改呈现，不降低目标。个性化边界按 `learn-core` 的 `references/prestart-settings-interpretation.md`。
+- 偏好：`profile.preferences.likes_story_context` 用生活情境，`likes_visual` 用图或线段，`likes_direct_calculation` 用纯算式。情境优先取共享档案 `personal.interests` 的一个具体细节；偏好只改呈现，目标保持不变。个性化边界按 `learn-core` 的 `references/prestart-settings-interpretation.md`。
 - 年级：1-3 年级句子短、数字小、一次一题；4-6 年级可以多步并要求说明理由。通用适配按 `learn-core` 的 `references/grade-band-defaults.md`。
 
 ## Delivery And Adaptation
 
-1. 先用一句话说明练什么、为什么练，再给编号清楚、能直接回答的题目；内部层名和错误类型不展示给学生。
-2. 学生作答后追问思路，按 `learn-core` 的 `references/confirm-before-accept.md` 确认，不直接报答案。
-3. 学生连续出错时退回更小数字或更低一层，不增加题量；根据本轮表现调整，不照搬预设题单。
-4. 每层 1-3 题，遵守上表的具体题量；任何时刻只给当前需要的一层。
-5. 结束时提炼一个可复述的方法句，如“先估结果大概多大，再动笔算”。练习不是考试：不排名、不计时、不贴标签。
+1. 先用一句话说明练什么、为什么练，再给编号清楚、能直接回答的当前题；内部层名和错误类型留在内部。给题后等待作答。
+2. 学生作答后追问思路，按 `learn-core` 的 `references/confirm-before-accept.md` 确认；完成条件是取得策略和换角度验证证据，或按无响应协议确定需要支架。
+3. 学生连续出错时退回更小数字或更基础的支架，必要时改选更低一层；题量保持在当前层限制内，根据本轮表现调整，而非追加题单。
+4. 遵守选层表的具体题量，任何时刻只给当前需要的一层。完成条件按本层目的判定：诊断层已观察同类错误是否重复；对比层能说明两种做法的差别或已定位困难；变式层已观察独立策略是否稳定；连接层已展示与旧知识的联系或已定位缺口。未知项如实保留，题量耗尽也不自动认定掌握。
+5. 当前层收束时提炼一个可复述的方法句，如“先估结果大概多大，再动笔算”，依据证据决定继续、换层或回教学。练习用于发现策略和提供反馈；不排名、不计时、不贴标签。

@@ -8,11 +8,11 @@
 
 - 新写入的 `error_history` 必须使用带前缀的标签：`reading:` 或 `writing:`。
 - 旧标签 `writing:意图误判` 归一化为 `writing:偏题`；读取旧记录时做映射。
-- 每条诊断只保留一个主标签；次要标签写入 `notes`。
+- 每条诊断只保留一个有原文与学生表现依据的主标签；次要问题可在持久化条目的 `notes` 说明，无明确标签时省略诊断。
 
 ## 存储方式
 
-诊断标签不写进 `skill_errors`。正确链路：
+诊断标签与技能追踪分开：标签描述本次主问题，写入 `diagnosis`；`confirmed_skills` / `skill_errors_observed` 只接收共享白名单技能及其证据，finalize 的 `skill_errors` 不承载诊断标签。记录链路：
 
 1. 学科 skill 在 `session_segment.diagnosis` 写 `{ "domain", "label", "evidence" }`。
 2. `learn-data` finalize 把它写成一条 `error_history` 诊断条目：
@@ -23,7 +23,7 @@
 
 ## 阅读标签
 
-诊断阅读题时使用以下标签：
+诊断阅读题时，先对照题目、学生答案与原文定位具体失分点，再选下表中最值得先改的一项。定义用于归类，“常见问题”的纠偏方式见 `references/chinese-reading-core.md`。
 
 | 标签 | 定义 | 示例 |
 |-------|------------|-----------------|

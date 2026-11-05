@@ -1,6 +1,6 @@
 ---
 name: chinese-session
-description: 分派语文学习回合。入口确定 subject = chinese、学生切换阅读/写作领域，或费曼回合需要确定领域时加载。
+description: 语文路由。学习入口确定 subject = chinese、恢复语文回合或切换阅读/写作领域时加载；按目标与 mode 分派一个子技能。
 user-invocable: false
 ---
 
@@ -29,7 +29,7 @@ user-invocable: false
 - `mode`：`learn` | `feynman`。
 - `focus`：本轮主题字符串；为空时由子 skill 从档案或材料中确定。
 
-如果入口没有给出 `target_context`，按 `learn-data` 的 `references/target-parsing.md` 补齐；仍然无法判断时只问一个短问题，不要靠猜开始教学。
+如果入口没有给出 `target_context`，按 `learn-data` 的 `references/target-parsing.md` 补齐；仍无法确定流程分支时，用 `ask_user_question` 提供对应的阅读/写作或动作选项，得到选择后再路由。
 
 ## Load First
 
@@ -49,6 +49,8 @@ user-invocable: false
 4. 本轮只路由一次；不要在一次回复里加载多个子 skill 的教学内容。
 
 ## Routing Table
+
+依次完成文件归类、确定领域、选择子 skill。明确 `intent` 优先于旧 `type`：按共享分类器补齐匹配类别，保留原始目标与材料；两者表达了互相冲突的明确请求时，用 `ask_user_question` 确认一个动作后再路由。`mode = feynman` 优先决定教学方式，出题/迁移目标仅保留其阅读或写作领域。
 
 | 条件 | 路由到 | 传入 mode |
 |---|---|---|
@@ -73,7 +75,7 @@ user-invocable: false
    - 入口已归类并传 `files_processed: true` 时，直接使用其阅读/写作类别、intent、提取内容和 material_refs；不再加载 `learn-errors` 或追问自我诊断。
    - 兼容仍为 `error_files` 但已处理的目标：读取 material_refs 指向的 extracted 内容，归为阅读/写作类别；不再分析旧 raw 路径。
    - 尚未处理时交回共享生命周期调用一次 `learn-errors`，取得结果后再路由；本路由器不进行文件持久化。
-   - 阅读答案用 `assessment + assess_reading`；作文批改用 `assessment + assess_writing`，其余按材料归类。仍不清楚只问“这是阅读题还是作文？”。
+   - 阅读答案用 `assessment + assess_reading`；作文批改用 `assessment + assess_writing`，其余按材料归类。仍不清楚用 `ask_user_question` 问“这是阅读题还是作文？”，选项为「阅读题」「作文」。
 3. `type = profile` 选定领域的顺序：
    1. `session_history[0].next_step` 明确指向阅读或写作时，用它。
    2. 否则用科目档案 `learning_state.active_domain`。
@@ -101,14 +103,13 @@ user-invocable: false
 
 - `student_id`、`subject: chinese`
 - `mode`、`submode`
-- `target_context`（原始值，不改写）
+- `target_context`（已按共享分类器归类的目标，保留原意图与材料引用；入口持有原始输入）
+- 恢复时的 `context.activity`、`context.turn_state`（迁移来源、技巧、阶段、轮数、待答问题）
 - `focus`
 - 入口已读会话与快照，以及按 Preconditions 补读的缺失部分（子 skill 复用，不重复读文件）
 - 个性化输入：`personal.interests`、`personal.most_exciting_event`、`profile.preferences`、`self_report.easy_topics/hard_topics`、`memory.preferred_scaffolds` / `recent_error_patterns` / `expression_traits` / `stable_strengths` / `stable_difficulties`
 - 阅读材料或草稿原文，以及学生本轮最新一句原话
 
-只加载一个子 skill。子 skill 产出的 `session_segment` 就是本轮的记录；路由器不另造一段。
+路由完成条件：目标子 skill 已收到以上上下文并接管本轮；仅需补问或等待入口处理文件时停在当前步骤。教学、反馈及唯一 `session_segment` 均由该子 skill 产出，路由器只交接，不追加教学或记录。
 
-方向清楚就直接进入子 skill，不用空转提问。本路由器不讲方法、档位、标签或范文，不给阅读答案、不批改作文，也不拼接多个子 skill 的输出。
-
-会话结束、中途换主题、模式切换或恢复时，把子 skill 的唯一段交回入口，按 `learn-data` 的 `references/session-lifecycle.md` 记录与处理；finalize 由入口执行，本路由器不生成额外段、不写数据。
+每次子 skill 返回后，把唯一段及最新阶段交回入口，按 `learn-data` 的 `references/session-lifecycle.md` 记录、恢复或切换；finalize 时机与持久化均由入口负责。
