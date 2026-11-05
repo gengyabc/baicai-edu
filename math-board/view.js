@@ -238,7 +238,13 @@ export function createBoardDescription(M) {
   };
 }
 
-export function createBoardView(React, M, ctx, t, css, art, describeBoard) {
+/** Resolve a level value to its stored palette index (not the array position). */
+export function colorIndexForValue(levels, value) {
+  const level = levels.find((entry) => entry.value === value);
+  return level ? level.color : 0;
+}
+
+export function createBoardView(React, M, ctx, t, css, art, describeBoard, applyHostConfig) {
   const h = React.createElement;
   const paletteColor = (index) => M.color(index);
   function icon(name, size = 18) {
@@ -255,6 +261,7 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard) {
       cross: 'M4 12h16M7 5h10v14H7z',
       trash: 'M4 6h16M9 6V3h6v3M7 6l1 15h8l1-15',
       multi: 'M3 3h7v7H3zm11 11h7v7h-7zM17 3v7M14 6h7M3 17h7',
+      focus: 'M4 9V4h5M15 4h5v5M4 15v5h5M20 15v5h-5',
       plus: 'M12 5v14M5 12h14',
       minus: 'M5 12h14',
     };
@@ -310,7 +317,8 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard) {
         const next = raw ? M.validate(JSON.parse(raw)) : M.empty();
         boardRef.current = next; setBoard(next);
         const mark = localStorage.getItem(watermarkKey) ?? (previous === null ? null : localStorage.getItem(`${legacyKey}:config`));
-        watermark.current = mark === null ? -1 : Number(mark);
+        const parsed = mark === null ? -1 : Number(mark);
+        watermark.current = Number.isFinite(parsed) ? parsed : -1;
       } catch { setStorageBlocked(true); setStatus(t('loadError')); }
       setReady(true);
       return () => { revision.current++; gesture.current = null; if (url.current) URL.revokeObjectURL(url.current); };
@@ -323,25 +331,13 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard) {
 
     // Host settings changes (typed by the student in chat or via /math-board-settings).
     React.useEffect(() => {
-      if (!ready || !config || !Array.isArray(config.changes)) return;
-      const pending = config.changes.filter((change) => change.revision > watermark.current);
-      if (!pending.length) return;
-      if (watermark.current < (config.floorRevision ?? 0)) {
-        let next = boardRef.current;
-        try { next = M.reduce(next, { type: 'configure', settings: config.settings, scope: 'future' }); } catch { return; }
-        publish(next); watermark.current = config.revision;
-        try { localStorage.setItem(watermarkKey, String(config.revision)); } catch {}
-        setStatus(t('configGap'));
-        return;
-      }
-      let next = boardRef.current, last = watermark.current;
-      for (const change of pending) {
-        try { next = M.reduce(next, { type: 'configure', settings: change.settings, scope: change.scope }); } catch { continue; }
-        last = Math.max(last, change.revision);
-      }
-      publish(next); watermark.current = last;
-      try { localStorage.setItem(watermarkKey, String(last)); } catch {}
-      setStatus(t('configApplied'));
+      if (!ready || !config) return;
+      const result = applyHostConfig(M, boardRef.current, config, watermark.current);
+      if (!result) return;
+      publish(result.board);
+      watermark.current = result.watermark;
+      try { localStorage.setItem(watermarkKey, String(result.watermark)); } catch {}
+      setStatus(t(result.status));
     }, [config, ready]);
 
     React.useEffect(() => {
@@ -578,11 +574,10 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard) {
     const library = M.shapes;
     const visibleShapes = settings.shapes;
     const levels = settings.levels;
-    const colorForLevel = (value) => levels.findIndex((l) => l.value === value);
 
     function settingsPanel() {
       const rows = levels.map((level, index) => h('div', { className: 'eb-level-row', key: index },
-        h('span', { className: 'eb-color-dot', style: { background: paletteColor(index) } }),
+        h('span', { className: 'eb-color-dot', style: { background: paletteColor(level.color) } }),
         h('input', {
           type: 'number', min: 1, value: level.value, 'aria-label': `${t('level')} ${index + 1}`,
           onChange: (event) => {
@@ -595,7 +590,7 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard) {
             });
           },
         }),
-        h('span', { className: 'eb-muted' }, `${t('colorName')} ${index + 1}`),
+        h('span', { className: 'eb-muted' }, `${t('colorName')} ${level.color + 1}`),
         button(icon('minus', 14), () => editSettings((draft) => {
           if (draft.levels.length < 2) return draft;
           const removed = draft.levels[index].value;
@@ -607,7 +602,7 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard) {
       const shapeRows = settings.shapes.map((shape) => {
         const entry = settings.defaults.find((item) => item.shape === shape);
         return h('div', { className: 'eb-default-row', key: shape },
-          h('span', { className: 'eb-default-shape' }, swatch(shape, Math.max(0, colorForLevel(entry.value)), 22), h('span', null, t(shape))),
+          h('span', { className: 'eb-default-shape' }, swatch(shape, colorIndexForValue(levels, entry.value), 22), h('span', null, t(shape))),
           h('input', {
             type: 'text', maxLength: 30, value: entry.alias, placeholder: t('aliasHint'), 'aria-label': `${t(shape)} ${t('alias')}`,
             onChange: (event) => editSettings((draft) => {
@@ -627,7 +622,7 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard) {
         const on = settings.shapes.includes(shape);
         const entry = settings.defaults.find((item) => item.shape === shape);
         const label = `${on ? t('removePattern') : t('addPattern')}: ${t(shape)}`;
-        return button(h(React.Fragment, null, swatch(shape, Math.max(0, colorForLevel(entry.value)), 24), h('span', null, t(shape))),
+        return button(h(React.Fragment, null, swatch(shape, colorIndexForValue(levels, entry.value), 24), h('span', null, t(shape))),
           () => togglePattern(shape),
           { key: shape, className: 'eb-library-tile', 'aria-pressed': on, 'aria-label': label, title: label,
             disabled: on && settings.shapes.length === 1 });
@@ -666,7 +661,7 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard) {
         h('div', { className: 'eb-section-label' }, t('shapes')),
         h('div', { className: 'eb-shape-grid' }, visibleShapes.map((shape) => {
           const def = settings.defaults.find((item) => item.shape === shape);
-          const colorIndex = Math.max(0, colorForLevel(def.value));
+          const colorIndex = colorIndexForValue(levels, def.value);
           return button(h(React.Fragment, null, swatch(shape, colorIndex, 28), h('span', null, t(shape))),
             () => add(shape),
             { className: 'eb-shape-tool', key: shape, draggable: true, disabled: board.objects.length >= 200,
@@ -677,7 +672,7 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard) {
           () => { setSettingsView(true); setSettingsDraft(null); },
           { className: 'eb-shape-tool eb-shape-more', key: 'more-patterns', title: t('patternsHint') })),
         h('div', { className: 'eb-legend' }, levels.map((level, index) => h('div', { className: 'eb-legend-row', key: index },
-          h('span', { className: 'eb-color-dot', style: { background: paletteColor(index) } }),
+          h('span', { className: 'eb-color-dot', style: { background: paletteColor(level.color) } }),
           h('span', null, String(level.value))))),
         button(h(React.Fragment, null, icon('gear', 15), t('settings')),
           () => { setSettingsView(!settingsView); setSettingsDraft(null); },

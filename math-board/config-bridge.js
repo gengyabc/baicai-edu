@@ -6,6 +6,33 @@ export const CONFIG_KIND = 'edu-board-config';
 const MAX_CHANGES = 100;
 const MAX_PENDING = 256;
 
+/**
+ * Replay host projection changes onto a local board draft.
+ * Retained history always keeps each change's real scope (including after a
+ * watermark gap). A failed configure aborts the rest of the batch.
+ */
+export function applyHostConfig(M, board, config, watermark) {
+  if (!config || !Array.isArray(config.changes)) return null;
+  const mark = Number.isFinite(watermark) ? watermark : -1;
+  const pending = config.changes.filter((change) => change.revision > mark);
+  if (!pending.length) return null;
+  // A real gap means retained history starts after revisions we already missed.
+  // watermark -1 with floorRevision 0 is a first sync, not a gap.
+  const floor = config.floorRevision ?? 0;
+  const gapped = floor > 0 && mark < floor;
+  let next = board;
+  let last = mark;
+  for (const change of pending) {
+    try {
+      next = M.reduce(next, { type: 'configure', settings: change.settings, scope: change.scope });
+    } catch {
+      return { board: next, watermark: last, status: 'configError' };
+    }
+    last = change.revision;
+  }
+  return { board: next, watermark: last, status: gapped ? 'configGap' : 'configApplied' };
+}
+
 export function createConfigBridge(M) {
   const own = (value, key) => Object.hasOwn(value, key);
   const record = value => value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -26,11 +53,11 @@ export function createConfigBridge(M) {
   const init = () => ({ view: initialView(), pendingTools: {}, pendingCommands: {} });
   function request(value) {
     if (value?.action === 'get') { exact(value, ['action']); return { action: 'get' }; }
-    exact(value, ['action', 'settings', 'scope'], ['expectedRevision']);
+    exact(value, ['action', 'settings', 'scope', 'expectedRevision']);
     if (value.action !== 'set' || !['future', 'existing'].includes(value.scope)
-      || (own(value, 'expectedRevision') && !integer(value.expectedRevision))) throw Error('Invalid configuration action, scope or revision');
+      || !integer(value.expectedRevision)) throw Error('Invalid configuration action, scope or revision');
     return { action: 'set', settings: settings(value.settings), scope: value.scope,
-      ...(own(value, 'expectedRevision') ? { expectedRevision: value.expectedRevision } : {}) };
+      expectedRevision: value.expectedRevision };
   }
   function parseRequest(text) { return request(JSON.parse(text)); }
   function change(value) {
@@ -78,7 +105,7 @@ export function createConfigBridge(M) {
     try {
       const output = change(payload), current = state.view;
       if (output.revision !== current.revision + 1 || !equal(output.settings, input.settings) || output.scope !== input.scope
-        || (own(input, 'expectedRevision') && input.expectedRevision !== current.revision)) return settled;
+        || input.expectedRevision !== current.revision) return settled;
       const changes = [...current.changes, { seq, revision: output.revision, settings: output.settings, scope: output.scope }].slice(-MAX_CHANGES);
       return { ...settled, view: { revision: output.revision, settings: output.settings, changes,
         floorRevision: changes[0].revision - 1 } };
@@ -133,7 +160,7 @@ export function createConfigBridge(M) {
         throw Error('Another configuration update is still settling; read settings and retry');
       }
       reservations.delete(session);
-      if (own(input, 'expectedRevision') && input.expectedRevision !== current.revision) {
+      if (input.expectedRevision !== current.revision) {
         throw Error(`Configuration revision changed: expected ${input.expectedRevision}, current ${current.revision}`);
       }
       const output = { kind: CONFIG_KIND, revision: current.revision + 1, settings: input.settings, scope: input.scope, status: 'recorded' };

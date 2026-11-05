@@ -1,6 +1,7 @@
 import { writeFile, readFile } from 'node:fs/promises';
 import { createBoardModel } from './model.js';
-import { createBoardDescription, createBoardView, createShapeArt } from './view.js';
+import { applyHostConfig } from './config-bridge.js';
+import { createBoardDescription, createBoardView, createShapeArt, colorIndexForValue } from './view.js';
 
 const stylesheet = await readFile(new URL('board.css', import.meta.url), 'utf8');
 
@@ -19,6 +20,8 @@ window.__ModuleLoader__.load({
     const M = (${createBoardModel.toString()})();
     const createArt = ${createShapeArt.toString()};
     const describeBoard = (${createBoardDescription.toString()})(M);
+    const colorIndexForValue = ${colorIndexForValue.toString()};
+    const applyHostConfig = ${applyHostConfig.toString()};
     const createView = ${createBoardView.toString()};
     const art = createArt(React);
     const dictionaries = ${JSON.stringify(dicts)};
@@ -28,7 +31,7 @@ window.__ModuleLoader__.load({
         ctx.effect(() => ctx.locale.register('edu-math-board', 'en', dictionaries.en));
         ctx.effect(() => ctx.locale.register('edu-math-board', 'zh', dictionaries.zh));
         const t = ctx.locale.bind('edu-math-board');
-        const Board = createView(React, M, ctx, t, ${JSON.stringify(stylesheet)}, art, describeBoard);
+        const Board = createView(React, M, ctx, t, ${JSON.stringify(stylesheet)}, art, describeBoard, applyHostConfig);
         function SessionBoard(props) { return React.createElement(Board, {...props, key: props.sessionId}); }
         ctx.slots.inject('conversation.input.right', () => ctx.slots.register({
           name: 'conversation.input.right', id: 'edu-math-board-launch-v3', order: 50,

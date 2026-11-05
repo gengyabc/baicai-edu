@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { createBoardDescription, createShapeArt } from './view.js';
+import { createBoardDescription, createShapeArt, colorIndexForValue } from './view.js';
 import { createBoardModel } from './model.js';
 
 const M = createBoardModel();
@@ -33,6 +33,13 @@ test('cat and dog use different ears, so they stay distinguishable at toolbox si
   const dogShapes = children(dog).map((child) => child.type);
   assert.ok(catShapes.filter((type) => type === 'polygon').length >= 4, 'cat has pointed ear and nose polygons');
   assert.ok(dogShapes.filter((type) => type === 'ellipse').length >= 3, 'dog has floppy ear and muzzle ellipses');
+});
+
+test('colorIndexForValue reads level.color, not the array index', () => {
+  const levels = [{ value: 1, color: 0 }, { value: 10, color: 4 }, { value: 100, color: 7 }];
+  assert.equal(colorIndexForValue(levels, 10), 4);
+  assert.equal(colorIndexForValue(levels, 100), 7);
+  assert.equal(colorIndexForValue(levels, 999), 0);
 });
 
 test('the answer note names groups, cross-outs and the student explanation without coordinates or JSON', () => {

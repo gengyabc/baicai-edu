@@ -121,7 +121,8 @@
   "storageError": "Cannot save this browser draft. Save JSON to keep your work.",
   "loadError": "Cannot read the draft. Original data was not overwritten.",
   "configApplied": "Your spoken values and colours are now applied.",
-  "configGap": "Settings caught up to the latest value; older step-by-step changes are not replayed.",
+  "configGap": "Settings history had a gap; retained changes were replayed with their original scopes.",
+  "configError": "A settings update could not be applied; earlier successful changes were kept.",
   "removed": "Crossed out",
   "active": "Kept"
 }
