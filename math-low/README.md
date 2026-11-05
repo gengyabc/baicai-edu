@@ -26,6 +26,12 @@ dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/math-low
 
 安装后刷新 Web 会话；数学 skill 进入模型目录，学生在 `/learn` 或 `/feynman` 里选择数学主题时生效。
 
+## 数学画板
+
+配合独立的画板插件使用：点击输入框上方「数学画板」的「打开工作台」，用猫、汽车、苹果等图案摆出想法；图案库可自定义工具箱，可圈组、合并同形同值的图形、划去、写说明；量级与颜色由学生自己设定。点「放入回答」插入结构化 JSON，再手动发送；画板不做运算，也不自动提交。
+
+模型只根据已发送的画板数据追问和教学，无需读图。学生在对话里说明「每个图形代表几」时，模型通过 `math_board_settings` 把设置写回本会话，工作台随之同步。完整协议与教学边界见 [结构化数学画板](skills/math-core/references/structured-drawing.md)；本技能包不提供画板 UI 或模型代提交工具。
+
 ## 依赖
 
 本包依赖 `dsh-edu-learn` 提供的 `learn-core`、`learn-data`、`learn-errors`：

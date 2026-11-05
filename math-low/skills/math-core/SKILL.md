@@ -23,6 +23,7 @@ user-invocable: false
 | 条件 | 读取 |
 |---|---|
 | 所有数学教学分支，包括诊断、练习与学生出题 | `references/math-teaching-core.md` |
+| 学生提交 `kind: "math-board"` 的 JSON，或需要引导使用数学画板 | `references/structured-drawing.md` |
 | 判断算术/分数策略阶段或分析错因 | `references/strategy-diagnosis-rules.md` |
 | 学生出题考 AI，设计 AI 的回答 | `references/math-student-problem-design.md` |
 | 生成诊断/对比/变式/连接练习 | `references/targeted-practice-rules.md` |
