@@ -32,7 +32,7 @@ dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/math-low
 
 - `learn-core`：中文语气、以学生为中心、年级适配、三步确认、引导无响应、结束信号、人格与费曼规则。
 - `learn-data`：`outputs/students/` JSON 读写协议、快照、建档、finalize。
-- `learn-errors`：错题图片/Markdown 解析、`raw/` 只读、`extracted/` 写入、`error_history` 更新。
+- `learn-errors`：用户投放文件解析、`data/.../raw/` 只读、`extracted/` 写入、`error_history` 更新。
 
 可以只安装本包，但缺少 `dsh-edu-learn` 时共享规则与数据协议不可用，数学教学无法正常进行。安装命令：
 
@@ -42,9 +42,11 @@ dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/learn
 
 ## 数据目录
 
-学生数据在当前工作区根目录的 `outputs/students/`，不随包发布：
+系统状态在 `outputs/students/`；用户投放原件在 `data/students/.../raw/`，不随包发布：
 
 ```
+data/students/<student_id>/math/raw/   # 用户投放原件，只读，只能改名
+
 outputs/students/
   session.json
   <student_id>/
@@ -55,7 +57,6 @@ outputs/students/
       current_state.json
       milestones.json
       session_log.json           # 当前会话 segment，每轮写，finalize 清空
-      raw/                       # 原始错题，只读，只能改名
       extracted/                 # 提取出的分析 md
       backups/raw/               # 改名前的原件备份
 ```

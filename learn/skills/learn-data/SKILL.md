@@ -10,9 +10,13 @@ user-invocable: false
 
 ## Data Root
 
-所有路径相对于**当前工作区根目录**。`outputs/` 是通用输出根目录；学生数据固定在 `outputs/students/`。
+所有路径相对于**当前工作区根目录**。学生系统状态在 `outputs/students/`；用户投放的持久原件在 `data/students/`。
 
 ```
+data/students/
+  <student_id>/
+    <subject>/raw/                 # 用户投放原件（错题、材料、草稿等）
+
 outputs/students/
   session.json
   <student_id>/
@@ -23,7 +27,6 @@ outputs/students/
       current_state.json
       milestones.json
       session_log.json
-      raw/
       extracted/
       backups/raw/
     chinese/
@@ -32,8 +35,8 @@ outputs/students/
 
 - `student_id` 形如 `stu_<slug>_<4hex>`；`slug` 只含 `[a-z0-9_]`，`4hex` 是 4 位 `[0-9a-f]`。
 - 不使用索引文件；用 `glob outputs/students/*/profile.json` 发现学生，再读每个 `profile.json`。
-- `raw/` 是原始错题区：只读，只能 `mv` 改名；不得 `write` / `edit` / 删除内容。
-- `backups/raw/` 是原件的写前备份，只增不改。
+- `data/.../raw/` 是用户投放区：只读，只能 `mv` 改名；不得 `write` / `edit` / 删除内容。
+- `outputs/.../backups/raw/` 是原件的写前备份，只增不改；`extracted/` 是系统写出的分析 Markdown。
 
 ## Read Snapshot
 
@@ -108,7 +111,7 @@ outputs/students/
    - `profile.preferences` 全部先写 `false`，由 `/start` 把学生选中的那一项设为 `true`。
    - `profile.self_report.easy_topics` / `hard_topics` 两个科目统一用这组字段名。
 4. 写 `outputs/students/session.json` 激活该学生与科目。
-5. 用 `bash` 创建目录：`mkdir -p outputs/students/<id>/<subject>/raw outputs/students/<id>/<subject>/extracted outputs/students/<id>/<subject>/backups/raw`。
+5. 用 `bash` 创建目录：`mkdir -p data/students/<id>/<subject>/raw outputs/students/<id>/<subject>/extracted outputs/students/<id>/<subject>/backups/raw`。
 6. 告诉学生建档完成，下一步用 `/learn`。
 
 年级段、默认领域、语气、策略阶段统一读取 `learn-core` 的 `references/grade-band-defaults.md`。
@@ -157,6 +160,6 @@ DSH 的 `write` 要求先读目标文件。每次写入遵循：
 - `personal.interests` 用于例子、阅读角度、写作题目和搭桥；不要把它变成对学生的刻板判断。
 - 不把学生的难过经历、家庭信息主动复述；只在搭桥时轻量使用。学生不想说时立即停止。
 - 不把学生数据写入工作区之外的位置。
-- 不删除学生档案、错题或里程碑，除非学生明确要求并再次确认。
+- 不删除学生档案、`data/.../raw/` 原件或里程碑，除非学生明确要求并再次确认；删除时同时移除 `data/students/<id>/` 与 `outputs/students/<id>/`。
 
 `references/...` 相对于本技能目录。目标分类与已处理文件交接读取 `references/target-parsing.md`。

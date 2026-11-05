@@ -60,7 +60,7 @@ disable-model-invocation: true
 ## 5. 激活已有学生
 
 1. 检查当前科目的 `profile.json`、`memory.json`、`current_state.json`、`milestones.json`、`session_log.json`，缺失文件按 `learn-data` 的 `references/profile-schema.md` 初始化；年级默认值读取 `learn-core` 的 `references/grade-band-defaults.md`。
-2. 用 `bash` 确保目录存在：`mkdir -p outputs/students/<id>/<subject>/raw outputs/students/<id>/<subject>/extracted outputs/students/<id>/<subject>/backups/raw`。
+2. 用 `bash` 确保目录存在：`mkdir -p data/students/<id>/<subject>/raw outputs/students/<id>/<subject>/extracted outputs/students/<id>/<subject>/backups/raw`。
 3. 按第 2 步的结构写 `session.json`，将 `student_id` 设为选定学生的 id。
 4. 回复：“好，今天我们用<name>的<科目>档案。输入 `/learn` 开始，或者直接告诉我今天想学什么。”
 

@@ -1,6 +1,6 @@
 ---
 name: learn-core
-description: 跨学科教学规则。学习入口及学科技能在教学、确认答案、调整引导、切换费曼模式或判断结束信号时加载。
+description: 跨学科教学规则。学习入口及学科技能，在教学、确认答案、调整引导、切换费曼模式或判断结束信号时加载。
 user-invocable: false
 ---
 
@@ -41,4 +41,4 @@ user-invocable: false
 
 学科只产出 segment；路由、逐轮日志、模式切换、换主题和保存由 `learn-data` 的 `references/session-lifecycle.md` 调度，写入权限以 `learn-data` 为准。
 
-原始错题 `raw/` 保持只读；文件解析、备份与改名交给 `learn-errors`。
+用户投放原件在 `data/students/<id>/<subject>/raw/`，保持只读；文件解析、备份与改名交给 `learn-errors`。

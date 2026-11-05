@@ -7,13 +7,13 @@
 
 ## Input
 
-- 文件路径：`outputs/students/<student_id>/<subject>/raw/<filename>`
+- 文件路径：`data/students/<student_id>/<subject>/raw/<filename>`
 - 学生档案：`outputs/students/<student_id>/<subject>/profile.json`
 
 ## Output
 
 - 备份文件：`outputs/students/<student_id>/<subject>/backups/raw/<original>`
-- 重命名后的 raw 文件：`outputs/students/<student_id>/<subject>/raw/<topic>-<number>-<YYYYMMDD>.<ext>`
+- 重命名后的 raw 文件：`data/students/<student_id>/<subject>/raw/<topic>-<number>-<YYYYMMDD>.<ext>`
 - 提取的 md 文件：`outputs/students/<student_id>/<subject>/extracted/<topic>-<number>-<YYYYMMDD>.md`
 - 错误分析结果（用于更新 profile）
 - 重命名告知信息
@@ -33,12 +33,12 @@
 
 ### 备份与命名
 
-在重命名前把原件复制到 `backups/raw/`。规则：
+在重命名前把原件复制到 `outputs/.../backups/raw/`。规则：
 
 - `<topic>`：根据题目自动识别，简短英文/拼音 slug。
-- `<number>`：按 `raw/<topic>-*` 与 `extracted/<topic>-*` 里最大编号递增，三位补零。
+- `<number>`：按 `data/.../raw/<topic>-*` 与 `outputs/.../extracted/<topic>-*` 里最大编号递增，三位补零。
 - `<YYYYMMDD>`：当前日期。
-- 只 `mv` 改名，不改内容；备份只增不改。
+- 只 `mv` 改名（仍在 `data/.../raw/` 内），不改内容；备份只增不改。
 
 ## Error Type Categories
 

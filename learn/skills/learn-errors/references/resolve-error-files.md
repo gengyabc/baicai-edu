@@ -6,7 +6,7 @@
 
 1. Get `student_id` and `subject` from the current session.
 2. 从 Arguments 部分提取路径，按空白分割。
-3. Resolve each token relative to `outputs/students/<student_id>/<subject>/` unless it is already under `outputs/students/`.
+3. Resolve each token using Path Rules below.
 4. Reject any token containing `..`.
 5. Expand directories recursively.
 6. Keep supported files, deduplicate, and count them.
@@ -14,13 +14,24 @@
 ### Path Rules
 
 Follow `references/raw-directory-protection.md`:
-- Only read from `raw/`; never write or modify
-- Back up to `backups/raw/` before any `mv` rename
+- Only read from `data/.../raw/`; never write or modify content there
+- Back up to `outputs/.../backups/raw/` before any `mv` rename
 - Rename via `mv` only when needed
 
-- `raw/`, `extracted/`, and `./` are relative to `outputs/students/<student_id>/<subject>/`.
-- Paths starting with `outputs/students/` must still stay under the current `outputs/students/<student_id>/<subject>/` subtree; reject any other student or subject path.
+Roots for the current student/subject:
+
+- **raw root**: `data/students/<student_id>/<subject>/`
+- **outputs root**: `outputs/students/<student_id>/<subject>/`
+
+Resolution:
+
+- Bare filename or `raw/...` → under raw root (`data/.../raw/...`).
+- `extracted/...` or `backups/...` → under outputs root.
+- Paths starting with `data/students/` must stay under the current `data/students/<student_id>/<subject>/` subtree.
+- Paths starting with `outputs/students/` must stay under the current `outputs/students/<student_id>/<subject>/` subtree.
+- Reject any other student or subject path.
 - `..` is invalid and should warn.
+- Relative tokens that are not clearly `raw/` / `extracted/` / `backups/` default to the raw root (user drop zone).
 
 ### Directory Handling
 

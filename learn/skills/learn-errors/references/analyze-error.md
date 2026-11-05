@@ -17,7 +17,7 @@
 1. Load the current session and subject profile.
 2. Ask for self-diagnosis before the first new file.
 3. Skip files already in `error_history` (match `raw_file` / `original_raw_file`).
-4. Back up each new file to `backups/raw/` before any rename.
+4. Back up each new file to `outputs/.../backups/raw/` before any rename.
 5. Analyze new files using `references/error-processing.md`.
 6. If the student's hypothesis does not match the detected `error_type` / `label`, re-evaluate with the subject rules; explain the difference in one sentence.
 7. Update `error_history`, `priority_targets`, and `updated_at`, then tell the student the renamed file, the core issue, and the next focus.
@@ -25,7 +25,7 @@
 ### Mode 2: Scan All
 
 1. Load the current session.
-2. Scan `raw/` and `extracted/` for unrecorded files.
+2. Scan `data/.../raw/` and `outputs/.../extracted/` for unrecorded files.
 3. Back up each new file before rename.
 4. Analyze each unrecorded item.
 5. Update `error_history`, `priority_targets`, and `updated_at`.

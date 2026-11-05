@@ -19,13 +19,13 @@ user-invocable: false
 3. 有错题文件时加载 `learn-errors`
 4. 诊断完成后要生成练习时，读 `math-core` 的 `references/targeted-practice-rules.md`
 
-需要数据时加载 `learn-data`；路径、`raw/` 只读、`extracted/` 写入、`error_history` 更新都按 `learn-errors` 的规则执行。
+需要数据时加载 `learn-data`；路径、`data/.../raw/` 只读、`outputs/.../extracted/` 写入、`error_history` 更新都按 `learn-errors` 的规则执行。
 
 ## Inputs
 
 - `student_id`、`subject: math`
 - 快照：`outputs/students/<student_id>/math/{profile,memory,current_state,milestones}.json`，以及 `current_levels`、`error_history`、`priority_targets`
-- 可选文件列表：学生消息里的路径，或 `raw/` 扫描范围
+- 可选文件列表：学生消息里的路径，或 `data/.../raw/` 扫描范围
 - 学生自述：先问“你觉得这道题错在哪？”
 
 ## Mode A：策略诊断
@@ -35,7 +35,7 @@ user-invocable: false
 ## Mode B：错题分流
 
 1. 先问学生自己的判断，再处理第一道新题；一次只分析一道。
-2. 把文件读取、改名、`extracted/` 分析写入、`error_history` / `priority_targets` 更新整体交给 `learn-errors`；本 skill 不读 `raw/` 原图、不改名、不写 `error_history`。
+2. 把文件读取、改名、`extracted/` 分析写入、`error_history` / `priority_targets` 更新整体交给 `learn-errors`；本 skill 不读 `data/.../raw/` 原图、不改名、不写 `error_history`。
 3. 拿回 `learn-errors` 的结论后，按 `references/strategy-diagnosis-rules.md` 的 Error Interpretation 分类，核对学生自述，区分偶发失误与稳定模式；该路径相对于 `math-core` 的 base directory。
 4. 按同一 reference 的 Conservative Conclusion 形成下一步：需要巩固时交给 `math-practice`；需要继续教学时把诊断交回 `math-session`。
 
@@ -59,6 +59,6 @@ user-invocable: false
 ## Constraints
 
 - 不重复分析 `error_history` 里已记录的文件；重复上传合并为一条。
-- 不把整道题原文写进档案，原文留在 `raw/` 与 `extracted/`。
-- `raw/` 只读；任何情况下不改原始错题内容。
+- 不把整道题原文写进档案，原文留在 `data/.../raw/` 与 `outputs/.../extracted/`。
+- `data/.../raw/` 只读；任何情况下不改原件内容。
 - 不展示内部阶段名、错误标签或 JSON 给学生。

@@ -40,8 +40,8 @@ If the student discloses harm to someone else, follow the same steps and encoura
 - `personal.interests` and `personal.most_exciting_event` may be used for examples and prompts; do not turn them into stereotypes or share them with anyone.
 - `personal.most_sad_event` is optional and sensitive. Use it only as a light bridge when the student brings it up or the lesson clearly needs it; never repeat it back, never probe, and stop if the student becomes uncomfortable.
 - Do not ask for a home address, school name, phone number, ID, password, or photos of the student.
-- Do not write student data outside `outputs/students/`.
-- If the student asks to delete their data, confirm once and then remove the student directory (except a minimal `safety_flag` note if a crisis was disclosed).
+- Do not write student JSON or system artifacts outside `outputs/students/`. User-provided originals live under `data/students/<id>/<subject>/raw/` (read-only content; `mv` rename after backup is allowed).
+- If the student asks to delete their data, confirm once and then remove both `data/students/<id>/` and `outputs/students/<id>/` (and clear `session.json` if it pointed at that id), except a minimal `safety_flag` note if a crisis was disclosed.
 
 ## Usage Boundary
 

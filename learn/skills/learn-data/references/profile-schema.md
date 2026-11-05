@@ -3,6 +3,11 @@
 ## Directory Structure
 
 ```
+data/students/
+  <student_id>/
+    math/raw/
+    chinese/raw/
+
 outputs/students/
   session.json
   <student_id>/
@@ -13,7 +18,6 @@ outputs/students/
       current_state.json
       milestones.json
       session_log.json
-      raw/
       extracted/
       backups/raw/
     chinese/
@@ -22,7 +26,6 @@ outputs/students/
       current_state.json
       milestones.json
       session_log.json
-      raw/
       extracted/
       backups/raw/
 ```
@@ -385,8 +388,8 @@ Optional fields:
   "topic": "异分母加法",
   "error_type": "concept",
   "label": "fractions:denominator_confusion",
-  "raw_file": "outputs/students/<id>/math/raw/fractions-001-20261004.jpg",
-  "original_raw_file": "outputs/students/<id>/math/raw/分数-001.jpg",
+  "raw_file": "data/students/<id>/math/raw/fractions-001-20261004.jpg",
+  "original_raw_file": "data/students/<id>/math/raw/分数-001.jpg",
   "backup_file": "outputs/students/<id>/math/backups/raw/分数-001.jpg",
   "extracted_file": "outputs/students/<id>/math/extracted/fractions-001-20261004.md",
   "renamed": true,

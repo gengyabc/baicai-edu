@@ -171,9 +171,12 @@ user-invocable: false
 
 ### 5.1 根目录
 
-所有数据位于**当前工作区根目录**的 `outputs/students/`；`outputs/` 是通用输出根目录，后续可以新增 `outputs/reports/`、`outputs/lessons/` 等。
+系统状态位于**当前工作区根目录**的 `outputs/students/`；用户投放原件位于 `data/students/<id>/<subject>/raw/`。`outputs/` 是通用输出根目录，后续可以新增 `outputs/reports/`、`outputs/lessons/` 等。
 
 ```
+data/students/
+  <student_id>/<subject>/raw/          # 用户投放原件（只读）
+
 outputs/students/
   session.json                         # 当前学生与科目
   <student_id>/
@@ -183,14 +186,14 @@ outputs/students/
       memory.json
       current_state.json
       milestones.json
-      raw/                             # 只读原始错题
       extracted/                       # 提取出的 md
+      backups/raw/                     # 改名前原件备份
     chinese/
       ... 同上
 ```
 
 - 不使用 `outputs/students/index.json`；用 `glob outputs/students/*/profile.json` 发现学生。
-- `raw/` 只读：不得 `write`/`edit`，只能 `mv` 改名。
+- `data/.../raw/` 只读：不得 `write`/`edit`，只能 `mv` 改名；备份到 `outputs/.../backups/raw/`。
 - 所有写入先读完整文件，合并后写完整文件；不要写片段 JSON。
 - 日期使用 ISO 8601；`student_id` 形如 `stu_<拼音或英文>_<4位hex>`。
 
@@ -302,7 +305,7 @@ dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/math-low lin
 3. `math-low` 与 `chinese-reading` 的 skill 中不再出现 `@.pi`、Pi 工具名、`ui_actions`、`contract_version`、`platform` 等平台契约。
 4. `/teach` 已被全局 `teach` 占用，本迁移使用 `/feynman`，避免同名冲突。
 5. `pkgs/pkg-a` 示例包已删除。
-6. 学生数据根目录为 `outputs/students/`；整个 `outputs/` 已加入 `.gitignore`，后续可扩展 `outputs/reports/` 等其他输出。
+6. 系统状态根目录为 `outputs/students/`，用户投放原件为 `data/students/.../raw/`；`outputs/` 与 `data/` 均已加入 `.gitignore`，后续可扩展 `outputs/reports/` 等其他输出。
 
 ### 7.4 待人工验收
 

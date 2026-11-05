@@ -275,5 +275,5 @@ Every segment with a `diagnosis` object produces one diagnosis entry. File-based
 - `learn -> feynman` 算一次完整会话。
 - 不写共享 `profile.json` 的姓名、年级、兴趣、经历字段。
 - 不生成 `shared_profile_patch`。
-- 不在 finalize 里修改 `raw/`。
+- 不在 finalize 里修改 `data/.../raw/`。
 - 提交失败与清理失败分别按 Commit And Recovery 处理，不把已提交会话重复汇总；未提交时保留 plan 与 segments，可用 `/save` 重试。

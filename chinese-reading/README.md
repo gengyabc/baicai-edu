@@ -68,9 +68,11 @@ dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/learn
 
 ## 数据目录
 
-所有学生数据在当前工作区根目录：
+系统状态在 `outputs/students/`；用户投放原件在 `data/students/.../raw/`：
 
 ```
+data/students/<student_id>/chinese/raw/  # 用户投放原件，只读
+
 outputs/students/
   session.json                         # 当前学生与科目
   <student_id>/
@@ -81,12 +83,11 @@ outputs/students/
       current_state.json
       milestones.json
       session_log.json                 # 当前会话 segment，每轮写，finalize 清空
-      raw/                             # 只读原始错题
       extracted/                       # 提取出的分析 md
       backups/raw/                     # 改名前的原件备份
 ```
 
-- 学科固定为 `chinese`；`raw/` 只读，只能 `mv` 改名；改名前后备到 `backups/raw/`。
+- 学科固定为 `chinese`；`data/.../raw/` 只读，只能 `mv` 改名；改名前后备到 `outputs/.../backups/raw/`。
 - 每轮由入口把 `session_segment` 追加到 `session_log.json`；会话结束由入口按 `learn-data` 的 finalize 规则写回四个科目文件。
 - 诊断标签写在 `session_segment.diagnosis`（`label` + `evidence`），finalize 写成 `error_history` 诊断条目，不再塞进 `skill_errors`。
 - 协议细节见 `learn` 包的 `skills/learn-data/SKILL.md`。

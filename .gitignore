@@ -27,3 +27,9 @@ dist/
 
 # Generated/private outputs (student data and future teaching artifacts)
 outputs/
+
+# User-provided durable inputs (drop-zone under data/students/.../raw/)
+data/
+
+# Local agent planning/spec scratch (superpowers)
+docs/superpowers/

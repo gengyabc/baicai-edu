@@ -36,24 +36,27 @@ dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/chinese-read
 
 ## 数据
 
-学生数据写在**当前工作区**的 `outputs/students/`。`outputs/` 是通用输出根目录，后续可以在同级扩展 `outputs/reports/`、`outputs/lessons/` 等，不把教学产物混进代码目录。
+系统写出的学生状态在**当前工作区**的 `outputs/students/`；用户投放的持久原件在 `data/students/<id>/<subject>/raw/`。`outputs/` 与 `data/` 均 gitignored，不把教学产物或用户原件混进代码目录。
 
 ```
+data/students/
+  <student_id>/<subject>/raw/    # 用户投放原件（只读；可 mv 改名）
+
 outputs/students/
   session.json
   <student_id>/
     profile.json                 # 姓名、年级、personal.interests、经历
     math/{profile,memory,current_state,milestones,session_log}.json
     chinese/{profile,memory,current_state,milestones,session_log}.json
-    <subject>/raw/               # 只读原始错题
     <subject>/extracted/         # 分析 md
-    <subject>/backups/raw/       # 原件备份
+    <subject>/backups/raw/       # 改名前的原件备份
 ```
 
-`raw/` 只读，`extracted/` 放分析 Markdown，`backups/raw/` 放改名前的原件备份。会话进行中每轮写 `session_log.json`；`profile.json` / `memory.json` 只在 finalize 写。详细协议见 [`learn/skills/learn-data/SKILL.md`](./learn/skills/learn-data/SKILL.md)。
+`data/.../raw/` 只读，`extracted/` 放分析 Markdown，`backups/raw/` 放改名前的原件备份。会话进行中每轮写 `session_log.json`；`profile.json` / `memory.json` 只在 finalize 写。详细协议见 [`learn/skills/learn-data/SKILL.md`](./learn/skills/learn-data/SKILL.md)。
 
 ## 设计文档
 
+- [技能调用关系与使用场景](./docs/skills/call-graph.md)（包依赖、调用面、Mermaid 调用图与场景时序）
 - [Pi → DSH 迁移映射](./docs/migration/pi-to-dsh-skills.md)
 - [DSH 教学插件产品方案](./docs/DSH教学插件_最终技术与产品方案.md)
 - [跨 Harness 技能与多用户 Agent 平台方案](./docs/跨Harness技能与多用户Agent平台总体实施方案_v1.1_Python优先.md)
