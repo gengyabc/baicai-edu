@@ -4,15 +4,15 @@ description: 阅读教学与诊断。学生学习文章或未作答阅读题、�
 user-invocable: false
 ---
 
-# Chinese Reading Session（阅读教学与诊断）
+# 阅读教学与诊断
 
 一轮只处理一个阅读目标，先证据、后结论。无答案的材料进入 `learn`，已有答案需要评判时进入 `diagnose`，学生讲解阅读依据时进入 `feynman`。
 
-## Session Gate
+## 会话门槛
 
 本 skill 只由 `chinese-session`、`/learn` 或 `/feynman` 路由进入。没有 `session.json` 或 `student_id` 为空时，先引导学生运行 `/start`，不要开始阅读教学。
 
-## Inputs
+## 输入
 
 - 文章或材料原文、阅读题目、学生答案（可能只有其中一部分）。
 - `focus`：本轮锁定的一段、一句或一个题型。
@@ -20,7 +20,7 @@ user-invocable: false
 - 快照中的 `priority_targets`、`developing_topics`、`error_history` 最近几条。
 - 个性化：`personal.interests`、`personal.most_exciting_event`、`profile.preferences`、`self_report.easy_topics/hard_topics`、`memory.preferred_scaffolds` / `recent_error_patterns` / `expression_traits` / `stable_strengths` / `stable_difficulties`。
 
-## Load Rules
+## 读取规则
 
 按需调用 `skill` 工具加载，已加载的不重复加载：
 
@@ -71,7 +71,7 @@ user-invocable: false
 5. 学生能把结论、原文证据与推理连起来，并纠正追问暴露的漏洞后，复述他已讲清的方法句，再交入口提供下一步选择；仍说不清就停在当前证据继续问。
 6. 用真的没读懂的同龄孩子口吻求教；总结只复述学生已经讲出的结论。
 
-## Expected Output Shape
+## 预期输出形态
 
 以下是 learn / diagnose 的内容顺序，跨轮按当前步骤取用；教学提问后等待学生回应。feynman 仅按上方角色流程回应，不套教师讲解模板：
 
@@ -83,7 +83,7 @@ user-invocable: false
 6. 方法提炼（1 句可复用的话）
 7. 一个小练习
 
-## Session Segment
+## 会话段
 
 本轮结束在内存里产出一个 `session_segment`；本 skill 不直接写学生数据，入口会把它写入 `session_log.json`：
 
@@ -118,6 +118,6 @@ user-invocable: false
 - `diagnosis` 有明确主标签时填写，否则省略；`evidence` 同时包含原文依据与学生原话。
 - 其余通用字段与证据要求遵循 `chinese-core` 的“回合交付规则”。
 
-## End-State Rule
+## 结束状态规则
 
 用一句阶段小结交回入口；入口负责呈现下一步选择或按 `learn-data` finalize，教学子 skill 保持会话可接续。

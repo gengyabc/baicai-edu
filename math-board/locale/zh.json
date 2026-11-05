@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "数学画板",
-    "description": "用图案与可命名分组表达数量想法，量级颜色由学生自己设定，并以结构化 JSON 交给老师。"
+    "description": "用图案与可命名分组表达数量想法，量级颜色由学生自己设定，并把画板说明和文件放进回答。"
   },
   "title": "数学画板",
   "openWorkbench": "打开工作台",
@@ -103,10 +103,20 @@
   "clearQuestion": "要清空画布吗？可以撤销。",
   "confirmClear": "确认清空",
   "insert": "放入回答",
-  "inserted": "已放入输入框，请检查后自己发送。",
+  "inserted": "已把画板说明放进输入框，画板文件也附上了；请检查后自己发送。",
   "insertFailed": "暂时无法放入回答，请等输入框可编辑后重试。",
+  "attachmentName": "我的画板.json",
+  "summaryIntro": "我在数学画板上摆好了：",
+  "summaryUngroupedLine": "没圈组的：{parts}",
+  "summaryGroup": "一组「{name}」：{parts}，一共 {total}",
+  "summaryRemovedLine": "划去的：{parts}",
+  "summaryItem": "{name} {count} 个，每个代表 {value}",
+  "summaryMerged": "由 {sources} 个图形合并成的{name}，代表 {value}",
+  "summaryJoin": "、",
+  "summaryUnnamedGroup": "还没起名的一组",
+  "summaryNote": "我想说：{note}",
   "backToChat": "返回对话",
-  "localDraft": "草稿只保存在本浏览器，发送后老师才看得到。",
+  "localDraft": "草稿还没发送，老师看不到；发送前随时可以改。",
   "failed": "操作未完成",
   "fileTooLarge": "文件太大，请选择小于 256 KB 的画板 JSON。",
   "imported": "已打开画板。",

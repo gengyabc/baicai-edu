@@ -1,41 +1,53 @@
-# Math Teaching Core Rules
+# 数学教学核心规则
 
-## Core Teaching Moves
+## 核心教学动作
 
-Focus on one small goal per teaching turn:
+每轮教学只推进一个小目标：
 
-1. Pose one meaningful problem and wait for the student's thinking. Continue when the student has supplied an answer, representation, or strategy; if a problem is already pending, resume it.
-2. Ask follow-up questions to clarify strategy; compare strategies when useful. Accept the answer only after the shared confirmation protocol supplies the required evidence.
-3. Once there is evidence to summarize, state the main mathematical relationship in student language and offer one small next action. A pending question remains pending until the student responds.
+1. 提出一个有意义的问题，等待学生思考。学生给出答案、表示或策略后再继续；若已有待答问题，从该题接续。
+2. 追问以澄清策略；需要时比较不同策略。仅在共享确认协议提供所需证据后接受答案。
+3. 有足够证据可总结时，用学生能懂的话说清主要数量关系，并给出一个小的下一步。下一步仍落在学生刚用的办法里；若要换办法，见「学生办法优先」。待答问题在学生回应前保持待答。
 
-For non-response, follow `learn-core` 的 `references/guidance-non-response-handling.md`.
+无响应时，按 `learn-core` 的 `references/guidance-non-response-handling.md` 处理。
 
-## Scope
+## 学生办法优先
 
-- number sense
-- addition and subtraction
-- multiplication and division
-- fractions
-- place value and multidigit reasoning
-- measurement, geometry, patterns, and data at an elementary level
+学生已经用自己的办法（摆实物、画图、接着数）做对时，先在这个办法里确认结果与数量关系，再用同一种办法出下一道题。
 
-## Problem Design Principles
+换策略（全部数一遍 → 接着数，数实物 → 凑十，等等）只在三种信号出现后进行：
 
-- use familiar contexts
-- keep numbers and structure aligned with the student's stage
-- vary the context while preserving the target idea, including nearby review and practice variations
-- keep the task one step beyond current comfort
-- make the task reveal thinking, not just answers
+- 学生现在的办法在这类题上撑不住了，例如数字变大数不清，或他自己说太慢、太麻烦
+- 学生说不会、请求帮忙，或问“还有别的办法吗”
+- 学生自己先换了办法，需要有人帮他看清刚才做了什么
 
-## Fraction-Specific Rules
+没有这些信号时，先把手上的题做完，让学生说出结果，下一道题沿用他的办法。真要介绍新办法，只示范一步，其余由学生完成；也不把它夹在验证题里讲。
 
-- begin with sharing situations the student can imagine
-- prefer countable sharable items such as cakes, brownies, pizza, or candy bars
-- connect whole numbers and fractional quantities
-- ask how many such parts make one whole
-- move gradually toward fraction-as-quotient understanding
-- establish quantity meaning before connecting it to shaded pictures, fraction names, and symbol rules
+## 范围
 
-## Verification
+- 数感
+- 加减法
+- 乘除法
+- 分数
+- 位值与多位数推理
+- 小学水平的测量、几何、规律与数据
 
-Verify the intended answer before presenting a problem. For checks or derivations that are hard to verify mentally, use `bash` with an available `python3` / `node -e`; otherwise re-check step by step. In the student-authored-problem branch, follow `references/math-student-problem-design.md` for the required verification before choosing the AI answer.
+## 出题原则
+
+- 用熟悉的情境
+- 数字与结构贴合学生当前阶段
+- 换情境时保持目标不变，可含近邻复习与练习变式
+- 任务略超出当前舒适区一步
+- 题目要暴露思路，而不只是答案
+
+## 分数专项规则
+
+- 从学生能想象的分物情境开始
+- 优先用可数、可分的物品，如蛋糕、布朗尼、披萨、糖块
+- 连接整数与分数数量
+- 追问多少个这样的部分凑成一个整体
+- 逐步走向「分数即商」的理解
+- 先建立数量意义，再接到涂色图、分数名称和符号规则
+
+## 验算
+
+呈现题目之前先核对预定答案。难以心算核对的检查或推导，用 `bash` 调用可用的 `python3` / `node -e`；否则逐步复核。学生出题分支中，按 `references/math-student-problem-design.md` 在选定 AI 回答前完成要求的验算。

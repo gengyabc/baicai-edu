@@ -4,7 +4,7 @@ description: 学生出题考 AI。学生主动要出数学题考 AI，或已选�
 user-invocable: false
 ---
 
-# Math Student Problem
+# 学生出题
 
 ## 开始前
 

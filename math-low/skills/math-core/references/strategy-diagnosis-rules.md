@@ -1,10 +1,10 @@
-# Strategy Diagnosis Rules
+# 策略诊断规则
 
-## Purpose
+## 用途
 
-数学策略阶段与错误解释的 canonical reference；`math-diagnose` 负责获取证据、错题分流和回传结论。
+数学策略阶段与错误解释的权威参考；`math-diagnose` 负责获取证据、错题分流和回传结论。
 
-## What To Observe
+## 观察什么
 
 | 观察信号 | 证据示例 |
 |---|---|
@@ -17,11 +17,11 @@
 
 推理比速度和单次对错重要；稳定理解比偶然答对重要。学生自己的语言、画图、手势和选择的表示方式都算证据。逐项核对观察表，将未涉及的项目留作未知；只为当前焦点补必要证据，无需为填满表而逐项出题。
 
-## Guidance Understanding Check
+## 引导理解检查
 
 引导反复无响应时，先按 `learn-core` 的 `references/guidance-non-response-handling.md` 探查并分流。只有实际操作、解释或作答暴露的卡点才作为困难和阶段调整的证据；尚未收到这些证据时，策略与原因保留未知。
 
-## Error Interpretation
+## 错因解释
 
 | 类型 | 典型信号 |
 |---|---|
@@ -34,7 +34,7 @@
 - 区分偶发失误与稳定模式：结合 `error_history` 同类错误的重复情况及 `confirmed_skills`，不凭一次结果定性。
 - `diagnosis.label` 细化到具体数学错误，如 `calculation:carry_omission`；`diagnosis.evidence` 写观察到的关键一步，不把整题原文放进档案。
 
-## Conservative Conclusion
+## 保守结论
 
 - 输出保守的阶段估计、简短 `strategy_summary`、`strengths` / `difficulties` 和一步可执行的 `next_target`；目标宁小勿跳单元。
 - `current_levels` 仅提供有证据的 `arithmetic_strategy_stage` / `fraction_strategy_stage` 部分更新；字段与取值沿用 `learn-data` 的 `references/profile-schema.md`，阶段解释按 `learn-core` 的 `references/progression-map.md`。

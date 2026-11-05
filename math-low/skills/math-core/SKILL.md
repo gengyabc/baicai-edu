@@ -4,7 +4,7 @@ description: 数学共享规则。数学教学、策略诊断、分层练习或�
 user-invocable: false
 ---
 
-# Math Core
+# 数学规则
 
 提供数学规则与字段约定；教学流程由 `math-session`、`math-diagnose`、`math-practice`、`math-student-problem` 执行，路由与持久化使用共享协议。
 
@@ -23,7 +23,7 @@ user-invocable: false
 | 条件 | 读取 |
 |---|---|
 | 所有数学教学分支，包括诊断、练习与学生出题 | `references/math-teaching-core.md` |
-| 学生提交 `kind: "math-board"` 的 JSON，或需要引导使用数学画板 | `references/structured-drawing.md` |
+| 学生消息带画板附件（`我的画板.json`）或需要引导使用数学画板 | `references/structured-drawing.md` |
 | 判断算术/分数策略阶段或分析错因 | `references/strategy-diagnosis-rules.md` |
 | 学生出题考 AI，设计 AI 的回答 | `references/math-student-problem-design.md` |
 | 生成诊断/对比/变式/连接练习 | `references/targeted-practice-rules.md` |

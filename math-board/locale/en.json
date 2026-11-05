@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Math board",
-    "description": "Express quantity ideas with kid-friendly patterns and named groups; students set their own level colours and share structured JSON."
+    "description": "Express quantity ideas with kid-friendly patterns and named groups; students set their own level colours and share a board note with a file."
   },
   "title": "Math board",
   "openWorkbench": "Open workspace",
@@ -103,10 +103,20 @@
   "clearQuestion": "Clear the canvas? You can undo this.",
   "confirmClear": "Confirm clear",
   "insert": "Add to answer",
-  "inserted": "Added to the composer. Review it and send it yourself.",
+  "inserted": "Added the board note and file to the composer. Review it and send it yourself.",
   "insertFailed": "Cannot insert now. Wait until the composer is editable and try again.",
+  "attachmentName": "my-math-board.json",
+  "summaryIntro": "Here is what I put on the math board:",
+  "summaryUngroupedLine": "Not grouped: {parts}",
+  "summaryGroup": "Group “{name}”: {parts} — {total} altogether",
+  "summaryRemovedLine": "Crossed out: {parts}",
+  "summaryItem": "{name} × {count}, each standing for {value}",
+  "summaryMerged": "{name} merged from {sources} shapes, standing for {value}",
+  "summaryJoin": ", ",
+  "summaryUnnamedGroup": "an unnamed group",
+  "summaryNote": "What I mean: {note}",
   "backToChat": "Back to chat",
-  "localDraft": "Draft stays in this browser until you send it.",
+  "localDraft": "Your draft stays here until you send it.",
   "failed": "Action not completed",
   "fileTooLarge": "Choose a board JSON smaller than 256 KB.",
   "imported": "Board opened.",

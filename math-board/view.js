@@ -212,7 +212,33 @@ export function createShapeArt(React) {
   return { node, patterns: Object.keys(patterns) };
 }
 
-export function createBoardView(React, M, ctx, t, css, art) {
+// Turn one board into the short, human sentence that goes into the composer.
+// The attachment carries the exact JSON; this text lets a child (and the model)
+// understand the board without reading a wall of data.
+export function createBoardDescription(M) {
+  const nameOf = (item, t) => item.alias || t(item.shape);
+  const itemText = (item, t) => item.merged
+    ? t('summaryMerged', { name: nameOf(item, t), sources: item.merged, value: item.value })
+    : t('summaryItem', { name: nameOf(item, t), count: item.count, value: item.value });
+  const partsText = (bucket, t) => bucket.items.map((item) => itemText(item, t)).join(t('summaryJoin'));
+  return function describeBoard(board, t) {
+    const digest = M.digest(board);
+    const lines = [t('summaryIntro')];
+    if (digest.ungrouped.count) lines.push(`· ${t('summaryUngroupedLine', { parts: partsText(digest.ungrouped, t) })}`);
+    for (const group of digest.groups) {
+      lines.push(`· ${t('summaryGroup', {
+        name: group.alias || t('summaryUnnamedGroup'),
+        parts: partsText(group, t),
+        total: group.total,
+      })}`);
+    }
+    if (digest.removed.count) lines.push(`· ${t('summaryRemovedLine', { parts: partsText(digest.removed, t) })}`);
+    if (board.note) lines.push('', t('summaryNote', { note: board.note }));
+    return lines.join('\n');
+  };
+}
+
+export function createBoardView(React, M, ctx, t, css, art, describeBoard) {
   const h = React.createElement;
   const paletteColor = (index) => M.color(index);
   function icon(name, size = 18) {
@@ -459,12 +485,30 @@ export function createBoardView(React, M, ctx, t, css, art) {
     function close() { flushEditor(); gesture.current = null; setPreview(null); setOpened(false); }
     function insert() {
       flushEditor();
+      // The composer owns draft attachments, so reach its service at click time
+      // instead of making the whole board depend on it at load time.
+      const conversation = ctx.get('conversation');
+      let drafts = [];
+      const discard = () => {
+        for (const draft of drafts) {
+          try { props.inputActions.removeAttachment(draft.id); } catch { /* the composer may already be locked */ }
+          try { conversation.releaseDraftAttachment(draft.id); } catch { /* upload already settled */ }
+        }
+        drafts = [];
+      };
       try {
+        if (!conversation?.createDrafts) throw Error();
         const span = props.inputActions.captureInsertion();
-        const text = '\n```json\n' + M.serialize(boardRef.current) + '\n```\n';
+        const text = '\n' + describeBoard(boardRef.current, t) + '\n';
+        const file = new File([M.serialize(boardRef.current)], t('attachmentName'), { type: 'application/json' });
+        drafts = conversation.createDrafts(props.sessionId, [file]);
+        if (!props.inputActions.addAttachments(drafts.map((draft) => draft.id))) throw Error();
         if (!props.inputActions.insertText(text, span)) throw Error();
         props.inputActions.persistDraft(); setStatus(t('inserted')); close();
-      } catch { setStatus(t('insertFailed')); }
+      } catch {
+        discard();
+        setStatus(t('insertFailed'));
+      }
     }
     function exportFile() {
       flushEditor();

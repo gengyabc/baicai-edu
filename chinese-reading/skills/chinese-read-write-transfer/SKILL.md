@@ -4,15 +4,15 @@ description: 读写迁移。学生已读懂材料并愿意换主题运用其中�
 user-invocable: false
 ---
 
-# Chinese Read-Write Transfer（读写迁移）
+# 读写迁移
 
 先确认学生已读懂材料且愿意练习其中写法；尚未读懂、只要求出题、只要求批改已有作文时，分别交回阅读、出题、写作评改，不开始迁移。
 
-## Session Gate
+## 会话门槛
 
 本 skill 只由 `chinese-session`、`/learn` 或 `/feynman` 路由进入。没有 `session.json` 或 `student_id` 为空时，先引导学生运行 `/start`，不要开始迁移。
 
-## Inputs
+## 输入
 
 - 已读过的阅读材料原文；本轮阅读 session 提炼出的技巧（若有）。
 - 学生年级段与 `grade_band`。
@@ -20,7 +20,7 @@ user-invocable: false
 - 恢复时复用 `context.turn_state` 的迁移来源、技巧、阶段、轮数及待答问题；没有活跃迁移上下文且 `current_state.pending_transfer_phase: true` 时，才以 `current_state.pending_transfer_focus` 作为候选。学生本次明确选择优先。
 - 个性化：`personal.interests`、`personal.most_exciting_event`、`profile.preferences`、`self_report.easy_topics/hard_topics`、`memory.preferred_scaffolds` / `expression_traits`。迁移主题优先从兴趣里选一个具体情境。
 
-## Load Rules
+## 读取规则
 
 | 需要什么 | 加载 | 读哪个文件 |
 |---|---|---|
@@ -37,7 +37,7 @@ user-invocable: false
 
 `chinese-core` 的加载结果会给出 base directory；参考文件按 `<base_directory>/references/<文件名>.md` 读取。
 
-## Process
+## 流程
 
 按当前阶段逐轮推进；恢复从已记录阶段与待答问题接续。每次交回入口时同步阶段、轮数、已提取技巧与材料引用，由入口更新日志 context；本 skill 只返回内存结果。
 
@@ -72,7 +72,7 @@ user-invocable: false
 - 第 2 轮评改完成或学生跳过时，返回一句阶段总结、一个下一步候选及已完成状态；该次迁移交回入口，不再自行开启第 3 轮。
 - 入口按共享生命周期决定继续教学、换主题或 finalize；迁移轮数用尽不是学生结束整个会话的信号。
 
-## Expected Output Shape
+## 预期输出形态
 
 跨轮只输出当前阶段所需内容，等待学生回应后再推进；恢复时复用已交付内容。
 
@@ -81,7 +81,7 @@ user-invocable: false
 3. 写后评改：按量规输出（技巧运用必填）；低年级简化分支优先
 4. 一句阶段总结
 
-## Session Segment
+## 会话段
 
 本轮在内存里产出一个 `session_segment`；本 skill 不直接写学生数据，入口会把它写入 `session_log.json`：
 

@@ -4,7 +4,9 @@ export function createBoardModel() {
   const shapes = ['circle', 'square', 'triangle', 'star', 'hexagon', 'diamond', 'heart', 'oval', 'cat', 'dog',
     'car', 'person', 'apple', 'fish', 'rocket', 'flower', 'butterfly', 'house', 'icecream'];
   const legacyShapes = shapes.slice(0, 10);
-  const defaultVisible = ['cat', 'dog', 'car', 'person', 'apple'];
+  // The default toolbox follows the original ten shapes: eight basic geometry
+  // patterns plus cat and dog. Saved boards keep their own `settings.shapes`.
+  const defaultVisible = [...legacyShapes];
   const palette = ['#4CAF50', '#42A5F5', '#AB47BC', '#26A69A', '#FF7043', '#F4511E', '#E53935', '#D81B60', '#8E24AA'];
   const oldValues = [1, 10, 100, 1000, 10000];
   const fail = (message) => { throw new Error(message); };
@@ -74,6 +76,37 @@ export function createBoardModel() {
   };
   // Exact large aggregates are decimal strings; ordinary quantities remain numbers.
   const exact = (v) => v <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(v) : v.toString();
+  // Group composition for the friendly answer text. Unlike `summary`, this keeps
+  // each group's shape/value makeup so the model can read the board without
+  // opening the attachment, while coordinates and ids stay out of the prose.
+  const digest = (board) => {
+    const canonical = validate(board);
+    const groups = canonical.groups.map((g) => ({ id: g.id, alias: g.alias, items: [], count: 0, total: 0n }));
+    const byGroup = new Map(groups.map((g) => [g.id, g]));
+    const ungrouped = { items: [], count: 0, total: 0n };
+    const removed = { items: [], count: 0, total: 0n };
+    const addTo = (bucket, o) => {
+      bucket.count++; bucket.total += BigInt(o.value);
+      const merged = o.sources.length;
+      let item = bucket.items.find((entry) => entry.shape === o.shape && entry.value === o.value
+        && entry.alias === o.alias && entry.merged === merged);
+      if (!item) { item = { shape: o.shape, value: o.value, alias: o.alias, merged, count: 0, total: 0n }; bucket.items.push(item); }
+      item.count++; item.total += BigInt(o.value);
+    };
+    for (const o of canonical.objects) {
+      if (o.removed) { addTo(removed, o); continue; }
+      addTo(o.groupId === null ? ungrouped : byGroup.get(o.groupId), o);
+    }
+    const finish = (bucket) => ({
+      ...bucket, total: exact(bucket.total),
+      items: bucket.items.map((item) => ({ ...item, total: exact(item.total) })),
+    });
+    return {
+      groups: groups.filter((g) => g.count > 0).map(finish),
+      ungrouped: finish(ungrouped),
+      removed: finish(removed),
+    };
+  };
   const summarize = (board) => {
     const result = { totalCount: board.objects.length, activeCount: 0, totalValue: 0n, removedCount: 0, removedValue: 0n,
       groups: board.groups.map(({ id, alias }) => ({ id, alias, count: 0, value: 0n })), ungrouped: { count: 0, value: 0n } };
@@ -333,6 +366,6 @@ export function createBoardModel() {
   }
   const serialize = (board) => { const canonical = validate(board); return JSON.stringify({ kind: 'math-board', ...canonical, summary: summarize(canonical) }); };
   const color = (index) => { if (!validColor(index)) fail('Invalid color index'); return palette[index]; };
-  return { empty, defaultSettings, validateSettings, validate, reduce, summary, serialize, color, mergeCandidate,
+  return { empty, defaultSettings, validateSettings, validate, reduce, summary, digest, serialize, color, mergeCandidate,
     shapes: [...shapes], defaultVisibleShapes: [...defaultVisible] };
 }

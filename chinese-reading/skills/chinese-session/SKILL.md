@@ -4,11 +4,11 @@ description: 语文路由。学习入口确定 subject = chinese、恢复语文�
 user-invocable: false
 ---
 
-# Chinese Session（语文路由器）
+# 语文路由
 
 每轮只选一个子 skill，把上下文原样交给它；教学、诊断、出题与会话段均由子 skill 负责。
 
-## Inputs
+## 输入
 
 学习入口会传入：
 
@@ -31,7 +31,7 @@ user-invocable: false
 
 如果入口没有给出 `target_context`，按 `learn-data` 的 `references/target-parsing.md` 补齐；仍无法确定流程分支时，用 `ask_user_question` 提供对应的阅读/写作或动作选项，得到选择后再路由。
 
-## Load First
+## 首先加载
 
 如果本会话尚未加载，按顺序调用 `skill` 工具加载：
 
@@ -41,14 +41,14 @@ user-invocable: false
 
 路由器只需要读规则来判断方向，不必读 `chinese-core` 的全部 reference；具体规则由被路由到的子 skill 读取。
 
-## Preconditions
+## 前置条件
 
 1. 优先复用入口已读的 `session.json` 与学生快照，确认 `student_id` 存在且 `subject = chinese`；已提供的部分不重复读取。
 2. 仅当必要会话信息或快照字段缺失时，按 `learn-data` 的 Read Snapshot 补读缺失部分；会话不存在或 `student_id` 为空则引导 `/start`，停止路由。科目不匹配则交回入口确认，不在这里切换或写回。
 3. 科目文件缺失时交回入口按 `learn-data` 初始化，再使用入口返回快照；本路由器不创建、初始化或修改任何学生数据。
 4. 本轮只路由一次；不要在一次回复里加载多个子 skill 的教学内容。
 
-## Routing Table
+## 路由表
 
 依次完成文件归类、确定领域、选择子 skill。明确 `intent` 优先于旧 `type`：按共享分类器补齐匹配类别，保留原始目标与材料；两者表达了互相冲突的明确请求时，用 `ask_user_question` 确认一个动作后再路由。`mode = feynman` 优先决定教学方式，出题/迁移目标仅保留其阅读或写作领域。
 
@@ -68,7 +68,7 @@ user-invocable: false
 | `type = profile`，选定阅读 | `chinese-reading-session` | `learn` |
 | `type = profile`，选定写作 | `chinese-writing-session` | `start` |
 
-## Routing Rules
+## 路由规则
 
 1. 费曼模式只在开头路由一次；随后不再因为学生的新句子反复切换领域。
 2. 文件目标遵循 `learn-data` 的 `references/target-parsing.md` 的 After File Processing：
@@ -85,7 +85,7 @@ user-invocable: false
 5. 阅读结束后学生提出“我想试试自己写”时，不要重新走写作 start；路由 `chinese-read-write-transfer`，保留当前阅读材料与已提取技巧。
 6. 路由完成后，由子 skill 负责本轮全部教学动作、规则读取、输出形状和 `session_segment`；路由器不再补充学科建议。
 
-## Submode Mapping
+## submode 映射
 
 | 实际动作 | mode | submode |
 |---|---|---|
@@ -97,7 +97,7 @@ user-invocable: false
 | 出题 | `learn` | `generate_tasks` |
 | 费曼（阅读或写作） | `feynman` | `feynman` |
 
-## Passing Control
+## 移交控制
 
 调用目标子 skill 时，传齐：
 
@@ -106,7 +106,7 @@ user-invocable: false
 - `target_context`（已按共享分类器归类的目标，保留原意图与材料引用；入口持有原始输入）
 - 恢复时的 `context.activity`、`context.turn_state`（迁移来源、技巧、阶段、轮数、待答问题）
 - `focus`
-- 入口已读会话与快照，以及按 Preconditions 补读的缺失部分（子 skill 复用，不重复读文件）
+- 入口已读会话与快照，以及按「前置条件」补读的缺失部分（子 skill 复用，不重复读文件）
 - 个性化输入：`personal.interests`、`personal.most_exciting_event`、`profile.preferences`、`self_report.easy_topics/hard_topics`、`memory.preferred_scaffolds` / `recent_error_patterns` / `expression_traits` / `stable_strengths` / `stable_difficulties`
 - 阅读材料或草稿原文，以及学生本轮最新一句原话
 

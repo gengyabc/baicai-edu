@@ -1,11 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createShapeArt } from './view.js';
+import { readFile } from 'node:fs/promises';
+import { createBoardDescription, createShapeArt } from './view.js';
 import { createBoardModel } from './model.js';
 
 const M = createBoardModel();
 const React = { createElement(type, props, ...children) { return { type, props: props || {}, children }; } };
 const art = createShapeArt(React);
+const zh = JSON.parse(await readFile(new URL('./locale/zh.json', import.meta.url), 'utf8'));
+const t = (key, params = {}) => zh[key].replace(/\{(\w+)\}/g, (match, name) =>
+  Object.hasOwn(params, name) ? String(params[name]) : match);
+const describeBoard = createBoardDescription(M);
 
 test('every library pattern renders artwork, and the custom patterns use the level fill', () => {
   const expected = ['apple', 'butterfly', 'car', 'cat', 'dog', 'fish', 'flower', 'house', 'icecream', 'person', 'rocket'];
@@ -28,4 +33,21 @@ test('cat and dog use different ears, so they stay distinguishable at toolbox si
   const dogShapes = children(dog).map((child) => child.type);
   assert.ok(catShapes.filter((type) => type === 'polygon').length >= 4, 'cat has pointed ear and nose polygons');
   assert.ok(dogShapes.filter((type) => type === 'ellipse').length >= 3, 'dog has floppy ear and muzzle ellipses');
+});
+
+test('the answer note names groups, cross-outs and the student explanation without coordinates or JSON', () => {
+  let board = M.reduce(M.empty(), { type: 'add', shape: 'cat', count: 2 });
+  board = M.reduce(board, { type: 'add', shape: 'apple' });
+  board = M.reduce(board, { type: 'groupSelected', ids: ['object-1', 'object-2'], alias: '小猫队' });
+  board = M.reduce(board, { type: 'update', id: 'object-3', patch: { removed: true } });
+  board = M.reduce(board, { type: 'note', value: '两只小猫在一起' });
+  const text = describeBoard(board, t);
+  assert.equal(text, [
+    '我在数学画板上摆好了：',
+    '· 一组「小猫队」：小猫 2 个，每个代表 1，一共 2',
+    '· 划去的：苹果 1 个，每个代表 1',
+    '',
+    '我想说：两只小猫在一起',
+  ].join('\n'));
+  assert.equal(/object-|"x":|schemaVersion/.test(text), false);
 });

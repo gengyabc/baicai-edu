@@ -19,13 +19,13 @@ const assertSpaced = (objects) => {
   }
 };
 
-test('v3 defaults show five kid-friendly patterns, keep the full library and detached factories', () => {
+test('v3 defaults show the ten legacy patterns, including basic geometry, and keep the full library', () => {
   const empty = M.empty();
   assert.equal(empty.schemaVersion, 3); assert.equal(Object.hasOwn(empty, 'operation'), false);
   assert.deepEqual(Object.keys(empty).sort(), ['groups', 'note', 'objects', 'schemaVersion', 'settings']);
   assert.deepEqual(M.shapes, ['circle', 'square', 'triangle', 'star', 'hexagon', 'diamond', 'heart', 'oval', 'cat', 'dog',
     'car', 'person', 'apple', 'fish', 'rocket', 'flower', 'butterfly', 'house', 'icecream']);
-  assert.deepEqual(M.defaultVisibleShapes, ['cat', 'dog', 'car', 'person', 'apple']);
+  assert.deepEqual(M.defaultVisibleShapes, ['circle', 'square', 'triangle', 'star', 'hexagon', 'diamond', 'heart', 'oval', 'cat', 'dog']);
   assert.deepEqual(empty.settings.shapes, M.defaultVisibleShapes);
   assert.deepEqual(M.defaultSettings().levels, [1, 10, 100, 1000, 10000].map((value, color) => ({ value, color })));
   assert.deepEqual(empty.settings.defaults.map((d) => d.shape), M.shapes);
@@ -314,6 +314,26 @@ test('summary preserves active versus removed facts and serialization roundtrips
     groups: [{ id: 'group-1', alias: '两份', count: 1, value: 2 }], ungrouped: { count: 1, value: 2 } });
   const exported = JSON.parse(M.serialize(b)); assert.equal(exported.kind, 'math-board'); assert.equal(exported.schemaVersion, 3);
   assert.deepEqual(M.validate(exported), b);
+});
+
+test('digest keeps group composition, cross-outs and merge provenance for the friendly answer text', () => {
+  let b = configured();
+  b = add(b, { count: 3 });
+  b = group(b, ['object-1', 'object-2'], '小猫队');
+  b = M.reduce(b, { type: 'update', id: 'object-3', patch: { removed: true } });
+  const digest = M.digest(b);
+  assert.equal(digest.groups.length, 1);
+  assert.deepEqual(digest.groups[0], {
+    id: 'group-1', alias: '小猫队', count: 2, total: 4,
+    items: [{ shape: 'circle', value: 2, alias: '苹果', merged: 0, count: 2, total: 4 }],
+  });
+  assert.deepEqual(digest.ungrouped, { items: [], count: 0, total: 0 });
+  assert.deepEqual(digest.removed, {
+    items: [{ shape: 'circle', value: 2, alias: '苹果', merged: 0, count: 1, total: 2 }], count: 1, total: 2,
+  });
+  const merged = M.reduce(add(configured(), { count: 3 }), { type: 'merge', ids: ['object-1', 'object-2', 'object-3'] });
+  const item = M.digest(merged).ungrouped.items[0];
+  assert.equal(item.merged, 3); assert.equal(item.value, 6); assert.equal(item.count, 1); assert.equal(item.total, 6);
 });
 
 test('factory has no runtime imports or external bindings, source states and actions remain immutable', () => {

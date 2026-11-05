@@ -4,7 +4,7 @@ description: 数学教学主线。学习入口路由到数学、恢复未完成�
 user-invocable: false
 ---
 
-# Math Session
+# 数学教学
 
 ## 开始前
 

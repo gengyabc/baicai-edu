@@ -4,22 +4,22 @@ description: 写作教学。学生有题无稿需起笔、修改已有草稿、�
 user-invocable: false
 ---
 
-# Chinese Writing Session（写作教学）
+# 写作教学
 
 一轮只推进一篇作文的一步，让学生自己写得更具体：有题无稿用 `start`，修改草稿用 `revise`，批改看档次用 `assess`，学生讲写作或修改选择用 `feynman`。
 
-## Inputs
+## 输入
 
 - 作文题与要求，或学生草稿原文。
 - `focus`：本轮只改的一个点（一个定格、一个开头、一处结尾）。
 - `grade_band` 与年级；`priority_targets`、`developing_topics`、`error_history` 最近的写作标签。
 - 个性化：`personal.interests`、`personal.most_exciting_event`、`profile.preferences`、`self_report.easy_topics/hard_topics`、`memory.preferred_scaffolds` / `expression_traits`。
 
-## Session Gate
+## 会话门槛
 
 本 skill 只由 `chinese-session`、`/learn` 或 `/feynman` 路由进入。没有 `session.json` 或 `student_id` 为空时，先引导学生运行 `/start`，不要开始写作教学。
 
-## Load Rules
+## 读取规则
 
 | 需要什么 | 加载 | 读哪个文件 |
 |---|---|---|
@@ -77,7 +77,7 @@ user-invocable: false
 5. 学生能指出具体句子、说明选择的效果并回应反例后，用他已讲出的理由复述“现在这版好在哪里”，再交入口选下一步；空泛理由继续追到画面。
 6. 用向学生学写作文的同龄孩子口吻求教，修改选择与结论由学生讲出。
 
-## Expected Output Shape
+## 预期输出形态
 
 start / revise 跨轮按当前步骤取用以下内容，提问后等待回应；feynman 使用上方角色流程，assess 使用量规格式：
 
@@ -91,7 +91,7 @@ start / revise 跨轮按当前步骤取用以下内容，提问后等待回应�
 
 assess 模式的档位、分项分析、修改处数与下一步格式统一按量规。
 
-## Session Segment
+## 会话段
 
 本轮结束在内存里产出一个 `session_segment`；本 skill 不直接写学生数据，入口会把它写入 `session_log.json`：
 
@@ -126,6 +126,6 @@ assess 模式的档位、分项分析、修改处数与下一步格式统一按�
 - `diagnosis` 有明确主标签时填写，否则省略；证据用实际草稿及学生表现，AI 示范只作为提示过程。
 - 其余通用字段与证据要求遵循 `chinese-core` 的“回合交付规则”。
 
-## End-State Rule
+## 结束状态规则
 
 用阶段小结交回入口；入口负责呈现下一步选择或按 `learn-data` finalize，教学子 skill 保持会话可接续。
