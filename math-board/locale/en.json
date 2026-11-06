@@ -101,6 +101,7 @@
   "done": "Done",
   "fileSaved": "Saved to the last location.",
   "fileDownloaded": "Board file downloaded.",
+  "fileOpenFallback": "Using the standard file picker; the browser may not remember the last location.",
   "undo": "Undo",
   "redo": "Redo",
   "group2": "Group",

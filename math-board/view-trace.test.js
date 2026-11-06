@@ -176,6 +176,26 @@ test('draft and trace sidecar restore across mounts, including attachment prefer
   });
 });
 
+test('a genuine nineteen-pattern v3 local draft migrates without hiding its objects', () => {
+  const old = M.reduce(M.empty(), { type: 'add', shape: 'cat' });
+  old.schemaVersion = 3;
+  delete old.notes;
+  for (const object of old.objects) delete object.note;
+  old.settings.defaults = old.settings.defaults.filter((entry) => entry.shape !== 'rectangle');
+  old.settings.shapes = ['cat', 'circle'];
+  const storage = new Map([['dsh-edu-math-board:v3:integration', JSON.stringify(old)]]);
+  withMount({ storage }, (h) => {
+    assert.equal(h.board().schemaVersion, 4);
+    assert.equal(h.board().objects.length, 1);
+    assert.equal(h.board().objects[0].shape, 'cat');
+    assert.equal(h.board().settings.defaults.length, 20);
+    assert.deepEqual(h.board().settings.shapes, ['cat', 'circle']);
+    assert.equal(h.trace().priorUnknown, true);
+    h.add('cat');
+    assert.equal(h.board().objects.length, 2);
+  });
+});
+
 test('old draft without a trace restores the board and explicitly marks unknown prior work', () => {
   const draft = M.reduce(M.empty(), { type: 'add', shape: 'cat', count: 2 });
   for (const draftKey of [key, 'dsh-edu-math-board:v3:integration', 'dsh-edu-math-board:v2:integration']) {
@@ -473,6 +493,46 @@ test('the explanation bubble follows the selection and keeps ordinary and per-ob
     assert.equal(h.board().objects[0].note, '第一只小猫');
     assert.equal(h.board().note, '整张画板的想法');
   });
+});
+
+test('host defaults govern creation until the student explicitly chooses a creation colour', () => {
+  withMount({}, (h) => {
+    h.add('cat');
+    const settings = M.empty().settings;
+    settings.levels.push({ value: 2, color: 5 });
+    settings.defaults.find((entry) => entry.shape === 'cat').value = 2;
+    h.setConfig({ revision: 1, floorRevision: 0, settings, changes: [{ revision: 1, settings, scope: 'future' }] });
+    assert.ok(h.button(`${t('cat')} · ${t('value')} 2`));
+    h.add('cat'); h.add('circle');
+    assert.deepEqual(h.board().objects.map((o) => o.value), [1, 2, 1]);
+    h.click(`${t('creationColor')} · 1`);
+    h.find((node) => node.props.role === 'menuitemradio' && text(node) === '10').props.onClick(); h.refresh();
+    h.add('cat');
+    assert.equal(h.board().objects.at(-1).value, 10);
+    h.setConfig({ revision: 2, floorRevision: 0, settings, changes: [{ revision: 2, settings, scope: 'future' }] });
+    h.add('cat');
+    assert.equal(h.board().objects.at(-1).value, 2);
+  });
+});
+
+test('denied file picker permission falls back to ordinary input while cancellation does not', async () => {
+  const h = mount();
+  try {
+    let clicks = 0;
+    h.find((node) => node.type === 'input' && node.props.type === 'file').props.ref.current.click = () => { clicks++; };
+    for (const name of ['NotAllowedError', 'SecurityError']) {
+      window.showOpenFilePicker = async () => { throw Object.assign(new Error('denied'), { name }); };
+      h.openMore(); await h.click(t('import')); h.refresh();
+    }
+    assert.equal(clicks, 2);
+    window.showOpenFilePicker = async () => { throw Object.assign(new Error('cancelled'), { name: 'AbortError' }); };
+    h.openMore(); await h.click(t('import')); h.refresh();
+    assert.equal(clicks, 2);
+    window.showOpenFilePicker = async () => [{ getFile: async () => new File(['not json'], 'bad.json') }];
+    h.openMore(); await h.click(t('import')); h.refresh();
+    assert.equal(clicks, 2, 'invalid file content reports failure without opening a second picker');
+    assert.equal(h.board().objects.length, 0);
+  } finally { h.unmount(); }
 });
 
 test('the quantity rides in a corner tag at the shape lower right, leaving the artwork clear', () => {

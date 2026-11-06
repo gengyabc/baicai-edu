@@ -113,7 +113,8 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
     const [status, setStatus] = React.useState('');
     const [preview, setPreview] = React.useState(null);
     const [overlay, setOverlay] = React.useState(null);
-    const [toolValue, setToolValue] = React.useState(1);
+    // No explicit colour choice: honour the host's per-pattern defaults.
+    const [toolValue, setToolValue] = React.useState(null);
     const [colorMenu, setColorMenu] = React.useState(false);
     const [moreOpen, setMoreOpen] = React.useState(false);
     const [append, setAppend] = React.useState(false);
@@ -193,6 +194,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
       revision.current++;
       publish(result.board);
       if (applied.length) {
+        setToolValue(null);
         const replay = (snapshot) => applied.reduce((state, action) => {
           try { return M.reduce(state, action); } catch { return state; }
         }, snapshot);
@@ -303,10 +305,15 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
         { ...extra, title: label, 'aria-label': label });
     }
 
+    function creationLevel(shape) {
+      if (toolValue !== null && levels.some((level) => level.value === toolValue)) return toolLevel;
+      const value = board.settings.defaults.find((entry) => entry.shape === shape)?.value;
+      return levels.find((level) => level.value === value) || toolLevel;
+    }
     function add(shape, point) {
       const before = new Set(boardRef.current.objects.map((o) => o.id));
       const extra = point ? { x: point.x, y: point.y } : {};
-      const next = action({ type: 'add', shape, value: toolLevel.value, ...extra });
+      const next = action({ type: 'add', shape, value: creationLevel(shape).value, ...extra });
       if (next) selectIds(next.objects.filter((o) => !before.has(o.id)).map((o) => o.id));
     }
     function updateSelected(patch) { batch(selected.map((o) => ({ type: 'update', id: o.id, patch }))); }
@@ -502,10 +509,14 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
           return;
         } catch (error) {
           if (error?.name === 'AbortError') return;
-          setStatus(`${t('failed')}: ${error.message}`);
-          return;
+          if (!['NotAllowedError', 'SecurityError', 'NotSupportedError'].includes(error?.name)) {
+            setStatus(`${t('failed')}: ${error.message}`);
+            return;
+          }
+          // Permission denial must not prevent opening an ordinary local file.
         }
       }
+      setStatus(t('fileOpenFallback'));
       fileInput.current.click();
     }
     async function importInput(event) {
@@ -619,9 +630,9 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
     const noteHasText = Boolean(noteText(noteTarget));
     const brand = h('div', { className: 'eb-brand', title: t('title'), 'aria-label': t('title') }, brandMark(levels, 34));
     const palette = h('aside', { className: 'eb-palette', 'aria-label': t('toolbox') },
-      visibleShapes.map((shape) => button(swatch(shape, toolLevel.color, 32), () => add(shape), {
+      visibleShapes.map((shape) => button(swatch(shape, creationLevel(shape).color, 32), () => add(shape), {
         className: 'eb-shape-tool', key: shape, draggable: true, disabled: board.objects.length >= 200,
-        title: `${t(shape)} · ${t('value')} ${toolLevel.value}`, 'aria-label': `${t(shape)} · ${t('value')} ${toolLevel.value}`,
+        title: `${t(shape)} · ${t('value')} ${creationLevel(shape).value}`, 'aria-label': `${t(shape)} · ${t('value')} ${creationLevel(shape).value}`,
         onDragStart: () => setDragShape(shape), onDragEnd: () => setDragShape(null),
       })),
       button(icon('plus', 20), () => setOverlay({ kind: 'library' }), {

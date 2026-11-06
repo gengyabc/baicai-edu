@@ -15,13 +15,13 @@ const settingsSchema = {
         color: { type: 'integer', enum: [0, 1, 2, 3, 4, 5, 6, 7, 8] },
       },
     } },
-    defaults: { type: 'array', minItems: shapes.length, maxItems: shapes.length, description: `全部 ${shapes.length} 个图案的完整默认值。每个默认数值必须出现在 levels 中。`, items: {
+    defaults: { type: 'array', description: `全部 ${shapes.length} 个图案的完整默认值，必须恰好 ${shapes.length} 项、每个图案恰好一项且不重复。每个默认数值必须出现在 levels 中。`, items: {
       type: 'object', additionalProperties: false, required: ['shape', 'value', 'alias'], properties: {
         shape: { type: 'string', enum: shapes }, value: { type: 'integer' },
         alias: { type: 'string', description: '面向学生的物品名，最多 30 个字符；允许为空。' },
       },
     } },
-    shapes: { type: 'array', description: '工具箱当前显示的图案，按显示顺序。除非学生要求添加或收起图案，否则原样带回返回的清单。', minItems: 1, maxItems: shapes.length, uniqueItems: true, items: { type: 'string', enum: shapes } },
+    shapes: { type: 'array', description: `工具箱当前显示的图案，按显示顺序，至少 1 项、至多 ${shapes.length} 项且不重复。除非学生要求添加或收起图案，否则原样带回返回的清单。`, items: { type: 'string', enum: shapes } },
   },
 };
 const parameters = {
@@ -29,13 +29,11 @@ const parameters = {
   additionalProperties: false,
   required: ['action'],
   properties: {
-    action: { type: 'string', enum: ['get', 'set'], description: 'get 读取当前设置；set 用新设置替换本会话配置。' },
+    action: { type: 'string', enum: ['get', 'set'], description: 'get 读取当前设置；set 用新设置替换本会话配置，此时必须同时给出 settings、scope 与 expectedRevision。' },
     settings: settingsSchema,
     scope: { type: 'string', enum: ['future', 'existing'], description: 'future 只改之后新添加图形的默认值；existing 也会更新普通已有图形；已合并对象保留记录时的数值与颜色。' },
     expectedRevision: { type: 'integer', description: 'set 必填：get 返回的修订号，用于拒绝过期写回。' },
   },
-  if: { properties: { action: { const: 'set' } }, required: ['action'] },
-  then: { required: ['settings', 'scope', 'expectedRevision'] },
 };
 const outputSchema = {
   type: 'object',

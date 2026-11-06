@@ -34,8 +34,7 @@ export function createBoardModel() {
     keys(settings, ['levels', 'defaults'], ['shapes']);
     if (!Array.isArray(settings.levels) || settings.levels.length < 1 || settings.levels.length > 20
       || !Array.isArray(settings.defaults)) fail('Invalid settings');
-    // A missing `shapes` list is the schemaVersion 2 settings shape: its ten pattern
-    // defaults are accepted once and padded with the newer patterns.
+    // Preserve the established legacy configuration API for ten-pattern settings.
     const legacy = !Object.hasOwn(settings, 'shapes');
     const expected = legacy ? legacyShapes : shapes;
     if (settings.defaults.length !== expected.length) fail('Invalid settings');
@@ -65,6 +64,22 @@ export function createBoardModel() {
       visible = [...settings.shapes];
     }
     return { levels, defaults, shapes: visible };
+  }
+  function migrateSettings(settings) {
+    keys(settings, ['levels', 'defaults'], ['shapes']);
+    const originalShapes = shapes.slice(0, -1);
+    // The original v3 library had nineteen defaults, without rectangle. Pad only
+    // during board migration, keeping its visible toolbox and existing defaults.
+    if (Object.hasOwn(settings, 'shapes') && Array.isArray(settings.defaults) && settings.defaults.length === originalShapes.length) {
+      const entries = new Map(settings.defaults.map((entry) => [entry?.shape, entry]));
+      if (entries.size !== originalShapes.length || originalShapes.some((shape) => !entries.has(shape))) fail('Invalid shape default');
+      const fallback = settings.levels?.some((level) => level.value === 1) ? 1 : settings.levels?.[0]?.value;
+      return validateSettings({ ...settings,
+        defaults: [...settings.defaults, ...shapes.filter((shape) => !entries.has(shape)).map((shape) => ({ shape, value: fallback, alias: '' }))],
+        shapes: settings.shapes,
+      });
+    }
+    return validateSettings(settings);
   }
   const empty = () => ({ schemaVersion: 4, settings: defaultSettings(), objects: [], groups: [], notes: [], note: '' });
   const cloneObject = (o) => ({ id: o.id, shape: o.shape, value: o.value, color: o.color, alias: o.alias,
@@ -154,7 +169,7 @@ export function createBoardModel() {
       // v2 settings kept the ten original pattern defaults and no visible list.
       // Both older shapes gain the note field lazily; no text is invented.
       input = {
-        ...input, schemaVersion: 4, settings: validateSettings(input.settings),
+        ...input, schemaVersion: 4, settings: migrateSettings(input.settings),
         objects: input.objects.map(upgradeNotes),
         groups: input.groups.map((g) => ({ ...g, note: '' })),
         notes: [],
@@ -373,24 +388,27 @@ export function createBoardModel() {
         const lower = Math.max(1, ...next.settings.levels.filter((l) => l.value < parent.value).map((l) => l.value));
         const count = Math.floor(parent.value / lower);
         const remainder = parent.value % lower;
-        if (next.objects.length - 1 + count + Number(remainder > 0) > 200) fail('Object limit exceeded');
-        const values = [...Array(count).fill(lower), ...(remainder ? [remainder] : [])];
+        // A merged object undoes exactly its last merge, independent of today's
+        // configured levels. Only native objects decompose into lower units.
+        const size = parent.sources.length || count + Number(remainder > 0);
+        if (next.objects.length - 1 + size > 200) fail('Object limit exceeded');
+        const parts = parent.sources.length ? parent.sources.map(cloneObject)
+          : [...Array(count).fill(lower), ...(remainder ? [remainder] : [])].map((value) => ({
+            ...cloneObject(parent), id: '', value, note: '', sources: [],
+            color: next.settings.levels.find((l) => l.value === value)?.color ?? customColorIndex,
+          }));
         const allocator = { ...next, objects: next.objects.slice() };
         next.objects = next.objects.filter((o) => o.id !== parent.id);
-        const reusable = parent.sources.length === values.length && parent.sources.every((s, i) => s.value === values[i]);
         const used = new Set([...next.objects, ...next.groups].map((o) => o.id));
-        for (const [i, value] of values.entries()) {
-          const level = next.settings.levels.find((l) => l.value === value);
-          const restored = { ...cloneObject(parent), id: nextId(allocator, 'object'), value, note: '',
-            color: level ? level.color : customColorIndex, sources: [], ...freePosition(next.objects) };
-          if (reusable) {
-            const source = cloneObject(parent.sources[i]);
-            if (used.has(source.id)) source.id = restored.id;
-            Object.assign(restored, source, { groupId: parent.groupId, x: restored.x, y: restored.y });
-          }
+        for (const restored of parts) {
+          if (!restored.id || used.has(restored.id)) restored.id = nextId(allocator, 'object');
+          Object.assign(restored, { groupId: parent.groupId, ...freePosition(next.objects) });
           used.add(restored.id);
           next.objects.push(restored); allocator.objects.push(restored);
         }
+        // Other selection notes still refer to their unchanged objects. A note
+        // naming the removed parent cannot describe the restored selection.
+        next.notes = next.notes.filter((note) => !note.objectIds.includes(parent.id));
         break;
       }
       case 'configure': {

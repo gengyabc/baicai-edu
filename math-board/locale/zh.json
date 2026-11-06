@@ -101,6 +101,7 @@
   "done": "完成",
   "fileSaved": "已保存到上次的位置。",
   "fileDownloaded": "已下载画板文件。",
+  "fileOpenFallback": "将使用普通文件选择，浏览器可能无法记住上次的位置。",
   "undo": "撤销",
   "redo": "重做",
   "group2": "圈组",

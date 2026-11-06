@@ -88,7 +88,6 @@ export function createBoardTrace(M) {
     if (!types.includes(type)) fail();
     return type;
   };
-  const exact = (v) => v <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(v) : v.toString();
   const countKinds = (board) => {
     const counts = new Map();
     for (const o of board.objects) {
@@ -122,16 +121,19 @@ export function createBoardTrace(M) {
     for (const o of board.objects) counts.set(o.color, (counts.get(o.color) || 0) + 1);
     return list([...counts].sort(([a], [b]) => a - b).map(([color, n]) => `${color} ×${n}`));
   };
-  const metrics = (board) => ({
-    count: board.objects.length,
-    activeCount: board.objects.filter((o) => !o.removed).length,
-    removedCount: board.objects.filter((o) => o.removed).length,
-    value: exact(board.objects.reduce((n, o) => n + (o.removed ? 0n : BigInt(o.value)), 0n)),
-    removedValue: exact(board.objects.reduce((n, o) => n + (o.removed ? BigInt(o.value) : 0n), 0n)),
-    groupCount: board.groups.length,
-    groupedCount: board.objects.filter((o) => o.groupId !== null).length,
-    mergedCount: board.objects.filter((o) => o.sources.length > 0).length,
-  });
+  const metrics = (board) => {
+    const summary = M.summary(board);
+    return {
+      count: summary.totalCount,
+      activeCount: summary.activeCount,
+      removedCount: summary.removedCount,
+      value: summary.totalValue,
+      removedValue: summary.removedValue,
+      groupCount: board.groups.length,
+      groupedCount: board.objects.filter((o) => o.groupId !== null).length,
+      mergedCount: board.objects.filter((o) => o.sources.length > 0).length,
+    };
+  };
   /** Record one successful user-visible transition; neither inputs nor board history are modified. */
   function record(trace, before, after, action, origin = 'student') {
     const next = validate(trace);

@@ -278,7 +278,31 @@ test('schemaVersion 2 settings migrate to v4: ten old patterns stay visible and 
     defaults: legacyDefaults.map((entry) => ({ ...entry, value: 2 })) } });
   assert.ok(noOne.settings.defaults.slice(10).every((d) => d.value === 2));
   assert.deepEqual(M.validateSettings(old.settings).shapes, M.shapes.slice(0, 10));
+  assert.deepEqual(M.validate({ kind: 'math-board', ...old, summary: M.summary(migrated) }), migrated);
   assert.throws(() => M.validateSettings({ ...old.settings, shapes: M.defaultVisibleShapes }));
+});
+
+test('genuine nineteen-default v3 drafts and exports migrate without changing toolbox or existing defaults', () => {
+  const current = add(configured(M.empty(), 'future', [{ value: 2, color: 3 }, { value: 10, color: 5 }]), { count: 2 });
+  const settings = { ...current.settings, defaults: current.settings.defaults.filter((entry) => entry.shape !== 'rectangle'), shapes: ['cat', 'circle', 'icecream'] };
+  const old = { schemaVersion: 3, settings, objects: current.objects.map(({ note, ...o }) => o), groups: [], note: '旧版草稿' };
+  const migrated = M.validate(freeze(old));
+  assert.deepEqual(migrated.settings.shapes, settings.shapes);
+  assert.deepEqual(migrated.settings.levels, settings.levels);
+  assert.deepEqual(migrated.settings.defaults.slice(0, 19), settings.defaults);
+  assert.deepEqual(migrated.settings.defaults[19], { shape: 'rectangle', value: 2, alias: '' });
+  assert.deepEqual(migrated.objects, current.objects);
+  assert.equal(migrated.note, old.note);
+  assert.deepEqual(M.validate({ kind: 'math-board', ...old, summary: M.summary(migrated) }), migrated);
+  const withOne = { ...old, settings: { ...settings, levels: [...settings.levels, { value: 1, color: 0 }] } };
+  assert.equal(M.validate(withOne).settings.defaults[19].value, 1);
+  assert.throws(() => M.validateSettings(settings));
+  assert.throws(() => M.validate({ ...migrated, settings }));
+  assert.throws(() => M.reduce(migrated, { type: 'configure', settings, scope: 'future' }));
+  const wrongMissing = { ...settings, defaults: [...settings.defaults.slice(1), { shape: 'rectangle', value: 2, alias: '' }] };
+  assert.throws(() => M.validate({ ...old, settings: wrongMissing }));
+  const invalidExport = { kind: 'math-board', ...old, summary: { ...M.summary(migrated), totalValue: 999 } };
+  assert.throws(() => M.validate(invalidExport));
 });
 
 test('strict v4 validation rejects malformed state, notes, sources, links and untrusted totals', () => {
