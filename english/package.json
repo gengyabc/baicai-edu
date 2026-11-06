@@ -1,0 +1,18 @@
+{
+  "name": "dsh-edu-english",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "English teaching skills for dsh-edu: story input, dialogic interaction, output, scaffolding, tasks, usage-based patterns, spaced retrieval, and child-friendly news reading.",
+  "files": [
+    "cordis.patch.yml",
+    "skills",
+    "README.md"
+  ],
+  "dsh": {
+    "manifestVersion": 1,
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

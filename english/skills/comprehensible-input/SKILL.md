@@ -1,6 +1,7 @@
 ---
 name: comprehensible-input
 description: Apply Stephen Krashen's Comprehensible Input hypothesis to age-appropriate English stories, descriptions, and listening activities for children.
+user-invocable: false
 ---
 # Comprehensible Input — Krashen
 ## Principle

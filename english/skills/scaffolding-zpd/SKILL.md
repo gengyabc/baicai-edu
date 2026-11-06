@@ -1,6 +1,7 @@
 ---
 name: scaffolding-zpd
 description: Apply Vygotsky's Zone of Proximal Development and contingent scaffolding to children struggling with an English task, including graduated hints and fading support.
+user-invocable: false
 ---
 # Scaffolding and ZPD — Vygotsky
 ## Principle

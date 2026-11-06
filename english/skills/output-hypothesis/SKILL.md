@@ -1,6 +1,7 @@
 ---
 name: output-hypothesis
 description: Apply Merrill Swain's Output Hypothesis when children need to express ideas, retell, describe, ask questions or notice gaps in their English.
+user-invocable: false
 ---
 # Output Hypothesis — Swain
 ## Principle

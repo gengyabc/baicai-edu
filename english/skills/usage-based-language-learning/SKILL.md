@@ -1,6 +1,7 @@
 ---
 name: usage-based-language-learning
 description: Apply usage-based language learning and construction-learning ideas associated with Michael Tomasello and Nick Ellis to help children acquire useful English sentence patterns through meaningful varied examples.
+user-invocable: false
 ---
 # Usage-Based Language Learning
 ## Principle
