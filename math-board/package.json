@@ -1,9 +1,9 @@
 {
   "name": "dsh-edu-math-board",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
   "type": "module",
-  "description": "表达型数学工作台：猫、汽车等可切换图案、可命名分组与同形合并；学生自己设定量级颜色，并以画板快照和可选修改记录提交想法。",
+  "description": "表达型数学工作台：预设颜色创建图案、可命名分组与同形合并；学生用整板、图形或组说明表达想法，并以画板快照和可选修改记录提交。",
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",
@@ -16,6 +16,7 @@
     "model.js",
     "trace.js",
     "view.js",
+    "view-component.js",
     "board.css",
     "build.mjs",
     "preview.mjs",

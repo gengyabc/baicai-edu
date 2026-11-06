@@ -6,7 +6,7 @@ export function createBoardTrace(M) {
   const types = ['add', 'batch', 'group', 'merge', 'split', 'delete', 'note', 'configure', 'move',
     'undo', 'redo', 'clear', 'import', 'update', 'duplicate'];
   const fields = ['count', 'activeCount', 'removedCount', 'value', 'removedValue', 'groupCount',
-    'groupedCount', 'mergedCount', 'objects', 'aliases', 'colors', 'groups', 'note',
+    'groupedCount', 'mergedCount', 'objects', 'aliases', 'colors', 'groups', 'note', 'notes',
     'settings.levels', 'settings.defaults', 'settings.shapes', 'movedCount', 'changedCount', 'detailsOmitted'];
   const fail = () => { throw new Error('Invalid math-board trace'); };
   const plain = (v) => v !== null && typeof v === 'object' && !Array.isArray(v)
@@ -36,7 +36,7 @@ export function createBoardTrace(M) {
   };
   const validValue = (field, v) => {
     if (field === 'note') return typeof v === 'string' && [...v].length <= 60;
-    if (['objects', 'aliases', 'colors', 'groups', 'settings.levels', 'settings.defaults', 'settings.shapes'].includes(field)) {
+    if (['objects', 'aliases', 'colors', 'groups', 'notes', 'settings.levels', 'settings.defaults', 'settings.shapes'].includes(field)) {
       return Array.isArray(v) && v.length <= 6 && v.every((s) => typeof s === 'string' && [...s].length <= 60);
     }
     if (['value', 'removedValue'].includes(field) && typeof v === 'string') return /^[1-9][0-9]{15,20}$/.test(v)
@@ -82,7 +82,8 @@ export function createBoardTrace(M) {
   const normalizeType = (action) => {
     if (!plain(action) || typeof action.type !== 'string') fail();
     const aliases = { groupSelected: 'group', renameGroup: 'group', deleteGroup: 'group',
-      moveMany: 'move', arrange: 'move', duplicateSelected: 'duplicate', systemConfigure: 'configure' };
+      moveMany: 'move', arrange: 'move', duplicateSelected: 'duplicate', systemConfigure: 'configure',
+      annotate: 'note' };
     const type = aliases[action.type] || action.type;
     if (!types.includes(type)) fail();
     return type;
@@ -164,6 +165,12 @@ export function createBoardTrace(M) {
     };
     const oldMetrics = metrics(a); const newMetrics = metrics(b);
     for (const field of Object.keys(oldMetrics)) add(field, oldMetrics[field], newMetrics[field]);
+    const contextualNotes = (board) => list([
+      ...board.objects.filter((o) => o.note).map((o) => `${o.shape}:${o.id}: ${short(o.note, 30)}`),
+      ...board.groups.filter((g) => g.note).map((g) => `${g.alias || '(unnamed)'}: ${short(g.note, 30)}`),
+      ...board.notes.map((note) => `selection ${note.objectIds.length}: ${short(note.text, 30)}`),
+    ]);
+    add('notes', contextualNotes(a), contextualNotes(b));
     // Long notes show bounded excerpts around the first difference, not an equal prefix.
     if (a.note !== b.note) {
       const oldChars = [...a.note]; const newChars = [...b.note];

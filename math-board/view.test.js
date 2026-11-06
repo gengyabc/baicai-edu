@@ -12,7 +12,7 @@ const zh = JSON.parse(await readFile(new URL('./locale/zh.json', import.meta.url
 const t = (key, params = {}) => zh[key].replace(/\{(\w+)\}/g, (match, name) =>
   Object.hasOwn(params, name) ? String(params[name]) : match);
 
-test('tool value radios default to 1 and synchronize previews and new objects', () => {
+test('creation colour defaults to 1 and synchronizes previews and new objects', () => {
   const states = []; let cursor = 0;
   const hooks = { ...React,
     useState(initial) {
@@ -24,6 +24,8 @@ test('tool value radios default to 1 and synchronize previews and new objects', 
   };
   const previousWindow = globalThis.window;
   globalThis.window = { matchMedia: () => ({ matches: true }) };
+  const text = (node) => typeof node === 'string' || typeof node === 'number' ? String(node)
+    : node && typeof node === 'object' ? (node.children || []).flat(Infinity).map(text).join('') : '';
   try {
     const Board = createBoardView(hooks, M, {}, t, '', art, () => null, createBoardTrace(M));
     const render = () => {
@@ -34,14 +36,14 @@ test('tool value radios default to 1 and synchronize previews and new objects', 
       walk(tree); return nodes;
     };
     let nodes = render();
-    assert.equal(nodes.find((n) => n.props.type === 'radio' && n.props.checked).props.value, 1);
-    nodes.find((n) => n.props.type === 'radio' && n.props.value === 10).props.onChange();
+    let tool = nodes.find((n) => n.props.className === 'eb-shape-tool');
+    assert.ok(tool.props.title.endsWith('1'));
+    nodes.find((n) => n.props.className?.includes('eb-color-button')).props.onClick();
     nodes = render();
-    assert.equal(nodes.find((n) => n.props.type === 'radio' && n.props.checked).props.value, 10);
-    const tool = nodes.find((n) => n.props.className === 'eb-shape-tool');
+    nodes.find((n) => n.props.role === 'menuitemradio' && text(n) === '10').props.onClick();
+    nodes = render();
+    tool = nodes.find((n) => n.props.className === 'eb-shape-tool');
     assert.ok(tool.props.title.endsWith('10'));
-    const svg = tool.children.flat(Infinity)[0].children[0];
-    assert.deepEqual(svg.children[0], art.node(M.empty().settings.shapes[0], 17, { fill: M.color(colorIndexForValue(M.empty().settings.levels, 10)), stroke: '#1E293B', strokeWidth: 1.1 }));
     tool.props.onClick();
     assert.equal(states[1].objects[0].value, 10);
     assert.equal(states[1].objects[0].color, colorIndexForValue(states[1].settings.levels, 10));

@@ -2,11 +2,11 @@
 export function createBoardModel() {
   // Library order is stable: schemaVersion 2 boards used the first ten names.
   const shapes = ['circle', 'square', 'triangle', 'star', 'hexagon', 'diamond', 'heart', 'oval', 'cat', 'dog',
-    'car', 'person', 'apple', 'fish', 'rocket', 'flower', 'butterfly', 'house', 'icecream'];
+    'car', 'person', 'apple', 'fish', 'rocket', 'flower', 'butterfly', 'house', 'icecream', 'rectangle'];
   const legacyShapes = shapes.slice(0, 10);
-  // The default toolbox follows the original ten shapes: eight basic geometry
-  // patterns plus cat and dog. Saved boards keep their own `settings.shapes`.
-  const defaultVisible = [...legacyShapes];
+  // New boards open with one rectangle, triangle, circle, cat and dog. Every
+  // other pattern stays in the library; saved boards keep their own toolbox.
+  const defaultVisible = ['rectangle', 'triangle', 'circle', 'cat', 'dog'];
   const palette = ['#4CAF50', '#42A5F5', '#AB47BC', '#26A69A', '#FF7043', '#F4511E', '#E53935', '#D81B60', '#8E24AA'];
   const oldValues = [1, 10, 100, 1000, 10000];
   const fail = (message) => { throw new Error(message); };
@@ -66,9 +66,12 @@ export function createBoardModel() {
     }
     return { levels, defaults, shapes: visible };
   }
-  const empty = () => ({ schemaVersion: 3, settings: defaultSettings(), objects: [], groups: [], note: '' });
+  const empty = () => ({ schemaVersion: 4, settings: defaultSettings(), objects: [], groups: [], notes: [], note: '' });
   const cloneObject = (o) => ({ id: o.id, shape: o.shape, value: o.value, color: o.color, alias: o.alias,
-    x: o.x, y: o.y, groupId: o.groupId, removed: o.removed, sources: o.sources.map(cloneObject) });
+    note: o.note, x: o.x, y: o.y, groupId: o.groupId, removed: o.removed, sources: o.sources.map(cloneObject) });
+  const upgradeNotes = (o) => ({ ...o, note: '', sources: Array.isArray(o.sources) ? o.sources.map(upgradeNotes) : [] });
+  const sameIds = (a, b) => a.length === b.length && a.every((id, index) => id === b[index]);
+  const pruneSelectionNotes = (notes, liveIds) => notes.filter((note) => note.objectIds.every((id) => liveIds.has(id)));
   const sameData = (a, b) => {
     if (a === b) return true;
     if (Array.isArray(a)) return Array.isArray(b) && a.length === b.length && a.every((v, i) => sameData(v, b[i]));
@@ -133,41 +136,49 @@ export function createBoardModel() {
       || !Array.isArray(input.groups) || input.groups.length > 12 || !Array.isArray(input.objects) || input.objects.length > 200) fail('Invalid legacy board');
     const canonical = empty(); canonical.note = input.note;
     canonical.settings.shapes = legacyShapes.slice(0, 3);
-    canonical.groups = input.groups.map((g) => { keys(g, ['id', 'alias']); return { id: g.id, alias: g.alias }; });
+    canonical.groups = input.groups.map((g) => { keys(g, ['id', 'alias']); return { id: g.id, alias: g.alias, note: '' }; });
     canonical.objects = input.objects.map((o) => {
       keys(o, ['id', 'shape', 'value', 'alias', 'x', 'y', 'groupId', 'removed']);
       if (!legacyShapes.slice(0, 3).includes(o.shape) || !oldValues.includes(o.value)) fail('Invalid legacy object');
-      return { ...o, color: oldValues.indexOf(o.value), sources: [] };
+      return { ...o, note: '', color: oldValues.indexOf(o.value), sources: [] };
     });
     const valid = validate(canonical);
     checkEnvelope(input, valid);
     return valid;
   }
-  /** Return detached canonical v3 state; validated v1/v2 states/exports migrate transparently. */
+  /** Return detached canonical v4 state; validated v1/v2/v3 states/exports migrate transparently. */
   function validate(input) {
     if (record(input) && input.schemaVersion === 1) return migrateV1(input);
-    if (record(input) && input.schemaVersion === 2) {
+    if (record(input) && (input.schemaVersion === 2 || input.schemaVersion === 3)) {
       keys(input, ['schemaVersion', 'settings', 'objects', 'groups', 'note'], ['kind', 'summary']);
       // v2 settings kept the ten original pattern defaults and no visible list.
-      input = { ...input, schemaVersion: 3, settings: validateSettings(input.settings) };
+      // Both older shapes gain the note field lazily; no text is invented.
+      input = {
+        ...input, schemaVersion: 4, settings: validateSettings(input.settings),
+        objects: input.objects.map(upgradeNotes),
+        groups: input.groups.map((g) => ({ ...g, note: '' })),
+        notes: [],
+      };
     }
-    keys(input, ['schemaVersion', 'settings', 'objects', 'groups', 'note'], ['kind', 'summary']);
-    if (input.schemaVersion !== 3 || !text(input.note, 500) || !Array.isArray(input.objects) || input.objects.length > 200
-      || !Array.isArray(input.groups) || input.groups.length > 12) fail('Invalid board');
+    keys(input, ['schemaVersion', 'settings', 'objects', 'groups', 'notes', 'note'], ['kind', 'summary']);
+    if (input.schemaVersion !== 4 || !text(input.note, 500) || !Array.isArray(input.objects) || input.objects.length > 200
+      || !Array.isArray(input.groups) || input.groups.length > 12
+      || !Array.isArray(input.notes) || input.notes.length > 100) fail('Invalid board');
     const settings = validateSettings(input.settings);
     const ids = new Set(); const groupIds = new Set();
     const groups = input.groups.map((g) => {
-      keys(g, ['id', 'alias']);
-      if (!idValid(g.id) || ids.has(g.id) || !text(g.alias, 30)) fail('Invalid group');
-      ids.add(g.id); groupIds.add(g.id); return { id: g.id, alias: g.alias };
+      keys(g, ['id', 'alias', 'note']);
+      if (!idValid(g.id) || ids.has(g.id) || !text(g.alias, 30) || !text(g.note, 500)) fail('Invalid group');
+      ids.add(g.id); groupIds.add(g.id); return { id: g.id, alias: g.alias, note: g.note };
     });
     let nodes = 0;
     const ancestors = new Set();
     function object(o, depth, live) {
       if (depth > 8 || ++nodes > 2000 || ancestors.has(o)) fail('Provenance limit exceeded');
-      keys(o, ['id', 'shape', 'value', 'color', 'alias', 'x', 'y', 'groupId', 'removed', 'sources']);
+      keys(o, ['id', 'shape', 'value', 'color', 'alias', 'note', 'x', 'y', 'groupId', 'removed', 'sources']);
       if (!idValid(o.id) || (live && ids.has(o.id)) || !shapes.includes(o.shape) || !positive(o.value) || !(validColor(o.color) || o.color === customColorIndex)
-        || !text(o.alias, 30) || typeof o.removed !== 'boolean' || typeof o.x !== 'number' || !Number.isFinite(o.x) || o.x < 30 || o.x > 770
+        || !text(o.alias, 30) || !text(o.note, 500) || typeof o.removed !== 'boolean'
+        || typeof o.x !== 'number' || !Number.isFinite(o.x) || o.x < 30 || o.x > 770
         || typeof o.y !== 'number' || !Number.isFinite(o.y) || o.y < 30 || o.y > 330
         || (o.groupId !== null && (!idValid(o.groupId) || (live && !groupIds.has(o.groupId))))
         || !Array.isArray(o.sources) || o.sources.length > 200 || o.sources.length === 1) fail('Invalid object');
@@ -180,10 +191,22 @@ export function createBoardModel() {
         if (sum !== BigInt(o.value) || sources.some((s) => s.shape !== o.shape || s.value !== sources[0].value || s.removed)
           || new Set(sources.map((s) => s.id)).size !== sources.length) fail('Invalid merge provenance');
       }
-      return { id: o.id, shape: o.shape, value: o.value, color: o.color, alias: o.alias, x: o.x, y: o.y,
+      return { id: o.id, shape: o.shape, value: o.value, color: o.color, alias: o.alias, note: o.note, x: o.x, y: o.y,
         groupId: o.groupId, removed: o.removed, sources };
     }
-    const board = { schemaVersion: 3, settings, objects: input.objects.map((o) => object(o, 0, true)), groups, note: input.note };
+    const objects = input.objects.map((o) => object(o, 0, true));
+    const liveIds = new Set(objects.map((o) => o.id));
+    const noteIds = new Set();
+    const notes = input.notes.map((note) => {
+      keys(note, ['id', 'text', 'objectIds']);
+      if (!idValid(note.id) || noteIds.has(note.id) || !text(note.text, 500) || !note.text.trim()
+        || !Array.isArray(note.objectIds) || note.objectIds.length < 2 || note.objectIds.length > 200
+        || new Set(note.objectIds).size !== note.objectIds.length
+        || note.objectIds.some((id) => typeof id !== 'string' || !liveIds.has(id))) fail('Invalid selection note');
+      noteIds.add(note.id);
+      return { id: note.id, text: note.text, objectIds: [...note.objectIds].sort() };
+    });
+    const board = { schemaVersion: 4, settings, objects, groups, notes, note: input.note };
     checkEnvelope(input, board);
     return board;
   }
@@ -196,6 +219,7 @@ export function createBoardModel() {
     };
     const visit = (o) => { inspect(o.id); if (o.groupId !== null) inspect(o.groupId); o.sources.forEach(visit); };
     board.groups.forEach((g) => inspect(g.id)); board.objects.forEach(visit);
+    board.notes.forEach((note) => inspect(note.id));
     if (!Number.isSafeInteger(max + 1)) fail('ID sequence exhausted');
     return `${prefix}-${max + 1}`;
   }
@@ -262,7 +286,7 @@ export function createBoardModel() {
         const dropped = Object.hasOwn(action, 'x') || Object.hasOwn(action, 'y');
         const point = dropped ? { x: clamp(action.x, 30, 770), y: clamp(action.y, 30, 330) } : null;
         for (let i = 0; i < count; i++) next.objects.push({ id: nextId(next, 'object'), shape, value, color: level.color,
-          alias: defaults.alias, ...(i === 0 && point ? point : freePosition(next.objects)), groupId: null, removed: false, sources: [] });
+          alias: defaults.alias, note: '', ...(i === 0 && point ? point : freePosition(next.objects)), groupId: null, removed: false, sources: [] });
         break;
       }
       case 'update': {
@@ -295,7 +319,7 @@ export function createBoardModel() {
         next.groups = next.groups.filter((g) => !touched.has(g.id));
         if (next.groups.length >= 12) fail('Group limit exceeded');
         for (const o of next.objects) if (touched.has(o.groupId)) o.groupId = null;
-        next.groups.push({ id, alias }); for (const o of members) o.groupId = id; break;
+        next.groups.push({ id, alias, note: '' }); for (const o of members) o.groupId = id; break;
       }
       case 'renameGroup': aliasValid(action.alias); groupById(action.id).alias = action.alias; break;
       case 'deleteGroup': {
@@ -305,7 +329,11 @@ export function createBoardModel() {
       case 'delete': {
         objectById(action.id); next.objects = next.objects.filter((o) => o.id !== action.id);
         const occupied = new Set(next.objects.map((o) => o.groupId).filter((id) => id !== null));
-        next.groups = next.groups.filter((g) => occupied.has(g.id)); break;
+        next.groups = next.groups.filter((g) => occupied.has(g.id));
+        // A selection note describes exactly the objects it names; losing any
+        // target makes that description no longer refer to the current board.
+        next.notes = pruneSelectionNotes(next.notes, new Set(next.objects.map((o) => o.id)));
+        break;
       }
       case 'duplicateSelected': {
         const members = membersOf(next, action.ids);
@@ -315,7 +343,7 @@ export function createBoardModel() {
           const original = next.objects.filter((o) => o.groupId === g.id);
           if (original.length && original.every((o) => ids.has(o.id))) {
             if (next.groups.length >= 12) fail('Group limit exceeded');
-            const cloned = { id: nextId(next, 'group'), alias: g.alias }; next.groups.push(cloned); groupMap.set(g.id, cloned.id);
+            const cloned = { id: nextId(next, 'group'), alias: g.alias, note: g.note }; next.groups.push(cloned); groupMap.set(g.id, cloned.id);
           }
         }
         for (const member of members) next.objects.push({ ...cloneObject(member), id: nextId(next, 'object'),
@@ -325,11 +353,19 @@ export function createBoardModel() {
       case 'merge': {
         const info = candidate(next, action.ids); if (!info.allowed) fail(info.reason);
         const members = membersOf(next, action.ids); const first = members[0]; const ids = new Set(action.ids);
-        const merged = { ...cloneObject(first), id: nextId(next, 'object'), value: info.value, color: info.color, sources: members.map(cloneObject) };
+        const sortedIds = [...action.ids].sort();
+        const selectionNote = next.notes.find((note) => sameIds(note.objectIds, sortedIds));
+        const memberNote = members.map((member) => member.note).find((value) => value.trim());
+        const merged = { ...cloneObject(first), id: nextId(next, 'object'), value: info.value, color: info.color,
+          note: selectionNote?.text ?? memberNote ?? '', sources: members.map(cloneObject) };
         const index = next.objects.findIndex((o) => o.id === first.id);
         const before = next.objects.slice(0, index).filter((o) => !ids.has(o.id));
         const after = next.objects.slice(index).filter((o) => !ids.has(o.id));
-        next.objects = [...before, merged, ...after]; break;
+        next.objects = [...before, merged, ...after];
+        // The exact selection note moves to the merged object; notes that only
+        // partly covered the merged shapes no longer describe the current board.
+        next.notes = next.notes.filter((note) => note.id !== selectionNote?.id && !note.objectIds.some((id) => ids.has(id)));
+        break;
       }
       case 'split': {
         const parent = objectById(action.id);
@@ -345,7 +381,7 @@ export function createBoardModel() {
         const used = new Set([...next.objects, ...next.groups].map((o) => o.id));
         for (const [i, value] of values.entries()) {
           const level = next.settings.levels.find((l) => l.value === value);
-          const restored = { ...cloneObject(parent), id: nextId(allocator, 'object'), value,
+          const restored = { ...cloneObject(parent), id: nextId(allocator, 'object'), value, note: '',
             color: level ? level.color : customColorIndex, sources: [], ...freePosition(next.objects) };
           if (reusable) {
             const source = cloneObject(parent.sources[i]);
@@ -375,6 +411,21 @@ export function createBoardModel() {
         break;
       }
       case 'note': if (!text(action.value, 500)) fail('Note exceeds 500 characters'); next.note = action.value; break;
+      case 'annotate': {
+        if (!text(action.value, 500)) fail('Note exceeds 500 characters');
+        const textValue = action.value.trim() ? action.value : '';
+        if (action.target === 'object') { objectById(action.id).note = textValue; break; }
+        if (action.target === 'group') { groupById(action.id).note = textValue; break; }
+        if (action.target !== 'selection') fail('Unknown annotation target');
+        const members = membersOf(next, action.ids);
+        if (members.length < 2) fail('A selection note needs at least two objects');
+        const sorted = [...action.ids].sort();
+        const existing = next.notes.find((note) => sameIds(note.objectIds, sorted));
+        if (!action.value.trim()) next.notes = next.notes.filter((note) => note !== existing);
+        else if (existing) existing.text = action.value;
+        else next.notes.push({ id: nextId(next, 'note'), text: action.value, objectIds: sorted });
+        break;
+      }
       default: fail('Unknown action');
     }
     return validate(next);

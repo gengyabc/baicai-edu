@@ -6,11 +6,11 @@ window.__ModuleLoader__.load({
     const M = (function createBoardModel() {
   // Library order is stable: schemaVersion 2 boards used the first ten names.
   const shapes = ['circle', 'square', 'triangle', 'star', 'hexagon', 'diamond', 'heart', 'oval', 'cat', 'dog',
-    'car', 'person', 'apple', 'fish', 'rocket', 'flower', 'butterfly', 'house', 'icecream'];
+    'car', 'person', 'apple', 'fish', 'rocket', 'flower', 'butterfly', 'house', 'icecream', 'rectangle'];
   const legacyShapes = shapes.slice(0, 10);
-  // The default toolbox follows the original ten shapes: eight basic geometry
-  // patterns plus cat and dog. Saved boards keep their own `settings.shapes`.
-  const defaultVisible = [...legacyShapes];
+  // New boards open with one rectangle, triangle, circle, cat and dog. Every
+  // other pattern stays in the library; saved boards keep their own toolbox.
+  const defaultVisible = ['rectangle', 'triangle', 'circle', 'cat', 'dog'];
   const palette = ['#4CAF50', '#42A5F5', '#AB47BC', '#26A69A', '#FF7043', '#F4511E', '#E53935', '#D81B60', '#8E24AA'];
   const oldValues = [1, 10, 100, 1000, 10000];
   const fail = (message) => { throw new Error(message); };
@@ -70,9 +70,12 @@ window.__ModuleLoader__.load({
     }
     return { levels, defaults, shapes: visible };
   }
-  const empty = () => ({ schemaVersion: 3, settings: defaultSettings(), objects: [], groups: [], note: '' });
+  const empty = () => ({ schemaVersion: 4, settings: defaultSettings(), objects: [], groups: [], notes: [], note: '' });
   const cloneObject = (o) => ({ id: o.id, shape: o.shape, value: o.value, color: o.color, alias: o.alias,
-    x: o.x, y: o.y, groupId: o.groupId, removed: o.removed, sources: o.sources.map(cloneObject) });
+    note: o.note, x: o.x, y: o.y, groupId: o.groupId, removed: o.removed, sources: o.sources.map(cloneObject) });
+  const upgradeNotes = (o) => ({ ...o, note: '', sources: Array.isArray(o.sources) ? o.sources.map(upgradeNotes) : [] });
+  const sameIds = (a, b) => a.length === b.length && a.every((id, index) => id === b[index]);
+  const pruneSelectionNotes = (notes, liveIds) => notes.filter((note) => note.objectIds.every((id) => liveIds.has(id)));
   const sameData = (a, b) => {
     if (a === b) return true;
     if (Array.isArray(a)) return Array.isArray(b) && a.length === b.length && a.every((v, i) => sameData(v, b[i]));
@@ -137,41 +140,49 @@ window.__ModuleLoader__.load({
       || !Array.isArray(input.groups) || input.groups.length > 12 || !Array.isArray(input.objects) || input.objects.length > 200) fail('Invalid legacy board');
     const canonical = empty(); canonical.note = input.note;
     canonical.settings.shapes = legacyShapes.slice(0, 3);
-    canonical.groups = input.groups.map((g) => { keys(g, ['id', 'alias']); return { id: g.id, alias: g.alias }; });
+    canonical.groups = input.groups.map((g) => { keys(g, ['id', 'alias']); return { id: g.id, alias: g.alias, note: '' }; });
     canonical.objects = input.objects.map((o) => {
       keys(o, ['id', 'shape', 'value', 'alias', 'x', 'y', 'groupId', 'removed']);
       if (!legacyShapes.slice(0, 3).includes(o.shape) || !oldValues.includes(o.value)) fail('Invalid legacy object');
-      return { ...o, color: oldValues.indexOf(o.value), sources: [] };
+      return { ...o, note: '', color: oldValues.indexOf(o.value), sources: [] };
     });
     const valid = validate(canonical);
     checkEnvelope(input, valid);
     return valid;
   }
-  /** Return detached canonical v3 state; validated v1/v2 states/exports migrate transparently. */
+  /** Return detached canonical v4 state; validated v1/v2/v3 states/exports migrate transparently. */
   function validate(input) {
     if (record(input) && input.schemaVersion === 1) return migrateV1(input);
-    if (record(input) && input.schemaVersion === 2) {
+    if (record(input) && (input.schemaVersion === 2 || input.schemaVersion === 3)) {
       keys(input, ['schemaVersion', 'settings', 'objects', 'groups', 'note'], ['kind', 'summary']);
       // v2 settings kept the ten original pattern defaults and no visible list.
-      input = { ...input, schemaVersion: 3, settings: validateSettings(input.settings) };
+      // Both older shapes gain the note field lazily; no text is invented.
+      input = {
+        ...input, schemaVersion: 4, settings: validateSettings(input.settings),
+        objects: input.objects.map(upgradeNotes),
+        groups: input.groups.map((g) => ({ ...g, note: '' })),
+        notes: [],
+      };
     }
-    keys(input, ['schemaVersion', 'settings', 'objects', 'groups', 'note'], ['kind', 'summary']);
-    if (input.schemaVersion !== 3 || !text(input.note, 500) || !Array.isArray(input.objects) || input.objects.length > 200
-      || !Array.isArray(input.groups) || input.groups.length > 12) fail('Invalid board');
+    keys(input, ['schemaVersion', 'settings', 'objects', 'groups', 'notes', 'note'], ['kind', 'summary']);
+    if (input.schemaVersion !== 4 || !text(input.note, 500) || !Array.isArray(input.objects) || input.objects.length > 200
+      || !Array.isArray(input.groups) || input.groups.length > 12
+      || !Array.isArray(input.notes) || input.notes.length > 100) fail('Invalid board');
     const settings = validateSettings(input.settings);
     const ids = new Set(); const groupIds = new Set();
     const groups = input.groups.map((g) => {
-      keys(g, ['id', 'alias']);
-      if (!idValid(g.id) || ids.has(g.id) || !text(g.alias, 30)) fail('Invalid group');
-      ids.add(g.id); groupIds.add(g.id); return { id: g.id, alias: g.alias };
+      keys(g, ['id', 'alias', 'note']);
+      if (!idValid(g.id) || ids.has(g.id) || !text(g.alias, 30) || !text(g.note, 500)) fail('Invalid group');
+      ids.add(g.id); groupIds.add(g.id); return { id: g.id, alias: g.alias, note: g.note };
     });
     let nodes = 0;
     const ancestors = new Set();
     function object(o, depth, live) {
       if (depth > 8 || ++nodes > 2000 || ancestors.has(o)) fail('Provenance limit exceeded');
-      keys(o, ['id', 'shape', 'value', 'color', 'alias', 'x', 'y', 'groupId', 'removed', 'sources']);
+      keys(o, ['id', 'shape', 'value', 'color', 'alias', 'note', 'x', 'y', 'groupId', 'removed', 'sources']);
       if (!idValid(o.id) || (live && ids.has(o.id)) || !shapes.includes(o.shape) || !positive(o.value) || !(validColor(o.color) || o.color === customColorIndex)
-        || !text(o.alias, 30) || typeof o.removed !== 'boolean' || typeof o.x !== 'number' || !Number.isFinite(o.x) || o.x < 30 || o.x > 770
+        || !text(o.alias, 30) || !text(o.note, 500) || typeof o.removed !== 'boolean'
+        || typeof o.x !== 'number' || !Number.isFinite(o.x) || o.x < 30 || o.x > 770
         || typeof o.y !== 'number' || !Number.isFinite(o.y) || o.y < 30 || o.y > 330
         || (o.groupId !== null && (!idValid(o.groupId) || (live && !groupIds.has(o.groupId))))
         || !Array.isArray(o.sources) || o.sources.length > 200 || o.sources.length === 1) fail('Invalid object');
@@ -184,10 +195,22 @@ window.__ModuleLoader__.load({
         if (sum !== BigInt(o.value) || sources.some((s) => s.shape !== o.shape || s.value !== sources[0].value || s.removed)
           || new Set(sources.map((s) => s.id)).size !== sources.length) fail('Invalid merge provenance');
       }
-      return { id: o.id, shape: o.shape, value: o.value, color: o.color, alias: o.alias, x: o.x, y: o.y,
+      return { id: o.id, shape: o.shape, value: o.value, color: o.color, alias: o.alias, note: o.note, x: o.x, y: o.y,
         groupId: o.groupId, removed: o.removed, sources };
     }
-    const board = { schemaVersion: 3, settings, objects: input.objects.map((o) => object(o, 0, true)), groups, note: input.note };
+    const objects = input.objects.map((o) => object(o, 0, true));
+    const liveIds = new Set(objects.map((o) => o.id));
+    const noteIds = new Set();
+    const notes = input.notes.map((note) => {
+      keys(note, ['id', 'text', 'objectIds']);
+      if (!idValid(note.id) || noteIds.has(note.id) || !text(note.text, 500) || !note.text.trim()
+        || !Array.isArray(note.objectIds) || note.objectIds.length < 2 || note.objectIds.length > 200
+        || new Set(note.objectIds).size !== note.objectIds.length
+        || note.objectIds.some((id) => typeof id !== 'string' || !liveIds.has(id))) fail('Invalid selection note');
+      noteIds.add(note.id);
+      return { id: note.id, text: note.text, objectIds: [...note.objectIds].sort() };
+    });
+    const board = { schemaVersion: 4, settings, objects, groups, notes, note: input.note };
     checkEnvelope(input, board);
     return board;
   }
@@ -200,6 +223,7 @@ window.__ModuleLoader__.load({
     };
     const visit = (o) => { inspect(o.id); if (o.groupId !== null) inspect(o.groupId); o.sources.forEach(visit); };
     board.groups.forEach((g) => inspect(g.id)); board.objects.forEach(visit);
+    board.notes.forEach((note) => inspect(note.id));
     if (!Number.isSafeInteger(max + 1)) fail('ID sequence exhausted');
     return `${prefix}-${max + 1}`;
   }
@@ -266,7 +290,7 @@ window.__ModuleLoader__.load({
         const dropped = Object.hasOwn(action, 'x') || Object.hasOwn(action, 'y');
         const point = dropped ? { x: clamp(action.x, 30, 770), y: clamp(action.y, 30, 330) } : null;
         for (let i = 0; i < count; i++) next.objects.push({ id: nextId(next, 'object'), shape, value, color: level.color,
-          alias: defaults.alias, ...(i === 0 && point ? point : freePosition(next.objects)), groupId: null, removed: false, sources: [] });
+          alias: defaults.alias, note: '', ...(i === 0 && point ? point : freePosition(next.objects)), groupId: null, removed: false, sources: [] });
         break;
       }
       case 'update': {
@@ -299,7 +323,7 @@ window.__ModuleLoader__.load({
         next.groups = next.groups.filter((g) => !touched.has(g.id));
         if (next.groups.length >= 12) fail('Group limit exceeded');
         for (const o of next.objects) if (touched.has(o.groupId)) o.groupId = null;
-        next.groups.push({ id, alias }); for (const o of members) o.groupId = id; break;
+        next.groups.push({ id, alias, note: '' }); for (const o of members) o.groupId = id; break;
       }
       case 'renameGroup': aliasValid(action.alias); groupById(action.id).alias = action.alias; break;
       case 'deleteGroup': {
@@ -309,7 +333,11 @@ window.__ModuleLoader__.load({
       case 'delete': {
         objectById(action.id); next.objects = next.objects.filter((o) => o.id !== action.id);
         const occupied = new Set(next.objects.map((o) => o.groupId).filter((id) => id !== null));
-        next.groups = next.groups.filter((g) => occupied.has(g.id)); break;
+        next.groups = next.groups.filter((g) => occupied.has(g.id));
+        // A selection note describes exactly the objects it names; losing any
+        // target makes that description no longer refer to the current board.
+        next.notes = pruneSelectionNotes(next.notes, new Set(next.objects.map((o) => o.id)));
+        break;
       }
       case 'duplicateSelected': {
         const members = membersOf(next, action.ids);
@@ -319,7 +347,7 @@ window.__ModuleLoader__.load({
           const original = next.objects.filter((o) => o.groupId === g.id);
           if (original.length && original.every((o) => ids.has(o.id))) {
             if (next.groups.length >= 12) fail('Group limit exceeded');
-            const cloned = { id: nextId(next, 'group'), alias: g.alias }; next.groups.push(cloned); groupMap.set(g.id, cloned.id);
+            const cloned = { id: nextId(next, 'group'), alias: g.alias, note: g.note }; next.groups.push(cloned); groupMap.set(g.id, cloned.id);
           }
         }
         for (const member of members) next.objects.push({ ...cloneObject(member), id: nextId(next, 'object'),
@@ -329,11 +357,19 @@ window.__ModuleLoader__.load({
       case 'merge': {
         const info = candidate(next, action.ids); if (!info.allowed) fail(info.reason);
         const members = membersOf(next, action.ids); const first = members[0]; const ids = new Set(action.ids);
-        const merged = { ...cloneObject(first), id: nextId(next, 'object'), value: info.value, color: info.color, sources: members.map(cloneObject) };
+        const sortedIds = [...action.ids].sort();
+        const selectionNote = next.notes.find((note) => sameIds(note.objectIds, sortedIds));
+        const memberNote = members.map((member) => member.note).find((value) => value.trim());
+        const merged = { ...cloneObject(first), id: nextId(next, 'object'), value: info.value, color: info.color,
+          note: selectionNote?.text ?? memberNote ?? '', sources: members.map(cloneObject) };
         const index = next.objects.findIndex((o) => o.id === first.id);
         const before = next.objects.slice(0, index).filter((o) => !ids.has(o.id));
         const after = next.objects.slice(index).filter((o) => !ids.has(o.id));
-        next.objects = [...before, merged, ...after]; break;
+        next.objects = [...before, merged, ...after];
+        // The exact selection note moves to the merged object; notes that only
+        // partly covered the merged shapes no longer describe the current board.
+        next.notes = next.notes.filter((note) => note.id !== selectionNote?.id && !note.objectIds.some((id) => ids.has(id)));
+        break;
       }
       case 'split': {
         const parent = objectById(action.id);
@@ -349,7 +385,7 @@ window.__ModuleLoader__.load({
         const used = new Set([...next.objects, ...next.groups].map((o) => o.id));
         for (const [i, value] of values.entries()) {
           const level = next.settings.levels.find((l) => l.value === value);
-          const restored = { ...cloneObject(parent), id: nextId(allocator, 'object'), value,
+          const restored = { ...cloneObject(parent), id: nextId(allocator, 'object'), value, note: '',
             color: level ? level.color : customColorIndex, sources: [], ...freePosition(next.objects) };
           if (reusable) {
             const source = cloneObject(parent.sources[i]);
@@ -379,6 +415,21 @@ window.__ModuleLoader__.load({
         break;
       }
       case 'note': if (!text(action.value, 500)) fail('Note exceeds 500 characters'); next.note = action.value; break;
+      case 'annotate': {
+        if (!text(action.value, 500)) fail('Note exceeds 500 characters');
+        const textValue = action.value.trim() ? action.value : '';
+        if (action.target === 'object') { objectById(action.id).note = textValue; break; }
+        if (action.target === 'group') { groupById(action.id).note = textValue; break; }
+        if (action.target !== 'selection') fail('Unknown annotation target');
+        const members = membersOf(next, action.ids);
+        if (members.length < 2) fail('A selection note needs at least two objects');
+        const sorted = [...action.ids].sort();
+        const existing = next.notes.find((note) => sameIds(note.objectIds, sorted));
+        if (!action.value.trim()) next.notes = next.notes.filter((note) => note !== existing);
+        else if (existing) existing.text = action.value;
+        else next.notes.push({ id: nextId(next, 'note'), text: action.value, objectIds: sorted });
+        break;
+      }
       default: fail('Unknown action');
     }
     return validate(next);
@@ -395,7 +446,7 @@ window.__ModuleLoader__.load({
   const types = ['add', 'batch', 'group', 'merge', 'split', 'delete', 'note', 'configure', 'move',
     'undo', 'redo', 'clear', 'import', 'update', 'duplicate'];
   const fields = ['count', 'activeCount', 'removedCount', 'value', 'removedValue', 'groupCount',
-    'groupedCount', 'mergedCount', 'objects', 'aliases', 'colors', 'groups', 'note',
+    'groupedCount', 'mergedCount', 'objects', 'aliases', 'colors', 'groups', 'note', 'notes',
     'settings.levels', 'settings.defaults', 'settings.shapes', 'movedCount', 'changedCount', 'detailsOmitted'];
   const fail = () => { throw new Error('Invalid math-board trace'); };
   const plain = (v) => v !== null && typeof v === 'object' && !Array.isArray(v)
@@ -425,7 +476,7 @@ window.__ModuleLoader__.load({
   };
   const validValue = (field, v) => {
     if (field === 'note') return typeof v === 'string' && [...v].length <= 60;
-    if (['objects', 'aliases', 'colors', 'groups', 'settings.levels', 'settings.defaults', 'settings.shapes'].includes(field)) {
+    if (['objects', 'aliases', 'colors', 'groups', 'notes', 'settings.levels', 'settings.defaults', 'settings.shapes'].includes(field)) {
       return Array.isArray(v) && v.length <= 6 && v.every((s) => typeof s === 'string' && [...s].length <= 60);
     }
     if (['value', 'removedValue'].includes(field) && typeof v === 'string') return /^[1-9][0-9]{15,20}$/.test(v)
@@ -471,7 +522,8 @@ window.__ModuleLoader__.load({
   const normalizeType = (action) => {
     if (!plain(action) || typeof action.type !== 'string') fail();
     const aliases = { groupSelected: 'group', renameGroup: 'group', deleteGroup: 'group',
-      moveMany: 'move', arrange: 'move', duplicateSelected: 'duplicate', systemConfigure: 'configure' };
+      moveMany: 'move', arrange: 'move', duplicateSelected: 'duplicate', systemConfigure: 'configure',
+      annotate: 'note' };
     const type = aliases[action.type] || action.type;
     if (!types.includes(type)) fail();
     return type;
@@ -553,6 +605,12 @@ window.__ModuleLoader__.load({
     };
     const oldMetrics = metrics(a); const newMetrics = metrics(b);
     for (const field of Object.keys(oldMetrics)) add(field, oldMetrics[field], newMetrics[field]);
+    const contextualNotes = (board) => list([
+      ...board.objects.filter((o) => o.note).map((o) => `${o.shape}:${o.id}: ${short(o.note, 30)}`),
+      ...board.groups.filter((g) => g.note).map((g) => `${g.alias || '(unnamed)'}: ${short(g.note, 30)}`),
+      ...board.notes.map((note) => `selection ${note.objectIds.length}: ${short(note.text, 30)}`),
+    ]);
+    add('notes', contextualNotes(a), contextualNotes(b));
     // Long notes show bounded excerpts around the first difference, not an equal prefix.
     if (a.note !== b.note) {
       const oldChars = [...a.note]; const newChars = [...b.note];
@@ -776,6 +834,7 @@ window.__ModuleLoader__.load({
     switch (shape) {
       case 'circle': return { type: 'circle', r };
       case 'square': return { type: 'rect', x: -r * 0.88, y: -r * 0.88, width: r * 1.76, height: r * 1.76, rx: 3 };
+      case 'rectangle': return { type: 'rect', x: -r * 1.1, y: -r * 0.8, width: r * 2.2, height: r * 1.6, rx: 3 };
       case 'triangle': return { type: 'polygon', points: `0,${-r - 2} ${r + 2},${r - 2} ${-r - 2},${r - 2}` };
       case 'star': {
         const starPoints = [];
@@ -847,33 +906,98 @@ window.__ModuleLoader__.load({
     const createView = function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) {
   const h = React.createElement;
   const paletteColor = (index) => M.color(index);
+  const DB_NAME = 'dsh-edu-math-board';
+  const DB_STORE = 'files';
+  const DB_LAST = 'last-board-file';
+  const JSON_TYPES = [{ description: 'JSON', accept: { 'application/json': ['.json'] } }];
+  function openFileDb() {
+    return new Promise((resolve, reject) => {
+      if (typeof indexedDB === 'undefined') return reject(new Error('unsupported'));
+      const request = indexedDB.open(DB_NAME, 1);
+      request.onupgradeneeded = () => {
+        if (!request.result.objectStoreNames.contains(DB_STORE)) request.result.createObjectStore(DB_STORE);
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+  async function readRememberedHandle() {
+    const db = await openFileDb();
+    try {
+      return await new Promise((resolve, reject) => {
+        const request = db.transaction(DB_STORE, 'readonly').objectStore(DB_STORE).get(DB_LAST);
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => reject(request.error);
+      });
+    } finally { db.close(); }
+  }
+  async function rememberHandle(handle) {
+    const db = await openFileDb();
+    try {
+      await new Promise((resolve, reject) => {
+        const transaction = db.transaction(DB_STORE, 'readwrite');
+        transaction.objectStore(DB_STORE).put(handle, DB_LAST);
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+      });
+    } finally { db.close(); }
+  }
+  async function allowHandle(handle, mode) {
+    try {
+      const options = { mode };
+      if (await handle.queryPermission(options) === 'granted') return true;
+      return await handle.requestPermission(options) === 'granted';
+    } catch { return false; }
+  }
+  const sameIds = (a, b) => a.length === b.length && a.every((id, index) => id === b[index]);
+  const sorted = (ids) => [...ids].sort();
   function icon(name, size = 18) {
     const paths = {
       undo: 'M9 5 4 10l5 5M4 10h9a6 6 0 0 1 0 12',
       redo: 'm15 5 5 5-5 5m5-5h-9a6 6 0 0 0 0 12',
-      close: 'm6 6 12 12M18 6 6 18',
-      gear: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z',
+      back: 'M19 12H5m6-6-6 6 6 6',
+      note: 'M20 11a8 8 0 0 1-8 8H7l-5 3V11a9 9 0 0 1 18 0ZM7 10h8M7 14h5',
       group: 'M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5M8 8h8v8H8z',
       ungroup: 'M3 3h5v5H3zM16 16h5v5h-5zM3 16h5v5H3zM16 3h5v5h-5z',
       copy: 'M9 9h12v12H9zM15 9V3H3v12h6',
       merge: 'M4 18 10 12M4 12h6v6M20 6l-6 6M14 12h6V6',
       split: 'M10 4 4 10M4 4h6v6M14 20l6-6M20 20h-6v-6',
-      cross: 'M4 12h16M7 5h10v14H7z',
+      cross: 'M4 12h16',
+      name: 'm4 16 11-11 4 4L8 20H4Zm9-9 4 4',
       trash: 'M4 6h16M9 6V3h6v3M7 6l1 15h8l1-15',
-      multi: 'M3 3h7v7H3zm11 11h7v7h-7zM17 3v7M14 6h7M3 17h7',
-      focus: 'M4 9V4h5M15 4h5v5M4 15v5h5M20 15v5h-5',
+      clear: 'm18 3-7 9m-3-2 7 4-4 7H3l2-10 3-1Zm-1 6-2 5m6-3-2 3M2 21h13',
+      multi: 'M3 3h8v8H3zM13 13h8v8h-8zM17 3v8M13 7h8',
+      check: 'm5 12 4 4L19 6',
       plus: 'M12 5v14M5 12h14',
       minus: 'M5 12h14',
+      more: 'M5 12h.01M12 12h.01M19 12h.01',
+      open: 'M3 7h6l2 3h10l-3 10H3ZM3 7V4h6l2 3h8v3',
+      save: 'M4 3h13l3 3v15H4ZM8 3v6h8V3M8 21v-7h8v7',
+      insert: 'M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5',
+      library: 'M4 4h6v6H4zm10 0h6v6h-6zM4 14h6v6H4zm10 0h6v6h-6z',
     };
     return h('svg', { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true }, h('path', { d: paths[name] || paths.group }));
   }
   function swatch(shape, colorIndex, size = 30) {
     return h('svg', { width: size, height: size, viewBox: '-28 -28 56 56', 'aria-hidden': true }, art.node(shape, 17, { fill: paletteColor(colorIndex), stroke: '#1E293B', strokeWidth: 1.1 }));
   }
+  function brandMark(levels, size = 34) {
+    const levelColor = (value, fallback) => {
+      const level = levels.find((item) => item.value === value) || levels[Math.min(fallback, levels.length - 1)] || levels[0];
+      return level ? paletteColor(level.color) : '#4CAF50';
+    };
+    return h('svg', { width: size, height: size, viewBox: '0 0 36 36', 'aria-hidden': true },
+      h('rect', { x: 0.5, y: 0.5, width: 35, height: 35, rx: 10, fill: '#FFFFFF', stroke: '#D6DFE2' }),
+      h('circle', { cx: 11, cy: 11.5, r: 5.5, fill: levelColor(1, 0) }),
+      h('path', { d: 'M26 5.5 33.5 19h-15Z', fill: levelColor(10, 1) }),
+      h('rect', { x: 6.5, y: 20, width: 21, height: 9, rx: 2, fill: levelColor(10000, 4) }));
+  }
+
   return function Board(props) {
     React.useSyncExternalStore((fn) => ctx.locale.subscribe(fn), () => ctx.locale.getSnapshot());
-    const key = `dsh-edu-math-board:v3:${props.sessionId}`;
+    const key = `dsh-edu-math-board:v4:${props.sessionId}`;
     const legacyKey = `dsh-edu-math-board:v2:${props.sessionId}`;
+    const oldKey = `dsh-edu-math-board:v3:${props.sessionId}`;
     const watermarkKey = `${key}:config`;
     const [opened, setOpened] = React.useState(false);
     const [board, setBoard] = React.useState(M.empty);
@@ -884,21 +1008,19 @@ window.__ModuleLoader__.load({
     const [trace, setTrace] = React.useState(() => T.empty());
     const traceRef = React.useRef(trace);
     const [attachTrace, setAttachTrace] = React.useState(true);
-    const [traceView, setTraceView] = React.useState(false);
-    const [resetTraceConfirm, setResetTraceConfirm] = React.useState(false);
     const traceKey = `${key}:trace-v1`;
     const [selection, setSelection] = React.useState([]);
-    const [multi, setMulti] = React.useState(false);
-    const [focus, setFocus] = React.useState(false);
-    const [fit, setFit] = React.useState(() => window.matchMedia('(min-width: 1000px)').matches);
     const [zoom, setZoom] = React.useState(1);
+    const [fit, setFit] = React.useState(() => window.matchMedia('(min-width: 1000px)').matches);
     const [status, setStatus] = React.useState('');
     const [preview, setPreview] = React.useState(null);
-    const [clearConfirm, setClearConfirm] = React.useState(false);
-    const [settingsView, setSettingsView] = React.useState(false);
-    const [settingsDraft, setSettingsDraft] = React.useState(null);
-    const [dragShape, setDragShape] = React.useState(null);
+    const [overlay, setOverlay] = React.useState(null);
     const [toolValue, setToolValue] = React.useState(1);
+    const [colorMenu, setColorMenu] = React.useState(false);
+    const [moreOpen, setMoreOpen] = React.useState(false);
+    const [append, setAppend] = React.useState(false);
+    const [fileName, setFileName] = React.useState('');
+    const [dragShape, setDragShape] = React.useState(null);
     const toolLevel = board.settings.levels.find((level) => level.value === toolValue)
       || board.settings.levels.find((level) => level.value === 1) || board.settings.levels[0];
     const config = props.useProjection('eduBoardConfig');
@@ -907,6 +1029,8 @@ window.__ModuleLoader__.load({
     const dialog = React.useRef(null), fileInput = React.useRef(null), downloadAnchor = React.useRef(null);
     const url = React.useRef(null), gesture = React.useRef(null), revision = React.useRef(0);
     const svgRef = React.useRef(null);
+    const nameRef = React.useRef(null), noteRef = React.useRef(null);
+    const fileHandle = React.useRef(null);
     const phase = props.useInput((s) => s.phase);
     const selected = board.objects.filter((o) => selection.includes(o.id));
     const single = selected.length === 1 ? selected[0] : null;
@@ -919,17 +1043,16 @@ window.__ModuleLoader__.load({
     const dense = board.objects.length > 60;
     const radius = dense ? 13 : 19;
     const mergeInfo = activeSelected.length >= 2 ? M.mergeCandidate(board, activeSelected.map((o) => o.id)) : null;
-    const settings = settingsDraft || board.settings;
+    const levels = board.settings.levels;
+    const visibleShapes = board.settings.shapes;
 
     React.useEffect(() => {
       revision.current++;
       try {
-        const current = localStorage.getItem(key);
-        const previous = current === null ? localStorage.getItem(legacyKey) : null;
-        const raw = current ?? previous;
-        const next = raw ? M.validate(JSON.parse(raw)) : M.empty();
+        const current = localStorage.getItem(key) ?? localStorage.getItem(oldKey) ?? localStorage.getItem(legacyKey);
+        const next = current ? M.validate(JSON.parse(current)) : M.empty();
         boardRef.current = next; setBoard(next);
-        let restored = T.empty(raw !== null);
+        let restored = T.empty(current !== null);
         try {
           const saved = JSON.parse(localStorage.getItem(traceKey) || 'null');
           if (saved && typeof saved.attach === 'boolean') setAttachTrace(saved.attach);
@@ -937,7 +1060,7 @@ window.__ModuleLoader__.load({
         } catch { setStatus(t('traceLoadError')); }
         traceRef.current = restored; setTrace(restored);
         setHistory({ past: [], future: [] });
-        const mark = localStorage.getItem(watermarkKey) ?? (previous === null ? null : localStorage.getItem(`${legacyKey}:config`));
+        const mark = localStorage.getItem(watermarkKey) ?? localStorage.getItem(`${oldKey}:config`) ?? localStorage.getItem(`${legacyKey}:config`);
         const parsed = mark === null ? -1 : Number(mark);
         watermark.current = Number.isFinite(parsed) ? parsed : -1;
         pendingWatermark.current = null;
@@ -951,10 +1074,7 @@ window.__ModuleLoader__.load({
       try {
         const serialized = JSON.stringify(board);
         localStorage.setItem(key, serialized);
-        // Bind the sidecar to the exact draft; interrupted writes never invent history.
         localStorage.setItem(traceKey, JSON.stringify({ board: serialized, trace, attach: attachTrace }));
-        // The settings watermark advances only together with the board it describes,
-        // so a failed or interrupted write cannot skip a host configuration forever.
         if (pendingWatermark.current !== null) {
           localStorage.setItem(watermarkKey, String(pendingWatermark.current));
           pendingWatermark.current = null;
@@ -962,12 +1082,8 @@ window.__ModuleLoader__.load({
       } catch { setStatus(t('storageError')); }
     }, [board, trace, attachTrace, ready, storageBlocked, key]);
 
-    // Host settings changes (typed by the student in chat or via /math-board-settings).
     React.useEffect(() => {
       if (!ready || !config) return;
-      if ((config.floorRevision ?? 0) > 0 && watermark.current < config.floorRevision) {
-        publishTrace({ ...traceRef.current, priorUnknown: true });
-      }
       const applied = [];
       let recordFailed = false;
       const result = applyHostConfig(M, boardRef.current, config, watermark.current,
@@ -976,7 +1092,6 @@ window.__ModuleLoader__.load({
           if (!recordChange(before, after, change, 'system')) recordFailed = true;
         });
       if (!result) return;
-      // Apply before any in-flight async import resolves; its revision check then drops it.
       revision.current++;
       publish(result.board);
       if (applied.length) {
@@ -996,6 +1111,43 @@ window.__ModuleLoader__.load({
       if (!opened && node.open) node.close();
     }, [opened]);
     React.useEffect(() => () => { if (dialog.current?.open) dialog.current.close(); }, []);
+    React.useEffect(() => {
+      let live = true;
+      readRememberedHandle().then((handle) => {
+        if (!live || !handle) return;
+        fileHandle.current = handle; setFileName(handle.name || '');
+      }).catch(() => {});
+      return () => { live = false; };
+    }, []);
+    React.useEffect(() => {
+      if (!status) return;
+      const timer = setTimeout(() => setStatus(''), 5200);
+      return () => clearTimeout(timer);
+    }, [status]);
+    React.useEffect(() => {
+      if (!opened) return;
+      const closeMenus = (event) => {
+        if (!event.target.closest?.('.eb-menu, .eb-menu-trigger')) { setColorMenu(false); setMoreOpen(false); }
+      };
+      document.addEventListener('pointerdown', closeMenus);
+      return () => document.removeEventListener('pointerdown', closeMenus);
+    }, [opened]);
+    React.useEffect(() => {
+      if (!overlay) return;
+      const node = overlay.kind === 'note' ? noteRef.current : nameRef.current;
+      if (node) { node.focus(); if (node.select) node.select(); }
+    }, [overlay]);
+    React.useEffect(() => {
+      if (!opened) return;
+      const onKey = (event) => {
+        if (event.key !== 'Escape') return;
+        if (overlay) { event.preventDefault(); setOverlay(null); }
+        if (colorMenu || moreOpen) { setColorMenu(false); setMoreOpen(false); }
+        if (append) setAppend(false);
+      };
+      document.addEventListener('keydown', onKey);
+      return () => document.removeEventListener('keydown', onKey);
+    }, [opened, overlay, colorMenu, moreOpen]);
 
     function flushEditor() {
       const active = dialog.current?.ownerDocument.activeElement;
@@ -1006,7 +1158,6 @@ window.__ModuleLoader__.load({
     function recordChange(before, after, change, origin = 'student') {
       try { publishTrace(T.record(traceRef.current, before, after, change, origin)); return true; }
       catch {
-        // Keep every known fact; only the process after this point becomes unknown.
         let kept;
         try { kept = { ...traceRef.current, priorUnknown: true }; T.validate(kept); } catch { kept = T.empty(true); }
         publishTrace(kept);
@@ -1025,7 +1176,6 @@ window.__ModuleLoader__.load({
       const recorded = recordChange(before, next, change);
       publish(next);
       if (recorded) setStatus('');
-      setClearConfirm(false);
     }
     function action(a) {
       try { const next = M.reduce(boardRef.current, a); commit(next, a); return next; }
@@ -1038,17 +1188,22 @@ window.__ModuleLoader__.load({
       gesture.current = null; setPreview(null); revision.current++;
       setHistory({ past: history.past.slice(0, -1), future: [boardRef.current, ...history.future].slice(0, 40) });
       const recorded = recordChange(boardRef.current, prev, { type: 'undo' });
-      publish(prev); selectIds([]); if (recorded) setStatus('');
+      publish(prev); selectIds([]); setAppend(false); if (recorded) setStatus('');
     }
     function redo() {
       const next = history.future[0]; if (!next) return;
       gesture.current = null; setPreview(null); revision.current++;
       setHistory({ past: [...history.past, boardRef.current].slice(-40), future: history.future.slice(1) });
       const recorded = recordChange(boardRef.current, next, { type: 'redo' });
-      publish(next); selectIds([]); if (recorded) setStatus('');
+      publish(next); selectIds([]); setAppend(false); if (recorded) setStatus('');
     }
     function button(label, handler, extra = {}) { return h('button', { type: 'button', onClick: handler, ...extra }, label); }
     function toolButton(name, handler, extra = {}) { return button(icon(name), handler, { title: t(name), 'aria-label': t(name), className: 'eb-icon-button', ...extra }); }
+    function labelled(name, text, handler, extra = {}) {
+      const label = extra.title ?? text;
+      return button(h(React.Fragment, null, icon(name, 16), h('span', { className: 'eb-label' }, text)), handler,
+        { ...extra, title: label, 'aria-label': label });
+    }
 
     function add(shape, point) {
       const before = new Set(boardRef.current.objects.map((o) => o.id));
@@ -1083,6 +1238,7 @@ window.__ModuleLoader__.load({
       if (next) selectIds([]);
     }
     function removeSelected() { batch(selected.map((o) => ({ type: 'delete', id: o.id }))); selectIds([]); }
+    function crossOut() { batch(activeSelected.map((o) => ({ type: 'update', id: o.id, patch: { removed: true } }))); }
 
     function point(e) {
       const svg = svgRef.current, p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
@@ -1101,7 +1257,7 @@ window.__ModuleLoader__.load({
       if (objectId) {
         const whole = expandGroup([objectId]);
         let ids = selection;
-        if (e.shiftKey || multi) {
+        if (e.shiftKey || append) {
           ids = selection.includes(objectId) ? selection.filter((id) => id !== objectId) : [...selection, objectId];
           selectIds(ids); return;
         }
@@ -1109,7 +1265,7 @@ window.__ModuleLoader__.load({
         selectIds(ids);
         gesture.current = { kind: 'move', ids, start: p, pointer: e.pointerId, base: boardRef.current, moved: false };
       } else {
-        gesture.current = { kind: 'lasso', start: p, current: p, pointer: e.pointerId, base: boardRef.current, initial: e.shiftKey ? selection : [], moved: false };
+        gesture.current = { kind: 'lasso', start: p, current: p, pointer: e.pointerId, base: boardRef.current, initial: e.shiftKey || append ? selection : [], moved: false };
       }
       e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId);
     }
@@ -1142,7 +1298,7 @@ window.__ModuleLoader__.load({
       const arrows = { ArrowLeft: [-10, 0], ArrowRight: [10, 0], ArrowUp: [0, -10], ArrowDown: [0, 10] };
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
-        selectIds(e.shiftKey
+        selectIds(e.shiftKey || append
           ? (selection.includes(o.id) ? selection.filter((id) => id !== o.id) : [...selection, o.id])
           : expandGroup([o.id]));
       } else if (arrows[e.key]) {
@@ -1152,37 +1308,26 @@ window.__ModuleLoader__.load({
         e.preventDefault(); batch((selection.includes(o.id) ? selection : [o.id]).map((id) => ({ type: 'delete', id }))); selectIds([]);
       }
     }
-    function close() { flushEditor(); gesture.current = null; setPreview(null); setOpened(false); }
-    // Clear is the boundary between tasks. Submitted files stay; undo cannot restore this attempt.
+    function close() { flushEditor(); gesture.current = null; setPreview(null); setOverlay(null); setColorMenu(false); setMoreOpen(false); setAppend(false); setOpened(false); }
     function confirmClearBoard() {
       revision.current++; gesture.current = null; setPreview(null);
-      publish(M.empty());
+      const next = M.empty();
+      next.settings = boardRef.current.settings;
+      publish(next);
       publishTrace(T.empty());
       setHistory({ past: [], future: [] });
-      selectIds([]);
+      selectIds([]); setAppend(false); setOverlay(null);
       setStorageBlocked(false);
-      setClearConfirm(false); setResetTraceConfirm(false);
-      setSettingsView(false); setSettingsDraft(null);
       setStatus(t('clearDone'));
-    }
-    // Drop the local process log without touching the drawing or files already inserted.
-    function confirmResetTrace() {
-      revision.current++; gesture.current = null; setPreview(null);
-      const baseline = boardRef.current;
-      publishTrace(T.empty(Boolean(baseline.objects.length || baseline.groups.length || baseline.note)));
-      setHistory({ past: [], future: [] });
-      setResetTraceConfirm(false); setStatus(t('traceResetDone'));
     }
     function insert() {
       flushEditor();
-      // The composer owns draft attachments, so reach its service at click time
-      // instead of making the whole board depend on it at load time.
       const conversation = ctx.get('conversation');
       let drafts = [];
       const discard = () => {
         for (const draft of drafts) {
-          try { props.inputActions.removeAttachment(draft.id); } catch { /* the composer may already be locked */ }
-          try { conversation.releaseDraftAttachment(draft.id); } catch { /* upload already settled */ }
+          try { props.inputActions.removeAttachment(draft.id); } catch { /* composer may be locked */ }
+          try { conversation.releaseDraftAttachment(draft.id); } catch { /* upload settled */ }
         }
         drafts = [];
       };
@@ -1204,57 +1349,154 @@ window.__ModuleLoader__.load({
         setStatus(t('insertFailed'));
       }
     }
-    function exportFile() {
+
+    async function saveFile() {
       flushEditor();
+      const text = M.serialize(boardRef.current);
+      if (typeof window !== 'undefined' && window.showSaveFilePicker) {
+        try {
+          let handle = fileHandle.current;
+          if (handle && await allowHandle(handle, 'readwrite')) {
+            const writable = await handle.createWritable();
+            await writable.write(text); await writable.close();
+            setStatus(t('fileSaved')); return;
+          }
+          handle = await window.showSaveFilePicker({ suggestedName: t('attachmentName'), types: JSON_TYPES });
+          const writable = await handle.createWritable();
+          await writable.write(text); await writable.close();
+          fileHandle.current = handle; setFileName(handle.name || '');
+          try { await rememberHandle(handle); } catch { /* remembering is best effort */ }
+          setStatus(t('fileSaved')); return;
+        } catch (error) {
+          if (error?.name === 'AbortError') return;
+          // A browser that exposes the API can still refuse it (permissions, embedded view).
+        }
+      }
       if (url.current) URL.revokeObjectURL(url.current);
-      url.current = URL.createObjectURL(new Blob([M.serialize(boardRef.current)], { type: 'application/json' }));
+      url.current = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
       downloadAnchor.current.href = url.current; downloadAnchor.current.click();
+      setStatus(t('fileDownloaded'));
     }
-    async function importFile(e) {
-      const file = e.target.files?.[0]; e.target.value = ''; if (!file) return;
+    async function loadOpenedFile(file) {
       const rev = ++revision.current; gesture.current = null; setPreview(null);
-      try {
-        if (file.size > 262144) throw Error(t('fileTooLarge'));
-        const next = M.validate(JSON.parse(await file.text()));
-        if (rev !== revision.current) return;
-        commit(next, { type: 'import' }); setStorageBlocked(false); selectIds([]); setStatus(t('imported'));
-      } catch (error) { setStatus(`${t('failed')}: ${error.message}`); }
+      if (file.size > 262144) throw Error(t('fileTooLarge'));
+      const next = M.validate(JSON.parse(await file.text()));
+      if (rev !== revision.current) return;
+      commit(next, { type: 'import' }); setStorageBlocked(false); selectIds([]); setAppend(false); setStatus(t('imported'));
+    }
+    async function openFile() {
+      flushEditor();
+      if (typeof window !== 'undefined' && window.showOpenFilePicker) {
+        try {
+          const options = { multiple: false, types: JSON_TYPES };
+          if (fileHandle.current) options.startIn = fileHandle.current;
+          let handles;
+          try { handles = await window.showOpenFilePicker(options); }
+          catch (error) {
+            if (error?.name === 'TypeError' && options.startIn) { delete options.startIn; handles = await window.showOpenFilePicker(options); }
+            else throw error;
+          }
+          const handle = handles?.[0]; if (!handle) return;
+          await loadOpenedFile(await handle.getFile());
+          fileHandle.current = handle; setFileName(handle.name || '');
+          try { await rememberHandle(handle); } catch { /* remembering is best effort */ }
+          setMoreOpen(false);
+          return;
+        } catch (error) {
+          if (error?.name === 'AbortError') return;
+          setStatus(`${t('failed')}: ${error.message}`);
+          return;
+        }
+      }
+      fileInput.current.click();
+    }
+    async function importInput(event) {
+      const file = event.target.files?.[0]; event.target.value = ''; if (!file) return;
+      try { await loadOpenedFile(file); } catch (error) { setStatus(`${t('failed')}: ${error.message}`); }
     }
 
-    function saveSettings(scope) {
-      const next = action({ type: 'configure', settings, scope });
-      if (next) { setSettingsView(false); setSettingsDraft(null); setStatus(scope === 'existing' ? t('settingsExistingDone') : t('settingsFutureDone')); }
+    function noteTargetFor(items, group) {
+      if (group) return { kind: 'group', id: group.id, label: group.alias || t('defaultGroup') };
+      if (items.length === 1) return { kind: 'object', id: items[0].id, label: items[0].alias || t(items[0].shape) };
+      if (items.length > 1) return { kind: 'selection', ids: sorted(items.map((o) => o.id)), label: `${t('selectedCount')} ${items.length}` };
+      return null;
     }
-    function editSettings(change) {
-      let draft;
-      try { draft = M.validateSettings(settings); } catch { draft = JSON.parse(JSON.stringify(settings)); }
-      setSettingsDraft(change(draft));
+    function noteText(target) {
+      if (!target) return board.note;
+      if (target.kind === 'group') return board.groups.find((g) => g.id === target.id)?.note || '';
+      if (target.kind === 'object') return board.objects.find((o) => o.id === target.id)?.note || '';
+      return board.notes.find((note) => sameIds(note.objectIds, target.ids))?.text || '';
+    }
+    function openNote() {
+      const target = noteTargetFor(selected, completeGroup);
+      setOverlay({ kind: 'note', target, value: noteText(target), label: target ? target.label : t('noteGeneral') });
+    }
+    function openName() {
+      if (completeGroup) setOverlay({ kind: 'name', group: completeGroup, value: completeGroup.alias });
+      else if (single && !single.groupId) setOverlay({ kind: 'name', object: single, value: single.alias });
+    }
+    function applyName() {
+      const value = nameRef.current?.value ?? '';
+      if (overlay?.group) action({ type: 'renameGroup', id: overlay.group.id, alias: value });
+      if (overlay?.object) action({ type: 'update', id: overlay.object.id, patch: { alias: value } });
+      setOverlay(null);
+    }
+    function applyNote() {
+      const value = noteRef.current?.value ?? '';
+      const target = overlay?.target;
+      if (!target) action({ type: 'note', value });
+      else if (target.kind === 'selection') action({ type: 'annotate', target: 'selection', ids: target.ids, value });
+      else action({ type: 'annotate', target: target.kind, id: target.id, value });
+      setOverlay(null);
     }
     function togglePattern(shape) {
-      editSettings((draft) => {
-        const index = draft.shapes.indexOf(shape);
-        if (index >= 0) { if (draft.shapes.length > 1) draft.shapes.splice(index, 1); }
-        else draft.shapes.push(shape);
-        return draft;
-      });
+      const current = boardRef.current.settings;
+      if (current.shapes.includes(shape)) {
+        if (current.shapes.length === 1) return;
+        action({ type: 'configure', settings: { ...current, shapes: current.shapes.filter((item) => item !== shape) }, scope: 'future' });
+      } else {
+        action({ type: 'configure', settings: { ...current, shapes: [...current.shapes, shape] }, scope: 'future' });
+      }
+    }
+    function defaultColorIndex(shape) {
+      const entry = board.settings.defaults.find((item) => item.shape === shape);
+      const level = levels.find((item) => item.value === entry?.value) || levels[0];
+      return level ? level.color : 0;
     }
 
+    // The quantity rides in a small corner tag at the shape's lower right, the way
+    // the pattern previews show it; the artwork itself stays uncovered.
+    function valueBadge(value, r) {
+      const text = String(value), long = text.length > 3;
+      const fontSize = long ? (r > 15 ? 8 : 7) : (r > 15 ? 9.5 : 8.5);
+      const height = r > 15 ? 13 : 11;
+      const width = Math.max(height + 3, text.length * fontSize * 0.62 + 8);
+      const x = r + 4 - width / 2, y = r * 0.98 + 2 - height / 2;
+      return h('g', { transform: `translate(${x} ${y})`, pointerEvents: 'none' },
+        h('rect', { x: -width / 2, y: -height / 2, width, height, rx: height / 2 - 1.5, fill: '#FFFFFF', stroke: '#CBD5E1', strokeWidth: 1 }),
+        h('text', { textAnchor: 'middle', y: fontSize * 0.36, fill: '#1E293B', fontSize, fontWeight: 700 }, text));
+    }
     function renderObject(o) {
       const picked = selection.includes(o.id), moving = preview?.kind === 'move' && preview.ids.includes(o.id);
       const dx = moving ? preview.dx : 0, dy = moving ? preview.dy : 0, r = radius;
       const fill = paletteColor(o.color);
-      const label = `${o.alias || t(o.shape)} · ${t('value')} ${o.value} · ${t(o.removed ? 'removed' : 'active')}`;
+      const label = `${o.alias || t(o.shape)} · ${t('value')} ${o.value} · ${t(o.removed ? 'removed' : 'active')}${o.note ? ` · ${t('hasNote')}` : ''}`;
       const common = { fill, stroke: '#1E293B', strokeWidth: 1.2 };
       return h('g', { key: o.id, 'data-object': o.id, transform: `translate(${o.x + dx} ${o.y + dy})`, role: 'button', tabIndex: 0, 'aria-label': label, 'aria-pressed': picked, onKeyDown: (e) => objectKey(e, o) },
         h('title', null, label),
         h('rect', { className: 'eb-focus-ring', x: -r - 6, y: -r - 6, width: r * 2 + 12, height: r * 2 + 12, rx: 8, fill: picked ? '#2563EB12' : 'transparent', stroke: picked ? '#2563EB' : 'transparent', strokeWidth: 2.5 }),
         h('g', { opacity: o.removed ? 0.35 : 1 },
           art.node(o.shape, r, common),
-          h('text', { textAnchor: 'middle', y: 4, fill: '#1E293B', fontSize: String(o.value).length > 3 ? 8 : 10, fontWeight: 700, pointerEvents: 'none', stroke: '#FFFFFF', strokeWidth: 2.5, paintOrder: 'stroke' }, String(o.value))),
+          valueBadge(o.value, r)),
         o.removed && h('path', { d: `M${-r - 4} 0h${r * 2 + 8}`, stroke: '#64748B', strokeWidth: 3, strokeDasharray: '4 2', pointerEvents: 'none' }),
         o.sources.length > 0 && h('g', { transform: `translate(${r * 0.72} ${-r * 0.72})`, pointerEvents: 'none' },
           h('circle', { r: 8, fill: '#1F2937', stroke: '#FFFFFF', strokeWidth: 1.5 }),
           h('text', { textAnchor: 'middle', y: 3, fill: '#FFFFFF', fontSize: 9, fontWeight: 700 }, o.sources.length)),
+        o.note && !o.groupId && h('g', { transform: `translate(${-r - 3} ${-r - 3})`, pointerEvents: 'none' },
+          h('path', { d: 'M0 0h13v8.5H5.5L2.5 12v-3.5H0Z', fill: '#FFFFFF', stroke: '#4CAF50', strokeWidth: 1.3 }),
+          h('circle', { cx: 3, cy: 3.4, r: 0.8, fill: '#4CAF50' }),
+          h('circle', { cx: 6.5, cy: 3.4, r: 0.8, fill: '#4CAF50' }),
+          h('circle', { cx: 10, cy: 3.4, r: 0.8, fill: '#4CAF50' })),
         o.alias && (!dense || picked) && h('text', { textAnchor: 'middle', y: r + 16, fill: '#1E293B', fontSize: 11, pointerEvents: 'none', stroke: '#FFFFFF', strokeWidth: 3, paintOrder: 'stroke' }, [...o.alias].slice(0, 12).join('')));
     }
     function groupBoundary(g) {
@@ -1266,127 +1508,27 @@ window.__ModuleLoader__.load({
       return h('g', { key: g.id, pointerEvents: 'none' },
         h('path', { d: points.map((p, i) => `${i ? 'L' : 'M'}${p.x} ${p.y}`).join(' '), fill: 'none', stroke: '#CBD5E1', strokeWidth: 1.5, strokeDasharray: '4 4' }),
         points.map((p, i) => h('rect', { key: i, x: p.x - radius - 4, y: p.y - radius - 4, width: radius * 2 + 8, height: radius * 2 + 8, rx: 9, fill: 'none', stroke: '#94A3B8', strokeWidth: 1, strokeDasharray: '3 3' })),
-        h('text', { x: Math.max(8, first.x - radius), y: Math.max(14, first.y - radius - 10), fill: '#64748B', fontSize: 10, stroke: '#FFFFFF', strokeWidth: 3, paintOrder: 'stroke' }, [...(g.alias || t('defaultGroup'))].slice(0, 18).join('')));
+        h('text', { x: Math.max(8, first.x - radius), y: Math.max(14, first.y - radius - 10), fill: '#64748B', fontSize: 10, stroke: '#FFFFFF', strokeWidth: 3, paintOrder: 'stroke' }, [...(g.alias || t('defaultGroup'))].slice(0, 18).join('')),
+        g.note && h('g', { transform: `translate(${Math.max(8, first.x - radius + 86)} ${Math.max(3, first.y - radius - 22)})` },
+          h('path', { d: 'M0 0h13v8.5H5.5L2.5 12v-3.5H0Z', fill: '#FFFFFF', stroke: '#4CAF50', strokeWidth: 1.3 }),
+          h('circle', { cx: 4, cy: 3.4, r: 0.8, fill: '#4CAF50' }),
+          h('circle', { cx: 7.5, cy: 3.4, r: 0.8, fill: '#4CAF50' })));
     }
 
-    const library = M.shapes;
-    const visibleShapes = settings.shapes;
-    const levels = settings.levels;
-
-    function settingsPanel() {
-      const rows = levels.map((level, index) => h('div', { className: 'eb-level-row', key: index },
-        h('span', { className: 'eb-color-dot', style: { background: paletteColor(level.color) } }),
-        h('input', {
-          type: 'number', min: 1, value: level.value, 'aria-label': `${t('level')} ${index + 1}`,
-          onChange: (event) => {
-            const next = Number(event.target.value);
-            editSettings((draft) => {
-              const previous = draft.levels[index].value;
-              draft.levels[index] = { ...draft.levels[index], value: next };
-              for (const entry of draft.defaults) if (entry.value === previous) entry.value = next;
-              return draft;
-            });
-          },
-        }),
-        h('span', { className: 'eb-muted' }, `${t('colorName')} ${level.color + 1}`),
-        button(icon('minus', 14), () => editSettings((draft) => {
-          if (draft.levels.length < 2) return draft;
-          const removed = draft.levels[index].value;
-          const fallback = draft.levels[index === 0 ? 1 : 0].value;
-          draft.levels.splice(index, 1);
-          for (const entry of draft.defaults) if (entry.value === removed) entry.value = fallback;
-          return draft;
-        }), { 'aria-label': t('removeLevel') })));
-      const shapeRows = settings.shapes.map((shape) => {
-        const entry = settings.defaults.find((item) => item.shape === shape);
-        return h('div', { className: 'eb-default-row', key: shape },
-          h('span', { className: 'eb-default-shape' }, swatch(shape, colorIndexForValue(levels, entry.value), 22), h('span', null, t(shape))),
-          h('input', {
-            type: 'text', maxLength: 30, value: entry.alias, placeholder: t('aliasHint'), 'aria-label': `${t(shape)} ${t('alias')}`,
-            onChange: (event) => editSettings((draft) => {
-              draft.defaults.find((item) => item.shape === shape).alias = event.target.value;
-              return draft;
-            }),
-          }),
-          h('select', {
-            value: entry.value, 'aria-label': `${t(shape)} ${t('value')}`,
-            onChange: (event) => editSettings((draft) => {
-              draft.defaults.find((item) => item.shape === shape).value = Number(event.target.value);
-              return draft;
-            }),
-          }, levels.map((level, index) => h('option', { key: index, value: level.value }, String(level.value)))));
-      });
-      const libraryTiles = library.map((shape) => {
-        const on = settings.shapes.includes(shape);
-        const entry = settings.defaults.find((item) => item.shape === shape);
-        const label = `${on ? t('removePattern') : t('addPattern')}: ${t(shape)}`;
-        return button(h(React.Fragment, null, swatch(shape, colorIndexForValue(levels, entry.value), 24), h('span', null, t(shape))),
-          () => togglePattern(shape),
-          { key: shape, className: 'eb-library-tile', 'aria-pressed': on, 'aria-label': label, title: label,
-            disabled: on && settings.shapes.length === 1 });
-      });
-      return h('div', { className: 'eb-settings' },
-        h('h2', { className: 'eb-settings-title' }, t('settings')),
-        h('p', { className: 'eb-muted' }, t('settingsIntro')),
-        h('div', { className: 'eb-section-label' }, t('levelLadder')),
-        rows,
-        h('div', { className: 'eb-inline-actions' },
-          button(`＋ ${t('addLevel')}`, () => editSettings((draft) => {
-            if (draft.levels.length < 9) draft.levels.push({ value: Math.max(...draft.levels.map((item) => item.value)) * 10, color: draft.levels.length });
-            return draft;
-          }), { disabled: levels.length >= 9 }),
-          button(t('resetSettings'), () => setSettingsDraft(M.defaultSettings()))),
-        h('div', { className: 'eb-section-label' }, t('patterns')),
-        h('p', { className: 'eb-muted' }, t('patternsHint')),
-        h('div', { className: 'eb-library-grid' }, libraryTiles),
-        h('div', { className: 'eb-section-label' }, t('shapeDefaults')),
-        shapeRows,
-        h('div', { className: 'eb-inline-actions' },
-          button(t('applyFuture'), () => saveSettings('future'), { className: 'eb-primary' }),
-          button(t('applyExisting'), () => saveSettings('existing')),
-          button(t('cancel'), () => { setSettingsView(false); setSettingsDraft(null); })));
-    }
-
-    const modeHint = completeGroup ? t('hintGrouped') : selected.length ? t('hintSelected') : t('hintEmpty');
     const canMerge = activeSelected.length >= 2;
     const canSplit = Boolean(single && single.value > 1 && !single.removed);
-    const header = h('header', { className: 'eb-top' },
-      h('div', { className: 'eb-identity' }, swatch('star', 1, 32),
-        h('div', null, h('strong', null, t('title')), h('small', null, t('workspaceSubtitle')))));
-    const toolboxPanel = h('aside', { className: 'eb-panel eb-tools', 'aria-label': t('toolbox') },
-      h('div', { className: 'eb-panel-head' }, h('h3', null, t('toolbox')), h('p', null, t('tapToAdd'))),
-      h('div', { className: 'eb-tools-body' },
-        h('div', { className: 'eb-section-label' }, t('shapes')),
-        h('div', { className: 'eb-shape-grid' }, visibleShapes.map((shape) => {
-          const colorIndex = toolLevel.color;
-          return button(h(React.Fragment, null, swatch(shape, colorIndex, 28), h('span', null, t(shape))),
-            () => add(shape),
-            { className: 'eb-shape-tool', key: shape, draggable: true, disabled: board.objects.length >= 200,
-              title: `${t(shape)} · ${t('value')} ${toolLevel.value}`,
-              onDragStart: () => setDragShape(shape), onDragEnd: () => setDragShape(null) });
-        }),
-        button(h(React.Fragment, null, icon('plus', 15), h('span', null, t('morePatterns'))),
-          () => { setSettingsView(true); setSettingsDraft(null); },
-          { className: 'eb-shape-tool eb-shape-more', key: 'more-patterns', title: t('patternsHint') })),
-        h('div', { className: 'eb-legend', role: 'group', 'aria-label': t('value') }, board.settings.levels.map((level) => h('label', { className: 'eb-legend-row', key: level.value },
-          h('input', { type: 'radio', name: `${key}:tool-value`, value: level.value,
-            checked: toolLevel.value === level.value, onChange: () => setToolValue(level.value) }),
-          h('span', { className: 'eb-color-dot', style: { background: paletteColor(level.color) } }),
-          h('span', null, String(level.value))))),
-        button(h(React.Fragment, null, icon('gear', 15), t('settings')),
-          () => { setSettingsView(!settingsView); setSettingsDraft(null); },
-          { className: 'eb-new-group', 'aria-pressed': settingsView })));
-    const selectionBar = selected.length > 0 && !settingsView && h('div', { className: 'eb-floating', role: 'toolbar', 'aria-label': t('selectionActions') },
-      h('small', null, `${t('selectedCount')} ${selected.length}`),
-      !completeGroup && button(h(React.Fragment, null, icon('group', 15), t('makeGroup')), groupSelection, { disabled: board.groups.length - touchedGroups.length >= 12 }),
-      completeGroup && button(h(React.Fragment, null, icon('ungroup', 15), t('ungroup')), ungroup),
-      canMerge && button(h(React.Fragment, null, icon('merge', 15), t('merge')), mergeSelection,
-        { disabled: !(mergeInfo && mergeInfo.allowed), title: mergeInfo && !mergeInfo.allowed ? mergeInfo.reason : '' }),
-      canSplit && button(h(React.Fragment, null, icon('split', 15), t('split')), splitSelection),
-      button(h(React.Fragment, null, icon('copy', 15), t('copy')), duplicate, { disabled: board.objects.length + selected.length > 200 }),
-      button(h(React.Fragment, null, icon('cross', 15), selected.every((item) => item.removed) ? t('restore') : t('crossOut')),
-        () => updateSelected({ removed: !selected.every((item) => item.removed) })),
-      toolButton('trash', removeSelected));
+    const noteTarget = noteTargetFor(selected, completeGroup);
+    const noteHasText = Boolean(noteText(noteTarget));
+    const brand = h('div', { className: 'eb-brand', title: t('title'), 'aria-label': t('title') }, brandMark(levels, 34));
+    const palette = h('aside', { className: 'eb-palette', 'aria-label': t('toolbox') },
+      visibleShapes.map((shape) => button(swatch(shape, toolLevel.color, 32), () => add(shape), {
+        className: 'eb-shape-tool', key: shape, draggable: true, disabled: board.objects.length >= 200,
+        title: `${t(shape)} · ${t('value')} ${toolLevel.value}`, 'aria-label': `${t(shape)} · ${t('value')} ${toolLevel.value}`,
+        onDragStart: () => setDragShape(shape), onDragEnd: () => setDragShape(null),
+      })),
+      button(icon('plus', 20), () => setOverlay({ kind: 'library' }), {
+        className: 'eb-shape-tool eb-shape-more', title: t('morePatterns'), 'aria-label': t('morePatterns'),
+      }));
     const canvas = h('div', { className: 'eb-canvas-scroll' },
       h('svg', {
         ref: svgRef, className: 'eb-artboard',
@@ -1405,112 +1547,110 @@ window.__ModuleLoader__.load({
         x: preview.x, y: preview.y, width: preview.w, height: preview.h,
         fill: '#2563EB18', stroke: '#2563EB', strokeWidth: 1.5, pointerEvents: 'none',
       })));
-    const stageTools = h('div', { className: 'eb-canvas-tools' },
+    const selectionBar = selected.length > 0 && h('div', { className: 'eb-floating', role: 'toolbar', 'aria-label': t('selectionActions') },
+      h('small', null, `${t('selectedCount')} ${selected.length}`),
+      button(h(React.Fragment, null, icon('name', 16), h('span', { className: 'eb-label' }, t('alias'))), openName,
+        { disabled: !completeGroup && !(single && !single.groupId), className: 'eb-context-action', title: t('alias') }),
+      !completeGroup && button(h(React.Fragment, null, icon('group', 15), h('span', { className: 'eb-label' }, t('makeGroup'))), groupSelection,
+        { disabled: board.groups.length - touchedGroups.length >= 12, title: t('makeGroup') }),
+      completeGroup && button(h(React.Fragment, null, icon('ungroup', 15), h('span', { className: 'eb-label' }, t('ungroup'))), ungroup, { title: t('ungroup') }),
+      canMerge && button(h(React.Fragment, null, icon('merge', 15), h('span', { className: 'eb-label' }, t('merge'))), mergeSelection,
+        { disabled: !(mergeInfo && mergeInfo.allowed), title: mergeInfo && !mergeInfo.allowed ? mergeInfo.reason : t('merge') }),
+      canSplit && button(h(React.Fragment, null, icon('split', 15), h('span', { className: 'eb-label' }, t('split'))), splitSelection, { title: t('split') }),
+      button(h(React.Fragment, null, icon('copy', 15), h('span', { className: 'eb-label' }, t('copy'))), duplicate, { disabled: board.objects.length + selected.length > 200, title: t('copy') }),
+      button(h(React.Fragment, null, icon('cross', 15), h('span', { className: 'eb-label' }, t('crossOut'))), crossOut,
+        { disabled: !activeSelected.length, title: t('crossOut') }),
+      button(h(React.Fragment, null, icon(append ? 'check' : 'multi', 15), h('span', { className: 'eb-label' }, append ? t('appendDone') : t('appendSelect'))),
+        () => setAppend(!append), { 'aria-pressed': append, className: append ? 'eb-selected-mode' : '', title: append ? t('appendDone') : t('appendHint') }),
+      toolButton('trash', removeSelected, { className: 'eb-icon-button eb-danger', title: t('trash') }));
+    const stage = h('section', { className: 'eb-stage-wrap', 'aria-label': t('canvas') },
+      h('div', {
+        className: 'eb-stage-frame',
+        onDragOver: (event) => { if (dragShape) event.preventDefault(); },
+        onDrop: (event) => {
+          if (!dragShape) return;
+          event.preventDefault();
+          add(dragShape, point(event));
+          setDragShape(null);
+        },
+      }, canvas, selectionBar));
+    const colorButton = h('button', {
+      type: 'button', className: 'eb-color-button eb-menu-trigger', 'aria-expanded': colorMenu, 'aria-haspopup': 'menu',
+      title: `${t('creationColor')} · ${toolLevel.value}`, 'aria-label': `${t('creationColor')} · ${toolLevel.value}`,
+      onClick: () => { setColorMenu(!colorMenu); setMoreOpen(false); },
+    }, h('span', { className: 'eb-color-dot', style: { background: paletteColor(toolLevel.color) } }), h('span', { className: 'eb-color-value' }, String(toolLevel.value)), h('span', { className: 'eb-chevron' }, '⌄'));
+    const colorMenuNode = colorMenu && h('div', { className: 'eb-menu eb-color-menu', role: 'menu', 'aria-label': t('creationColor') },
+      h('div', { className: 'eb-menu-head' }, t('creationColor')),
+      levels.map((level) => button(h(React.Fragment, null,
+        h('span', { className: 'eb-color-dot', style: { background: paletteColor(level.color) } }),
+        h('span', { className: 'eb-menu-value' }, String(level.value)),
+        level.value === toolLevel.value ? icon('check', 16) : null), () => { setToolValue(level.value); setColorMenu(false); }, {
+        key: level.value, role: 'menuitemradio', 'aria-checked': level.value === toolLevel.value, className: 'eb-color-option',
+      })));
+    const moreMenuNode = moreOpen && h('div', { className: 'eb-menu eb-more-menu', role: 'menu', 'aria-label': t('files') },
+      h('div', { className: 'eb-menu-head' }, t('files')),
+      button(h(React.Fragment, null, icon('open', 16), h('span', null, t('import'))), openFile, { role: 'menuitem' }),
+      button(h(React.Fragment, null, icon('save', 16), h('span', null, t('export'))), saveFile, { role: 'menuitem' }),
+      fileName && h('p', { className: 'eb-menu-note' }, fileName),
+      h('div', { className: 'eb-menu-line' }),
+      h('label', { className: 'eb-menu-check' }, h('input', { type: 'checkbox', checked: attachTrace, onChange: (event) => setAttachTrace(event.target.checked) }), h('span', null, t('traceAttach'))));
+    const dock = h('nav', { className: 'eb-dock', 'aria-label': t('canvasTools') },
+      labelled('back', t('backToChat'), close, { className: 'eb-dock-return' }),
+      h('span', { className: 'eb-divider' }),
       toolButton('undo', undo, { disabled: !history.past.length }),
-      toolButton('redo', redo, { disabled: !history.future.length }),
-      button(h(React.Fragment, null, icon('multi', 15), h('span', null, t('multiSelect'))),
-        () => setMulti(!multi), { 'aria-pressed': multi, className: 'eb-chip' }),
-      button(h(React.Fragment, null, icon('focus', 15), h('span', null, t('focusMode'))),
-        () => setFocus(!focus), { 'aria-pressed': focus, className: 'eb-chip' }),
-      h('div', { className: 'eb-zoom' },
-        button('−', () => { setFit(false); setZoom(Math.max(0.75, zoom - 0.25)); }, { 'aria-label': t('zoomOut') }),
-        button(fit ? t('fitView') : `${Math.round(zoom * 100)}%`, () => setFit(!fit), { 'aria-label': t('fitView'), 'aria-pressed': fit }),
-        button('＋', () => { setFit(false); setZoom(Math.min(2, zoom + 0.25)); }, { 'aria-label': t('zoomIn') })));
-    const stagePanel = h('section', { className: 'eb-stage-wrap', 'aria-label': t('canvas') },
-      settingsView
-        ? h('div', { className: 'eb-settings-wrap' }, settingsPanel())
-        : h('div', {
-            className: 'eb-stage-frame',
-            onDragOver: (event) => { if (dragShape) event.preventDefault(); },
-            onDrop: (event) => {
-              if (!dragShape) return;
-              event.preventDefault();
-              add(dragShape, point(event));
-              setDragShape(null);
-            },
-          },
-          h('div', { className: 'eb-canvas-area' }, canvas, selectionBar),
-          stageTools),
-      h('div', { className: 'eb-stage-caption' }, h('span', null, modeHint)));
-    const inspectorSections = [];
-    if (selected.length > 0 && completeGroup) inspectorSections.push(h('section', { key: 'group' },
-      h('label', null, t('groupAlias'), h('input', {
-        key: `g:${completeGroup.id}:${completeGroup.alias}`, type: 'text', maxLength: 30, defaultValue: completeGroup.alias, placeholder: t('groupHint'),
-        onBlur: (event) => { if (event.target.value !== completeGroup.alias) action({ type: 'renameGroup', id: completeGroup.id, alias: event.target.value }); },
-        onKeyDown: (event) => { if (event.key === 'Enter') event.currentTarget.blur(); },
-      })),
-      h('p', { className: 'eb-muted' }, t('groupedNoAlias')),
-      h('div', { className: 'eb-inspector-actions' },
-        button(t('ungroup'), ungroup),
-        button(t('duplicateGroup'), () => { action({ type: 'duplicateSelected', ids: selected.map((item) => item.id) }); }))));
-    if (selected.length > 0 && !completeGroup && single) inspectorSections.push(h('section', { key: 'single' },
-      h('label', null, t('alias'), h('input', {
-        key: `n:${single.id}:${single.alias}`, type: 'text', maxLength: 30, defaultValue: single.alias, placeholder: t('aliasHint'),
-        onBlur: (event) => { if (event.target.value !== single.alias) updateSelected({ alias: event.target.value }); },
-        onKeyDown: (event) => { if (event.key === 'Enter') event.currentTarget.blur(); },
-      })),
-      h('p', { className: 'eb-muted' }, `${t('value')}: ${single.value}${single.sources.length ? ` · ${t('mergedFrom')} ${single.sources.length}` : ''}`)));
-    if (selected.length > 0 && !completeGroup && !single) inspectorSections.push(h('div', { className: 'eb-hint-card', key: 'many' }, `${t('selectedCount')} ${selected.length}`));
-    const inspectorPanel = h('aside', { className: 'eb-panel eb-inspector', 'aria-label': t('myObjects') },
-      h('div', { className: 'eb-panel-head' },
-        h('h3', null, completeGroup ? t('myGroup') : t('myObjects')),
-        h('p', null, t('inspectorHint'))),
-      h('div', { className: 'eb-inspector-body' },
-        !selected.length && h('div', { className: 'eb-hint-card' }, t('noSelection')),
-        ...inspectorSections,
-        canMerge && mergeInfo && !mergeInfo.allowed && h('div', { className: 'eb-hint-card' }, t('mergeReason')),
-        h('label', null, t('note'), h('textarea', {
-          key: `note:${board.note}`, defaultValue: board.note, maxLength: 500, placeholder: t('noteHint'),
-          onBlur: (event) => { if (event.target.value !== boardRef.current.note) action({ type: 'note', value: event.target.value }); },
-        }))));
-    const traceControls = h('section', { className: 'eb-trace', 'aria-label': t('traceTitle') },
-      h('div', { className: 'eb-trace-controls' },
-        h('label', null, h('input', { type: 'checkbox', checked: attachTrace,
-          onChange: (event) => setAttachTrace(event.target.checked) }), t('traceAttach')),
-        button(t(traceView ? 'traceHide' : 'tracePreview'), () => { flushEditor(); setTraceView(!traceView); }),
-        button(t('traceNewAttempt'), () => { flushEditor(); setClearConfirm(false); setResetTraceConfirm(true); })),
-      h('p', { className: 'eb-muted' }, t('traceNotice')),
-      resetTraceConfirm && h('div', { className: 'eb-confirm' },
-        h('span', null, t('traceResetQuestion')),
-        button(t('traceResetConfirm'), confirmResetTrace),
-        button(t('cancel'), () => setResetTraceConfirm(false))),
-      traceView && h('div', { className: 'eb-trace-preview' },
-        h('p', null, t('traceScope')),
-        trace.priorUnknown && h('p', null, t('tracePriorUnknown')),
-        h('p', null, t('traceTotals', { count: trace.totalChanges, omitted: trace.omittedChanges })),
-        !trace.entries.length && h('p', null, t('traceEmpty')),
-        h('ol', null, trace.entries.map((entry, index) => h('li', { key: entry.seq, value: entry.seq },
-          index > 0 && entry.seq > trace.entries[index - 1].seq + trace.entries[index - 1].repeats
-            && h('p', null, t('traceGap')),
-          h('strong', null, `${t(`traceType_${entry.type}`)} · ${t(`traceOrigin_${entry.origin}`)} × ${entry.repeats}`),
-          h('ul', null, entry.facts.map((fact) => h('li', { key: fact.field },
-            `${t(`traceField_${fact.field.replaceAll('.', '_')}`)}: ${traceValue(fact.before, fact.field)} → ${traceValue(fact.after, fact.field)}`))))))));
-    function traceValue(value, field) {
-      if (Array.isArray(value)) return value.map((item) => traceValue(item, field)).join(' / ');
-      if (typeof value !== 'string') return String(value ?? '—');
-      if (['objects', 'settings.defaults', 'settings.shapes'].includes(field)) {
-        const shape = M.shapes.find((name) => value === name || value.startsWith(`${name}:`));
-        if (shape) value = t(shape) + value.slice(shape.length);
-        value = value.replaceAll(':crossed-out', `:${t('removed')}`).replaceAll(':merged', `:${t('merge')}`);
-      }
-      return value;
-    }
-    const footer = h('footer', { className: 'eb-footer' },
-      h('div', { className: 'eb-status', role: 'status', 'aria-live': 'polite' }, status || t('localDraft')),
-      clearConfirm
-        ? h('div', { className: 'eb-confirm' },
-            h('span', null, t('clearQuestion')),
-            button(t('confirmClear'), confirmClearBoard),
-            button(t('cancel'), () => setClearConfirm(false)))
-        : h('div', { className: 'eb-file-actions' },
-            button(t('export'), exportFile),
-            button(t('import'), () => fileInput.current.click()),
-            button(t('traceClear'), () => { flushEditor(); setClearConfirm(false); setResetTraceConfirm(true); }),
-            button(t('clear'), () => { setResetTraceConfirm(false); setClearConfirm(true); })),
-      button(t('insert'), insert, { className: 'eb-primary', disabled: (!board.objects.length && !board.note && !(attachTrace && trace.totalChanges)) || phase !== 'plain' }),
-      button(h(React.Fragment, null, icon('close'), h('span', null, t('backToChat'))), close, { className: 'eb-close', 'aria-label': t('backToChat') }),
-      h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: fileInput, onChange: importFile }),
-      h('a', { hidden: true, ref: downloadAnchor, download: 'math-board.json' }));
+      toolButton('redo', redo, { disabled: !history.future.length, className: 'eb-icon-button eb-redo', title: t('redo') }),
+      h('span', { className: 'eb-divider' }),
+      colorButton,
+      h('span', { className: 'eb-divider' }),
+      button('−', () => { setFit(false); setZoom(Math.max(0.75, zoom - 0.25)); }, { className: 'eb-zoom-button eb-zoom-out', 'aria-label': t('zoomOut'), title: t('zoomOut') }),
+      button(fit ? t('fitView') : `${Math.round(zoom * 100)}%`, () => setFit(!fit), { className: 'eb-zoom-label', 'aria-label': t('fitView'), 'aria-pressed': fit, title: t('fitView') }),
+      button('＋', () => { setFit(false); setZoom(Math.min(2, zoom + 0.25)); }, { className: 'eb-zoom-button eb-zoom-in', 'aria-label': t('zoomIn'), title: t('zoomIn') }),
+      h('span', { className: 'eb-grow' }),
+      button(h(React.Fragment, null, icon('note', 19), noteHasText ? h('span', { className: 'eb-note-dot' }) : null), openNote, {
+        className: `eb-note-button${noteTarget ? ' eb-contextual' : ''}`, title: noteTarget ? `${t('note')} · ${noteTarget.label}` : `${t('note')} · ${t('noteGeneral')}`,
+        'aria-label': noteTarget ? `${t('note')} · ${noteTarget.label}` : `${t('note')} · ${t('noteGeneral')}`,
+      }),
+      button(icon('clear', 19), () => setOverlay({ kind: 'clear' }), { className: 'eb-icon-button eb-danger', title: t('clear'), 'aria-label': t('clear') }),
+      button(icon('more', 19), () => { setMoreOpen(!moreOpen); setColorMenu(false); }, { className: 'eb-icon-button eb-menu-trigger', title: t('moreActions'), 'aria-label': t('moreActions'), 'aria-expanded': moreOpen }),
+      button(h(React.Fragment, null, icon('insert', 17), h('span', null, t('insert'))), insert, {
+        className: 'eb-primary', title: t('insert'), disabled: (!board.objects.length && !board.note && !(attachTrace && trace.totalChanges)) || phase !== 'plain' }));
+    const overlayNode = overlay && h('div', { className: 'eb-overlay', onPointerDown: (event) => { if (event.target === event.currentTarget) setOverlay(null); } },
+      h('div', { className: `eb-overlay-card eb-overlay-${overlay.kind}`, role: 'dialog', 'aria-modal': 'true', 'aria-label': overlay.kind === 'note' ? t('note') : overlay.kind === 'name' ? t('alias') : overlay.kind === 'library' ? t('morePatterns') : t('clear') },
+        overlay.kind === 'name' && h(React.Fragment, null,
+          h('h2', null, overlay.group ? t('groupAlias') : t('alias')),
+          h('input', { ref: nameRef, type: 'text', maxLength: 30, defaultValue: overlay.value, placeholder: overlay.group ? t('groupHint') : t('aliasHint'),
+            onKeyDown: (event) => { if (event.key === 'Enter') { event.preventDefault(); applyName(); } } }),
+          h('div', { className: 'eb-overlay-actions' },
+            button(t('cancel'), () => setOverlay(null)),
+            button(t('apply'), applyName, { className: 'eb-primary' }))),
+        overlay.kind === 'note' && h(React.Fragment, null,
+          h('h2', null, t('note')),
+          h('p', { className: 'eb-overlay-context' }, overlay.target ? `${t('noteAbout')} ${overlay.label}` : t('noteGeneral')),
+          h('textarea', { ref: noteRef, maxLength: 500, defaultValue: overlay.value, placeholder: t('noteHint') }),
+          h('div', { className: 'eb-overlay-actions' },
+            button(t('cancel'), () => setOverlay(null)),
+            button(t('save'), applyNote, { className: 'eb-primary' }))),
+        overlay.kind === 'library' && h(React.Fragment, null,
+          h('h2', null, t('morePatterns')),
+          h('p', { className: 'eb-muted' }, t('patternsHint')),
+          h('div', { className: 'eb-library-grid' }, M.shapes.map((shape) => {
+            const on = visibleShapes.includes(shape);
+            return button(h(React.Fragment, null, swatch(shape, defaultColorIndex(shape), 28), h('span', null, t(shape))), () => togglePattern(shape), {
+              key: shape, className: 'eb-library-tile', 'aria-pressed': on, 'aria-label': `${on ? t('removePattern') : t('addPattern')}: ${t(shape)}`,
+              title: `${on ? t('removePattern') : t('addPattern')}: ${t(shape)}`, disabled: on && visibleShapes.length === 1,
+            });
+          })),
+          h('div', { className: 'eb-overlay-actions' }, button(t('done'), () => setOverlay(null), { className: 'eb-primary' }))),
+        overlay.kind === 'clear' && h(React.Fragment, null,
+          h('h2', null, t('clear')),
+          h('p', { className: 'eb-muted' }, t('clearQuestion')),
+          h('div', { className: 'eb-overlay-actions' },
+            button(t('cancel'), () => setOverlay(null)),
+            button(t('confirmClear'), confirmClearBoard, { className: 'eb-primary eb-danger-solid' })))));
+    const statusNode = status && h('div', { className: 'eb-status-toast', role: 'status', 'aria-live': 'polite' }, status);
+    const editor = h(React.Fragment, null,
+      h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: fileInput, onChange: importInput }),
+      h('a', { hidden: true, ref: downloadAnchor, download: t('attachmentName') }));
     return h(React.Fragment, null,
       h('style', null, css),
       h('button', {
@@ -1518,29 +1658,40 @@ window.__ModuleLoader__.load({
         'aria-label': t('title'), 'aria-haspopup': 'dialog',
         disabled: !ready, onClick: () => setOpened(true),
       },
-      swatch('star', 1, 18),
+      brandMark(levels, 18),
       h('span', null, t('title'))),
       h('dialog', {
         ref: dialog, className: 'eb-dialog', 'aria-label': t('title'),
-        onCancel: (event) => { event.preventDefault(); close(); },
+        onCancel: (event) => {
+          event.preventDefault();
+          if (overlay) setOverlay(null);
+          else if (colorMenu || moreOpen) { setColorMenu(false); setMoreOpen(false); }
+          else close();
+        },
         onClose: () => setOpened(false),
       },
       h('div', { className: 'eb-workbench' },
-        header,
-        h('main', { className: 'eb-layout', 'data-focus': focus }, toolboxPanel, stagePanel, inspectorPanel),
-        traceControls,
-        footer)));
+        h('div', { className: 'eb-workspace' },
+          brand,
+          palette,
+          stage,
+          dock,
+          colorMenuNode,
+          moreMenuNode,
+          statusNode,
+          overlayNode)),
+        editor));
   };
 };
     const art = createArt(React);
-    const dictionaries = {"en":{"title":"Math board","workspaceSubtitle":"Place shapes · group them · name the amounts","toolbox":"Toolbox","tapToAdd":"Tap to place, or drag one in","shapes":"Patterns","circle":"Circle","square":"Square","triangle":"Triangle","star":"Star","hexagon":"Hexagon","diamond":"Diamond","heart":"Heart","oval":"Oval","cat":"Cat","dog":"Dog","car":"Car","person":"Person","apple":"Apple","fish":"Fish","rocket":"Rocket","flower":"Flower","butterfly":"Butterfly","house":"House","icecream":"Ice cream","settings":"Settings","settingsIntro":"You choose which patterns sit in the toolbox, what each stands for, and which colour marks which amount.","patterns":"Pattern library","patternsHint":"Tap a pattern to put it in the toolbox; tap again to tuck it away. Shapes already on the canvas stay.","addPattern":"Add to toolbox","removePattern":"Tuck away","morePatterns":"More patterns","levelLadder":"Value ladder","level":"Level","colorName":"Colour","removeLevel":"Remove level","addLevel":"Add level","resetSettings":"Reset","shapeDefaults":"What these patterns stand for","applyFuture":"New shapes only","applyExisting":"Also change existing","settingsFutureDone":"Saved. New shapes use the new value.","settingsExistingDone":"Saved. Existing unmerged shapes also use the new value.","cancel":"Cancel","value":"Standing for","alias":"Name","aliasHint":"For example: apple","canvas":"Shape canvas","canvasEmpty":"Pick a shape on the left to begin","canvasEmptyHint":"Drag to arrange · box-select · Shift-click to add","gestureHint":"Drag to arrange · box-select · Shift-click to add","multiSelect":"Multi-select","focusMode":"Canvas only","zoomIn":"Zoom in","zoomOut":"Zoom out","fitView":"Fit","selectionActions":"Selected shape actions","selectedCount":"Selected","makeGroup":"Group","ungroup":"Ungroup","merge":"Merge","split":"Split","copy":"Copy","crossOut":"Cross out","restore":"Restore","trash":"Delete selected","group":"Group","defaultGroup":"My group","groupAlias":"Group name","groupHint":"For example: Rabbit's share","groupedNoAlias":"Shapes in a group share its name instead of having their own.","duplicateGroup":"Duplicate group","mergedFrom":"Merged from","noSelection":"Select one shape or box-select several to name, group, or merge them.","mergeReason":"Merging needs the same shape, the same value, the same name, the same group, and a total that matches one of your levels.","hintGrouped":"A whole group is selected: renaming changes the group.","hintSelected":"Name, group or merge the selection.","hintEmpty":"Drag shapes to arrange; drag on empty space to select several.","myObjects":"My thinking","myGroup":"My group","inspectorHint":"Select shapes to name them here","note":"My explanation","noteHint":"What do these shapes mean? How did you think about it?","undo":"Undo","redo":"Redo","group2":"Group","close":"Close","gear":"Settings","minus":"Remove","plus":"Add","cross":"Cross out","multi":"Multi-select","focus":"Focus","export":"Save JSON","import":"Open JSON","clear":"Clear","clearQuestion":"Clear the canvas and this modification record? Files already added to an answer stay. This cannot be undone.","confirmClear":"Confirm clear","clearDone":"Canvas and modification record cleared.","insert":"Add to answer","inserted":"The board file is attached. Review it and send it yourself.","insertedNote":"The board file is attached, and your own words are in the composer. Review them and send yourself.","insertFailed":"Cannot insert now. Wait until the composer is editable and try again.","attachmentName":"my-math-board.json","backToChat":"Back to chat","localDraft":"Your draft stays here until you send it.","failed":"Action not completed","fileTooLarge":"Choose a board JSON smaller than 256 KB.","imported":"Board opened.","storageError":"Cannot save this browser draft. Save JSON to keep your work.","loadError":"Cannot read the draft. Original data was not overwritten.","configApplied":"Your spoken values and colours are now applied.","configGap":"Settings history had a gap; retained changes were replayed with their original scopes.","configError":"A settings update could not be applied; earlier successful changes were kept.","removed":"Crossed out","active":"Kept","traceTitle":"Modification record","traceAttach":"Attach modification record (optional)","tracePreview":"View modifications","traceHide":"Hide modifications","traceNewAttempt":"Start a new attempt","traceClear":"Clear record","traceNotice":"Changes stay in this browser, without times or drag paths. Your teacher sees them only if attached and sent; sent files remain with the conversation.","traceScope":"Retained modifications to this draft so far, not necessarily one continuous sitting. These are observations, not correctness judgments; omitted details are marked.","tracePriorUnknown":"Earlier process unknown: the starting board may have content, or history has a gap.","traceTotals":"{count} changes recorded; {omitted} changes omitted in the middle.","traceEmpty":"No modifications recorded yet.","traceGap":"… Intermediate modifications omitted …","traceResetQuestion":"Keep the board and delete its local modification record to start anew? Existing draft/sent attachments remain. Undo history will also be cleared.","traceResetConfirm":"Confirm new attempt","traceResetDone":"New attempt started; board kept, earlier process marked unknown.","traceLoadError":"Earlier modifications could not be restored and are marked unknown. The board remains usable.","traceRecordError":"This change could not be added to the modification record; later process is marked unknown. The board itself is saved.","traceSkipped":"Modification record unavailable. The board file is attached; review and send yourself.","traceAttachmentName":"my-modifications.json","traceOrigin_student":"My action","traceOrigin_system":"Chat settings sync","traceType_add":"Add","traceType_batch":"Batch change","traceType_group":"Change groups","traceType_merge":"Merge","traceType_split":"Split","traceType_delete":"Delete","traceType_note":"Edit explanation","traceType_configure":"Change settings","traceType_move":"Move or arrange","traceType_undo":"Undo","traceType_redo":"Redo","traceType_clear":"Clear board","traceType_import":"Open board file","traceType_update":"Edit shape","traceType_duplicate":"Duplicate","traceField_count":"Shape count","traceField_activeCount":"Kept shapes","traceField_removedCount":"Crossed-out shapes","traceField_value":"Kept total value","traceField_removedValue":"Crossed-out value","traceField_groupCount":"Group count","traceField_groupedCount":"Grouped shapes","traceField_mergedCount":"Merged shapes","traceField_objects":"Composition (pattern:value ×count)","traceField_aliases":"Shape names","traceField_colors":"Level colour indices","traceField_groups":"Groups (name:count/value)","traceField_note":"My explanation (excerpt)","traceField_settings_levels":"Levels (value:colour index)","traceField_settings_defaults":"Default meanings (pattern:value:name)","traceField_settings_shapes":"Toolbox patterns","traceField_movedCount":"Shapes moved in this step","traceField_changedCount":"Other changes","traceField_detailsOmitted":"Details omitted in this step"},"zh":{"title":"数学画板","workspaceSubtitle":"摆图形 · 圈一组 · 自己说数量","toolbox":"工具箱","tapToAdd":"点一下放到画布；也可以拖进来","shapes":"图案","circle":"圆形","square":"方块","triangle":"三角形","star":"星形","hexagon":"六边形","diamond":"菱形","heart":"爱心","oval":"椭圆","cat":"小猫","dog":"小狗","car":"汽车","person":"人","apple":"苹果","fish":"小鱼","rocket":"火箭","flower":"小花","butterfly":"蝴蝶","house":"房子","icecream":"冰淇淋","settings":"设置","settingsIntro":"你来决定工具箱里有哪些图案、每个图案代表多少，以及哪个数值用哪种颜色。","patterns":"图案库","patternsHint":"点一下图案就放进工具箱，再点一下收起来；已经摆好的图形不会消失。","addPattern":"添加到工具箱","removePattern":"从工具箱收起","morePatterns":"更多图案","levelLadder":"数值阶梯","level":"第几级","colorName":"颜色","removeLevel":"删除这一级","addLevel":"增加一级","resetSettings":"恢复默认","shapeDefaults":"这些图案默认代表多少","applyFuture":"只用于新图形","applyExisting":"也改已有图形","settingsFutureDone":"已保存设置，新添加的图形按新数值。","settingsExistingDone":"已保存设置，未合并的已有图形也改成新数值。","cancel":"取消","value":"代表","alias":"名字","aliasHint":"例如：苹果","canvas":"图形画布","canvasEmpty":"从左边选一个图形，开始摆一摆","canvasEmptyHint":"拖动摆放 · 空白处框选 · Shift 点击加选","gestureHint":"拖动摆放 · 空白处框选 · Shift 点击加选","multiSelect":"多选","focusMode":"只看画布","zoomIn":"放大画布","zoomOut":"缩小画布","fitView":"全图","selectionActions":"所选图形操作","selectedCount":"已选","makeGroup":"圈为一组","ungroup":"解散组","merge":"合并","split":"拆开","copy":"复制","crossOut":"划去","restore":"恢复","trash":"删除所选","group":"组","defaultGroup":"我的一组","groupAlias":"这一组的名字","groupHint":"例如：小兔的一份","groupedNoAlias":"组里的图形不单独起名字；改名后整组一起变。","duplicateGroup":"复制这一组","mergedFrom":"由这些图形合并而来","noSelection":"点一个图形，或框选几个，就能起名字、圈组、合并。","mergeReason":"合并需要同一形状、同一数值、同一个名字、同属一组，而且总量正好是你设定的一级。","hintGrouped":"已选中一整组：改名只影响这一组。","hintSelected":"选中后可起名字、圈组或合并。","hintEmpty":"拖动摆放图形；空白处拖框可一次选中多个。","myObjects":"我的想法","myGroup":"我的一组","inspectorHint":"选中图形后在这里起名字","note":"我想说","noteHint":"这些图形代表什么？你是怎么想的？","undo":"撤销","redo":"重做","group2":"圈组","close":"关闭","gear":"设置","minus":"减少","plus":"增加","cross":"划去","multi":"多选","focus":"专注","export":"保存 JSON","import":"打开 JSON","clear":"清空","clearQuestion":"要清空画布和这次的修改记录吗？已经放进回答的文件还在。清空后不能撤销。","confirmClear":"确认清空","clearDone":"已清空画布和修改记录。","insert":"放入回答","inserted":"已附上画板文件；请检查后自己发送。","insertedNote":"已附上画板文件，你写的话也放进输入框了；请检查后自己发送。","insertFailed":"暂时无法放入回答，请等输入框可编辑后重试。","attachmentName":"我的画板.json","backToChat":"返回对话","localDraft":"草稿还没发送，老师看不到；发送前随时可以改。","failed":"操作未完成","fileTooLarge":"文件太大，请选择小于 256 KB 的画板 JSON。","imported":"已打开画板。","storageError":"浏览器无法保存草稿，请保存 JSON 以免丢失。","loadError":"草稿无法读取，原数据未覆盖。","configApplied":"已按你刚才说的，更新了图形数值和颜色。","configGap":"设置历史有缺口；已按保留记录的作用范围回放。","configError":"有一条设置更新未能应用；更早成功的修改已保留。","removed":"已划去","active":"保留","traceTitle":"修改记录","traceAttach":"回答时附上修改记录（可取消）","tracePreview":"查看修改记录","traceHide":"收起修改记录","traceNewAttempt":"开始新的尝试","traceClear":"清除记录","traceNotice":"修改记录保存在这个浏览器，不记时间和拖动轨迹。附上并发送后，老师才能看到；会随对话保留。","traceScope":"这是这份草稿到目前为止保留的修改，不一定来自一次连续操作。数字与文字是修改事实，不是对错结论；省略的细节以省略标记说明。","tracePriorUnknown":"此前过程未知：起点可能已有内容，或记录有缺口。","traceTotals":"共记录 {count} 次变更，中间省略 {omitted} 次。","traceEmpty":"还没有记录到修改。","traceGap":"……中间修改已省略……","traceResetQuestion":"保留当前画板，删去本地修改记录并开始新的尝试？已放入回答或发送的附件不会删除，撤销历史也将清空。","traceResetConfirm":"确认重新开始","traceResetDone":"已开始新的尝试，画板保留，此前过程标为未知。","traceLoadError":"此前修改记录无法恢复，已标为未知；画板仍可使用。","traceRecordError":"这次修改没能记进修改记录，此后的过程标为未知；画板本身已保存。","traceSkipped":"修改记录不可用，已附上画板文件；请检查后自己发送。","traceAttachmentName":"我的修改记录.json","traceOrigin_student":"我的操作","traceOrigin_system":"对话设置同步","traceType_add":"添加","traceType_batch":"批量修改","traceType_group":"修改分组","traceType_merge":"合并","traceType_split":"拆开","traceType_delete":"删除","traceType_note":"修改说明","traceType_configure":"修改设置","traceType_move":"移动或整理","traceType_undo":"撤销","traceType_redo":"重做","traceType_clear":"清空画板","traceType_import":"打开画板文件","traceType_update":"修改图形","traceType_duplicate":"复制","traceField_count":"图形数","traceField_activeCount":"保留图形数","traceField_removedCount":"划去图形数","traceField_value":"保留图形代表的总量","traceField_removedValue":"划去图形代表的总量","traceField_groupCount":"组数","traceField_groupedCount":"已分组图形数","traceField_mergedCount":"合并图形数","traceField_objects":"图形组成（图案:代表值 ×个数）","traceField_aliases":"图形名字","traceField_colors":"量级颜色编号","traceField_groups":"各组（名字:个数/代表总量）","traceField_note":"我想说（节选）","traceField_settings_levels":"量级（数值:颜色编号）","traceField_settings_defaults":"默认含义（图案:数值:名字）","traceField_settings_shapes":"工具箱图案","traceField_movedCount":"本步移动的图形数","traceField_changedCount":"其他变更数","traceField_detailsOmitted":"本步省略细节数"}};
+    const dictionaries = {"en":{"title":"Math board","workspaceSubtitle":"Place shapes · group them · name the amounts","toolbox":"Toolbox","tapToAdd":"Tap to place, or drag one in","shapes":"Patterns","circle":"Circle","square":"Square","rectangle":"Rectangle","triangle":"Triangle","star":"Star","hexagon":"Hexagon","diamond":"Diamond","heart":"Heart","oval":"Oval","cat":"Cat","dog":"Dog","car":"Car","person":"Person","apple":"Apple","fish":"Fish","rocket":"Rocket","flower":"Flower","butterfly":"Butterfly","house":"House","icecream":"Ice cream","settings":"Settings","settingsIntro":"You choose which patterns sit in the toolbox, what each stands for, and which colour marks which amount.","patterns":"Pattern library","patternsHint":"Tap a pattern to put it on the left rail; tap again to tuck it away. Shapes already on the canvas stay.","addPattern":"Add to toolbox","removePattern":"Tuck away","morePatterns":"More patterns","levelLadder":"Value ladder","level":"Level","colorName":"Colour","removeLevel":"Remove level","addLevel":"Add level","resetSettings":"Reset","shapeDefaults":"What these patterns stand for","applyFuture":"New shapes only","applyExisting":"Also change existing","settingsFutureDone":"Saved. New shapes use the new value.","settingsExistingDone":"Saved. Existing unmerged shapes also use the new value.","cancel":"Cancel","value":"Standing for","alias":"Name","aliasHint":"For example: apple","canvas":"Shape canvas","canvasEmpty":"Pick a shape on the left to begin","canvasEmptyHint":"Drag to arrange · box-select · Shift-click to add","gestureHint":"Drag to arrange · box-select · Shift-click to add","multiSelect":"Multi-select","focusMode":"Canvas only","zoomIn":"Zoom in","zoomOut":"Zoom out","fitView":"Fit","selectionActions":"Selected shape actions","selectedCount":"Selected","makeGroup":"Group","ungroup":"Ungroup","merge":"Merge","split":"Split","copy":"Copy","crossOut":"Cross out","restore":"Restore","trash":"Delete selected","group":"Group","defaultGroup":"My group","groupAlias":"Group name","groupHint":"For example: Rabbit's share","groupedNoAlias":"Shapes in a group share its name instead of having their own.","duplicateGroup":"Duplicate group","mergedFrom":"Merged from","noSelection":"Select one shape or box-select several to name, group, or merge them.","mergeReason":"Merging needs the same shape, the same value, the same name, the same group, and a total that matches one of your levels.","hintGrouped":"A whole group is selected: renaming changes the group.","hintSelected":"Name, group or merge the selection.","hintEmpty":"Drag shapes to arrange; drag on empty space to select several.","myObjects":"My thinking","myGroup":"My group","inspectorHint":"Select shapes to name them here","note":"My explanation","noteHint":"What do these shapes mean? How did you think about it?","noteGeneral":"Whole board · not tied to particular shapes","noteAbout":"About","hasNote":"Has an explanation","creationColor":"Creation colour","files":"Files","moreActions":"More actions","canvasTools":"Board tools","appendSelect":"Add to selection","appendDone":"Finish selecting","appendHint":"Tap shapes to add or remove them; useful on touch screens","apply":"Apply","save":"Save","done":"Done","fileSaved":"Saved to the last location.","fileDownloaded":"Board file downloaded.","undo":"Undo","redo":"Redo","group2":"Group","close":"Close","gear":"Settings","minus":"Remove","plus":"Add","cross":"Cross out","multi":"Multi-select","focus":"Focus","export":"Save JSON","import":"Open JSON","clear":"Clear canvas","clearQuestion":"Clear the canvas and this modification record? Files already added to an answer stay. This cannot be undone.","confirmClear":"Confirm clear","clearDone":"Canvas and modification record cleared.","insert":"Add to answer","inserted":"The board file is attached. Review it and send it yourself.","insertedNote":"The board file is attached, and your own words are in the composer. Review them and send yourself.","insertFailed":"Cannot insert now. Wait until the composer is editable and try again.","attachmentName":"my-math-board.json","backToChat":"Back to chat","localDraft":"Your draft stays here until you send it.","failed":"Action not completed","fileTooLarge":"Choose a board JSON smaller than 256 KB.","imported":"Board opened.","storageError":"Cannot save this browser draft. Save JSON to keep your work.","loadError":"Cannot read the draft. Original data was not overwritten.","configApplied":"Your spoken values and colours are now applied.","configGap":"Settings history had a gap; retained changes were replayed with their original scopes.","configError":"A settings update could not be applied; earlier successful changes were kept.","removed":"Crossed out","active":"Kept","traceTitle":"Modification record","traceAttach":"Attach modification record (optional)","tracePreview":"View modifications","traceHide":"Hide modifications","traceNewAttempt":"Start a new attempt","traceClear":"Clear record","traceNotice":"Changes stay in this browser, without times or drag paths. Your teacher sees them only if attached and sent; sent files remain with the conversation.","traceScope":"Retained modifications to this draft so far, not necessarily one continuous sitting. These are observations, not correctness judgments; omitted details are marked.","tracePriorUnknown":"Earlier process unknown: the starting board may have content, or history has a gap.","traceTotals":"{count} changes recorded; {omitted} changes omitted in the middle.","traceEmpty":"No modifications recorded yet.","traceGap":"… Intermediate modifications omitted …","traceResetQuestion":"Keep the board and delete its local modification record to start anew? Existing draft/sent attachments remain. Undo history will also be cleared.","traceResetConfirm":"Confirm new attempt","traceResetDone":"New attempt started; board kept, earlier process marked unknown.","traceLoadError":"Earlier modifications could not be restored and are marked unknown. The board remains usable.","traceRecordError":"This change could not be added to the modification record; later process is marked unknown. The board itself is saved.","traceSkipped":"Modification record unavailable. The board file is attached; review and send yourself.","traceAttachmentName":"my-modifications.json","traceOrigin_student":"My action","traceOrigin_system":"Chat settings sync","traceType_add":"Add","traceType_batch":"Batch change","traceType_group":"Change groups","traceType_merge":"Merge","traceType_split":"Split","traceType_delete":"Delete","traceType_note":"Edit explanation","traceType_configure":"Change settings","traceType_move":"Move or arrange","traceType_undo":"Undo","traceType_redo":"Redo","traceType_clear":"Clear board","traceType_import":"Open board file","traceType_update":"Edit shape","traceType_duplicate":"Duplicate","traceField_count":"Shape count","traceField_activeCount":"Kept shapes","traceField_removedCount":"Crossed-out shapes","traceField_value":"Kept total value","traceField_removedValue":"Crossed-out value","traceField_groupCount":"Group count","traceField_groupedCount":"Grouped shapes","traceField_mergedCount":"Merged shapes","traceField_objects":"Composition (pattern:value ×count)","traceField_aliases":"Shape names","traceField_colors":"Level colour indices","traceField_groups":"Groups (name:count/value)","traceField_note":"My explanation (excerpt)","traceField_settings_levels":"Levels (value:colour index)","traceField_settings_defaults":"Default meanings (pattern:value:name)","traceField_settings_shapes":"Toolbox patterns","traceField_movedCount":"Shapes moved in this step","traceField_changedCount":"Other changes","traceField_detailsOmitted":"Details omitted in this step"},"zh":{"title":"数学画板","workspaceSubtitle":"摆图形 · 圈一组 · 自己说数量","toolbox":"工具箱","tapToAdd":"点一下放到画布；也可以拖进来","shapes":"图案","circle":"圆形","square":"方块","rectangle":"矩形","triangle":"三角形","star":"星形","hexagon":"六边形","diamond":"菱形","heart":"爱心","oval":"椭圆","cat":"小猫","dog":"小狗","car":"汽车","person":"人","apple":"苹果","fish":"小鱼","rocket":"火箭","flower":"小花","butterfly":"蝴蝶","house":"房子","icecream":"冰淇淋","settings":"设置","settingsIntro":"你来决定工具箱里有哪些图案、每个图案代表多少，以及哪个数值用哪种颜色。","patterns":"图案库","patternsHint":"点一下图案就放到左侧图案轨，再点一下收起来；已经摆好的图形不会消失。","addPattern":"添加到工具箱","removePattern":"从工具箱收起","morePatterns":"更多图案","levelLadder":"数值阶梯","level":"第几级","colorName":"颜色","removeLevel":"删除这一级","addLevel":"增加一级","resetSettings":"恢复默认","shapeDefaults":"这些图案默认代表多少","applyFuture":"只用于新图形","applyExisting":"也改已有图形","settingsFutureDone":"已保存设置，新添加的图形按新数值。","settingsExistingDone":"已保存设置，未合并的已有图形也改成新数值。","cancel":"取消","value":"代表","alias":"名字","aliasHint":"例如：苹果","canvas":"图形画布","canvasEmpty":"从左边选一个图形，开始摆一摆","canvasEmptyHint":"拖动摆放 · 空白处框选 · Shift 点击加选","gestureHint":"拖动摆放 · 空白处框选 · Shift 点击加选","multiSelect":"多选","focusMode":"只看画布","zoomIn":"放大画布","zoomOut":"缩小画布","fitView":"全图","selectionActions":"所选图形操作","selectedCount":"已选","makeGroup":"圈为一组","ungroup":"解散组","merge":"合并","split":"拆开","copy":"复制","crossOut":"划去","restore":"恢复","trash":"删除所选","group":"组","defaultGroup":"我的一组","groupAlias":"这一组的名字","groupHint":"例如：小兔的一份","groupedNoAlias":"组里的图形不单独起名字；改名后整组一起变。","duplicateGroup":"复制这一组","mergedFrom":"由这些图形合并而来","noSelection":"点一个图形，或框选几个，就能起名字、圈组、合并。","mergeReason":"合并需要同一形状、同一数值、同一个名字、同属一组，而且总量正好是你设定的一级。","hintGrouped":"已选中一整组：改名只影响这一组。","hintSelected":"选中后可起名字、圈组或合并。","hintEmpty":"拖动摆放图形；空白处拖框可一次选中多个。","myObjects":"我的想法","myGroup":"我的一组","inspectorHint":"选中图形后在这里起名字","note":"我想说","noteHint":"这些图形代表什么？你是怎么想的？","noteGeneral":"整张画板 · 未关联特定图形","noteAbout":"针对","hasNote":"有说明","creationColor":"创建颜色","files":"文件","moreActions":"更多操作","canvasTools":"画板工具","appendSelect":"追加选择","appendDone":"完成选择","appendHint":"点按图形追加或移出选择，适合触屏","apply":"应用","save":"保存","done":"完成","fileSaved":"已保存到上次的位置。","fileDownloaded":"已下载画板文件。","undo":"撤销","redo":"重做","group2":"圈组","close":"关闭","gear":"设置","minus":"减少","plus":"增加","cross":"划去","multi":"多选","focus":"专注","export":"保存 JSON","import":"打开 JSON","clear":"清空画布","clearQuestion":"要清空画布和这次的修改记录吗？已经放进回答的文件还在。清空后不能撤销。","confirmClear":"确认清空","clearDone":"已清空画布和修改记录。","insert":"放入回答","inserted":"已附上画板文件；请检查后自己发送。","insertedNote":"已附上画板文件，你写的话也放进输入框了；请检查后自己发送。","insertFailed":"暂时无法放入回答，请等输入框可编辑后重试。","attachmentName":"我的画板.json","backToChat":"返回对话","localDraft":"草稿还没发送，老师看不到；发送前随时可以改。","failed":"操作未完成","fileTooLarge":"文件太大，请选择小于 256 KB 的画板 JSON。","imported":"已打开画板。","storageError":"浏览器无法保存草稿，请保存 JSON 以免丢失。","loadError":"草稿无法读取，原数据未覆盖。","configApplied":"已按你刚才说的，更新了图形数值和颜色。","configGap":"设置历史有缺口；已按保留记录的作用范围回放。","configError":"有一条设置更新未能应用；更早成功的修改已保留。","removed":"已划去","active":"保留","traceTitle":"修改记录","traceAttach":"回答时附上修改记录（可取消）","tracePreview":"查看修改记录","traceHide":"收起修改记录","traceNewAttempt":"开始新的尝试","traceClear":"清除记录","traceNotice":"修改记录保存在这个浏览器，不记时间和拖动轨迹。附上并发送后，老师才能看到；会随对话保留。","traceScope":"这是这份草稿到目前为止保留的修改，不一定来自一次连续操作。数字与文字是修改事实，不是对错结论；省略的细节以省略标记说明。","tracePriorUnknown":"此前过程未知：起点可能已有内容，或记录有缺口。","traceTotals":"共记录 {count} 次变更，中间省略 {omitted} 次。","traceEmpty":"还没有记录到修改。","traceGap":"……中间修改已省略……","traceResetQuestion":"保留当前画板，删去本地修改记录并开始新的尝试？已放入回答或发送的附件不会删除，撤销历史也将清空。","traceResetConfirm":"确认重新开始","traceResetDone":"已开始新的尝试，画板保留，此前过程标为未知。","traceLoadError":"此前修改记录无法恢复，已标为未知；画板仍可使用。","traceRecordError":"这次修改没能记进修改记录，此后的过程标为未知；画板本身已保存。","traceSkipped":"修改记录不可用，已附上画板文件；请检查后自己发送。","traceAttachmentName":"我的修改记录.json","traceOrigin_student":"我的操作","traceOrigin_system":"对话设置同步","traceType_add":"添加","traceType_batch":"批量修改","traceType_group":"修改分组","traceType_merge":"合并","traceType_split":"拆开","traceType_delete":"删除","traceType_note":"修改说明","traceType_configure":"修改设置","traceType_move":"移动或整理","traceType_undo":"撤销","traceType_redo":"重做","traceType_clear":"清空画板","traceType_import":"打开画板文件","traceType_update":"修改图形","traceType_duplicate":"复制","traceField_count":"图形数","traceField_activeCount":"保留图形数","traceField_removedCount":"划去图形数","traceField_value":"保留图形代表的总量","traceField_removedValue":"划去图形代表的总量","traceField_groupCount":"组数","traceField_groupedCount":"已分组图形数","traceField_mergedCount":"合并图形数","traceField_objects":"图形组成（图案:代表值 ×个数）","traceField_aliases":"图形名字","traceField_colors":"量级颜色编号","traceField_groups":"各组（名字:个数/代表总量）","traceField_note":"我想说（节选）","traceField_settings_levels":"量级（数值:颜色编号）","traceField_settings_defaults":"默认含义（图案:数值:名字）","traceField_settings_shapes":"工具箱图案","traceField_movedCount":"本步移动的图形数","traceField_changedCount":"其他变更数","traceField_detailsOmitted":"本步省略细节数"}};
     return {
       inject: ['slots', 'locale'],
       apply(ctx) {
         ctx.effect(() => ctx.locale.register('edu-math-board', 'en', dictionaries.en));
         ctx.effect(() => ctx.locale.register('edu-math-board', 'zh', dictionaries.zh));
         const t = ctx.locale.bind('edu-math-board');
-        const Board = createView(React, M, ctx, t, "/* Workbench layout reimplemented for DSH; teaching artwork keeps the prescribed palette. */\n.eb-trace{padding:4px 8px;min-height:0;max-height:30dvh;overflow:auto;border-top:1px solid var(--dsw-alias-border-l1)}\n.eb-trace-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}\n.eb-workbench .eb-trace-controls label{display:flex;align-items:center;gap:6px;font-weight:400}\n.eb-workbench .eb-trace-controls input[type=checkbox]{width:18px;min-height:18px;padding:0}\n.eb-workbench .eb-trace-controls button{min-height:32px;padding:4px 8px;font-size:12px}\n.eb-trace-preview{max-height:18dvh;overflow:auto;font-size:12px;overflow-wrap:anywhere}\n.eb-trace-preview ol{padding-left:32px}.eb-trace-preview ul{padding-left:20px}\n\n/* Compact composer-toolbar launcher, sized like the shipped model selector. */\n.edu-board-launch{display:inline-flex;align-items:center;gap:6px;flex:none;height:28px;padding:0 8px;border:0;border-radius:var(--dsw-radius-sm);background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:13px;font-weight:500;line-height:20px;white-space:nowrap;cursor:pointer}\n.edu-board-launch svg{flex:none;display:block}\n.edu-board-launch:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}\n.edu-board-launch:disabled{opacity:.5;cursor:default}\n@container (width<=560px){.edu-board-launch span{display:none}}\n.edu-board-launch,.eb-workbench button{font:inherit;cursor:pointer}\n.eb-dialog{box-sizing:border-box;width:min(1450px,96vw);height:min(920px,92dvh);max-width:96vw;max-height:94dvh;padding:0;border:1px solid var(--dsw-alias-border-l1);border-radius:24px;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-base);box-shadow:0 24px 80px #0f172a33;overflow:hidden}\n.eb-dialog::backdrop{background:#0f172a66;backdrop-filter:blur(5px)}\n.eb-workbench{box-sizing:border-box;height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;gap:12px;padding:14px;font-family:inherit;font-size:14px}\n.eb-workbench *{box-sizing:border-box}.eb-workbench button,.eb-workbench input,.eb-workbench select,.eb-workbench textarea{font:inherit;color:inherit}\n.eb-workbench button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:8px 12px;border:1px solid var(--dsw-alias-border-l1);border-radius:12px;background:var(--dsw-alias-bg-layer-1);transition:background .14s,box-shadow .14s}\n.eb-workbench button:hover:not(:disabled){background:var(--dsw-alias-bg-layer-2);border-color:var(--dsw-alias-border-l2)}.eb-workbench button:disabled{opacity:.4;cursor:default}\n.eb-workbench :is(button,input,select,textarea,a):focus-visible,.edu-board-launch:focus-visible{outline:3px solid var(--dsw-alias-brand-primary);outline-offset:3px}\n.eb-workbench button[aria-pressed=true]{background:color-mix(in srgb,var(--dsw-alias-brand-primary) 12%,var(--dsw-alias-bg-layer-1));border-color:var(--dsw-alias-brand-primary)}\n.eb-top{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:8px 12px;background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l1);border-radius:18px;box-shadow:0 4px 18px #0f172a08}\n.eb-identity{display:flex;align-items:center;gap:10px;margin-right:auto}.eb-identity strong{font-size:16px;white-space:nowrap}.eb-identity small{display:block;color:var(--dsw-alias-label-secondary);font-size:11px;margin-top:3px}\n.eb-top-actions{display:flex;gap:5px;align-items:center}.eb-top .eb-icon-button{width:40px;padding:8px}.eb-workbench .eb-primary{background:var(--dsw-alias-brand-primary);color:var(--dsw-alias-bg-base);border-color:var(--dsw-alias-brand-primary);font-weight:700}.eb-workbench .eb-primary:hover:not(:disabled){background:var(--dsw-alias-brand-primary);filter:brightness(.95)}\n.eb-layout{display:grid;grid-template-columns:178px minmax(0,1fr) 236px;gap:12px;min-height:0}.eb-panel{background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l1);border-radius:20px;min-height:0;overflow:auto}.eb-panel-head{padding:16px 14px 12px;border-bottom:1px solid var(--dsw-alias-border-l1)}.eb-panel-head h3{font-size:14px;margin:0 0 5px}.eb-panel-head p{font-size:11px;color:var(--dsw-alias-label-secondary);line-height:1.5;margin:0}\n.eb-tools-body{padding:12px}.eb-section-label{font-size:11px;color:var(--dsw-alias-label-secondary);font-weight:650;margin:10px 0 8px}.eb-palette{display:grid;gap:7px}.eb-workbench .eb-tool{justify-content:flex-start;min-height:62px;padding:10px;text-align:left;gap:10px;border-radius:14px}.eb-tool svg{flex:0 0 32px}.eb-tool span{font-size:13px;font-weight:650}.eb-tool small{display:block;font-weight:400;font-size:10px;color:var(--dsw-alias-label-secondary);margin-top:4px}.eb-workbench .eb-shape-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.eb-workbench .eb-shape-tool{padding:8px 3px;min-height:68px;flex-direction:column;gap:4px;font-size:10px}.eb-tool:active,.eb-shape-tool:active{transform:scale(.97)}\n.eb-stage-wrap{min-width:0;min-height:0;display:flex;flex-direction:column;gap:10px}.eb-stage-frame{flex:1;position:relative;display:flex;flex-direction:column;gap:8px;min-height:220px;border:1.5px dashed var(--dsw-alias-border-l2);border-radius:20px;padding:10px;background:var(--dsw-alias-bg-layer-2);overflow:hidden}.eb-artboard{width:100%;height:100%;border:1px solid #E3E8EF;border-radius:14px;background:#fff;display:block;touch-action:none;user-select:none}.eb-artboard [data-object]{cursor:grab}.eb-artboard [data-object]:active{cursor:grabbing}.eb-artboard [data-object]:focus-visible{outline:none}.eb-artboard [data-object]:focus-visible .eb-focus-ring{stroke:#2563EB;stroke-width:3}\n.eb-canvas-area{position:relative;flex:1;min-height:0}.eb-floating{position:absolute;z-index:2;left:50%;bottom:14px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:5px;max-width:calc(100% - 28px);padding:6px 8px;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-overlay);border-radius:16px;box-shadow:0 8px 24px #0f172a24;flex-wrap:wrap}.eb-floating small{padding:0 6px;white-space:nowrap}.eb-floating button{padding:7px 10px;min-height:36px;font-size:12px}.eb-stage-caption{display:flex;justify-content:space-between;gap:8px;padding:0 5px;color:var(--dsw-alias-label-secondary);font-size:11px;line-height:1.5}.eb-stage-caption span:last-child{white-space:nowrap}\n.eb-inspector-body{padding:14px;display:grid;gap:14px}.eb-workbench label{display:grid;gap:7px;font-size:12px;font-weight:600}.eb-workbench input:not([type=file]),.eb-workbench select,.eb-workbench textarea{width:100%;min-width:0;padding:10px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-base);min-height:42px;font-size:13px}.eb-workbench textarea{resize:vertical;min-height:76px;max-height:140px;font-weight:400;line-height:1.5}.eb-workbench [hidden]{display:none!important}.eb-workbench p{margin:0;line-height:1.6}.eb-muted{color:var(--dsw-alias-label-secondary);font-size:12px}.eb-hint-card{border:1px dashed var(--dsw-alias-border-l2);border-radius:14px;padding:14px;font-size:12px;color:var(--dsw-alias-label-secondary);line-height:1.7}.eb-inspector-actions{display:flex;gap:6px;flex-wrap:wrap}.eb-inspector-actions button{font-size:12px;flex:1}.eb-group-list{display:grid;gap:7px}.eb-workbench .eb-group-chip{justify-content:space-between;width:100%;text-align:left;font-size:12px}.eb-group-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.eb-group-chip small{font-size:11px;color:var(--dsw-alias-label-secondary);white-space:nowrap}.eb-workbench .eb-new-group{width:100%;border-style:dashed;font-size:12px}.eb-group-edit{display:grid;gap:8px;padding:10px;border:1px solid var(--dsw-alias-border-l1);border-radius:12px}\n.eb-footer{display:flex;gap:10px;align-items:center;padding:6px 4px;min-height:36px}.eb-status{flex:1;color:var(--dsw-alias-label-secondary);font-size:11px;line-height:1.4}.eb-file-actions{display:flex;align-items:center;gap:6px}.eb-file-actions button,.eb-file-actions a{font-size:11px;padding:5px 8px;min-height:32px}.eb-file-actions a{color:var(--dsw-alias-brand-primary)}.eb-workbench .eb-confirm{font-size:12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}.eb-confirm span{margin-right:auto}\n.eb-layout[data-focus=true]{grid-template-columns:minmax(0,1fr)}.eb-layout[data-focus=true]>.eb-panel{display:none}\n@media(max-width:1050px){.eb-layout{grid-template-columns:140px minmax(0,1fr) 200px}.eb-tools-body{padding:9px}.eb-workbench{padding:10px;gap:9px}.eb-layout{gap:9px}.eb-tool small{font-size:9px}.eb-top{padding:7px 10px}.eb-identity small{display:none}}\n@media(max-width:760px){.eb-dialog{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0;border:0}.eb-layout{grid-template-columns:92px minmax(0,1fr);grid-template-rows:minmax(230px,1fr) auto}.eb-inspector{grid-column:1/-1;max-height:28dvh}.eb-inspector .eb-panel-head{display:none}.eb-inspector-body{display:flex;flex-wrap:wrap;gap:10px;padding:10px}.eb-inspector-body>section,.eb-inspector-body>label,.eb-inspector-body>.eb-hint-card{flex:1;min-width:150px}.eb-inspector-body>.eb-group-section{min-width:180px}.eb-palette{gap:5px}.eb-workbench .eb-tool{padding:7px;min-height:54px;gap:4px}.eb-tool svg{flex-basis:24px;width:24px}.eb-tool span{font-size:11px}.eb-tool small{display:none}.eb-shape-grid{grid-template-columns:1fr!important}.eb-workbench .eb-shape-tool{min-height:42px;flex-direction:row;gap:5px}.eb-panel-head{padding:10px 8px}.eb-panel-head p{display:none}.eb-panel-head h3{font-size:12px}.eb-stage-frame{padding:5px;border-radius:14px}.eb-stage-caption{font-size:10px}.eb-stage-caption span:first-child{max-width:65%}.eb-file-actions{flex-wrap:wrap}.eb-footer{align-items:flex-start}.eb-identity strong{font-size:14px}.eb-identity>svg{width:25px}.eb-top-actions{margin-left:auto}.eb-workbench .eb-top .eb-close{padding:8px}.eb-workbench .eb-top .eb-close span{display:none}.eb-workbench .eb-primary{font-size:12px}.eb-status{max-width:60%}}\n.eb-canvas-scroll{width:100%;height:100%;overflow:auto;overscroll-behavior:contain;border-radius:14px;background:#FFFFFF}.eb-artboard{max-width:none;flex:none}.eb-zoom{display:flex;align-items:center;gap:3px;flex-shrink:0}.eb-workbench .eb-zoom button{font-size:11px;padding:3px 7px;min-height:32px;border-radius:8px}.eb-workbench .eb-top button,.eb-workbench .eb-shape-tool,.eb-workbench .eb-group-chip{min-height:44px}.eb-stage-caption{align-items:center}.eb-workbench .eb-floating button{min-height:44px}.eb-stage-wrap{min-height:300px}\n@media(max-height:620px){.eb-layout{overflow:auto;align-items:start}.eb-stage-wrap{min-height:320px}.eb-panel{max-height:100%}.eb-inspector{max-height:230px}}\n@media(prefers-reduced-motion:reduce){.eb-workbench *{transition:none!important;animation:none!important}}\n\n/* Expression board v3: shape palette, canvas tools and the student-owned value ladder. */\n.eb-shape-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}\n.eb-workbench .eb-shape-tool{flex-direction:column;gap:4px;padding:7px 3px;min-height:62px;font-size:10px;border-radius:12px}\n.eb-legend{display:grid;gap:3px;margin:12px 0 10px}\n.eb-workbench .eb-legend-row{display:flex;align-items:center;gap:8px;min-height:36px;padding:6px;border:1px solid transparent;border-radius:8px;font-size:11px;color:var(--dsw-alias-label-secondary);cursor:pointer}\n.eb-legend-row:has(:checked){border-color:var(--dsw-alias-brand-primary);background:color-mix(in srgb,var(--dsw-alias-brand-primary) 10%,transparent)}\n.eb-workbench .eb-legend-row input[type=radio]{width:14px;height:14px;min-height:0;margin:0;padding:0;flex:0 0 14px;accent-color:var(--dsw-alias-brand-primary)}\n.eb-color-dot{width:14px;height:14px;border-radius:999px;flex:0 0 14px;border:1px solid #1E293B22}\n.eb-canvas-tools{display:flex;align-items:center;flex-wrap:wrap;gap:5px;padding:2px 2px 0}\n.eb-workbench .eb-chip{min-height:38px;font-size:12px;padding:6px 10px;border-radius:999px}\n.eb-workbench .eb-icon-button{width:38px;padding:6px}\n.eb-settings-wrap{flex:1;min-height:0;overflow:auto;padding:14px;border:1px solid var(--dsw-alias-border-l1);border-radius:20px;background:var(--dsw-alias-bg-layer-1)}\n.eb-settings{display:grid;gap:8px;max-width:620px}\n.eb-settings-title{font-size:15px;margin:0 0 2px}\n.eb-level-row{display:grid;grid-template-columns:auto 96px 1fr auto;align-items:center;gap:8px}\n.eb-workbench .eb-level-row button{min-height:38px;width:38px;padding:4px}\n.eb-default-row{display:grid;grid-template-columns:auto 1fr 86px;align-items:center;gap:8px}\n.eb-default-shape{display:flex;align-items:center;gap:6px;font-size:12px;white-space:nowrap}\n.eb-inline-actions{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}\n.eb-inline-actions button{font-size:12px}\n.eb-workbench .eb-settings :is(input,select){min-height:38px;padding:6px 8px;font-size:12px}\n.eb-workbench .eb-shape-more{border-style:dashed;color:var(--dsw-alias-label-secondary);font-weight:600}\n.eb-library-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:2px 0 4px}\n.eb-workbench .eb-library-tile{flex-direction:column;gap:5px;min-height:62px;padding:6px 3px;font-size:10px;border-radius:12px}\n.eb-library-tile span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}\n@media(max-width:760px){.eb-shape-grid{grid-template-columns:repeat(2,1fr)}.eb-library-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.eb-default-row{grid-template-columns:1fr 76px}.eb-default-shape{font-size:11px}.eb-settings-wrap{padding:10px}}\n", art, applyHostConfig, T);
+        const Board = createView(React, M, ctx, t, "/* Workbench UI: one compact palette rail, one canvas, one bottom dock. */\n.edu-board-launch{display:inline-flex;align-items:center;gap:6px;flex:none;height:28px;padding:0 8px;border:0;border-radius:var(--dsw-radius-sm);background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:13px;font-weight:500;line-height:20px;white-space:nowrap;cursor:pointer}\n.edu-board-launch svg{flex:none;display:block}\n.edu-board-launch:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}\n.edu-board-launch:disabled{opacity:.5;cursor:default}\n@container (width<=560px){.edu-board-launch span{display:none}}\n\n.eb-dialog{box-sizing:border-box;width:min(1500px,96vw);height:min(940px,94dvh);max-width:96vw;max-height:94dvh;padding:0;border:1px solid var(--dsw-alias-border-l1);border-radius:22px;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-base);box-shadow:0 24px 80px #0f172a33;overflow:hidden}\n.eb-dialog::backdrop{background:#0f172a66;backdrop-filter:blur(5px)}\n.eb-workbench{box-sizing:border-box;height:100%;position:relative;font-family:inherit;font-size:14px;background:var(--dsw-alias-bg-layer-1)}\n.eb-workbench *{box-sizing:border-box}\n.eb-workbench button,.eb-workbench input,.eb-workbench select,.eb-workbench textarea{font:inherit;color:inherit}\n.eb-workbench button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:8px 12px;border:1px solid transparent;border-radius:10px;background:transparent;cursor:pointer;white-space:nowrap;transition:background .14s,border-color .14s,box-shadow .14s,transform .08s}\n.eb-workbench button:hover:not(:disabled){background:var(--dsw-alias-bg-layer-2)}\n.eb-workbench button:active:not(:disabled){transform:translateY(1px)}\n.eb-workbench button:disabled{opacity:.34;cursor:default}\n.eb-workbench button[aria-pressed=true]{background:#eaf4de;border-color:#b8d898;color:#375f21}\n.eb-workbench .eb-icon-button{width:42px;min-height:40px;padding:7px}\n.eb-workbench :is(button,input,select,textarea,a):focus-visible,.edu-board-launch:focus-visible{outline:3px solid #489AD4;outline-offset:2px}\n.eb-primary{background:linear-gradient(#88C94C,#70B337)!important;border:1px solid #669B36!important;box-shadow:0 2px 0 #537E2E;color:#203D0E!important;font-weight:700}\n.eb-primary:hover:not(:disabled){background:#83C547!important;filter:saturate(1.04)}\n.eb-danger{color:#B74035}\n.eb-danger-solid{background:#C14B40!important;border-color:#A83C32!important;color:#FFF!important;box-shadow:0 2px 0 #8E3027}\n\n/* The palette is a narrow rail; the canvas owns everything else. */\n.eb-brand{position:absolute;z-index:4;top:12px;left:14px;display:flex;align-items:center;justify-content:center;width:44px;height:44px;pointer-events:none}\n.eb-palette{position:absolute;z-index:3;left:8px;top:62px;bottom:78px;width:62px;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:2px 0}\n.eb-palette::-webkit-scrollbar{display:none}\n.eb-workbench .eb-shape-tool{width:54px;min-height:52px;padding:6px;border-radius:13px;flex:none;border:1px solid transparent}\n.eb-workbench .eb-shape-tool:hover:not(:disabled){background:#EAF4DE;border-color:#C8DDB6}\n.eb-workbench .eb-shape-tool:active:not(:disabled){transform:scale(.96)}\n.eb-workbench .eb-shape-more{border:1px dashed #C9D4D8!important;color:#72808A;min-height:46px}\n.eb-stage-wrap{position:absolute;inset:0 0 74px 78px;min-width:0;min-height:0;padding:10px 10px 0}\n.eb-stage-frame{position:relative;width:100%;height:100%;min-height:220px;border:1px solid #DCE4E7;border-radius:18px;background:#FFFFFF;overflow:hidden;box-shadow:0 3px 18px #243B5308}\n.eb-canvas-scroll{width:100%;height:100%;overflow:auto;overscroll-behavior:contain;border-radius:17px;background:#FFFFFF;background-image:radial-gradient(#DFE7EA .8px,transparent .8px);background-size:22px 22px}\n.eb-artboard{display:block;max-width:none;flex:none;touch-action:none;user-select:none}\n.eb-artboard [data-object]{cursor:grab}\n.eb-artboard [data-object]:active{cursor:grabbing}\n.eb-artboard [data-object]:focus-visible{outline:none}\n.eb-artboard [data-object]:focus-visible .eb-focus-ring{stroke:#2563EB;stroke-width:3}\n\n/* Selection actions hover above the dock, next to the selection they affect. */\n.eb-floating{position:absolute;z-index:5;left:50%;bottom:12px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:2px;max-width:calc(100% - 24px);padding:4px 6px;border:1px solid #D7E0E3;background:var(--dsw-alias-bg-overlay);border-radius:14px;box-shadow:0 8px 26px #243B5324;overflow-x:auto;scrollbar-width:none}\n.eb-floating small{padding:0 8px;white-space:nowrap;color:#6E7D87;font-size:12px}\n.eb-workbench .eb-floating button{padding:7px 9px;min-height:42px;font-size:12px}\n.eb-workbench .eb-floating .eb-context-action{gap:5px}\n.eb-workbench .eb-floating .eb-selected-mode{background:#EAF4DE;color:#416A28;border-color:#B8D898}\n\n/* One bottom row. */\n.eb-dock{position:absolute;z-index:6;left:10px;right:10px;bottom:8px;height:56px;padding:4px 6px;display:flex;align-items:center;gap:1px;border:1px solid #D8E1E4;border-radius:15px;background:#FFFFFF;box-shadow:0 6px 28px #243B5314,0 1px 3px #243B5308}\n.eb-dock .eb-grow{flex:1}\n.eb-dock .eb-divider{width:1px;height:22px;background:#E5EBED;margin:0 4px;flex:none}\n.eb-dock .eb-label{font-weight:550}\n.eb-dock .eb-zoom-label{min-width:46px;font-size:12px;color:#6E7C86;padding:7px 6px}\n.eb-dock .eb-zoom-button{width:36px;min-width:36px;padding:6px;font-size:16px;color:#65747E}\n.eb-dock .eb-color-button{min-width:82px;padding:6px 9px;gap:7px;border:1px solid #DCE4DF;background:#F9FCF7;border-radius:9px}\n.eb-color-dot{display:inline-block;flex:none;width:19px;height:19px;border-radius:999px;border:1px solid #233A2626;box-shadow:inset 0 1px 1px #FFF6}\n.eb-color-value{font-size:12px;font-weight:650;min-width:24px;text-align:left}\n.eb-chevron{font-size:11px;color:#7C8C80;line-height:1}\n.eb-dock .eb-note-button{width:42px;min-height:40px;padding:7px;position:relative;color:#5E7B44}\n.eb-dock .eb-note-button.eb-contextual{background:#F0F7E9}\n.eb-note-dot{position:absolute;top:7px;right:8px;width:6px;height:6px;border-radius:50%;background:#4CAF50;border:1px solid #FFF}\n.eb-dock .eb-primary{padding:8px 18px;margin-left:4px}\n.eb-dock .eb-primary .eb-label{font-weight:700}\n\n/* Menus, toast and modal editors. */\n.eb-menu{position:absolute;z-index:12;min-width:236px;max-width:calc(100% - 24px);padding:7px;border:1px solid #D5DFE3;border-radius:15px;background:var(--dsw-alias-bg-base);box-shadow:0 14px 44px #243B5326}\n.eb-more-menu{right:68px;bottom:70px}\n.eb-color-menu{left:112px;bottom:70px;min-width:190px}\n.eb-menu-head{padding:7px 10px;font-size:11px;color:#80909B}\n.eb-menu button{width:100%;justify-content:flex-start;text-align:left;padding:9px 10px;border-radius:9px}\n.eb-menu-value{flex:1;font-size:13px;font-weight:600}\n.eb-color-option{min-height:42px}\n.eb-color-option .icon{margin-left:auto;width:16px;height:16px}\n.eb-menu-note{margin:4px 10px 6px;font-size:11px;color:#71817A;overflow-wrap:anywhere}\n.eb-menu-line{height:1px;background:#E9EDEF;margin:6px 3px}\n.eb-menu-check{display:flex;align-items:center;gap:9px;padding:9px 10px;min-height:42px;font-size:12px;line-height:1.4}\n.eb-menu-check input{width:18px;height:18px;min-height:0;accent-color:#4CAF50}\n.eb-status-toast{position:absolute;z-index:20;left:50%;bottom:80px;transform:translateX(-50%);max-width:calc(100% - 40px);padding:9px 16px;border-radius:10px;background:#253A3E;color:#FFF;font-size:12px;line-height:1.5;box-shadow:0 6px 24px #0002;pointer-events:none}\n.eb-overlay{position:absolute;z-index:30;inset:0;display:grid;place-items:center;padding:20px;background:#20333F45;backdrop-filter:blur(2px)}\n.eb-overlay-card{width:min(470px,100%);max-height:calc(100% - 40px);overflow:auto;padding:20px;border:1px solid #D5DFE2;border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:0 20px 70px #1832472E}\n.eb-overlay-card h2{font-size:16px;margin:0 0 12px}\n.eb-overlay-card input:not([type=checkbox]),.eb-overlay-card textarea{width:100%;padding:11px;border:1px solid #CAD6DB;border-radius:10px;background:#FBFDFC;min-height:44px;font:inherit;font-size:13px}\n.eb-overlay-card textarea{min-height:128px;resize:vertical;line-height:1.65}\n.eb-overlay-context{margin:0 0 12px;padding:8px 11px;border:1px dashed #D7E3D0;border-radius:9px;background:#F7FBF3;color:#5D754C;font-size:12px}\n.eb-overlay-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:16px}\n.eb-overlay-actions button{min-height:40px;padding:8px 14px;border:1px solid #D8E1E4}\n.eb-overlay-actions .eb-primary{border:1px solid #669B36}\n.eb-muted{color:var(--dsw-alias-label-secondary);font-size:12px;line-height:1.6;margin:0 0 10px}\n.eb-library-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:8px}\n.eb-workbench .eb-library-tile{flex-direction:column;gap:2px;min-height:64px;padding:5px 2px;font-size:10px;border:1px solid #E3E9EB;border-radius:10px}\n.eb-library-tile span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}\n.eb-library-tile[aria-pressed=true]{background:#EAF4DE;border-color:#B8D898}\n\n@media(max-width:980px){\n  .eb-dock .eb-label{display:none}\n  .eb-dock .eb-dock-return{width:42px;min-width:42px;padding:7px}\n  .eb-dock .eb-primary{padding:8px 13px}\n  .eb-dock .eb-primary .eb-label{display:none}\n  .eb-dock .eb-primary{width:44px;min-width:44px}\n  .eb-floating .eb-label{display:none}\n  .eb-workbench .eb-floating button{width:40px;min-width:40px;padding:7px}\n  .eb-floating small{padding:0 5px}\n}\n@media(max-width:760px){\n  .eb-dialog{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0;border:0}\n  .eb-stage-wrap{left:66px;bottom:70px;padding:6px 6px 0}\n  .eb-palette{left:4px;top:56px;bottom:72px;width:56px}\n  .eb-workbench .eb-shape-tool{width:50px;min-height:48px;padding:5px}\n  .eb-brand{top:8px;left:9px;width:38px;height:38px}\n  .eb-dock{left:6px;right:6px;bottom:5px;height:54px}\n  .eb-dock .eb-divider{margin:0 2px}\n  .eb-dock .eb-zoom-out,.eb-dock .eb-zoom-in{display:none}\n  .eb-dock .eb-zoom-label{min-width:40px;font-size:11px;padding:6px 4px}\n  .eb-dock .eb-color-button{min-width:68px;padding:6px 7px}\n  .eb-dock .eb-color-value{font-size:11px;min-width:20px}\n  .eb-dock .eb-note-button,.eb-dock .eb-icon-button{width:38px;min-width:38px;padding:6px}\n  .eb-dock .eb-primary{width:40px;min-width:40px;padding:6px}\n  .eb-floating{bottom:9px;max-width:calc(100% - 12px);padding:3px}\n  .eb-workbench .eb-floating button{min-width:38px;width:38px;min-height:40px;padding:6px}\n  .eb-floating small{display:none}\n  .eb-status-toast{bottom:74px;font-size:11px}\n  .eb-overlay{padding:12px}\n  .eb-overlay-card{padding:16px;border-radius:15px}\n  .eb-more-menu{right:6px}\n  .eb-color-menu{left:6px}\n}\n@media(max-width:430px){\n  .eb-dock .eb-redo{display:none}\n  .eb-dock .eb-zoom-label{display:none}\n  .eb-dock .eb-color-button{min-width:58px}\n  .eb-dock .eb-note-button,.eb-dock .eb-icon-button{width:36px;min-width:36px}\n  .eb-library-grid{grid-template-columns:repeat(3,minmax(0,1fr))}\n}\n@media(max-height:620px){\n  .eb-stage-wrap{bottom:66px}\n  .eb-palette{bottom:68px}\n  .eb-dock{height:50px;bottom:5px}\n  .eb-floating{bottom:7px}\n  .eb-status-toast{bottom:68px}\n  .eb-more-menu,.eb-color-menu{bottom:62px}\n}\n@media(prefers-reduced-motion:reduce){.eb-workbench *{transition:none!important;animation:none!important}}\n", art, applyHostConfig, T);
         function SessionBoard(props) { return React.createElement(Board, {...props, key: props.sessionId}); }
         ctx.slots.inject('conversation.input.right', () => ctx.slots.register({
           name: 'conversation.input.right', id: 'edu-math-board-launch-v3', order: 50,

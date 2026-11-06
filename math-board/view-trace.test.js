@@ -13,7 +13,7 @@ const t = (key, params = {}) => {
   assert.equal(typeof locale[key], 'string', `Missing locale key: ${key}`);
   return locale[key].replace(/\{(\w+)\}/g, (match, name) => Object.hasOwn(params, name) ? String(params[name]) : match);
 };
-const key = 'dsh-edu-math-board:v3:integration';
+const key = 'dsh-edu-math-board:v4:integration';
 const traceKey = `${key}:trace-v1`;
 const walk = (node) => !node || typeof node !== 'object' ? []
   : [node, ...(node.children || []).flat(Infinity).flatMap(walk)];
@@ -84,7 +84,7 @@ function mount(options = {}) {
       const ref = node.props.ref;
       if (!dom.has(ref)) dom.set(ref, { open: false, ownerDocument: { activeElement: null },
         showModal() { this.open = true; }, close() { this.open = false; }, contains: () => false,
-        click() {}, href: '' });
+        focus() {}, select() {}, click() {}, href: '' });
       ref.current = dom.get(ref);
     }
     effects.splice(0).forEach((effect) => effect());
@@ -106,13 +106,41 @@ function mount(options = {}) {
     get persisted() { return persisted; }, get sent() { return sent; },
     render, refresh, button, find,
     click(label) { const node = button(label); assert.ok(!node.props.disabled, `${label} should be enabled`); const result = node.props.onClick(); refresh(); return result; },
-    add(shape = 'circle') { this.click(t(shape)); },
-    note(value) { find((node) => node.type === 'textarea').props.onBlur({ target: { value } }); refresh(); },
+    add(shape = 'circle') {
+      const node = find((candidate) => candidate.type === 'button'
+        && String(candidate.props['aria-label'] || '').startsWith(`${t(shape)} ·`));
+      assert.ok(!node.props.disabled, `${shape} should be enabled`);
+      node.props.onClick(); refresh();
+    },
+    clearSelection() {
+      const svg = find((node) => node.props.className === 'eb-artboard');
+      const node = svg.props.ref.current;
+      node.createSVGPoint = () => ({ matrixTransform: () => ({ x: 400, y: 200 }) });
+      node.getScreenCTM = () => ({ inverse: () => ({}) });
+      svg.props.onPointerDown({ button: 0, clientX: 0, clientY: 0, pointerId: 1, shiftKey: false,
+        target: { closest: () => null }, preventDefault() {}, currentTarget: { setPointerCapture() {} } });
+      svg.props.onPointerUp({ pointerId: 1 });
+      refresh();
+    },
+    note(value) {
+      find((node) => node.type === 'button' && String(node.props.className || '').includes('eb-note-button')).props.onClick(); refresh();
+      const area = find((node) => node.type === 'textarea');
+      area.props.ref.current.value = value;
+      this.click(t('save'));
+    },
+    openMore() {
+      const labels = () => walk(tree).filter((node) => node.type === 'label' && text(node) === t('traceAttach'));
+      if (labels().length === 1) return;
+      find((node) => node.type === 'button' && node.props['aria-label'] === t('moreActions')).props.onClick(); refresh();
+      assert.equal(labels().length, 1, 'More menu should open');
+    },
     attach(value) {
+      this.openMore();
       const label = find((node) => node.type === 'label' && text(node) === t('traceAttach'));
       walk(label).find((node) => node.type === 'input').props.onChange({ target: { checked: value } }); refresh();
     },
     get attachChecked() {
+      this.openMore();
       const label = find((node) => node.type === 'label' && text(node) === t('traceAttach'));
       return walk(label).find((node) => node.type === 'input').props.checked;
     },
@@ -137,22 +165,20 @@ function withMount(options, run) {
 test('draft and trace sidecar restore across mounts, including attachment preference', () => {
   const storage = new Map(); let expectedBoard; let expectedTrace;
   withMount({ storage }, (h) => {
-    h.add(); h.note('Two steps in my attempt'); h.attach(false);
+    h.add(); h.clearSelection(); h.note('Two steps in my attempt'); h.attach(false);
     expectedBoard = h.board(); expectedTrace = h.trace();
     assert.equal(expectedTrace.totalChanges, 2); assert.equal(expectedTrace.priorUnknown, false);
   });
   withMount({ storage }, (h) => {
     assert.deepEqual(h.board(), expectedBoard); assert.deepEqual(h.trace(), expectedTrace);
     assert.equal(h.attachChecked, false);
-    h.click(t('tracePreview'));
-    h.find((node) => node.type === 'p' && text(node) === t('traceTotals', { count: 2, omitted: 0 }));
     h.add(); assert.equal(h.trace().totalChanges, 3);
   });
 });
 
 test('old draft without a trace restores the board and explicitly marks unknown prior work', () => {
   const draft = M.reduce(M.empty(), { type: 'add', shape: 'cat', count: 2 });
-  for (const draftKey of [key, 'dsh-edu-math-board:v2:integration']) {
+  for (const draftKey of [key, 'dsh-edu-math-board:v3:integration', 'dsh-edu-math-board:v2:integration']) {
     withMount({ storage: new Map([[draftKey, JSON.stringify(draft)]]) }, (h) => {
       assert.deepEqual(h.board(), draft); assert.deepEqual(h.trace(), T.empty(true));
     });
@@ -172,7 +198,7 @@ test('mismatched and corrupt trace sidecars never discard a valid board draft', 
 
 test('clear wipes the canvas and the process record, and the next task starts fresh', () => {
   withMount({}, (h) => {
-    h.add(); h.note('An initial idea');
+    h.add(); h.clearSelection(); h.note('An initial idea');
     h.click(t('clear')); h.click(t('cancel'));
     assert.equal(h.board().objects.length, 1); assert.equal(h.trace().totalChanges, 2);
     h.click(t('clear')); h.click(t('confirmClear'));
@@ -235,7 +261,7 @@ test('insertion makes independent File snapshots, optional trace follows checkbo
     assert.equal(T.validate(JSON.parse(await h.files[2].text())).totalChanges, 2);
     assert.equal(h.trace().totalChanges, 3);
     assert.equal(h.persisted, 2); assert.equal(h.inserted.length, 0); assert.equal(h.sent, 0);
-    h.note('两只小猫在一起'); h.click(t('insert'));
+    h.clearSelection(); h.note('两只小猫在一起'); h.click(t('insert'));
     assert.equal(h.inserted.length, 1);
     assert.equal(h.inserted[0].value, '\n两只小猫在一起\n');
     assert.equal(/我在数学画板上摆好了|没圈组|划去的/.test(h.inserted[0].value), false);
@@ -243,32 +269,6 @@ test('insertion makes independent File snapshots, optional trace follows checkbo
     assert.equal(h.board().objects.length, 3); assert.equal(h.board().note, '两只小猫在一起');
     assert.equal(h.trace().totalChanges, 4);
   } finally { h.unmount(); }
-});
-
-test('starting a new attempt requires confirmation, keeps board, resets undo and process evidence', () => {
-  withMount({}, (h) => {
-    h.add(); h.note('Keep this arrangement'); const expected = h.board();
-    h.click(t('traceNewAttempt')); assert.equal(h.trace().totalChanges, 2);
-    h.click(t('cancel')); assert.equal(h.trace().totalChanges, 2);
-    h.click(t('traceNewAttempt')); h.click(t('traceResetConfirm'));
-    assert.deepEqual(h.board(), expected); assert.deepEqual(h.trace(), T.empty(true));
-    assert.equal(h.button(t('undo')).props.disabled, true); assert.equal(h.button(t('redo')).props.disabled, true);
-    h.add(); assert.equal(h.trace().totalChanges, 1); assert.equal(h.trace().priorUnknown, true);
-  });
-});
-
-test('clear record keeps the drawing, drops the local process log, and leaves an empty board fully known', () => {
-  withMount({}, (h) => {
-    h.add(); const expected = h.board();
-    h.click(t('traceClear')); h.click(t('cancel'));
-    assert.equal(h.trace().totalChanges, 1);
-    h.click(t('traceClear')); h.click(t('traceResetConfirm'));
-    assert.deepEqual(h.board(), expected); assert.deepEqual(h.trace(), T.empty(true));
-    h.click(t('clear')); h.click(t('confirmClear'));
-    assert.deepEqual(h.board(), M.empty()); assert.deepEqual(h.trace(), T.empty());
-    h.click(t('traceClear')); h.click(t('traceResetConfirm'));
-    assert.deepEqual(h.trace(), T.empty(false));
-  });
 });
 
 test('optional trace can be removed through normal attachment API without changing the board attachment', async () => {
@@ -297,7 +297,7 @@ test('failed attachment addition or text insertion rolls back both drafts via no
     h.find((node) => node.props.role === 'status' && text(node) === t('insertFailed'));
   });
   withMount({ fail: 'insertText' }, (h) => {
-    h.add(); h.note('keep my words'); h.click(t('insert')); const ids = h.batches[0].map((draft) => draft.id);
+    h.add(); h.clearSelection(); h.note('keep my words'); h.click(t('insert')); const ids = h.batches[0].map((draft) => draft.id);
     assert.equal(ids.length, 2); assert.deepEqual(h.removed, ids); assert.deepEqual(h.released, ids);
     assert.equal(h.attached.size, 0); assert.equal(h.persisted, 0); assert.equal(h.sent, 0);
     assert.equal(h.board().objects.length, 1); assert.equal(h.trace().totalChanges, 2);
@@ -325,7 +325,7 @@ test('a failed draft write keeps the settings watermark behind the applied board
 test('opening a board identical to the current one only marks earlier process unknown', async () => {
   const h = mount();
   try {
-    h.add(); h.note('Same content');
+    h.add(); h.clearSelection(); h.note('Same content');
     const before = h.trace(); const boardBefore = h.board();
     const input = h.find((node) => node.type === 'input' && node.props.type === 'file');
     await input.props.onChange({ target: {
@@ -445,7 +445,7 @@ test('dropping a pattern places the shape at the viewBox point from the screen t
 test('explicit snapshot export remains a board-only JSON attachment, independent from process evidence', async () => {
   const h = mount();
   try {
-    h.add(); h.note('Export this board'); h.click(t('export'));
+    h.add(); h.clearSelection(); h.note('Export this board'); h.openMore(); h.click(t('export'));
     assert.equal(h.exports.length, 1);
     const exported = JSON.parse(await h.exports[0].text());
     assert.equal(exported.kind, 'math-board'); assert.equal(exported.objects.length, 1);
@@ -453,4 +453,39 @@ test('explicit snapshot export remains a board-only JSON attachment, independent
     assert.equal(Object.hasOwn(exported, 'trace'), false); assert.equal(Object.hasOwn(exported, 'entries'), false);
     assert.deepEqual(M.validate(exported), h.board()); assert.equal(h.trace().totalChanges, 2);
   } finally { h.unmount(); }
+});
+
+test('the explanation bubble follows the selection and keeps ordinary and per-object notes separate', () => {
+  withMount({}, (h) => {
+    h.add();
+    h.note('第一只小猫');
+    assert.equal(h.board().objects[0].note, '第一只小猫');
+    assert.equal(h.board().note, '');
+    h.clearSelection();
+    h.note('整张画板的想法');
+    assert.equal(h.board().note, '整张画板的想法');
+    pointerAt(h, 'object-1');
+    h.find((node) => node.type === 'button' && String(node.props.className || '').includes('eb-note-button')).props.onClick();
+    h.refresh();
+    const area = h.find((node) => node.type === 'textarea');
+    assert.equal(area.props.defaultValue, '第一只小猫');
+    h.click(t('cancel'));
+    assert.equal(h.board().objects[0].note, '第一只小猫');
+    assert.equal(h.board().note, '整张画板的想法');
+  });
+});
+
+test('the quantity rides in a corner tag at the shape lower right, leaving the artwork clear', () => {
+  withMount({}, (h) => {
+    h.add('circle');
+    const object = h.find((node) => node.type === 'g' && node.props['data-object']);
+    const [badge] = walk(object).filter((node) => node.type === 'g' && !node.props['data-object']
+      && /^translate\(([\d.]+) ([\d.]+)\)$/.test(node.props.transform || '')
+      && walk(node).some((child) => child.type === 'text' && text(child) === '1'));
+    assert.ok(badge, 'the value should sit in its own tag');
+    const [, x, y] = /^translate\(([\d.]+) ([\d.]+)\)$/.exec(badge.props.transform);
+    assert.ok(Number(x) > 0 && Number(y) > 0, 'the tag sits at the lower right');
+    const art = walk(object).find((node) => node.props && node.props.textAnchor === 'middle' && node.props.y === 4);
+    assert.equal(art, undefined, 'no value label is centred on the shape');
+  });
 });

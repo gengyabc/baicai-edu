@@ -19,13 +19,13 @@ const assertSpaced = (objects) => {
   }
 };
 
-test('v3 defaults show the ten legacy patterns, including basic geometry, and keep the full library', () => {
+test('v4 defaults show rectangle triangle circle cat dog and keep the full library', () => {
   const empty = M.empty();
-  assert.equal(empty.schemaVersion, 3); assert.equal(Object.hasOwn(empty, 'operation'), false);
-  assert.deepEqual(Object.keys(empty).sort(), ['groups', 'note', 'objects', 'schemaVersion', 'settings']);
+  assert.equal(empty.schemaVersion, 4); assert.equal(Object.hasOwn(empty, 'operation'), false);
+  assert.deepEqual(Object.keys(empty).sort(), ['groups', 'note', 'notes', 'objects', 'schemaVersion', 'settings']);
   assert.deepEqual(M.shapes, ['circle', 'square', 'triangle', 'star', 'hexagon', 'diamond', 'heart', 'oval', 'cat', 'dog',
-    'car', 'person', 'apple', 'fish', 'rocket', 'flower', 'butterfly', 'house', 'icecream']);
-  assert.deepEqual(M.defaultVisibleShapes, ['circle', 'square', 'triangle', 'star', 'hexagon', 'diamond', 'heart', 'oval', 'cat', 'dog']);
+    'car', 'person', 'apple', 'fish', 'rocket', 'flower', 'butterfly', 'house', 'icecream', 'rectangle']);
+  assert.deepEqual(M.defaultVisibleShapes, ['rectangle', 'triangle', 'circle', 'cat', 'dog']);
   assert.deepEqual(empty.settings.shapes, M.defaultVisibleShapes);
   assert.deepEqual(M.defaultSettings().levels, [1, 10, 100, 1000, 10000].map((value, color) => ({ value, color })));
   assert.deepEqual(empty.settings.defaults.map((d) => d.shape), M.shapes);
@@ -121,7 +121,7 @@ test('regrouping dissolves every touched group, releases unselected members and 
   b = group(b, ['object-1', 'object-2'], '甲');
   b = group(b, ['object-3', 'object-4'], '乙');
   const result = group(freeze(b), ['object-1', 'object-3', 'object-5'], '新组');
-  assert.deepEqual(result.groups, [{ id: 'group-3', alias: '新组' }]);
+  assert.deepEqual(result.groups, [{ id: 'group-3', alias: '新组', note: '' }]);
   assert.deepEqual(result.objects.map((o) => o.groupId), ['group-3', null, 'group-3', null, 'group-3']);
   assert.deepEqual(result.objects.map(({ groupId, ...data }) => data), b.objects.map(({ groupId, ...data }) => data));
   const dissolved = M.reduce(result, { type: 'deleteGroup', id: 'group-3' });
@@ -248,12 +248,15 @@ const legacy = () => ({ schemaVersion: 1, operation: 'divide', objects: [
   { id: 'object-2', shape: 'triangle', value: 100, alias: '百', x: 100, y: 45, groupId: null, removed: true },
 ], groups: [{ id: 'group-1', alias: '老组' }], note: '旧画板' });
 
-test('validated legacy canonical and export states migrate to v3 without operation, geometry or name loss', () => {
+test('validated legacy canonical and export states migrate to v4 without operation, geometry or name loss', () => {
   const old = legacy(); const migrated = M.validate(freeze(old));
-  assert.equal(migrated.schemaVersion, 3); assert.equal(Object.hasOwn(migrated, 'operation'), false);
+  assert.equal(migrated.schemaVersion, 4); assert.equal(Object.hasOwn(migrated, 'operation'), false);
   assert.deepEqual(migrated.settings.shapes, ['circle', 'square', 'triangle']);
-  assert.deepEqual(migrated.objects.map(({ color, sources, ...rest }) => rest), old.objects);
-  assert.deepEqual(migrated.objects.map((o) => o.color), [1, 2]); assert.deepEqual(migrated.groups, old.groups);
+  assert.deepEqual(migrated.objects.map(({ color, sources, note, ...rest }) => rest), old.objects);
+  assert.ok(migrated.objects.every((o) => o.note === ''));
+  assert.deepEqual(migrated.objects.map((o) => o.color), [1, 2]);
+  assert.deepEqual(migrated.groups.map(({ alias }) => ({ id: migrated.groups[0].id, alias })), old.groups);
+  assert.equal(migrated.groups[0].note, '');
   const exported = { kind: 'math-board', ...old, summary: { totalCount: 2, activeCount: 1, totalValue: 10, removedCount: 1, removedValue: 100, groups: [{ id: 'group-1', alias: '老组', count: 1, value: 10 }], ungrouped: { count: 0, value: 0 } } };
   assert.deepEqual(M.validate(exported), migrated);
   exported.summary.totalValue = 999; assert.throws(() => M.validate(exported));
@@ -262,11 +265,11 @@ test('validated legacy canonical and export states migrate to v3 without operati
   }
 });
 
-test('schemaVersion 2 settings migrate to v3: ten old patterns stay visible and new patterns get a fallback default', () => {
+test('schemaVersion 2 settings migrate to v4: ten old patterns stay visible and new patterns get a fallback default', () => {
   const legacyDefaults = M.shapes.slice(0, 10).map((shape) => ({ shape, value: 1, alias: shape === 'circle' ? '苹果' : '' }));
   const old = { schemaVersion: 2, settings: { levels: [{ value: 1, color: 0 }, { value: 10, color: 1 }], defaults: legacyDefaults }, objects: [], groups: [], note: '' };
   const migrated = M.validate(freeze(old));
-  assert.equal(migrated.schemaVersion, 3);
+  assert.equal(migrated.schemaVersion, 4);
   assert.deepEqual(migrated.settings.shapes, M.shapes.slice(0, 10));
   assert.deepEqual(migrated.settings.defaults.map((d) => d.shape), M.shapes);
   assert.deepEqual(migrated.settings.defaults.slice(0, 10), legacyDefaults);
@@ -278,10 +281,13 @@ test('schemaVersion 2 settings migrate to v3: ten old patterns stay visible and 
   assert.throws(() => M.validateSettings({ ...old.settings, shapes: M.defaultVisibleShapes }));
 });
 
-test('strict v3 validation rejects malformed state, sources, links and untrusted totals', () => {
+test('strict v4 validation rejects malformed state, notes, sources, links and untrusted totals', () => {
   const b = add(M.empty());
-  const cases = [null, [], '{}', { ...b, schemaVersion: 4 }, { ...b, operation: 'add' }, { ...b, settings: {} }, { ...b, note: 1 }, { ...b, objects: {} }, { ...b, groups: [{ id: 'g', alias: 1 }] }];
-  for (const patch of [{ id: '' }, { shape: 'catfish' }, { value: 0 }, { color: 10 }, { alias: null }, { x: NaN }, { y: Infinity }, { x: 29 }, { y: 331 }, { removed: 1 }, { groupId: 'missing' }, { sources: [{}] }, { extra: 1 }]) cases.push({ ...b, objects: [{ ...b.objects[0], ...patch }] });
+  const cases = [null, [], '{}', { ...b, schemaVersion: 5 }, { ...b, operation: 'add' }, { ...b, settings: {} }, { ...b, note: 1 }, { ...b, objects: {} }, { ...b, groups: [{ id: 'g', alias: 1 }] }];
+  cases.push({ ...b, notes: [{ id: 'note-1', text: 'x', objectIds: ['object-1'] }] });
+  cases.push({ ...b, notes: [{ id: 'note-1', text: 'x', objectIds: ['object-1', 'missing'] }] });
+  cases.push({ ...b, notes: [{ id: 'note-1', text: '', objectIds: ['object-1'] }] });
+  for (const patch of [{ id: '' }, { shape: 'catfish' }, { value: 0 }, { color: 10 }, { alias: null }, { note: 1 }, { x: NaN }, { y: Infinity }, { x: 29 }, { y: 331 }, { removed: 1 }, { groupId: 'missing' }, { sources: [{}] }, { extra: 1 }]) cases.push({ ...b, objects: [{ ...b.objects[0], ...patch }] });
   cases.push({ ...b, objects: [b.objects[0], b.objects[0]] });
   for (const input of cases) assert.throws(() => M.validate(input));
   for (const patch of [{ id: 'changed' }, { shape: 'square' }, { color: 1 }, { value: 2 }, { removed: 'yes' }]) assert.throws(() => M.reduce(b, { type: 'update', id: 'object-1', patch }));
@@ -312,7 +318,7 @@ test('summary preserves active versus removed facts and serialization roundtrips
   b = M.reduce(b, { type: 'update', id: 'object-1', patch: { removed: true } });
   assert.deepEqual(M.summary(b), { totalCount: 3, activeCount: 2, totalValue: 4, removedCount: 1, removedValue: 2,
     groups: [{ id: 'group-1', alias: '两份', count: 1, value: 2 }], ungrouped: { count: 1, value: 2 } });
-  const exported = JSON.parse(M.serialize(b)); assert.equal(exported.kind, 'math-board'); assert.equal(exported.schemaVersion, 3);
+  const exported = JSON.parse(M.serialize(b)); assert.equal(exported.kind, 'math-board'); assert.equal(exported.schemaVersion, 4);
   assert.deepEqual(M.validate(exported), b);
 });
 
@@ -363,6 +369,29 @@ test('configure recolours unmerged shapes on a changed level and keeps a merged 
   const plain = add(configured(M.empty(), 'future', levels), { value: 6 });
   const painted = M.reduce(plain, { type: 'configure', settings, scope: 'future' });
   assert.equal(painted.objects[0].color, 4);
+});
+
+test('student explanations attach to objects, groups and exact selections, and follow merge/delete rules', () => {
+  let b = add(M.empty(), { count: 3 });
+  b = M.reduce(b, { type: 'annotate', target: 'object', id: 'object-1', value: '第一只' });
+  assert.equal(b.objects[0].note, '第一只');
+  b = group(b, ['object-1', 'object-2'], '甲组');
+  b = M.reduce(b, { type: 'annotate', target: 'group', id: 'group-1', value: '这一组' });
+  assert.equal(b.groups[0].note, '这一组');
+  b = M.reduce(b, { type: 'annotate', target: 'selection', ids: ['object-1', 'object-2'], value: '两只一起' });
+  assert.equal(b.notes.length, 1); assert.deepEqual(b.notes[0].objectIds, ['object-1', 'object-2']);
+  const roundtrip = M.validate(JSON.parse(M.serialize(b))); assert.deepEqual(roundtrip, b);
+  const merged = M.reduce(b, { type: 'merge', ids: ['object-1', 'object-2'] });
+  assert.equal(merged.objects[0].note, '两只一起');
+  assert.equal(merged.notes.length, 0);
+  const split = M.reduce(merged, { type: 'split', id: merged.objects[0].id });
+  assert.deepEqual(split.objects.map((o) => o.note).filter(Boolean).sort(), ['第一只']);
+  let removed = add(M.empty(), { count: 3 });
+  removed = M.reduce(removed, { type: 'annotate', target: 'selection', ids: ['object-1', 'object-2'], value: '两只' });
+  removed = M.reduce(removed, { type: 'delete', id: 'object-1' });
+  assert.equal(removed.notes.length, 0);
+  assert.throws(() => M.reduce(b, { type: 'annotate', target: 'selection', ids: ['object-1'], value: '一只' }));
+  assert.throws(() => M.reduce(b, { type: 'annotate', target: 'object', id: 'object-1', value: '字'.repeat(501) }));
 });
 
 test('factory has no runtime imports or external bindings, source states and actions remain immutable', () => {
