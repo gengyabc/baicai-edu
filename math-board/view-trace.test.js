@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { createBoardView, createBoardDescription, createShapeArt } from './view.js';
+import { createBoardView, createShapeArt } from './view.js';
 import { createBoardModel } from './model.js';
 import { createBoardTrace } from './trace.js';
 import { applyHostConfig } from './config-bridge.js';
@@ -76,7 +76,7 @@ function mount(options = {}) {
   };
   const ctx = { locale: { subscribe: () => () => {}, getSnapshot: () => 'zh' },
     get: (name) => { assert.equal(name, 'conversation'); return conversation; } };
-  const Board = createBoardView(React, M, ctx, t, '', createShapeArt(React), createBoardDescription(M), applyHostConfig, T);
+  const Board = createBoardView(React, M, ctx, t, '', createShapeArt(React), applyHostConfig, T);
   const props = { sessionId: 'integration', useProjection: () => config, useInput: () => 'plain', inputActions };
   function render() {
     cursor = 0; dirty = false; tree = Board(props);
@@ -170,16 +170,20 @@ test('mismatched and corrupt trace sidecars never discard a valid board draft', 
   }
 });
 
-test('clear retains event evidence, and an empty board with trace can still be inserted', () => {
+test('clear wipes the canvas and the process record, and the next task starts fresh', () => {
   withMount({}, (h) => {
-    h.add(); h.note('An initial idea'); const previous = h.trace().entries;
+    h.add(); h.note('An initial idea');
+    h.click(t('clear')); h.click(t('cancel'));
+    assert.equal(h.board().objects.length, 1); assert.equal(h.trace().totalChanges, 2);
     h.click(t('clear')); h.click(t('confirmClear'));
-    assert.deepEqual(h.board(), M.empty());
-    assert.deepEqual(h.trace().entries.slice(0, 2), previous);
-    assert.equal(h.trace().entries.at(-1).type, 'clear');
-    assert.equal(h.button(t('insert')).props.disabled, false);
-    h.attach(false); assert.equal(h.button(t('insert')).props.disabled, true);
-    h.attach(true); h.click(t('insert')); assert.equal(h.files.length, 2);
+    assert.deepEqual(h.board(), M.empty()); assert.deepEqual(h.trace(), T.empty());
+    assert.equal(h.button(t('undo')).props.disabled, true);
+    assert.equal(h.button(t('insert')).props.disabled, true);
+    h.find((node) => node.props.role === 'status' && text(node) === t('clearDone'));
+    h.add();
+    assert.equal(h.board().objects.length, 1);
+    assert.equal(h.trace().totalChanges, 1); assert.equal(h.trace().priorUnknown, false);
+    assert.equal(h.trace().entries[0].type, 'add');
   });
 });
 
@@ -219,16 +223,25 @@ test('insertion makes independent File snapshots, optional trace follows checkbo
     assert.equal(snapshot.kind, 'math-board'); assert.equal(snapshot.objects.length, 1);
     assert.equal(Object.hasOwn(snapshot, 'trace'), false);
     assert.equal(Object.hasOwn(snapshot, 'entries'), false);
+    assert.equal(h.board().objects.length, 1); assert.equal(h.trace().totalChanges, 1);
     h.add(); h.attach(true); h.click(t('insert'));
     assert.equal(h.batches[1].length, 2);
     const boardSnapshot = JSON.parse(await h.files[1].text());
     const traceSnapshot = T.validate(JSON.parse(await h.files[2].text()));
     assert.equal(boardSnapshot.objects.length, 2); assert.equal(traceSnapshot.totalChanges, 2);
+    assert.equal(h.board().objects.length, 2); assert.equal(h.trace().totalChanges, 2);
     assert.equal(h.files[2].name, t('traceAttachmentName')); assert.equal(h.files[2].type, 'application/json');
     h.add(); assert.equal(await h.files[0].text(), snapshotText);
     assert.equal(T.validate(JSON.parse(await h.files[2].text())).totalChanges, 2);
-    assert.equal(h.persisted, 2); assert.equal(h.inserted.length, 2); assert.equal(h.sent, 0);
+    assert.equal(h.trace().totalChanges, 3);
+    assert.equal(h.persisted, 2); assert.equal(h.inserted.length, 0); assert.equal(h.sent, 0);
+    h.note('两只小猫在一起'); h.click(t('insert'));
+    assert.equal(h.inserted.length, 1);
+    assert.equal(h.inserted[0].value, '\n两只小猫在一起\n');
+    assert.equal(/我在数学画板上摆好了|没圈组|划去的/.test(h.inserted[0].value), false);
     assert.deepEqual(h.inserted[0].span, { offset: 17 });
+    assert.equal(h.board().objects.length, 3); assert.equal(h.board().note, '两只小猫在一起');
+    assert.equal(h.trace().totalChanges, 4);
   } finally { h.unmount(); }
 });
 
@@ -244,23 +257,50 @@ test('starting a new attempt requires confirmation, keeps board, resets undo and
   });
 });
 
-test('optional trace can be removed through normal attachment API without changing the board attachment', () => {
+test('clear record keeps the drawing, drops the local process log, and leaves an empty board fully known', () => {
   withMount({}, (h) => {
-    h.add(); h.click(t('insert'));
-    const [boardDraft, traceDraft] = h.batches[0];
-    h.inputActions.removeAttachment(traceDraft.id);
-    assert.deepEqual([...h.attached], [boardDraft.id]);
-    assert.deepEqual(h.removed, [traceDraft.id]); assert.equal(h.board().objects.length, 1);
-    assert.equal(h.trace().totalChanges, 1); assert.equal(h.sent, 0);
+    h.add(); const expected = h.board();
+    h.click(t('traceClear')); h.click(t('cancel'));
+    assert.equal(h.trace().totalChanges, 1);
+    h.click(t('traceClear')); h.click(t('traceResetConfirm'));
+    assert.deepEqual(h.board(), expected); assert.deepEqual(h.trace(), T.empty(true));
+    h.click(t('clear')); h.click(t('confirmClear'));
+    assert.deepEqual(h.board(), M.empty()); assert.deepEqual(h.trace(), T.empty());
+    h.click(t('traceClear')); h.click(t('traceResetConfirm'));
+    assert.deepEqual(h.trace(), T.empty(false));
   });
 });
 
+test('optional trace can be removed through normal attachment API without changing the board attachment', async () => {
+  const h = mount();
+  try {
+    h.add(); h.click(t('insert'));
+    const [boardDraft, traceDraft] = h.batches[0];
+    const snapshotText = await h.files[0].text();
+    h.inputActions.removeAttachment(traceDraft.id);
+    assert.deepEqual([...h.attached], [boardDraft.id]);
+    assert.deepEqual(h.removed, [traceDraft.id]);
+    assert.equal(await h.files[0].text(), snapshotText);
+    assert.equal(JSON.parse(snapshotText).objects.length, 1);
+    assert.equal(h.board().objects.length, 1);
+    assert.equal(h.trace().totalChanges, 1);
+    assert.equal(h.sent, 0);
+  } finally { h.unmount(); }
+});
+
 test('failed attachment addition or text insertion rolls back both drafts via normal APIs', () => {
-  for (const fail of ['addAttachments', 'insertText']) withMount({ fail }, (h) => {
+  withMount({ fail: 'addAttachments' }, (h) => {
     h.add(); h.click(t('insert')); const ids = h.batches[0].map((draft) => draft.id);
     assert.equal(ids.length, 2); assert.deepEqual(h.removed, ids); assert.deepEqual(h.released, ids);
     assert.equal(h.attached.size, 0); assert.equal(h.persisted, 0); assert.equal(h.sent, 0);
     assert.equal(h.board().objects.length, 1); assert.equal(h.trace().totalChanges, 1);
+    h.find((node) => node.props.role === 'status' && text(node) === t('insertFailed'));
+  });
+  withMount({ fail: 'insertText' }, (h) => {
+    h.add(); h.note('keep my words'); h.click(t('insert')); const ids = h.batches[0].map((draft) => draft.id);
+    assert.equal(ids.length, 2); assert.deepEqual(h.removed, ids); assert.deepEqual(h.released, ids);
+    assert.equal(h.attached.size, 0); assert.equal(h.persisted, 0); assert.equal(h.sent, 0);
+    assert.equal(h.board().objects.length, 1); assert.equal(h.trace().totalChanges, 2);
     h.find((node) => node.props.role === 'status' && text(node) === t('insertFailed'));
   });
 });

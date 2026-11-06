@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { createBoardDescription, createShapeArt, colorIndexForValue, createBoardView } from './view.js';
+import { composerNote, createShapeArt, colorIndexForValue, createBoardView } from './view.js';
 import { createBoardModel } from './model.js';
 import { createBoardTrace } from './trace.js';
 
@@ -11,7 +11,6 @@ const art = createShapeArt(React);
 const zh = JSON.parse(await readFile(new URL('./locale/zh.json', import.meta.url), 'utf8'));
 const t = (key, params = {}) => zh[key].replace(/\{(\w+)\}/g, (match, name) =>
   Object.hasOwn(params, name) ? String(params[name]) : match);
-const describeBoard = createBoardDescription(M);
 
 test('tool value radios default to 1 and synchronize previews and new objects', () => {
   const states = []; let cursor = 0;
@@ -26,7 +25,7 @@ test('tool value radios default to 1 and synchronize previews and new objects', 
   const previousWindow = globalThis.window;
   globalThis.window = { matchMedia: () => ({ matches: true }) };
   try {
-    const Board = createBoardView(hooks, M, {}, t, '', art, describeBoard, () => null, createBoardTrace(M));
+    const Board = createBoardView(hooks, M, {}, t, '', art, () => null, createBoardTrace(M));
     const render = () => {
       cursor = 0;
       const tree = Board({ sessionId: 'test', useProjection: () => null, useInput: () => 'plain' });
@@ -79,19 +78,13 @@ test('colorIndexForValue reads level.color, not the array index', () => {
   assert.equal(colorIndexForValue(levels, 999), 0);
 });
 
-test('the answer note names groups, cross-outs and the student explanation without coordinates or JSON', () => {
+test('the composer receives only the student note, never a generated inventory', () => {
   let board = M.reduce(M.empty(), { type: 'add', shape: 'cat', count: 2 });
   board = M.reduce(board, { type: 'add', shape: 'apple' });
   board = M.reduce(board, { type: 'groupSelected', ids: ['object-1', 'object-2'], alias: '小猫队' });
   board = M.reduce(board, { type: 'update', id: 'object-3', patch: { removed: true } });
-  board = M.reduce(board, { type: 'note', value: '两只小猫在一起' });
-  const text = describeBoard(board, t);
-  assert.equal(text, [
-    '我在数学画板上摆好了：',
-    '· 一组「小猫队」：小猫 2 个，每个代表 1，一共 2',
-    '· 划去的：苹果 1 个，每个代表 1',
-    '',
-    '我想说：两只小猫在一起',
-  ].join('\n'));
-  assert.equal(/object-|"x":|schemaVersion/.test(text), false);
+  assert.equal(composerNote(board), '');
+  board = M.reduce(board, { type: 'note', value: '  两只小猫在一起  ' });
+  assert.equal(composerNote(board), '两只小猫在一起');
+  assert.equal(/我在数学画板上摆好了|没圈组|划去|object-|schemaVersion/.test(composerNote(board)), false);
 });

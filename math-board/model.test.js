@@ -316,7 +316,7 @@ test('summary preserves active versus removed facts and serialization roundtrips
   assert.deepEqual(M.validate(exported), b);
 });
 
-test('digest keeps group composition, cross-outs and merge provenance for the friendly answer text', () => {
+test('digest keeps group composition, cross-outs and merge provenance', () => {
   let b = configured();
   b = add(b, { count: 3 });
   b = group(b, ['object-1', 'object-2'], '小猫队');

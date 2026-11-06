@@ -212,30 +212,9 @@ export function createShapeArt(React) {
   return { node, patterns: Object.keys(patterns) };
 }
 
-// Turn one board into the short, human sentence that goes into the composer.
-// The attachment carries the exact JSON; this text lets a child (and the model)
-// understand the board without reading a wall of data.
-export function createBoardDescription(M) {
-  const nameOf = (item, t) => item.alias || t(item.shape);
-  const itemText = (item, t) => item.merged
-    ? t('summaryMerged', { name: nameOf(item, t), sources: item.merged, value: item.value })
-    : t('summaryItem', { name: nameOf(item, t), count: item.count, value: item.value });
-  const partsText = (bucket, t) => bucket.items.map((item) => itemText(item, t)).join(t('summaryJoin'));
-  return function describeBoard(board, t) {
-    const digest = M.digest(board);
-    const lines = [t('summaryIntro')];
-    if (digest.ungrouped.count) lines.push(`· ${t('summaryUngroupedLine', { parts: partsText(digest.ungrouped, t) })}`);
-    for (const group of digest.groups) {
-      lines.push(`· ${t('summaryGroup', {
-        name: group.alias || t('summaryUnnamedGroup'),
-        parts: partsText(group, t),
-        total: group.total,
-      })}`);
-    }
-    if (digest.removed.count) lines.push(`· ${t('summaryRemovedLine', { parts: partsText(digest.removed, t) })}`);
-    if (board.note) lines.push('', t('summaryNote', { note: board.note }));
-    return lines.join('\n');
-  };
+// The JSON attachment is the board. The composer only receives words the student wrote.
+export function composerNote(board) {
+  return typeof board?.note === 'string' ? board.note.trim() : '';
 }
 
 /** Resolve a level value to its stored palette index (not the array position). */
@@ -244,7 +223,7 @@ export function colorIndexForValue(levels, value) {
   return level ? level.color : 0;
 }
 
-export function createBoardView(React, M, ctx, t, css, art, describeBoard, applyHostConfig, T) {
+export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) {
   const h = React.createElement;
   const paletteColor = (index) => M.color(index);
   function icon(name, size = 18) {
@@ -553,6 +532,26 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
       }
     }
     function close() { flushEditor(); gesture.current = null; setPreview(null); setOpened(false); }
+    // Clear is the boundary between tasks. Submitted files stay; undo cannot restore this attempt.
+    function confirmClearBoard() {
+      revision.current++; gesture.current = null; setPreview(null);
+      publish(M.empty());
+      publishTrace(T.empty());
+      setHistory({ past: [], future: [] });
+      selectIds([]);
+      setStorageBlocked(false);
+      setClearConfirm(false); setResetTraceConfirm(false);
+      setSettingsView(false); setSettingsDraft(null);
+      setStatus(t('clearDone'));
+    }
+    // Drop the local process log without touching the drawing or files already inserted.
+    function confirmResetTrace() {
+      revision.current++; gesture.current = null; setPreview(null);
+      const baseline = boardRef.current;
+      publishTrace(T.empty(Boolean(baseline.objects.length || baseline.groups.length || baseline.note)));
+      setHistory({ past: [], future: [] });
+      setResetTraceConfirm(false); setStatus(t('traceResetDone'));
+    }
     function insert() {
       flushEditor();
       // The composer owns draft attachments, so reach its service at click time
@@ -568,8 +567,7 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
       };
       try {
         if (!conversation?.createDrafts) throw Error();
-        const span = props.inputActions.captureInsertion();
-        const text = '\n' + describeBoard(boardRef.current, t) + '\n';
+        const note = composerNote(boardRef.current);
         const files = [new File([M.serialize(boardRef.current)], t('attachmentName'), { type: 'application/json' })];
         let traceSkipped = false;
         if (attachTrace) {
@@ -578,8 +576,8 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
         }
         drafts = conversation.createDrafts(props.sessionId, files);
         if (!props.inputActions.addAttachments(drafts.map((draft) => draft.id))) throw Error();
-        if (!props.inputActions.insertText(text, span)) throw Error();
-        props.inputActions.persistDraft(); setStatus(t(traceSkipped ? 'traceSkipped' : 'inserted')); close();
+        if (note && !props.inputActions.insertText(`\n${note}\n`, props.inputActions.captureInsertion())) throw Error();
+        props.inputActions.persistDraft(); setStatus(t(traceSkipped ? 'traceSkipped' : (note ? 'insertedNote' : 'inserted'))); close();
       } catch {
         discard();
         setStatus(t('insertFailed'));
@@ -849,17 +847,11 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
         h('label', null, h('input', { type: 'checkbox', checked: attachTrace,
           onChange: (event) => setAttachTrace(event.target.checked) }), t('traceAttach')),
         button(t(traceView ? 'traceHide' : 'tracePreview'), () => { flushEditor(); setTraceView(!traceView); }),
-        button(t('traceNewAttempt'), () => { flushEditor(); setResetTraceConfirm(true); })),
+        button(t('traceNewAttempt'), () => { flushEditor(); setClearConfirm(false); setResetTraceConfirm(true); })),
       h('p', { className: 'eb-muted' }, t('traceNotice')),
       resetTraceConfirm && h('div', { className: 'eb-confirm' },
         h('span', null, t('traceResetQuestion')),
-        button(t('traceResetConfirm'), () => {
-          revision.current++; gesture.current = null; setPreview(null);
-          const baseline = boardRef.current;
-          publishTrace(T.empty(Boolean(baseline.objects.length || baseline.groups.length || baseline.note)));
-          setHistory({ past: [], future: [] });
-          setResetTraceConfirm(false); setStatus(t('traceResetDone'));
-        }),
+        button(t('traceResetConfirm'), confirmResetTrace),
         button(t('cancel'), () => setResetTraceConfirm(false))),
       traceView && h('div', { className: 'eb-trace-preview' },
         h('p', null, t('traceScope')),
@@ -887,12 +879,13 @@ export function createBoardView(React, M, ctx, t, css, art, describeBoard, apply
       clearConfirm
         ? h('div', { className: 'eb-confirm' },
             h('span', null, t('clearQuestion')),
-            button(t('confirmClear'), () => { commit(M.empty(), { type: 'clear' }); selectIds([]); setStorageBlocked(false); }),
+            button(t('confirmClear'), confirmClearBoard),
             button(t('cancel'), () => setClearConfirm(false)))
         : h('div', { className: 'eb-file-actions' },
             button(t('export'), exportFile),
             button(t('import'), () => fileInput.current.click()),
-            button(t('clear'), () => setClearConfirm(true))),
+            button(t('traceClear'), () => { flushEditor(); setClearConfirm(false); setResetTraceConfirm(true); }),
+            button(t('clear'), () => { setResetTraceConfirm(false); setClearConfirm(true); })),
       button(t('insert'), insert, { className: 'eb-primary', disabled: (!board.objects.length && !board.note && !(attachTrace && trace.totalChanges)) || phase !== 'plain' }),
       button(h(React.Fragment, null, icon('close'), h('span', null, t('backToChat'))), close, { className: 'eb-close', 'aria-label': t('backToChat') }),
       h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: fileInput, onChange: importFile }),

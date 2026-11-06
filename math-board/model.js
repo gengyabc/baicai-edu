@@ -77,9 +77,8 @@ export function createBoardModel() {
   };
   // Exact large aggregates are decimal strings; ordinary quantities remain numbers.
   const exact = (v) => v <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(v) : v.toString();
-  // Group composition for the friendly answer text. Unlike `summary`, this keeps
-  // each group's shape/value makeup so the model can read the board without
-  // opening the attachment, while coordinates and ids stay out of the prose.
+  // Per-group shape, value and merge counts. Unlike `summary`, this keeps each
+  // group's makeup; coordinates and ids stay out. It is not written into the composer.
   const digest = (board) => {
     const canonical = validate(board);
     const groups = canonical.groups.map((g) => ({ id: g.id, alias: g.alias, items: [], count: 0, total: 0n }));
