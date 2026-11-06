@@ -28,7 +28,7 @@ user-invocable: false
 | 评价重点要衔接后续评改 | `references/chinese-assessment-rubric.md` |
 | 对照最近错误标签选目标 | `references/chinese-error-labels.md` |
 
-使用兴趣、偏好、易/难时加载 `learn-core` 并读 `references/prestart-settings-interpretation.md`。
+使用兴趣、偏好、易/难时，先读 `learn-core` 的 `references/prestart-settings-interpretation.md`，再读 `chinese-core` 的 `references/chinese-personalization.md`。
 
 ## 流程
 
@@ -45,29 +45,11 @@ user-invocable: false
 
 ## 会话段
 
-在内存里产出一个 `session_segment`，交入口写入 `session_log.json`；本 skill 不直接写学生数据。
-
-```json
-{
-  "focus": "《XX》双层赏析与段落作用练习",
-  "subject": "chinese",
-  "mode": "learn",
-  "submode": "generate_tasks",
-  "source": "reading",
-  "strategy_summary": "按高年级难度出了 3 道题，覆盖概括、赏析、作用，并给出分点判分标准。",
-  "strengths": [],
-  "difficulties": [],
-  "next_step_candidate": "让学生先做赏析题，再按判分标准自评",
-  "recommended_targets": ["双层赏析"],
-  "feynman_handoff_recommended": false,
-  "confirmed_skills": [],
-  "skill_errors_observed": []
-}
-```
+按 `chinese-core` 的回合交付规则返回唯一内存 `session_segment`，由入口写日志；本 skill 不写学生数据。
 
 - `subject` 固定 `chinese`，`mode` 固定 `learn`，`submode` 固定 `generate_tasks`。
 - `source` 按题目领域取 `reading` / `writing`。
-- 出题不构成学生表现，表现与技巧追踪字段通常为空，不编造；采用默认训练目标时在 `strategy_summary` 说明。
+- 出题不构成学生表现：`strengths`、`difficulties`、`confirmed_skills`、`skill_errors_observed` 留空，`feynman_handoff_recommended: false`，不生成 `diagnosis`；采用默认训练目标时在 `strategy_summary` 说明。
 
 ## 结束状态规则
 

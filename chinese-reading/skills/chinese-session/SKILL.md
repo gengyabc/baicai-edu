@@ -10,19 +10,7 @@ user-invocable: false
 
 ## 输入
 
-学习入口会传入：
-
-```json
-{
-  "student_id": "stu_li_ming_a7k2",
-  "subject": "chinese",
-  "target_context": { "type": "reading_material", "intent": "learn_reading" },
-  "mode": "learn",
-  "focus": "《秋天的雨》第二段赏析",
-  "personal": { "interests": ["阅读", "踢足球"] },
-  "preferences": { "likes_model_text": true }
-}
-```
+入口传入学生身份、`subject: chinese`、目标、模式、焦点、快照与个性化字段；完整交接字段见“移交控制”。
 
 - `target_context.type`：`reading_material` | `writing_prompt` | `writing_draft` | `task_generation` | `assessment` | `error_files` | `profile`。
 - `target_context.intent`：`learn_reading` | `start_writing` | `revise_writing` | `assess_reading` | `assess_writing` | `generate_reading_tasks` | `generate_writing_task` | `transfer_read_write`。
@@ -71,7 +59,7 @@ user-invocable: false
 ## 路由规则
 
 1. 费曼模式只在开头路由一次；随后不再因为学生的新句子反复切换领域。
-2. 文件目标遵循 `learn-data` 的 `references/target-parsing.md` 的 After File Processing：
+2. 文件目标的共享交接见 `learn-data` 的 `references/target-parsing.md`；语文归类见 `chinese-core` 的 `references/chinese-target.md`：
    - 入口已归类并传 `files_processed: true` 时，直接使用其阅读/写作类别、intent、提取内容和 material_refs；不再加载 `learn-errors` 或追问自我诊断。
    - 兼容仍为 `error_files` 但已处理的目标：读取 material_refs 指向的 extracted 内容，归为阅读/写作类别；不再分析旧 raw 路径。
    - 尚未处理时交回共享生命周期调用一次 `learn-errors`，取得结果后再路由；本路由器不进行文件持久化。
@@ -79,7 +67,7 @@ user-invocable: false
 3. `type = profile` 选定领域的顺序：
    1. `session_history[0].next_step` 明确指向阅读或写作时，用它。
    2. 否则用科目档案 `learning_state.active_domain`。
-   3. 仍然没有，用 `learn-core` 的年级段默认领域（`references/grade-band-defaults.md`）。
+   3. 仍然没有，用 `chinese-core` 的 `references/chinese-grade-defaults.md`。年级段与语气仍见 `learn-data` 的 `references/grade-band-defaults.md`。
    4. 只选一个领域，不并列两个。
 4. 已明确 `intent` 时，不要用模糊描述重新推断阅读还是写作。
 5. 阅读结束后学生提出“我想试试自己写”时，不要重新走写作 start；路由 `chinese-read-write-transfer`，保留当前阅读材料与已提取技巧。

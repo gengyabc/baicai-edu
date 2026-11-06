@@ -16,7 +16,7 @@ user-invocable: false
 
 - 文章或材料原文、阅读题目、学生答案（可能只有其中一部分）。
 - `focus`：本轮锁定的一段、一句或一个题型。
-- `grade_band`：来自快照 `profile.json`；年级段规则见 `learn-core/references/grade-band-defaults.md`。
+- `grade_band`：来自快照 `profile.json`；年级段规则见 `learn-data/references/grade-band-defaults.md`。
 - 快照中的 `priority_targets`、`developing_topics`、`error_history` 最近几条。
 - 个性化：`personal.interests`、`personal.most_exciting_event`、`profile.preferences`、`self_report.easy_topics/hard_topics`、`memory.preferred_scaffolds` / `recent_error_patterns` / `expression_traits` / `stable_strengths` / `stable_difficulties`。
 
@@ -30,14 +30,14 @@ user-invocable: false
 | 反馈流程、标签用法、方法提炼 | `chinese-core` | `references/chinese-feedback-core.md` |
 | learn 提炼写法时：技巧提取标准与学段 | `chinese-core` | `references/chinese-writing-core.md` 的“行文技巧提取与读写迁移” |
 | 已定位失分点、选择标签与记录诊断前 | `chinese-core` | `references/chinese-error-labels.md` |
-| 默认语气（Guided Coach） | `learn-core` | `references/personas.md` |
-| 诊断回合叠加追问语气（Socratic Tutor） | `learn-core` | `references/personas.md` 的 Socratic Tutor 部分 |
+| 默认语气（Guided Coach）；诊断回合叠加 Socratic Tutor | `learn-core` | `references/pedagogy-core.md` 的 Voice And Feedback |
 | 确认学生答案或解释前 | `learn-core` | `references/confirm-before-accept.md` |
 | 学生连续不回应引导 | `learn-core` | `references/guidance-non-response-handling.md` |
 | 输出技能追踪字段前（所有模式） | `learn-core` | `references/feynman-skill-whitelist.md` |
 | 费曼模式 | `learn-core` | `references/feynman-mode.md` |
-| 情感、意境、人物处境进不去 | `experience-gap-bridging` | 按其流程执行 |
-| 使用兴趣、偏好、易/难 | `learn-core` | `references/prestart-settings-interpretation.md` |
+| 能复述字面，但因生活经验缺口进不去情感、意境或人物处境 | `chinese-core` | 按其“内部动作”的经验桥接执行 |
+| 使用兴趣、偏好、易/难的共享边界 | `learn-core` | `references/prestart-settings-interpretation.md` |
+| 这些信息在语文中的用法 | `chinese-core` | `references/chinese-personalization.md` |
 
 `chinese-core` 的加载结果会给出 base directory；参考文件按 `<base_directory>/references/<文件名>.md` 读取。
 
@@ -47,7 +47,7 @@ user-invocable: false
 2. 按已读 `references/chinese-reading-core.md` 的“薛法根文本解读法”选择一个方法，一次只拆一段或一句。可从 `personal.interests` 选相近经验开场；学生指出待讨论的词句后进入证据分析。
 3. 让学生自己指认关键证据：“你从哪一句看出来的？”。找到可核对的原文词句后，区分字面事实与学生推断。
 4. 讨论作者意图与深层含义；学生能把结论与该处证据连起来，才完成本次理解检查。低年级按学段要求确认，不强求术语。
-5. 情感或意境是核心难点、学生又缺少对应生活经验时，加载 `experience-gap-bridging` 作为内部子流程；接回桥接结果后继续本轮阅读。只把必要的文本理解证据并入本轮段，不另造桥接段；失败则换方法，危机则遵循其安全边界。
+5. 确认生活经验缺口时，按 `chinese-core` 的内部动作表执行经验桥接，再接回当前阅读焦点；证据并入本轮段，失败换方法，危机停止教学。
 6. 按 `references/chinese-writing-core.md` 的“行文技巧提取与读写迁移”提炼写法；复用已有提取结果，完成该处的原文证据、效果、迁移提示与学段检查。
 7. 用一句学生能复述的方法句收束，并留一个自然的下一步（练一道题、做读写迁移、讲给 AI 听），不要硬性结束。
 
@@ -71,46 +71,11 @@ user-invocable: false
 5. 学生能把结论、原文证据与推理连起来，并纠正追问暴露的漏洞后，复述他已讲清的方法句，再交入口提供下一步选择；仍说不清就停在当前证据继续问。
 6. 用真的没读懂的同龄孩子口吻求教；总结只复述学生已经讲出的结论。
 
-## 预期输出形态
-
-以下是 learn / diagnose 的内容顺序，跨轮按当前步骤取用；教学提问后等待学生回应。feynman 仅按上方角色流程回应，不套教师讲解模板：
-
-1. 题目理解（这题到底在问什么）
-2. 文本证据（原文哪一句）
-3. 关键分析（本义 → 语境义 → 效果）
-4. 学生答案诊断（diagnose 模式才写）
-5. 参考修正版（示范句，不是整篇代写）
-6. 方法提炼（1 句可复用的话）
-7. 一个小练习
-
 ## 会话段
 
-本轮结束在内存里产出一个 `session_segment`；本 skill 不直接写学生数据，入口会把它写入 `session_log.json`：
+按 `chinese-core` 的回合交付规则返回唯一内存 `session_segment`，入口负责写日志与下一步选择。只输出当前步骤，教学提问后等待；费曼不套教师讲解模板。
 
-```json
-{
-  "focus": "《秋天的雨》第二段中比喻的表达效果",
-  "subject": "chinese",
-  "mode": "diagnose",
-  "submode": "review",
-  "source": "reading",
-  "strategy_summary": "学生能找出比喻句，但只说了本义，经追问后补出语境效果。",
-  "strengths": ["能准确定位比喻句", "愿意回到原文找证据"],
-  "difficulties": ["赏析只停在字面", "说不清表达效果"],
-  "next_step_candidate": "用双层赏析重写这一句",
-  "recommended_targets": ["双层赏析", "段落作用题"],
-  "feynman_handoff_recommended": true,
-  "confirmed_skills": ["定位关键句"],
-  "skill_errors_observed": [],
-  "diagnosis": {
-    "domain": "reading",
-    "label": "reading:单层赏析",
-    "evidence": "学生只说‘这句话很美’，没有回到比喻句和表达效果。"
-  }
-}
-```
-
-字段要求：
+领域字段：
 
 - `subject` 固定 `chinese`；`source` 固定 `reading`。
 - `mode` 取 `learn` / `diagnose` / `feynman`；`submode` 取 `learn` / `review` / `feynman`。

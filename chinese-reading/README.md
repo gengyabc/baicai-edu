@@ -16,10 +16,9 @@ chinese-reading/
     chinese-writing-session/SKILL.md
     chinese-read-write-transfer/SKILL.md
     chinese-generate-tasks/SKILL.md
-    experience-gap-bridging/SKILL.md
 ```
 
-## 七个技能
+## 六个技能
 
 | 技能 | 作用 |
 |---|---|
@@ -29,7 +28,8 @@ chinese-reading/
 | `chinese-writing-session` | 写作教学。start 用六圈展开搭定格，revise 只做局部升格，assess 用六步量规给档位与最值得改的 3 处，费曼模式讲写作选择。 |
 | `chinese-read-write-transfer` | 读写迁移。提炼 1-3 个有原文证据的写法，换主题出题，陪写，按六步量规评改（技巧运用必查），最多两轮。 |
 | `chinese-generate-tasks` | 出题。阅读题与写作题，匹配年级难度，给参考答案、命题意图、判分标准；句子填空题说明合理边界。 |
-| `experience-gap-bridging` | 经验缺口桥接。学生进不去文本情感时，用低风险的替代经验搭桥，再回到原文证据。 |
+
+经验桥接不单独注册：阅读教学按 `chinese-core` 的“内部动作”表读取 `references/experience-gap-bridging.md`，接回原文证据。调用方不拼跨包路径。
 
 ## 个性化
 
@@ -41,7 +41,7 @@ chinese-reading/
 - 读写迁移：迁移主题优先选兴趣相关的情境。
 - 经验桥接：优先用兴趣、日常物件、熟悉角落做低风险替代经验。
 
-偏好（`profile.preferences`）和易/难（`self_report.easy_topics/hard_topics`）也参与选择呈现方式和支架。使用边界见 `learn` 包的 `learn-core/references/prestart-settings-interpretation.md`。
+偏好与易/难也参与呈现和支架。学科用法见 `skills/chinese-core/references/chinese-personalization.md`；共享边界见 `learn` 包的 `learn-core/references/prestart-settings-interpretation.md`。
 
 ## 安装
 
@@ -60,7 +60,7 @@ dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/learn
 ```
 
 - `chinese-session` 路由前加载 `learn-core` 与 `learn-data`。
-- 各子 skill 用 `learn-core` 的共享语气、三步确认、年级段、结束信号、费曼规则。
+- 各子 skill 用 `learn-core` 的共享语气、按需确认、年级段、结束信号、费曼规则。
 - 读写学生数据时用 `learn-data` 的 `outputs/students/` JSON 协议。
 - 处理错题图片或 Markdown 时加载 `learn-errors`，语文标签由本包 `chinese-core` 提供。
 

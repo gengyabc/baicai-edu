@@ -30,10 +30,11 @@ user-invocable: false
 | 反馈流程与方法提炼 | `chinese-core` | `references/chinese-feedback-core.md` |
 | 评改后有明确错误需落标签 | `chinese-core` | `references/chinese-error-labels.md` |
 | 确认学生想法、选材或改法前 | `learn-core` | `references/confirm-before-accept.md` |
-| 默认语气 | `learn-core` | `references/personas.md` |
+| 默认语气 | `learn-core` | `references/pedagogy-core.md` 的 Voice And Feedback |
 | 写作中卡住 | `learn-core` | `references/guidance-non-response-handling.md` |
 | 输出技能追踪字段前 | `learn-core` | `references/feynman-skill-whitelist.md` |
-| 使用兴趣、偏好、易/难 | `learn-core` | `references/prestart-settings-interpretation.md` |
+| 使用兴趣、偏好、易/难的共享边界 | `learn-core` | `references/prestart-settings-interpretation.md` |
+| 这些信息在语文中的用法 | `chinese-core` | `references/chinese-personalization.md` |
 
 `chinese-core` 的加载结果会给出 base directory；参考文件按 `<base_directory>/references/<文件名>.md` 读取。
 
@@ -56,7 +57,7 @@ user-invocable: false
 ### 第 3 步：陪写
 
 - 学生连续写作时等待其提交，在自然停顿处提醒一次技巧：“这里可以试试刚才那个用动作写心情。”
-- 学生说出选材、角度、改法时，先走 `learn-core` 的三步确认，再决定是否认可。
+- 学生说出选材、角度或改法时，按 `learn-core` 的 `references/confirm-before-accept.md` 按需确认；复用已有证据，同一缺口最多追问一次。
 - 卡住时只给一个小提示：一个问句、一个可写画面或一个动词；正文由学生写，必要示范最多一句并标明示范。
 - 偏题时用一个问句请学生回看题目，由他修改。
 - 收到学生明确提交的本轮作品后才进入评改；只有构想或尚未交稿时，停在陪写阶段。
@@ -72,45 +73,11 @@ user-invocable: false
 - 第 2 轮评改完成或学生跳过时，返回一句阶段总结、一个下一步候选及已完成状态；该次迁移交回入口，不再自行开启第 3 轮。
 - 入口按共享生命周期决定继续教学、换主题或 finalize；迁移轮数用尽不是学生结束整个会话的信号。
 
-## 预期输出形态
-
-跨轮只输出当前阶段所需内容，等待学生回应后再推进；恢复时复用已交付内容。
-
-1. 提炼的技巧（名称 + 原文证据 + 效果 + 怎么用）
-2. 写作任务（题目 + 提示 + 可写方向，按年级给）
-3. 写后评改：按量规输出（技巧运用必填）；低年级简化分支优先
-4. 一句阶段总结
-
 ## 会话段
 
-本轮在内存里产出一个 `session_segment`；本 skill 不直接写学生数据，入口会把它写入 `session_log.json`：
+只输出当前阶段，等待学生回应；恢复时复用已交付内容。按 `chinese-core` 的回合交付规则返回唯一内存 `session_segment`，入口写日志。
 
-```json
-{
-  "focus": "用动作写心情的迁移写作",
-  "subject": "chinese",
-  "mode": "learn",
-  "submode": "read_write_transfer",
-  "source": "writing",
-  "strategy_summary": "学生从《XX》提取“用动作写心情”，写跑步比赛时用了两个连续动词，但结尾又回到直接说感受。",
-  "strengths": ["选材具体", "能在中段用动作代替心情词"],
-  "difficulties": ["结尾回退到直接抒情"],
-  "next_step_candidate": "只改结尾一句，用动作暗示心情",
-  "recommended_targets": ["结尾回扣", "侧面描写"],
-  "feynman_handoff_recommended": true,
-  "confirmed_skills": ["用动作写心情"],
-  "skill_errors_observed": [],
-  "techniques_extracted": ["用动作写心情"],
-  "technique_application_quality": "中段自然，结尾生硬，属于半用对",
-  "diagnosis": {
-    "domain": "writing",
-    "label": "writing:空泛模板",
-    "evidence": "结尾又写‘我很开心’，没有用动作承接前面建立的具体画面。"
-  }
-}
-```
-
-字段要求：
+领域字段：
 
 - `subject` 固定 `chinese`；`mode` 固定 `learn`；`submode` 固定 `read_write_transfer`；`source` 固定 `writing`。
 - 额外返回：`techniques_extracted`（当前迁移确实选用、可含复用阅读结果的技巧名）；收到作品后 `technique_application_quality` 用一句话说明自然 / 半自然 / 生硬 / 未使用及作品依据，尚未交稿时为 `null`，与“未使用”区分。

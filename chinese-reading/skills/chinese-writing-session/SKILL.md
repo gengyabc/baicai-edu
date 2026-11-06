@@ -28,13 +28,13 @@ user-invocable: false
 | 反馈流程、建议怎么写、方法提炼 | `chinese-core` | `references/chinese-feedback-core.md` |
 | 发现明确写作问题、记录诊断前 | `chinese-core` | `references/chinese-error-labels.md` |
 | 需要给新题或变式题 | `chinese-core` | `references/chinese-task-generation.md` |
-| 默认语气 | `learn-core` | `references/personas.md` |
-| 评改回合叠加追问 | `learn-core` | `references/personas.md` 的 Socratic Tutor 部分 |
+| 默认语气；评改回合叠加追问 | `learn-core` | `references/pedagogy-core.md` 的 Voice And Feedback |
 | 确认学生选材或改法前 | `learn-core` | `references/confirm-before-accept.md` |
 | 学生卡住、连续短答 | `learn-core` | `references/guidance-non-response-handling.md` |
 | 输出技能追踪字段前（所有模式） | `learn-core` | `references/feynman-skill-whitelist.md` |
 | 费曼模式 | `learn-core` | `references/feynman-mode.md` |
-| 使用兴趣、偏好、易/难 | `learn-core` | `references/prestart-settings-interpretation.md` |
+| 使用兴趣、偏好、易/难的共享边界 | `learn-core` | `references/prestart-settings-interpretation.md` |
+| 这些信息在语文中的用法 | `chinese-core` | `references/chinese-personalization.md` |
 
 `chinese-core` 的加载结果会给出 base directory；参考文件按 `<base_directory>/references/<文件名>.md` 读取。
 
@@ -77,48 +77,11 @@ user-invocable: false
 5. 学生能指出具体句子、说明选择的效果并回应反例后，用他已讲出的理由复述“现在这版好在哪里”，再交入口选下一步；空泛理由继续追到画面。
 6. 用向学生学写作文的同龄孩子口吻求教，修改选择与结论由学生讲出。
 
-## 预期输出形态
-
-start / revise 跨轮按当前步骤取用以下内容，提问后等待回应；feynman 使用上方角色流程，assess 使用量规格式：
-
-1. 题目与中心
-2. 关键素材 / 定格瞬间
-3. 主要问题（一个）
-4. 升格建议（可执行）
-5. 修订版本或局部改写（示范，不是全篇）
-6. 方法提炼（1 句可复用）
-7. 一个小练习
-
-assess 模式的档位、分项分析、修改处数与下一步格式统一按量规。
-
 ## 会话段
 
-本轮结束在内存里产出一个 `session_segment`；本 skill 不直接写学生数据，入口会把它写入 `session_log.json`：
+按 `chinese-core` 的回合交付规则返回唯一内存 `session_segment`，入口负责日志与下一步选择。start / revise 只输出当前步骤，提问后等待；assess 按量规格式，费曼按角色流程。
 
-```json
-{
-  "focus": "写人作文的定格瞬间",
-  "subject": "chinese",
-  "mode": "revise",
-  "submode": "review",
-  "source": "writing",
-  "strategy_summary": "学生能说出想写的画面，但细节停在概括，经提示后补了两个连续动词。",
-  "strengths": ["选材真实", "愿意自己改句子"],
-  "difficulties": ["动词泛泛", "结尾假抒情"],
-  "next_step_candidate": "用三个精确动词改写结尾前一句",
-  "recommended_targets": ["定格展开", "结尾回扣"],
-  "feynman_handoff_recommended": true,
-  "confirmed_skills": ["选定定格画面"],
-  "skill_errors_observed": [],
-  "diagnosis": {
-    "domain": "writing",
-    "label": "writing:细节缺失",
-    "evidence": "‘他走了’没有动作；改成‘他抓起书包，头也不回地冲下楼’后才具体。"
-  }
-}
-```
-
-字段要求：
+领域字段：
 
 - `subject` 固定 `chinese`；`source` 固定 `writing`。
 - `mode` 取 `start` / `revise` / `assess` / `feynman`；`submode` 取 `learn` / `review` / `feynman`。
