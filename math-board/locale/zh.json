@@ -58,7 +58,7 @@
   "focusMode": "只看画布",
   "zoomIn": "放大画布",
   "zoomOut": "缩小画布",
-  "fitView": "全图",
+  "fitView": "适应宽度",
   "selectionActions": "所选图形操作",
   "selectedCount": "已选",
   "makeGroup": "圈为一组",

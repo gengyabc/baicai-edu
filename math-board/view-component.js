@@ -128,6 +128,8 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
     const dialog = React.useRef(null), fileInput = React.useRef(null), downloadAnchor = React.useRef(null);
     const url = React.useRef(null), gesture = React.useRef(null), revision = React.useRef(0);
     const svgRef = React.useRef(null);
+    const canvasRef = React.useRef(null);
+    const revealRef = React.useRef([]);
     const nameRef = React.useRef(null), noteRef = React.useRef(null);
     const fileHandle = React.useRef(null);
     const phase = props.useInput((s) => s.phase);
@@ -141,6 +143,13 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
       ? board.groups.find((g) => g.id === touchedGroups[0]) : null;
     const dense = board.objects.length > 60;
     const radius = dense ? 13 : 19;
+    // Rows keep growing downwards: the board is as tall as its lowest shape plus
+    // room for the value badge and name, and the canvas scrolls when it passes the
+    // visible area. Dragging stays inside the committed board, not this preview.
+    const restBottom = Math.max(330, board.objects.reduce((value, o) => Math.max(value, o.y), 0) + 60);
+    const lowest = board.objects.reduce((value, o) =>
+      Math.max(value, o.y + (preview?.kind === 'move' && preview.ids.includes(o.id) ? preview.dy : 0)), 0);
+    const boardHeight = Math.max(400, lowest + 60);
     const mergeInfo = activeSelected.length >= 2 ? M.mergeCandidate(board, activeSelected.map((o) => o.id)) : null;
     const levels = board.settings.levels;
     const visibleShapes = board.settings.shapes;
@@ -180,6 +189,27 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
         }
       } catch { setStatus(t('storageError')); }
     }, [board, trace, attachTrace, ready, storageBlocked, key]);
+
+    // New shapes that land below the visible part of a tall board scroll it down so
+    // the student sees the row they just started.
+    React.useEffect(() => {
+      const added = revealRef.current;
+      if (!added.length) return;
+      revealRef.current = [];
+      const container = canvasRef.current, svg = svgRef.current;
+      if (!container || !svg) return;
+      const viewHeight = svg.viewBox?.baseVal?.height
+        ?? Number.parseFloat((svg.getAttribute?.('viewBox') || '').split(/\s+/)[3] || '0');
+      const rect = svg.getBoundingClientRect?.();
+      const scale = rect?.height && viewHeight ? rect.height / viewHeight : 0;
+      if (!scale) return;
+      const objects = board.objects.filter((o) => added.includes(o.id));
+      if (!objects.length) return;
+      const bottom = Math.max(...objects.map((o) => o.y)) * scale;
+      if (bottom > container.scrollTop + container.clientHeight - 40) {
+        container.scrollTop = Math.max(0, bottom - container.clientHeight + 70);
+      }
+    }, [board]);
 
     React.useEffect(() => {
       if (!ready || !config) return;
@@ -314,7 +344,10 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
       const before = new Set(boardRef.current.objects.map((o) => o.id));
       const extra = point ? { x: point.x, y: point.y } : {};
       const next = action({ type: 'add', shape, value: creationLevel(shape).value, ...extra });
-      if (next) selectIds(next.objects.filter((o) => !before.has(o.id)).map((o) => o.id));
+      if (!next) return;
+      const added = next.objects.filter((o) => !before.has(o.id)).map((o) => o.id);
+      selectIds(added);
+      if (added.length) revealRef.current = added;
     }
     function updateSelected(patch) { batch(selected.map((o) => ({ type: 'update', id: o.id, patch }))); }
     function groupSelection() {
@@ -332,15 +365,21 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
     function duplicate() {
       const before = new Set(boardRef.current.objects.map((o) => o.id));
       const next = action({ type: 'duplicateSelected', ids: selection });
-      if (next) selectIds(next.objects.filter((o) => !before.has(o.id)).map((o) => o.id));
+      if (!next) return;
+      const added = next.objects.filter((o) => !before.has(o.id)).map((o) => o.id);
+      selectIds(added);
+      if (added.length) revealRef.current = added;
     }
     function mergeSelection() {
       const next = action({ type: 'merge', ids: activeSelected.map((o) => o.id) });
       if (next) selectIds([]);
     }
     function splitSelection() {
+      const before = new Set(boardRef.current.objects.map((o) => o.id));
       const next = action({ type: 'split', id: single.id });
-      if (next) selectIds([]);
+      if (!next) return;
+      revealRef.current = next.objects.filter((o) => !before.has(o.id)).map((o) => o.id);
+      selectIds([]);
     }
     function removeSelected() { batch(selected.map((o) => ({ type: 'delete', id: o.id }))); selectIds([]); }
     function crossOut() { batch(activeSelected.map((o) => ({ type: 'update', id: o.id, patch: { removed: true } }))); }
@@ -383,7 +422,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
       if (g.kind === 'move') {
         const members = g.base.objects.filter((o) => g.ids.includes(o.id));
         g.dx = Math.max(30 - Math.min(...members.map((o) => o.x)), Math.min(770 - Math.max(...members.map((o) => o.x)), dx));
-        g.dy = Math.max(30 - Math.min(...members.map((o) => o.y)), Math.min(330 - Math.max(...members.map((o) => o.y)), dy));
+        g.dy = Math.max(30 - Math.min(...members.map((o) => o.y)), Math.min(restBottom - Math.max(...members.map((o) => o.y)), dy));
         setPreview({ kind: 'move', ids: g.ids, dx: g.dx, dy: g.dy });
       } else setPreview({ kind: 'lasso', x: Math.min(p.x, g.start.x), y: Math.min(p.y, g.start.y), w: Math.abs(dx), h: Math.abs(dy) });
     }
@@ -638,15 +677,15 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
       button(icon('plus', 20), () => setOverlay({ kind: 'library' }), {
         className: 'eb-shape-tool eb-shape-more', title: t('morePatterns'), 'aria-label': t('morePatterns'),
       }));
-    const canvas = h('div', { className: 'eb-canvas-scroll' },
+    const canvas = h('div', { className: 'eb-canvas-scroll', ref: canvasRef },
       h('svg', {
         ref: svgRef, className: 'eb-artboard',
-        style: { width: fit ? '100%' : 800 * zoom, height: fit ? '100%' : 400 * zoom },
-        viewBox: '0 0 800 400', preserveAspectRatio: 'xMidYMid meet', role: 'group', 'aria-label': t('canvas'),
+        style: { width: fit ? '100%' : 800 * zoom, height: fit ? 'auto' : boardHeight * zoom },
+        viewBox: `0 0 800 ${boardHeight}`, preserveAspectRatio: 'xMidYMid meet', role: 'group', 'aria-label': t('canvas'),
         onPointerDown: pointerDown, onPointerMove: pointerMove, onPointerUp: (event) => pointerEnd(event),
         onPointerCancel: (event) => pointerEnd(event, true), onLostPointerCapture: (event) => pointerEnd(event, true),
       },
-      h('rect', { width: 800, height: 400, fill: '#FFFFFF' }),
+      h('rect', { width: 800, height: boardHeight, fill: '#FFFFFF' }),
       board.groups.map(groupBoundary),
       board.objects.map(renderObject),
       !board.objects.length && h('g', { pointerEvents: 'none' },

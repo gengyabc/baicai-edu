@@ -9,6 +9,13 @@ export function createBoardModel() {
   const defaultVisible = ['rectangle', 'triangle', 'circle', 'cat', 'dog'];
   const palette = ['#4CAF50', '#42A5F5', '#AB47BC', '#26A69A', '#FF7043', '#F4511E', '#E53935', '#D81B60', '#8E24AA'];
   const oldValues = [1, 10, 100, 1000, 10000];
+  // New shapes sit ten per row, 52 px apart, so a row covers only the left part of
+  // the canvas and leaves the right side blank. Rows keep going downwards and the
+  // canvas scrolls; the 200-shape cap bounds the deepest row placement can reach.
+  const rowColumns = 10;
+  const columnGap = 52;
+  const rowGap = 48;
+  const yLimit = 30 + 300 * rowGap;
   const fail = (message) => { throw new Error(message); };
   const record = (v) => v !== null && typeof v === 'object' && !Array.isArray(v)
     && (Object.getPrototypeOf(v) === Object.prototype || Object.getPrototypeOf(v) === null);
@@ -194,7 +201,7 @@ export function createBoardModel() {
       if (!idValid(o.id) || (live && ids.has(o.id)) || !shapes.includes(o.shape) || !positive(o.value) || !(validColor(o.color) || o.color === customColorIndex)
         || !text(o.alias, 30) || !text(o.note, 500) || typeof o.removed !== 'boolean'
         || typeof o.x !== 'number' || !Number.isFinite(o.x) || o.x < 30 || o.x > 770
-        || typeof o.y !== 'number' || !Number.isFinite(o.y) || o.y < 30 || o.y > 330
+        || typeof o.y !== 'number' || !Number.isFinite(o.y) || o.y < 30 || o.y > yLimit
         || (o.groupId !== null && (!idValid(o.groupId) || (live && !groupIds.has(o.groupId))))
         || !Array.isArray(o.sources) || o.sources.length > 200 || o.sources.length === 1) fail('Invalid object');
       if (live) ids.add(o.id);
@@ -246,6 +253,48 @@ export function createBoardModel() {
     const slot = grid.find((p) => objects.every((o) => Math.hypot(o.x - p.x, o.y - p.y) >= 30));
     if (!slot) fail('No free grid position; arrange all objects first');
     return slot;
+  }
+  // Tapped shapes go ten per row. A row keeps the pattern of its rightmost shape;
+  // tapping another pattern starts the next row instead of sharing the row.
+  const rowX = (col) => 30 + col * columnGap;
+  const rowY = (row) => 30 + row * rowGap;
+  function columnAt(x) {
+    const col = Math.round((x - 30) / columnGap);
+    return col >= 0 && col < rowColumns && Math.abs(x - rowX(col)) < 0.5 ? col : -1;
+  }
+  function rowAt(y) {
+    const row = Math.round((y - 30) / rowGap);
+    return row >= 0 && Math.abs(y - rowY(row)) < 0.5 ? row : -1;
+  }
+  function rowPosition(objects, shape) {
+    const rows = new Map();
+    let last = -1;
+    for (const o of objects) {
+      const col = columnAt(o.x), row = rowAt(o.y);
+      if (col < 0 || row < 0) continue;
+      if (!rows.has(row)) rows.set(row, Array(rowColumns).fill(null));
+      rows.get(row)[col] = o;
+      if (row > last) last = row;
+    }
+    if (last < 0) return { x: rowX(0), y: rowY(0) };
+    const line = rows.get(last);
+    const rightmost = line.filter(Boolean).at(-1);
+    if (rightmost?.shape === shape) {
+      const col = line.findIndex((o) => o === null);
+      if (col >= 0) return { x: rowX(col), y: rowY(last) };
+    }
+    return { x: rowX(0), y: rowY(last + 1) };
+  }
+  function spaced(objects, p) {
+    return objects.every((o) => Math.hypot(o.x - p.x, o.y - p.y) >= 30);
+  }
+  // Default placement for a new shape: keep the pattern's current row, otherwise
+  // start the next row. A dragged shape on that spot pushes the tap one row down
+  // instead of stacking on it.
+  function place(objects, shape) {
+    let at = rowPosition(objects, shape);
+    while (!spaced(objects, at)) at = { x: rowX(0), y: rowY(rowAt(at.y) + 1) };
+    return at;
   }
   function membersOf(board, ids, allowEmpty = false) {
     if (!Array.isArray(ids) || (!allowEmpty && !ids.length) || ids.length > 200 || new Set(ids).size !== ids.length
@@ -299,9 +348,12 @@ export function createBoardModel() {
         const level = next.settings.levels.find((l) => l.value === value);
         if (!defaults || !level || !Number.isInteger(count) || count < 1 || count > 100 || next.objects.length + count > 200) fail('Invalid add or object limit exceeded');
         const dropped = Object.hasOwn(action, 'x') || Object.hasOwn(action, 'y');
-        const point = dropped ? { x: clamp(action.x, 30, 770), y: clamp(action.y, 30, 330) } : null;
-        for (let i = 0; i < count; i++) next.objects.push({ id: nextId(next, 'object'), shape, value, color: level.color,
-          alias: defaults.alias, note: '', ...(i === 0 && point ? point : freePosition(next.objects)), groupId: null, removed: false, sources: [] });
+        const point = dropped ? { x: clamp(action.x, 30, 770), y: clamp(action.y, 30, yLimit) } : null;
+        for (let i = 0; i < count; i++) {
+          const at = i === 0 && point ? point : place(next.objects, shape);
+          next.objects.push({ id: nextId(next, 'object'), shape, value, color: level.color,
+            alias: defaults.alias, note: '', ...at, groupId: null, removed: false, sources: [] });
+        }
         break;
       }
       case 'update': {
@@ -309,7 +361,7 @@ export function createBoardModel() {
         const patch = { ...action.patch };
         if (Object.hasOwn(patch, 'alias')) { if (o.groupId !== null) fail('Rename the group, not its members'); aliasValid(patch.alias); }
         if (Object.hasOwn(patch, 'x')) patch.x = clamp(patch.x, 30, 770);
-        if (Object.hasOwn(patch, 'y')) patch.y = clamp(patch.y, 30, 330);
+        if (Object.hasOwn(patch, 'y')) patch.y = clamp(patch.y, 30, yLimit);
         if (Object.hasOwn(patch, 'removed') && typeof patch.removed !== 'boolean') fail('Invalid removed flag');
         Object.assign(o, patch); break;
       }
@@ -317,7 +369,7 @@ export function createBoardModel() {
         const members = membersOf(next, action.ids);
         if (typeof action.dx !== 'number' || !Number.isFinite(action.dx) || typeof action.dy !== 'number' || !Number.isFinite(action.dy)) fail('Invalid movement delta');
         const dx = clamp(action.dx, 30 - Math.min(...members.map((o) => o.x)), 770 - Math.max(...members.map((o) => o.x)));
-        const dy = clamp(action.dy, 30 - Math.min(...members.map((o) => o.y)), 330 - Math.max(...members.map((o) => o.y)));
+        const dy = clamp(action.dy, 30 - Math.min(...members.map((o) => o.y)), yLimit - Math.max(...members.map((o) => o.y)));
         for (const o of members) { o.x += dx; o.y += dy; } break;
       }
       case 'arrange': {
@@ -362,7 +414,7 @@ export function createBoardModel() {
           }
         }
         for (const member of members) next.objects.push({ ...cloneObject(member), id: nextId(next, 'object'),
-          groupId: groupMap.get(member.groupId) ?? null, ...freePosition(next.objects) });
+          groupId: groupMap.get(member.groupId) ?? null, ...place(next.objects, member.shape) });
         break;
       }
       case 'merge': {
@@ -402,7 +454,7 @@ export function createBoardModel() {
         const used = new Set([...next.objects, ...next.groups].map((o) => o.id));
         for (const restored of parts) {
           if (!restored.id || used.has(restored.id)) restored.id = nextId(allocator, 'object');
-          Object.assign(restored, { groupId: parent.groupId, ...freePosition(next.objects) });
+          Object.assign(restored, { groupId: parent.groupId, ...place(next.objects, restored.shape) });
           used.add(restored.id);
           next.objects.push(restored); allocator.objects.push(restored);
         }

@@ -535,6 +535,22 @@ test('denied file picker permission falls back to ordinary input while cancellat
   } finally { h.unmount(); }
 });
 
+test('tapping fills ten shapes per row and a taller board grows for scrolling', () => {
+  withMount({}, (h) => {
+    const artboard = () => h.find((node) => node.props.className === 'eb-artboard');
+    assert.equal(artboard().props.viewBox, '0 0 800 400');
+    for (let i = 0; i < 10; i++) h.add('circle');
+    assert.deepEqual(h.board().objects.map(({ x, y }) => [x, y]), Array.from({ length: 10 }, (_, i) => [30 + i * 52, 30]));
+    h.add('circle');
+    assert.deepEqual([h.board().objects.at(-1).x, h.board().objects.at(-1).y], [30, 78]);
+    for (let i = 0; i < 69; i++) h.add('circle');
+    assert.equal(h.board().objects.length, 80);
+    assert.deepEqual([h.board().objects.at(-1).x, h.board().objects.at(-1).y], [30 + 9 * 52, 30 + 7 * 48]);
+    assert.equal(artboard().props.viewBox, '0 0 800 426');
+    assert.deepEqual(artboard().props.style, { width: '100%', height: 'auto' });
+  });
+});
+
 test('the quantity rides in a corner tag at the shape lower right, leaving the artwork clear', () => {
   withMount({}, (h) => {
     h.add('circle');

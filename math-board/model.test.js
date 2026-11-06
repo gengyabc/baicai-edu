@@ -14,7 +14,7 @@ const configured = (b = M.empty(), scope = 'future', levels = [{ value: 2, color
 };
 const assertSpaced = (objects) => {
   for (let i = 0; i < objects.length; i++) {
-    const a = objects[i]; assert.ok(a.x >= 30 && a.x <= 770 && a.y >= 30 && a.y <= 330);
+    const a = objects[i]; assert.ok(a.x >= 30 && a.x <= 770 && a.y >= 30 && Number.isFinite(a.y));
     for (let j = i + 1; j < objects.length; j++) assert.ok(Math.hypot(a.x - objects[j].x, a.y - objects[j].y) >= 30);
   }
 };
@@ -184,22 +184,29 @@ test('duplicating complete groups creates flat new group; partial groups copy as
   assertSpaced(part.objects);
 });
 
-test('positions stay sparse first60, dense up to200, and deleted slots are reused', () => {
-  const sparse = add(M.empty(), { count: 60 });
-  for (const o of sparse.objects) {
-    assert.equal(Math.round((o.x - 30) / (740 / 22)) % 2, 0); assert.equal(Math.round((o.y - 30) / 37.5) % 2, 0);
-  }
-  assertSpaced(sparse.objects);
-  const dense = add(sparse); assert.equal(dense.objects.at(-1).x, 30 + 740 / 22); assert.equal(dense.objects.at(-1).y, 30);
-  let b = add(add(M.empty(), { count: 100 }), { count: 100 }); assertSpaced(b.objects);
-  const removed = b.objects[7]; b = M.reduce(b, { type: 'delete', id: removed.id });
-  const next = add(b); assert.equal(next.objects.at(-1).id, 'object-201');
-  assert.equal(next.objects.at(-1).x, removed.x); assert.equal(next.objects.at(-1).y, removed.y); assertSpaced(next.objects);
+test('taps fill ten per row, another pattern starts a new row, and rows keep going down', () => {
+  const step = 52, rowStep = 48;
+  const ten = add(M.empty(), { count: 10 });
+  ten.objects.forEach((o, col) => { assert.equal(o.y, 30); assert.equal(o.x, 30 + col * step); });
+  assertSpaced(ten.objects);
+  assert.deepEqual({ x: add(ten).objects.at(-1).x, y: add(ten).objects.at(-1).y }, { x: 30, y: 30 + rowStep });
+  let mixed = add(M.empty(), { count: 3 });
+  for (const shape of ['triangle', 'triangle', 'circle']) mixed = add(mixed, { shape });
+  assert.deepEqual(mixed.objects.slice(3).map(({ x, y }) => ({ x, y })),
+    [{ x: 30, y: 30 + rowStep }, { x: 30 + step, y: 30 + rowStep }, { x: 30, y: 30 + 2 * rowStep }]);
+  let holes = M.reduce(add(M.empty(), { count: 10 }), { type: 'delete', id: 'object-4' });
+  const refilled = add(holes);
+  assert.deepEqual({ x: refilled.objects.at(-1).x, y: refilled.objects.at(-1).y }, { x: 30 + 3 * step, y: 30 });
+  assertSpaced(refilled.objects);
+  const capped = add(add(M.empty(), { count: 100 }), { count: 100 });
+  assert.equal(capped.objects.length, 200); assertSpaced(capped.objects);
+  assert.deepEqual({ x: capped.objects.at(-1).x, y: capped.objects.at(-1).y },
+    { x: 30 + 9 * step, y: 30 + 19 * rowStep });
 });
 
 test('drop positioning and multi-move clamp selection as a rigid whole', () => {
   const dropped = add(M.empty(), { x: -100, y: 1000, count: 3 });
-  assert.equal(dropped.objects[0].x, 30); assert.equal(dropped.objects[0].y, 330); assertSpaced(dropped.objects);
+  assert.equal(dropped.objects[0].x, 30); assert.equal(dropped.objects[0].y, 1000); assertSpaced(dropped.objects);
   for (const options of [{ x: 20 }, { y: 40 }, { x: NaN, y: 40 }, { x: 30, y: Infinity }]) assert.throws(() => add(dropped, options));
   let b = add(add(add(M.empty(), { x: 100, y: 80 }), { x: 150, y: 160 }), { x: 300, y: 300 });
   const moved = M.reduce(freeze(b), { type: 'moveMany', ids: ['object-1', 'object-2'], dx: 999, dy: -999 });
@@ -311,7 +318,7 @@ test('strict v4 validation rejects malformed state, notes, sources, links and un
   cases.push({ ...b, notes: [{ id: 'note-1', text: 'x', objectIds: ['object-1'] }] });
   cases.push({ ...b, notes: [{ id: 'note-1', text: 'x', objectIds: ['object-1', 'missing'] }] });
   cases.push({ ...b, notes: [{ id: 'note-1', text: '', objectIds: ['object-1'] }] });
-  for (const patch of [{ id: '' }, { shape: 'catfish' }, { value: 0 }, { color: 10 }, { alias: null }, { note: 1 }, { x: NaN }, { y: Infinity }, { x: 29 }, { y: 331 }, { removed: 1 }, { groupId: 'missing' }, { sources: [{}] }, { extra: 1 }]) cases.push({ ...b, objects: [{ ...b.objects[0], ...patch }] });
+  for (const patch of [{ id: '' }, { shape: 'catfish' }, { value: 0 }, { color: 10 }, { alias: null }, { note: 1 }, { x: NaN }, { y: Infinity }, { x: 29 }, { y: 14431 }, { removed: 1 }, { groupId: 'missing' }, { sources: [{}] }, { extra: 1 }]) cases.push({ ...b, objects: [{ ...b.objects[0], ...patch }] });
   cases.push({ ...b, objects: [b.objects[0], b.objects[0]] });
   for (const input of cases) assert.throws(() => M.validate(input));
   for (const patch of [{ id: 'changed' }, { shape: 'square' }, { color: 1 }, { value: 2 }, { removed: 'yes' }]) assert.throws(() => M.reduce(b, { type: 'update', id: 'object-1', patch }));

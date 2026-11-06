@@ -58,7 +58,7 @@
   "focusMode": "Canvas only",
   "zoomIn": "Zoom in",
   "zoomOut": "Zoom out",
-  "fitView": "Fit",
+  "fitView": "Fit width",
   "selectionActions": "Selected shape actions",
   "selectedCount": "Selected",
   "makeGroup": "Group",
