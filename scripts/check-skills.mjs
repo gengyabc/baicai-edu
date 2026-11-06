@@ -25,7 +25,8 @@ const BANNED = [
   [/\beasy_areas\b|\bhard_areas\b/, 'old field `easy_areas`/`hard_areas`; use `easy_topics`/`hard_topics`'],
   [/\bteach_readiness\b/, 'old field `teach_readiness`; use `feynman_readiness`'],
   [/pending_teach_/, 'old field `pending_teach_*`; use `pending_feynman_*`'],
-  [/\bPython\b/, 'do not assume Python; use bash verification'],
+  [/\bPython\b/, 'do not assume Python or any one language; verify with a calculation command the current environment has'],
+  [/\bbash\b/, 'do not require bash; it is unavailable on Windows'],
   [/\bplugin\b/i, 'Pi wording `plugin`; use `skill` or plain language'],
   [/@\.pi/, 'Pi path notation'],
   [/\/teach\b/, 'stale `/teach`; the entry is `/feynman`'],
@@ -75,6 +76,9 @@ for (const bundle of BUNDLES) {
     }
     for (const ref of walk(join(dir, 'references'))) {
       allRefFiles.add(basename(ref))
+      if (/\bbash\b/.test(readFileSync(ref, 'utf8'))) {
+        errors.push(`${ref}: do not require bash; it is unavailable on Windows`)
+      }
     }
     const fm = parseFrontmatter(text)
     if (!fm) {
