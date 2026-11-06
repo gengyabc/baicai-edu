@@ -6,30 +6,33 @@ user-invocable: false
 
 # 数学规则
 
-提供数学规则与字段约定；教学流程由 `math-session`、`math-diagnose`、`math-practice`、`math-student-problem` 执行，路由与持久化使用共享协议。
+流程由 `math-session`、`math-diagnose`、`math-practice`、`math-student-problem` 按名调用；本 skill 维护共享数学规则。
 
 ## 开始门槛与共享协议
 
-数学技能由 `/learn`、`/feynman` 或数学内部技能按名称加载。开始教学前加载 `learn-core` 与 `learn-data`，复用入口传入的有效快照，并按 `learn-data` 的 Read Snapshot 检查会话和缺失文件。没有 `outputs/students/session.json` 或 `student_id` 为空时，引导 `/start`，停在此门槛，建档交给入口。
+教学前加载 `learn-core`、`learn-data`，复用入口有效快照，按 Read Snapshot 检查会话与缺失文件。没有 `outputs/students/session.json` 或 `student_id` 为空时，引导 `/start` 并停止，建档交入口。
 
-- `learn-core`：教学语气、确认答案、年级适配、无响应支架、人格/费曼角色、个性化、结束信号与学生可见边界，按其条件加载表执行。
-- `learn-data`：快照、segment、逐轮日志、恢复与 finalize 使用其协议。数学技能只回传证据，由调用方合并成本轮唯一 segment 并追加日志；档案写入与 finalize 交给共享流程。
-- 有错题图片、Markdown 或 raw 扫描请求时加载 `learn-errors`：文件解析、备份改名、`extracted/` 与 `error_history` / `priority_targets` 写回均交给它。已处理文件复用已有分析，同一文件合并为一条记录；原文保留在原件与分析文件，档案只留关键证据。
+- `learn-core`：按条件表加载教学语气、确认、年级、无响应、角色、个性化、结束与可见边界。数学题目按 CGI，题面以生活故事为主；共享规则中的兴趣情境，以 `references/math-personalization.md` 的搭桥条件为准。
+- `learn-data`：快照、segment、逐轮日志、恢复与 finalize。子流程回传证据，由调用方合并为本轮唯一 segment 并追加日志；档案写入与 finalize 交共享流程。
+- 有错题图片、Markdown 或 raw 扫描请求时加载 `learn-errors`，由它解析、备份改名、写 `extracted/` 和 `error_history` / `priority_targets`。复用已处理文件，同一文件合并一条记录；原文留在原件与分析文件，档案只留关键证据。
 
 ## 按分支读取
 
-本会话已加载的 skill 复用已有 `<skill_content>`，已读 reference 复用有效内容；以下路径相对于本 skill 返回的 base directory。
+复用已加载 skill 与有效 reference；路径相对于本 skill 的 base directory。共同规则先读，其余在进入对应分支前读取，各自为该规则的唯一来源。
 
 | 条件 | 读取 |
 |---|---|
-| 所有数学教学分支，包括诊断、练习与学生出题 | `references/math-teaching-core.md` |
-| 选题、改题、变式或教学加减乘除、位值与多位数 | `references/problem-design.md` |
-| 分数意义、等分、等值、比较、分数运算或小数 | `references/fraction-relations.md` |
-| 准备给提示、学生嫌麻烦、请求新办法或已有提示无效 | `references/scaffold-calibration.md` |
-| 学生消息带画板附件（`我的画板.json`）或需要引导使用数学画板 | `references/structured-drawing.md` |
+| 所有数学教学，包括诊断、练习、学生出题 | `references/math-teaching-core.md` |
+| 快照含兴趣、偏好、易/难主题或经历，或学生做不出当前题 | `references/math-personalization.md` |
+| 分类学习目标或文件交接后的数学目标 | `references/math-target.md` |
+| 初始化、重选年级或选择默认领域 | `references/math-grade-defaults.md` |
+| 写数学偏好、水平或科目档案 | `references/math-profile-fields.md` |
+| 选择下一目标、判断策略阶段 | `references/progression-map.md` |
+| 选题、改题、变式；加减乘除、位值、多位数 | `references/problem-design.md` |
+| 分数意义、等分、等值、比较、运算或小数 | `references/fraction-relations.md` |
+| 准备提示、学生嫌麻烦、求新办法或提示无效 | `references/scaffold-calibration.md` |
+| 消息带画板附件或修改记录附件（`我的画板.json` / `我的修改记录.json`），或学生问画板怎么用 | `references/structured-drawing.md` |
 | 判断算术/分数策略阶段或分析错因 | `references/strategy-diagnosis-rules.md` |
-| 学生出题考 AI，设计 AI 的回答 | `references/math-student-problem-design.md` |
+| 学生出题考 AI，设计 AI 回答 | `references/math-student-problem-design.md` |
 | 生成诊断/对比/变式/连接练习 | `references/targeted-practice-rules.md` |
-| 产出数学 segment 或合并内部子流程证据 | `references/math-segment-fields.md` |
-
-共同教学规则先读，其余在对应分支进入前读取。各 reference 是对应数学规则的唯一来源。
+| 产出数学 segment 或合并子流程证据 | `references/math-segment-fields.md` |

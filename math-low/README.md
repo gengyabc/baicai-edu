@@ -1,89 +1,45 @@
 # dsh-edu-math-low
 
-小学数学教学技能包，配合 `dsh-edu-learn` 使用。全部是给模型的指令，不挂工具、不改运行时。
+小学数学指令包，依赖 `dsh-edu-learn`，不提供工具或运行时。
 
-## 提供的技能
+## 技能
 
-| 技能 | 作用 |
+| 技能 | 职责 |
 |---|---|
-| `math-session` | 一回合小学数学教学：选一个小目标、出题、追问、三步确认，支持 `learn` 与 `feynman` 模式 |
-| `math-core` | 数学规则底座：最小介入、数量关系选题、分数与小数、策略诊断、练习与学生出题规则（含 `references/`） |
-| `math-diagnose` | 策略诊断与错题分流：估计策略阶段、判断错误类型、给出保守的下一步目标 |
-| `math-student-problem` | 学生编题、AI 验算后回答，学生解释与检查；普通模式正确答题，费曼模式按共享边界互动，故意错误当轮纠正 |
-| `math-practice` | 分层针对性练习：诊断、对比、变式、连接，每层 1-3 题，只给当前需要的一层 |
+| `math-session` | 教学主线、恢复焦点、调度子流程，支持 learn / feynman |
+| `math-core` | 共享规则及按条件读取的 references |
+| `math-diagnose` | 策略诊断、错题分流、有证据的阶段估计 |
+| `math-practice` | 诊断、对比、变式、连接；一次一题，目的不是等级 |
+| `math-student-problem` | 学生编题、AI 验算回答、学生检查；费曼故意错同轮纠正 |
 
-五个技能都是模型内部技能（`user-invocable: false`），不会出现在 `/` 菜单；由 `/learn`、`/feynman` 或学科 skill 按名称加载：
-
-- `math-session` 加载 `learn-core`、`learn-data`、`math-core`。
-- `math-diagnose`、`math-practice`、`math-student-problem` 加载 `math-core` 的对应 reference。
-- 错题文件处理统一交给 `learn-errors`。
+五个均为 `user-invocable: false`，由 `/learn`、`/feynman` 或数学技能按名加载，不进 `/` 菜单。诊断与练习可相互调用；证据不足不仓促换分支。错题文件统一交 `learn-errors`。
 
 ## 安装
 
 ```bash
+dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/learn
 dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/math-low
 ```
 
-安装后刷新 Web 会话；数学 skill 进入模型目录，学生在 `/learn` 或 `/feynman` 里选择数学主题时生效。
+刷新 Web 会话后，在 `/learn` 或 `/feynman` 选择数学。共享依赖：`learn-core` 管教学、角色与确认；`learn-data` 管快照、记录和 finalize；`learn-errors` 管投放文件。缺少 learn 包无法正常教学。
 
 ## 数学画板
 
-配合独立的画板插件使用：点击输入框工具栏里、模型选择按钮旁的「数学画板」，用猫、汽车、苹果等图案摆出想法；图案库可自定义工具箱，可圈组、合并同形同值的图形、划去、写说明；量级与颜色由学生自己设定。点「放入回答」插入结构化 JSON，再手动发送；画板不做运算，也不自动提交。
+独立画板插件在输入框工具栏、模型选择按钮旁提供「数学画板」。学生摆图、圈组、合并/拆开、划去或写说明，自定图案数值与颜色；「放入回答」附上 JSON，不插入图形清单，学生自己写的话会放进输入框，仍需手动发送；画板和修改记录都留着，方便改错。点「清空」才同时清掉画布和这次的修改记录。画板不运算、不自动提交。可附带独立的「我的修改记录」：它记录已发送的语义变化，供学生卡住或主动回看时按需读取；次数不作为诊断或掌握依据。
 
-模型只根据已发送的画板数据追问和教学，无需读图。学生在对话里说明「每个图形代表几」时，模型通过 `math_board_settings` 把设置写回本会话，工作台随之同步。完整协议与教学边界见 [结构化数学画板](skills/math-core/references/structured-drawing.md)；本技能包不提供画板 UI 或模型代提交工具。
+模型读取已发送附件教学，不读未提交画布；学生明确设置意图时可用 `math_board_settings` 同步会话设置，不代交答案。完整数据与边界见[结构化数学画板](skills/math-core/references/structured-drawing.md)。
 
-## 依赖
+## 数据与维护
 
-本包依赖 `dsh-edu-learn` 提供的 `learn-core`、`learn-data`、`learn-errors`：
+系统状态在 `outputs/students/`，用户原件在 `data/students/<student_id>/math/raw/`；均不随包发布。原件只读，改名先备份至 `outputs/students/<student_id>/math/backups/raw/`，处理交共享技能。
 
-- `learn-core`：中文语气、以学生为中心、年级适配、三步确认、引导无响应、结束信号、人格与费曼规则。
-- `learn-data`：`outputs/students/` JSON 读写协议、快照、建档、finalize。
-- `learn-errors`：用户投放文件解析、`data/.../raw/` 只读、`extracted/` 写入、`error_history` 更新。
+数学技能复用有效快照，并读取共享 `personal.interests` 与科目偏好。题目按 CGI，题面以生活故事为主，同一关系换场景检验迁移；兴趣只在学生做不出当前题时搭桥。用法见 `skills/math-core/references/math-personalization.md`。每轮唯一 segment 由调用方追加到 `session_log.json`；档案与 finalize 由共享协议执行，完整结构见 `learn-data`。
 
-可以只安装本包，但缺少 `dsh-edu-learn` 时共享规则与数据协议不可用，数学教学无法正常进行。安装命令：
-
-```bash
-dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/learn
-```
-
-## 数据目录
-
-系统状态在 `outputs/students/`；用户投放原件在 `data/students/.../raw/`，不随包发布：
-
-```
-data/students/<student_id>/math/raw/   # 用户投放原件，只读，只能改名
-
-outputs/students/
-  session.json
-  <student_id>/
-    profile.json                 # 共享：姓名、年级、personal.interests、经历
-    math/
-      profile.json
-      memory.json
-      current_state.json
-      milestones.json
-      session_log.json           # 当前会话 segment，每轮写，finalize 清空
-      extracted/                 # 提取出的分析 md
-      backups/raw/               # 改名前的原件备份
-```
-
-- 读写协议见 `learn-data`。
-- `math-session` 使用 `/learn` 已读好的快照；只在写回过文件时才重读。情境优先从 `personal.interests` 里选一个具体细节。
-- 每轮由入口把 `session_segment` 追加到 `session_log.json`；会话结束时由 `/learn` 调用 `learn-data` 的 finalize 写回，数学 skill 不直接写档案。
-
-## 维护与检查
-
-教学规则按 `math-core` 的条件指针加载；数量关系、支架与诊断分别维护，不把参考书摘要放入运行指令。现有阶段字段仅作策略摘要，不新增 schema 或把阶段当内容准入门槛。
+规则按 `math-core` 条件指针加载，不把参考书摘要放进运行指令；阶段仅作策略摘要，不新增 schema 或设内容门槛。
 
 ```bash
 node scripts/check-skills.mjs
 git diff --check
 ```
 
-[教学行为对照场景](tests/teaching-scenarios.md)用于人工审阅或模型回放；静态检查只验证技能结构和引用，不证明教学行为已通过模型实测。
-
-## 迁移说明
-
-来源：Pi 教学配置里的数学会话工作流、学生出题工作流、数学规则 `rules/math/*`，以及 `diagnose-strategy`、`analyze-error` 两个诊断工作流。
-
-迁移时保留教学动作、年级适配、分数规则、错误类型与学生出题互动；删除 Pi 的工具调用、平台契约与 `.pi` 路径写法，改为 DSH 的 `read` / `write` / `glob` 文件协议与自然对话。
+[教学行为对照场景](tests/teaching-scenarios.md)用于人工审阅/模型回放；静态检查不等于行为实测。

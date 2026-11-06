@@ -6,51 +6,44 @@ user-invocable: false
 
 # 数学诊断
 
-## 开始前
+## 开始与输入
 
-未加载时调用 `skill` 加载 `math-core`、`learn-core`、`learn-data`，通过 `math-core` 的开始门槛后诊断。读取它的 `references/math-teaching-core.md` 与 `references/strategy-diagnosis-rules.md`；后者是观察、错因分类、保守估计与置信度的唯一来源。reference 路径相对于对应 skill 的 base directory。
+未加载时加载 `math-core`、`learn-core`、`learn-data`，通过数学开始门槛。读 `math-core` 的 `references/math-teaching-core.md`、`references/strategy-diagnosis-rules.md`；后者统一观察、错因、保守估计与置信度。路径相对于对应 skill 的 base directory。
 
-有错题文件或 raw 扫描请求时加载 `learn-errors`；生成诊断练习时另读 `math-core` 的 `references/targeted-practice-rules.md`。无响应与费曼角色按 `learn-core` 的对应条件读取。
+错题文件/raw 扫描交 `learn-errors`；生成诊断练习另读 `math-core` 的 `references/targeted-practice-rules.md`。无响应与费曼角色按共享条件表。诊断题按 CGI 写成生活故事，兴趣不进入题干；学生做不出当前题时读 `math-core` 的 `references/math-personalization.md`。
 
-## 输入与分支
-
-复用调用方传入的 `student_id`、`subject: math`、当前 `focus` / `mode`、本轮消息，以及数学快照中的 `profile.current_levels`、`error_history`、`learning_state.priority_targets` 和 memory 的已确认技能。可选输入是文件列表或 raw 扫描范围。
-
-- 只有对话/策略证据：走策略诊断。
-- 有错题文件：走错题分流；已处理文件复用分析，处理权限与去重按 `math-core` 的共享协议。
-
-完成条件：已选定一个待诊断焦点，清楚可用证据及文件是否已处理。
+复用调用方的 `student_id`、`subject: math`、`focus` / `mode`、本轮消息与快照中的 `profile.current_levels`、`error_history`、`learning_state.priority_targets`、memory 已确认技能；可选文件列表或 raw 扫描范围。有文件走错题分流，否则走策略诊断。
 
 ## A. 策略诊断
 
-1. 按诊断 reference 的「先限定观察范围」定位当前题的数量角色与待澄清的一处策略；分数、小数按对应观察项取证。已知解释复用，未涉及项留作未知，不为填表逐项出题。
-2. 等学生展示推理，按「卡点与错因」区分关系理解、计算与表达；依据新回应调整支持，不以是否照教师办法做来定能力。
-3. 按「保守结论」形成当前任务范围内的阶段估计与下一步。证据不足可结束诊断，保留低置信度和原阶段，从已有能独立行动的任务或同结构低负荷任务补证。
+1. 按诊断参考定位当前数量角色与一处待澄清策略；分数/小数用其对应观察项。复用已知解释，未涉及项留未知，不逐项出题填表。
+2. 等学生展示推理，区分关系理解、计算与表达，依新回应调整支持；能力不以采用教师办法判断。
+3. 按「保守结论」给当前任务范围内的估计与一个 `next_target`。证据不足可结束诊断，保留低置信度和原阶段，从可独立行动或同结构低负荷任务补证。
 
-完成条件：每项结论能对应本轮或已有证据，未知项与低置信度已区分，且有一个可执行的小目标。
+完成条件：结论可追溯，未知/低置信度明确，有一个可执行小目标。
 
 ## B. 错题分流
 
-1. 先听学生怎样理解或计算当前题，再分析第一道新题；一次只分析一道。已给自述时直接继续，实际步骤尚无错误依据时不先问“错在哪”。
-2. 将文件处理整体交给 `learn-errors`，取得分析结论与已有记录引用后再继续。
-3. 按诊断参考的「卡点与错因」核对自述与实际步骤，结合历史区分偶发失误和稳定模式。
-4. 按「保守结论」给出下一目标：巩固交给 `math-practice`，继续教学交回 `math-session`。本分支负责交接结论，后续教学由接收方推进。
+1. 一次一道，先听当前题的理解或计算；已有自述直接继续，无实际错误依据不先问“错在哪”。
+2. 文件处理交 `learn-errors`，取得分析与记录引用。
+3. 核对自述和步骤，结合历史区分偶发与稳定模式。
+4. 按诊断参考形成有证据的结论；需巩固交 `math-practice`，继续教学交 `math-session`，接收方推进教学。
 
-完成条件：当前题的分析可追溯、学生自述已核对、错因结论有关键步骤支持，并已确定下一教学分支。
+完成条件：当前题分析可追溯，自述已核对，关键步骤支持错因与下一分支；证据不足不仓促转换。
 
 ## 回传
 
-内部回传诊断结论，供调用方合入本轮唯一 segment：
+仅回传结论，供调用方合并本轮唯一 segment，不另产 segment 或写档案。
 
 | 字段 | 契约 |
 |---|---|
-| `current_levels` | 算术/分数策略阶段的部分更新，只包含本次有证据的字段 |
-| `strategy_summary` | 简短描述学生实际推理方式 |
-| `strengths` / `difficulties` | 证据支持的优势与困难，包括引导理解情况 |
-| `next_target` | 下一步具体小目标 |
+| `current_levels` | 算术/分数策略阶段部分更新，仅本次有证据字段 |
+| `strategy_summary` | 学生实际推理 |
+| `strengths` / `difficulties` | 有证据的优势/困难，含引导理解情况 |
+| `next_target` | 具体小目标 |
 | `diagnosis` | 有错误证据时填 `domain`、具体数学 `label`、`evidence` |
-| `confidence` | 诊断 reference 定义的置信度 |
+| `confidence` | 按诊断参考 |
 
-合并前读 `math-core` 的 `references/math-segment-fields.md`：`next_target` 映射为 `next_step_candidate`；`confidence` 仅为诊断元信息。完整 schema 与 finalize 映射归 `learn-data`；本 skill 回传结论，不另产出 segment 或写档案。
+合并前读 `math-core` 的 `references/math-segment-fields.md`：`next_target` → `next_step_candidate`；`confidence` 仅诊断元信息。schema 与 finalize 映射归 `learn-data`。
 
-学生可见的诊断收束为一句核心问题和一句下一步；取证过程仍按教学需要提问。阶段名、错误标签与 JSON 保留在内部。
+学生可见收束为一句核心问题与一句下一步；阶段、标签、JSON 留在内部。
