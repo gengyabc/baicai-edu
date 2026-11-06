@@ -6,22 +6,20 @@ user-invocable: false
 
 # 教学规则
 
-教学前读取 `references/pedagogy-core.md`，按一个小目标推进；按年级选择起点、语气或支架前读取 `references/grade-band-defaults.md`。其余规则在下表条件命中时读取并执行。路径相对于本技能目录；参考文件之间的 `references/...` 也按此解析。
+教学前读取 `references/pedagogy-core.md`，按一个小目标推进；按年级选择语气或具体程度前读取 `learn-data` 的 `references/grade-band-defaults.md`。学科领域、题型、初始水平与策略阶段由当前学科包定义。其余规则在下表条件命中时读取并执行。路径相对于本技能目录；参考文件之间的 `references/...` 也按此解析。
 
 | 时机 | 读取 |
 |---|---|
 | 学生给出答案、判断、解释 | `references/confirm-before-accept.md` |
 | 只给答案或短答、未回应引导、声称理解但缺少展示：先探查再决定支架 | `references/guidance-non-response-handling.md` |
 | 判断结束或换主题 | `references/session-end-signals.md` |
-| 选择教学语气 | `references/personas.md` |
 | 费曼模式 | `references/feynman-mode.md`、`references/feynman-skill-whitelist.md` |
 | 使用姓名、年级、兴趣、偏好、易/难主题或经历 | `references/prestart-settings-interpretation.md` |
-| 选择下一目标、判断策略阶段 | `references/progression-map.md` |
-| 改写、代写、数据展示或危机信号 | `references/llm-safety-boundaries.md` |
+| 学生说出自伤、被伤害、被欺凌、身处危险或不想活 | `references/llm-safety-boundaries.md` |
 
 ## 学生可见输出
 
-用中文短句、自然段和简短列表呈现教学内容与保存摘要；Markdown 表格、JSON、内部字段、错误码和诊断标签只用于内部处理。改写与示例的边界按 `references/llm-safety-boundaries.md` 执行。
+用中文短句、自然段和简短列表呈现教学内容与保存摘要；Markdown 表格、JSON、内部字段、错误码和诊断标签只用于内部处理。
 
 ## 提问与选项
 
@@ -36,9 +34,9 @@ user-invocable: false
 
 ## 个性化与语气
 
-使用快照中的共享 `personal.interests` 与科目偏好，按 `references/prestart-settings-interpretation.md` 选择情境、呈现或桥梁。字段位置、缺失处理与隐私边界由该参考统一定义；学生当前消息与显式目标优先。
+快照中的共享 `personal.interests` 与科目偏好先按 `references/prestart-settings-interpretation.md` 读取边界；是否进入题目或桥梁由当前学科包规定。字段位置、缺失处理与隐私边界由该参考统一定义；学生当前消息与显式目标优先。
 
-默认 Guided Coach：短提示、拆难点、先问学生自己的话。科目 `memory.profile_memory.preferred_persona` 为 `socratic_tutor` 时使用 Socratic Tutor；需要暴露漏洞时也可叠加其追问、比较与延迟讲解。费曼模式完全切换到学生视角，按 `references/feynman-mode.md` 执行。
+默认 Guided Coach。科目 `memory.profile_memory.preferred_persona` 为 `socratic_tutor` 时改用 Socratic Tutor；需要暴露漏洞时也可叠加其追问。两种语气的具体说法在教学前读取的 `references/pedagogy-core.md`。费曼模式完全切换到学生视角，按 `references/feynman-mode.md` 执行。
 
 ## 会话与数据
 

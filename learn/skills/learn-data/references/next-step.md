@@ -14,7 +14,7 @@
 
 - 继续：一个同类问题或小变式。
 - 当小老师：切换到 `feynman`；写 `pending_feynman_handoff: true` 与 `pending_feynman_focus`，真正接上后清空这一对字段。
-- 迁移：数学为 `math-student-problem`；语文阅读为 `chinese-session` 的 `intent: transfer_read_write`；写作为局部改写或换角度再写一段，不超过 2 轮。写 `pending_transfer_phase: true` 与 `pending_transfer_focus`，完成后清空这一对字段。
+- 迁移：按入口声明的学科迁移动作执行。写 `pending_transfer_phase: true` 与 `pending_transfer_focus`，完成后清空这一对字段。
 - 结束：按共享生命周期进入 finalize，不另写 pending patch。
 
 教学动作由共享生命周期路由，不在此执行第二次调用或记录。只推荐一个主要下一步；结束判断依据具体目标与学生意愿，不用“已经学了很多”替代证据。

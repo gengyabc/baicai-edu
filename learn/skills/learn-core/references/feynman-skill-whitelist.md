@@ -1,83 +1,27 @@
 # Feynman Skill Whitelist
 
-## Scope
+全模式可记录技能确认与真实错误；故意犯错仅在费曼（AI 作听众）。角色难度按 `references/feynman-mode.md`。学科技能名与 domain 由各科目约定；本文件只定证据与撤销。
 
-- **Whitelist applies to**: All learning modes (learn, practice, review, feynman)
-- **Strategic mistakes apply to**: Only Feynman mode (AI as learner)
-- **Skill confirmation**: Can happen in any mode when student demonstrates mastery
+## 故意犯错
 
-## Initialization
+回应前查 `confirmed_skills`（含本会话已投影、尚未 finalize 的确认）。
 
-When a student's `outputs/students/<student_id>/<subject>/memory.json` is first created or when `mastered_topics` is updated:
+- **已在白名单**：该技能不故意犯错。
+- **不在白名单**：在关键概念步骤上犯略低于学生水平的真实错误（能错尽量错）；不只犯计算笔误。
+- 任何回合末尾都不得把错误答案当作正确结果呈上。
 
-1. Read `outputs/students/<student_id>/<subject>/profile.json` → `learning_state.mastered_topics`
-2. For each topic in `mastered_topics`, add to `confirmed_skills`:
-   ```json
-   { "skill": "<topic>", "domain": "<domain>", "confirmed_at": "<now>" }
-   ```
-3. Skip duplicates: check if the `skill` field already exists in `confirmed_skills` (match on `skill` only, ignore `domain` and `confirmed_at`)
+## 确认门槛
 
-## Whitelist Behavior in Feynman Mode
+学生成功纠正 AI，或清晰讲清概念时：
 
-### During AI Response (as Learner)
+1. 若技能尚不在 `confirmed_skills`，且达到 **two independent demonstrations**（different numbers/contexts）或 **one demonstration plus a correct explanation** of why it works，把技能名写入本轮 `session_segment.confirmed_skills`（字符串数组）。
+2. 回合内不写 `memory.json`；finalize 将名称转为带 `domain` / `confirmed_at` 的对象并一次写入。
+3. 初始化：新建或更新 memory 时，按 `learn-data` 的 `references/profile-schema.md` 从 `mastered_topics` 播种 `confirmed_skills`，仅按 `skill` 去重。
 
-1. **Before making mistakes**: Check if the skill being demonstrated is in `confirmed_skills`
-2. **If IN whitelist**: Do NOT make mistakes on this skill
-3. **If NOT IN whitelist**: Make strategic mistakes on key steps ("能错尽量错")
-4. **Role level**: Always play slightly below the current student's level
+## 错误与撤销
 
-### Mistake Strategy
+教学中把真实观察到的错误技能名追加到本轮 `skill_errors_observed`；用内存投影白名单，避免稍后回合仍把已应撤销的技能当已确认。同一 segment 内同一技能只记一次；重放同一作答不算新观察。AI 故意犯错不算学生错误。
 
-When the skill is NOT in the whitelist:
-- Make mistakes on key conceptual steps (not just calculation errors)
-- Mistakes should be realistic for a learner slightly below the student's level
-- Never make a mistake on a skill in `confirmed_skills`, and never present a wrong answer as correct at the end of a turn
-- Common mistake types:
-  - Misapplying a rule
-  - Skipping a step
-  - Confusing similar concepts
-  - Wrong operation choice
+finalize 按 segment 时间序处理：每次错误观察找到或创建该技能的 `skill_errors`，递增 `error_count` 并更新 `last_error_at`（累计次数，非连续 streak）。`error_count >= 2` 时从 `confirmed_skills` 移除该技能并清掉其错误计数项。再确认必须满足上文确认门槛的新证据；撤销前的旧证据不得在同一次 finalize 里加回。
 
-### After Student Corrects
-
-When the student successfully corrects AI's mistake or explains a concept clearly:
-
-1. Check if the skill is already in `confirmed_skills`
-2. If not, and the skill has **two independent demonstrations** (different numbers/contexts) or one demonstration plus a correct explanation of why it works, add its name to the current `session_segment.confirmed_skills`:
-   ```json
-   ["<skill_name>"]
-   ```
-3. Do not write `memory.json` now. Finalize converts the names to objects and writes memory once.
-
-## Error Tracking
-
-During teaching, append each genuinely observed error's skill name to the current segment's `skill_errors_observed`. Use a projected in-memory whitelist so later turns do not treat a revoked skill as confirmed; do not write memory mid-turn.
-
-At finalize, process segments in order. For each error observation, find/create the skill's `skill_errors` entry, increment `error_count`, and update `last_error_at`. The counter accumulates observations; it is not a consecutive-error streak. At `error_count >= 2`, remove that skill from `confirmed_skills` and remove its error-counter entry. A later re-confirmation needs fresh evidence under After Student Corrects; evidence preceding revocation cannot re-add it during the same finalize.
-
-Record only actual errors once per skill per segment; replaying the same student answer is not a new observation.
-
-## Skill Domain Mapping
-
-| Domain | Example Skills |
-|--------|----------------|
-| `addition_subtraction` | 凑十策略, 减法借位, 加减法逆运算 |
-| `multiplication_division` | 乘法口诀, 除法意义, 余数概念 |
-| `fractions` | 分数意义, 通分, 约分 |
-| `place_value` | 数位理解, 进位退位 |
-| `word_problems` | 理解题意, 找关键信息, 列式 |
-
-## Session End Update
-
-At the end of each Feynman/teaching session:
-
-1. Check `skill_errors` for any skills reaching `error_count >= 2`
-2. Remove those skills from `confirmed_skills`
-3. Add newly confirmed skills that meet the two-evidence bar
-4. Leave the actual `memory.json` write to `learn-data` finalize; the session log already carries the names
-
-## Write Timing
-
-- During a turn: only append to `session_log.json`; do not write `memory.json`.
-- At finalize: merge `confirmed_skills` and `skill_errors` once, in the same write as the other memory fields.
-- There is no cross-process lock; do not write the same file from two turns in parallel.
+写入时机：回合内只追加 `session_log.json`；finalize 与其它 memory 字段同一次合并 `confirmed_skills` / `skill_errors`。不并行写同一文件。

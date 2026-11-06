@@ -26,6 +26,6 @@ description: 查看学习进展或修改学生档案。学生询问当前重点�
 3. 按 `learn-data` 的 Write Protocol 写入：
    - 姓名、年级、`personal.interests`、开心/难过经历 → 共享 `profile.json`。
    - 学习偏好、当前水平、易/难主题、优先目标 → 科目 `profile.json`。
-   - 改年级时同步 `grade_band`，按 `learn-core` 的 `references/grade-band-defaults.md` 重选 `tone`、`learning_state.active_domain`；是否重置水平不明确时先问。
+   - 改年级时同步 `grade_band`。`tone` 按 `learn-data` 的 `references/grade-band-defaults.md` 重选。`active_domain` 与 `current_levels`：数学读 `math-core` 的 `references/math-grade-defaults.md`，语文读 `chinese-core` 的 `references/chinese-grade-defaults.md`。是否重置水平不明确时先问。
    - 新增兴趣时保留其他兴趣；学生明确不再喜欢时才移除。
 4. 所有请求字段写入成功且有效快照同步更新后，告诉学生“已经更新”。部分写入失败时说明哪些修改尚未保存，保留成功部分供重试；回复只展示结果摘要。

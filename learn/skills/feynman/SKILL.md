@@ -19,14 +19,12 @@ description: 费曼学习。学生想当小老师、讲给 AI 听、检查自己
 1. 用户显式讲解目标或 `/feynman` 后的文本。
 2. `pending_feynman_handoff` 为 true 时的 `pending_feynman_focus`，其次 `active_focus`。
 3. 科目 `session_history[0].next_step`、`priority_targets`、`developing_topics`。
-4. `learn-core` 的 `references/grade-band-defaults.md` 中的默认领域。
+4. `learn-data` 的 `references/grade-band-defaults.md` 中的默认领域。
 
-显式新目标按 `learn-data` 的 `references/target-parsing.md` 分类，以 `mode: feynman` 路由；语文保留目标的阅读/写作领域。当前会话没有显式新目标时保留 focus、target_context。明确换主题先保存旧主题；文件解析与材料恢复按目标分类协议。缺少阅读材料或草稿时只问一个具体问题，不猜原文。
+显式新目标先按 `learn-data` 的 `references/target-parsing.md` 取共享形状，再按学科分类，并以 `mode: feynman` 路由。数学读 `math-core` 的 `references/math-target.md`，进入 `math-session`，不进入学生出题迁移。语文读 `chinese-core` 的 `references/chinese-target.md`，进入 `chinese-session`，保留阅读/写作领域。文件诊断规则与 `/learn` 相同：数学用 `math-core` 的 `references/strategy-diagnosis-rules.md`，语文用 `chinese-core` 的 `references/chinese-error-labels.md`。当前会话没有显式新目标时保留 focus、target_context。明确换主题先保存旧主题；文件解析与材料恢复按目标分类协议。缺少阅读材料或草稿时只问一个具体问题，不猜原文。学科未安装时说明需要 `dsh-edu-math-low` 或 `dsh-edu-chinese-reading`，停止教学路由。
 
-## 互动
+## 回合
 
-以同龄听众的第一人称困惑和好奇追问，一次一个小问题。学生卡住时缩小问题，仍由学生讲；数学追关系与理由，语文追原文证据、写作选择或修改理由。
+学科技能返回回复和一个 segment，`mode`、`submode` 均为 `feynman`。技能证据与错误只记入本轮，由共享 finalize 写回。角色、追问与故意犯错按已读的 `feynman-mode` 和白名单执行。
 
-学科技能返回回复和一个 segment，`mode`、`submode` 均为 `feynman`。技能证据与错误只记入本轮，由共享 finalize 写回。
-
-危机信号优先按 `learn-core` 的安全流程停止教学。扮演同学是学习游戏，不声称自己是真人。
+危机信号优先按 `learn-core` 的安全流程停止教学。

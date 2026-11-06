@@ -1,13 +1,13 @@
 # Finalize Session
 
-执行前读取本 skill 的 `references/session-retention.md` 和 `learn-core` 的 `references/feynman-skill-whitelist.md`。将 `session_segments` 汇总为科目档案、诊断历史、记忆、当前状态、里程碑五个 patch，合并写入四个科目文件后清空日志。
+执行前读取本 skill 的 `references/profile-schema.md`、`references/session-retention.md` 和 `learn-core` 的 `references/feynman-skill-whitelist.md`。将 `session_segments` 汇总为科目档案、诊断历史、记忆、当前状态、里程碑五个 patch，合并写入四个科目文件后清空日志。
 
 ## Inputs
 
 ```json
 {
   "student_id": "stu_xxx",
-  "subject": "math",
+  "subject": "subject_id",
   "session_id": "sess_20261004_1200",
   "session_segments": [],
   "status": "completed",
@@ -34,7 +34,7 @@
 
 ## Process
 
-1. `session_segments` 为空：返回 `nothing_to_finalize: true`，不要写文件。
+1. `session_segments` 为空：返回 `nothing_to_finalize: true`，不要写文件。返回形状见 No-op。
 2. 选最终焦点：取最后一个 segment 的 `focus`；若中断，取 `last_topic`。
 3. 汇总 `overall_performance_code` / `overall_performance_text`：取最保守/最低的档位，并写一句综合描述。
 4. 汇总 `strategy_summary`：合并各段，不超过 2-3 句。
@@ -60,197 +60,63 @@
 
 ## final_summary
 
-```json
-{
-  "session_id": "sess_20261004_1200",
-  "date": "2026-10-04T12:00:00Z",
-  "entry_point": "learn",
-  "focus": "异分母分数加法",
-  "overall_performance_code": "basic_independent",
-  "overall_performance_text": "基本独立完成，通分时还需要提示",
-  "strategy_summary": "学生用画图理解通分，能自己找到公分母，偶尔分母乘错。",
-  "strengths": ["能主动画图", "能解释为什么通分"],
-  "difficulties": ["分母选择偶尔出错"],
-  "next_step": "继续练异分母加法，先估分母再计算",
-  "recommended_targets": ["异分母减法"],
-  "status": "completed"
-}
-```
-
-中断时追加：
-
-```json
-{
-  "status": "interrupted",
-  "interrupted_at": "2026-10-04T12:10:00Z",
-  "last_topic": "异分母分数加法"
-}
-```
+形状是 `references/profile-schema.md` 的 Session Summary Entry。中断时 `status` 为 `interrupted`，并写 `interrupted_at`、`last_topic`；完成时 `status` 为 `completed`。
 
 ## subject_profile_patch
 
-`current_levels` is nested under `profile`. Do not write it at the top level.
+`current_levels` 嵌在 `profile` 下，不要写成顶层。只合并有变化的字段。
 
-```json
-{
-  "updated_at": "2026-10-04T12:00:00Z",
-  "profile": {
-    "current_levels": {
-      "overall": "L1",
-      "arithmetic_strategy_stage": "direct_modeling",
-      "fraction_strategy_stage": "equal_sharing_no_coordination"
-    }
-  },
-  "learning_state": {
-    "active_domain": "fractions",
-    "mastered_topics": [],
-    "developing_topics": ["异分母加法"],
-    "priority_targets": ["异分母加法"]
-  },
-  "session_history": [
-    {
-      "session_id": "sess_20261004_1200",
-      "date": "2026-10-04T12:00:00Z",
-      "entry_point": "learn",
-      "focus": "异分母分数加法",
-      "overall_performance_code": "basic_independent",
-      "overall_performance_text": "基本独立完成，通分时还需要提示",
-      "strategy_summary": "学生用画图理解通分，能自己找到公分母，偶尔分母乘错。",
-      "strengths": ["能主动画图", "能解释为什么通分"],
-      "difficulties": ["分母选择偶尔出错"],
-      "next_step": "继续练异分母加法，先估分母再计算",
-      "recommended_targets": ["异分母减法"]
-    }
-  ]
-}
-```
-
-合并规则：
-
-- `profile.current_levels` 只在有证据时更新；不确定时保留原值。证据来自 segment 的 `current_levels` 或 `diagnosis`。
-- `session_history` 前插最新 summary，按 `references/session-retention.md` 保留。
-- `learning_state` 只覆盖 patch 中出现的字段。
-- `mastered_topics` 不因一次成功添加。技能确认先遵循 `learn-core` 的白名单协议；只有当同一 topic 下的技能连续两个会话保持在 `confirmed_skills` 且没有 `skill_errors` 时，才把该 topic 加入 `mastered_topics`。
+- `profile.current_levels` 只在有证据时更新；不确定时保留原值。证据来自 segment 的 `current_levels` 或 `diagnosis`。键名由学科包定义。空对象只说明字段位置，不要用它覆盖已有水平。
+- 空 `session_history` 仅占位；前插上节生成的最新 `final_summary`，保留中断字段，按 `references/session-retention.md` 保留旧记录。
+- `learning_state` 只覆盖 patch 中出现的字段。`mastered_topics` 的加入门槛见 `references/profile-schema.md` 的 Subject Memory。
 - 不改共享 `profile.json` 的姓名、年级、兴趣、经历字段。
 
 ## error_history_patch
 
 Every segment with a `diagnosis` object produces one diagnosis entry. File-based errors are written by `learn-errors`, not here.
 
-```json
-{
-  "error_history": [
-    {
-      "error_id": "diag_20261004_001",
-      "source": "diagnosis",
-      "date": "2026-10-04T12:00:00Z",
-      "domain": "reading",
-      "label": "reading:证据不足",
-      "topic": "《秋天的雨》第二段赏析",
-      "evidence": "学生只说了‘很美’，没有引用原文。",
-      "next_step": "回到原文找出一句比喻，并说明它写的是什么。",
-      "analyzed": true
-    }
-  ]
-}
-```
+`error_history` 条目采用 `references/profile-schema.md` 的 Diagnosis entry：`source: diagnosis`、当前 `date`、`analyzed: true`，其余字段从 segment 的诊断和下一步生成。
 
 规则：
 
 - `error_id` 用 `diag_<YYYYMMDD>_<3位序号>`；同一天按已有 `diag_` 记录递增。
-- `label` 必须是学科标签表里的值（语文 `reading:` / `writing:`），数学用具体错误类型。
+- `label` 必须是当前学科标签表里的值。本文件不列举标签。
 - 前插最新条目，上限按 `references/session-retention.md`。
 - 多个 segment 同一标签时只写一条，保留最新证据和 `next_step`。
-- `priority_targets` 从最新 `diagnosis` 与 `next_step` 中选 1-5 个去重写入。
+- `priority_targets` 从最新 `diagnosis` 与 `next_step` 中去重选取，条数按 `references/session-retention.md`。
 
 ## memory_patch
 
-```json
-{
-  "learning_memory": {
-    "recent_focus": "异分母分数加法",
-    "recent_modes": ["learn", "practice"],
-    "recent_error_patterns": ["通分时分母乘错"],
-    "recommended_next_moves": ["先用估算检查公分母"],
-    "feynman_readiness": "ready",
-    "confirmed_skills": [
-      { "skill": "通分", "domain": "fractions", "confirmed_at": "2026-10-04T12:00:00Z" }
-    ],
-    "skill_errors": [
-      { "skill": "异分母加法", "error_count": 1, "last_error_at": "2026-10-04T12:00:00Z" }
-    ],
-    "updated_at": "2026-10-04T12:00:00Z"
-  }
-}
-```
+按 `references/profile-schema.md` 的 Subject Memory 合并。没有新观察时不改 `profile_memory`。
 
 合并规则：
 
 - 按 segment 时间顺序处理 `confirmed_skills` 与 `skill_errors_observed`。确认门槛、错误计数和撤销/再确认完全遵循 `learn-core` 的 `references/feynman-skill-whitelist.md`；不要在 finalize 另设一套阈值。
 - 达到确认条件的技能名转成 `{ "skill", "domain", "confirmed_at" }`，按 `skill` 去重；错误计数持久化为 `{ "skill", "error_count", "last_error_at" }`。撤销后的旧确认不得被无序合并重新加入。
 - `feynman_readiness` 取 `unknown` / `ready` / `not_ready`。
-- `profile_memory` 的稳定观察可单独合并；没有新观察时不要改。`preferred_scaffolds`、`motivation_signals`、`expression_traits` 在观察到稳定模式时更新，且下一轮要读取使用。
+- `preferred_scaffolds`、`motivation_signals`、`expression_traits` 在观察到稳定模式时更新，下一轮要读出来用。
 
 ## current_state_patch
 
-```json
-{
-  "active_focus": "异分母分数加法",
-  "source": "profile",
-  "entry_point": "learn",
-  "submode": "practice",
-  "pending_feynman_handoff": false,
-  "pending_feynman_focus": "",
-  "pending_transfer_phase": false,
-  "pending_transfer_focus": "",
-  "last_finalized_session_id": "sess_20261004_1200",
-  "updated_at": "2026-10-04T12:00:00Z"
-}
-```
+按 Current Learning State 模板覆盖本次要改的字段。
 
-- 结束时清空四个 pending 字段。
+- 结束时清空四个 pending 字段：两个布尔写 `false`，两个 focus 写 `""`。
 - 写入 `last_finalized_session_id` 作为幂等标记。
 - 不使用旧的 slash-command / apply 词汇。
 
 ## milestones_patch
 
-```json
-{
-  "milestones": [
-    {
-      "focus": "异分母分数加法",
-      "date": "2026-10-04T12:00:00Z",
-      "type": "developing",
-      "importance": "medium",
-      "summary": "能用画图理解通分，开始独立找公分母。"
-    }
-  ],
-  "updated_at": "2026-10-04T12:00:00Z"
-}
-```
+形状与 `type` 枚举见 `references/profile-schema.md` 的 Milestones。
 
 规则：
 
 - 先合并重复 focus，保留最近一次。
-- `importance` 取 `high` / `medium` / `low`；按 importance 再按时间排序。
-- 上限与超限压缩按 `references/session-retention.md`。
+- 排序、上限和超限压缩按 `references/session-retention.md`。
 - 只记录长期有意义的变化：策略阶段变化、主题掌握、反复成功、明显跃迁。
 
 ## Session Log After Finalize
 
-移除 `context` 与 `finalize_plan`，把 `session_log.json` 更新为：
-
-```json
-{
-  "session_id": "sess_20261004_1200",
-  "entry_point": "learn",
-  "started_at": "2026-10-04T12:00:00Z",
-  "updated_at": "2026-10-04T12:20:00Z",
-  "segments": []
-}
-```
-
-这样下一次 `/learn` 会开新会话；`/save` 也不会重复写已经 finalize 的段。
+移除 `context` 与 `finalize_plan`。`session_log.json` 只保留 `session_id`、`entry_point`、`started_at`、`updated_at`，`segments` 为 `[]`。下一次 `/learn` 会开新会话；`/save` 也不会重复写已经 finalize 的段。
 
 ## No-op
 

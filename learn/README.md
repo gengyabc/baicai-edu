@@ -6,7 +6,7 @@
 
 | 命令 | 作用 |
 |---|---|
-| `/start` | 选数学/语文，识别或创建学生 |
+| `/start` | 选科目，识别或创建学生 |
 | `/learn` | 自适应学习主循环 |
 | `/feynman` | 费曼模式：学生讲，AI 当学生 |
 | `/profile` | 查看/修改学生档案 |
@@ -24,7 +24,8 @@
 
 - `learn-core`：跨学科教学行为；年级默认、费曼角色与白名单分别由其 references 定义。
 - `learn-data/references/session-lifecycle.md`：`/learn` 与 `/feynman` 的唯一会话循环。模式切换沿用日志与 entry_point，不重开会话。
-- `learn-data/references/profile-schema.md`：数据与 segment 结构；学科只定义字段增量。
+- `learn-data/references/profile-schema.md`：数据与 segment 外壳；偏好键、水平、领域、标签和目标分类由学科包定义。
+- `learn-core/references/prestart-settings-interpretation.md`：个性化不得覆盖什么、隐私与用量。字段路径归 `profile-schema`；学科怎么用归学科包。
 - `learn-data/references/finalize-session.md`：统一保存流程；保留策略归 `session-retention.md`。
 - 学科 references：方法、量规、标签与题型的唯一正文；学科 SKILL 保留分流、执行步骤和独有输出。
 
@@ -37,8 +38,8 @@
 | 场景 | 验收结果 |
 |---|---|
 | `/learn` 中选择当小老师，再结束 | 同一 session_id 与 entry_point，仅模式改变；只写一条会话 summary |
-| 直接 `/feynman`，给出作文或阅读答案 | 保留写作/阅读意图，AI 用学生角色追写作选择/原文证据 |
-| 已解析语文错题后重启会话 | 从 extracted 引用恢复材料，不重复改名、分析或问自我诊断 |
+| 直接 `/feynman`，给出该科材料或答案 | 保留学科意图，AI 用学生角色按该学科的追问点提问 |
+| 已解析错题后重启会话 | 从 extracted 引用恢复材料，不重复改名、分析或问自我诊断 |
 | pending 费曼/迁移后中断 | 恢复对应动作和进度，不仅恢复 focus；迁移不重置轮数 |
 | 学生拒绝经验桥接或出现危机信号 | 失败不记掌握；危机停止教学、不落危机细节 |
 | 保存中途失败后重复 `/save` | 重放同一计划，错误计数/历史不重复；已提交仅清理日志 |
@@ -57,24 +58,10 @@ dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/learn
 
 系统状态在 `outputs/students/`；用户投放原件在 `data/students/<id>/<subject>/raw/`。
 
-```
-data/students/
-  <student_id>/<subject>/raw/    # 用户投放原件（只读）
-
-outputs/students/
-  session.json
-  <student_id>/
-    profile.json                 # 姓名、年级、personal.interests、经历
-    math/{profile,memory,current_state,milestones,session_log}.json
-    chinese/{profile,memory,current_state,milestones,session_log}.json
-    <subject>/extracted/         # 分析 md
-    <subject>/backups/raw/       # 原件备份
-```
-
-协议见 `skills/learn-data/SKILL.md`。会话进行中每轮写 `session_log.json`；`profile.json` / `memory.json` 只在 finalize 写。
+目录、字段和写入例外见 `skills/learn-data/SKILL.md`。教学逐轮写 `session_log.json`，长期学习证据在 finalize 提交；建档、显式档案编辑和文件分析按该协议的专属入口写入。
 
 ## 依赖
 
 - `math-low` 与 `chinese-reading` 的 skill 会按名称加载 `learn-core`、`learn-data`、`learn-errors`。
 - 单独安装本包只能使用入口、档案、保存和通用错题处理；学科教学需要安装 `math-low` 或 `chinese-reading`。
-- `personal.interests` 是跨学科个性化字段，语文和数学 skill 都会读取。
+- `personal.interests` 是跨学科个性化字段，各学科 skill 都会读取；具体用法在学科包里。

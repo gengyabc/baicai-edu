@@ -21,7 +21,7 @@ outputs/students/
   session.json
   <student_id>/
     profile.json
-    math/
+    <subject>/
       profile.json
       memory.json
       current_state.json
@@ -29,8 +29,6 @@ outputs/students/
       session_log.json
       extracted/
       backups/raw/
-    chinese/
-      ... 同上
 ```
 
 - `student_id` 形如 `stu_<slug>_<4hex>`；`slug` 只含 `[a-z0-9_]`，`4hex` 是 4 位 `[0-9a-f]`。
@@ -54,7 +52,7 @@ outputs/students/
 
 - `session.json` 缺失或 `student_id` 为空：告诉学生先运行 `/start`。
 - 共享档案缺失：学生选择的名字在目录里不存在，转 `/start` 建档，不要凭空生成。
-- 科目 `profile.json` 缺失：按 `references/profile-schema.md` 初始化；初始化前先确认共享档案存在。
+- 科目 `profile.json` 缺失：按 `references/profile-schema.md` 初始化，年级映射、默认领域、语气与初始水平读取 `references/grade-band-defaults.md`；初始化前先确认共享档案存在。
 - `memory.json` / `current_state.json` / `milestones.json` 缺失：按 `references/profile-schema.md` 的默认值创建。
 - `session_log.json` 缺失：视为没有未完成会话。
 
@@ -71,13 +69,13 @@ outputs/students/
 ```json
 {
   "student_id": "stu_li_ming_a7b2",
-  "subject": "math",
+  "subject": "subject_id",
   "last_active": "2026-10-04T12:00:00Z",
   "session_started_at": "2026-10-04T11:30:00Z"
 }
 ```
 
-- `subject` 只能是 `math` 或 `chinese`。
+- `subject` 是入口写入的科目 id。本协议不列举科目。
 - 切换学生或科目时，整文件覆盖写。
 - 切换当前学生：读旧 session，写新的 `student_id`、`subject`、`last_active`；若 `student_id` 为 `null`，只保留科目并清空学生。
 
@@ -126,7 +124,7 @@ outputs/students/
 ## Privacy
 
 - 不把 `profile.json` / `memory.json` 的原始 JSON 展示给学生。
-- `personal.interests` 用于例子、阅读角度、写作题目和搭桥；不要把它变成对学生的刻板判断。
+- `personal.interests` 由当前学科包决定何时用于例子或搭桥。不要把它变成对学生的刻板判断。
 - 不把学生的难过经历、家庭信息主动复述；只在搭桥时轻量使用。学生不想说时立即停止。
 - 不把学生数据写入工作区之外的位置。
 - 不删除学生档案、`data/.../raw/` 原件或里程碑，除非学生明确要求并再次确认；删除时同时移除 `data/students/<id>/` 与 `outputs/students/<id>/`。

@@ -2,24 +2,26 @@
 
 ## Policy
 
-- `profile.json.session_history` keeps only the most recent 5 summary-level sessions.
-- `profile.json.error_history` keeps the most recent 20 entries, newest first.
-- Older sessions are condensed into milestones, not kept verbatim.
-- Long-term progress lives in `outputs/students/<student_id>/<subject>/milestones.json`.
+条数与排序只在这里规定。
+
+- `profile.json.session_history` 只留最近 5 条会话摘要，最新的在 index 0。
+- `profile.json.error_history` 只留最近 20 条，最新的在前。
+- `learning_state.priority_targets` 最多 5 条。字符串或对象都可以；错题分析优先用对象。
+- `milestones` 最多 20 条。先按 `importance`（`high` > `medium` > `low`），再按时间从新到旧。
+- 更早的会话压成 milestone，不逐字保留。
+- 长期进展在 `outputs/students/<student_id>/<subject>/milestones.json`。
 
 ## Rules
 
-1. Keep recent sessions that help immediate follow-up.
-2. Merge repeated sessions by focus.
-3. Promote stable gains, stage changes, and topic mastery into milestones.
-4. Keep milestones compact, ordered by `importance` (`high` > `medium` > `low`) then recency.
-5. Limit milestones to 20 items.
-6. Keep the per-turn record in `session_log.json`, not in `session_history`; `session_history` is written once per finalized session.
-7. Clear `session_log.json.segments` after finalize.
+1. 留下对紧接着的跟进有用的近期会话。
+2. 同一 focus 的重复会话合并。
+3. 稳定进展、阶段变化和主题掌握提升为 milestone。
+4. 逐轮记录在 `session_log.json`，不在 `session_history`；`session_history` 每次 finalize 写一条。
+5. finalize 之后清空 `session_log.json.segments`。
 
 ## Milestone Signals
 
-- strategy stage changes
-- topic mastery
-- repeated success across the same focus
-- a clear performance jump after prior struggle
+- 策略阶段变化
+- 主题掌握
+- 同一 focus 反复成功
+- 先前卡住之后出现明显跃迁
