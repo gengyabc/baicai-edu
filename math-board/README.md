@@ -69,7 +69,7 @@ summary:  确定性数量汇总（不是对错结论）
 
 「放入回答」把完整 JSON 作为 `我的画板.json` 文件附件放进草稿，不把图形、分组或划去清单写进输入框。学生在「我想说」里写过的话会原样放进去。画布和修改记录都保留，学生可以在同一块画板上改错并再次放入。附件是只读的精确快照，模型读取它再回应，不把清单复述给学生，也不把更早消息里的修改记录串成总过程。附件在点击「放入回答」时上传到本机 Host，但直到学生自己发送才进入会话；学生可以像普通附件一样撤销它。点「清空」才同时清掉画布和本地修改记录，已经放入或发送的附件不删除，清空后不能撤销。
 
-旧版 `schemaVersion: 1`、`2` 和 `3` 的 JSON 会自动迁移到 v4：v1 保留圆形、方块、三角形，v2 保留原来的十个图案并为新图案补默认值，v3 图形和组补空说明、多选说明为空；浏览器草稿会从 v3/v2 存储键读入后写回新的 v4 存储键。详见 [教学协议](<../math-low/skills/math-core/references/structured-drawing.md>)。
+旧版 `schemaVersion: 1`、`2` 和 `3` 的 JSON 会自动迁移到 v4：v1 保留圆形、方块、三角形，v2 保留原来的十个图案并为新图案补默认值，v3 图形和组补空说明、多选说明为空；浏览器草稿会从 v3/v2 存储键读入后写回新的 v4 存储键。详见 [教学协议](<../math-primary-low/skills/math-core/references/structured-drawing.md>)。
 
 保存与打开 JSON 时，支持文件系统访问 API 的浏览器会记住上次使用的文件；再次保存优先写回同一文件，打开也优先从该位置开始。浏览器拒绝或环境不支持时，退回普通下载与文件选择，并在界面说明。
 
@@ -91,11 +91,13 @@ node --check math-board/client.js
 node --test math-board/*.test.js
 node scripts/check-skills.mjs
 node math-board/preview.mjs /tmp/math-board-shapes.html   # 可选：在无头 Chrome 或浏览器里目视检查图案
-# 用 DSH plugin_manager 安装本目录；也可人工运行：
-dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/math-board
+# 安装数学会自动配齐画板和共享学习包：
+node scripts/install.mjs math-primary-low --profile web
+# 画板也可独立安装：
+node scripts/install.mjs math-board --profile web
 ```
 
-纯 JavaScript 包，无第三方依赖、无安装脚本。提交生成的 `client.js`；修改模型、视图、样式或字典后运行 build。`preview.mjs` 用最小 React→SVG 适配器渲染全部图案，便于对比猫、狗等小尺寸辨识度；它不进入运行时包。首次安装支持 live activation，替换已安装模块是否需要重启以安装结果为准。
+数学包将本包列为必需依赖，但画板不反向依赖教学技能。完整安装与启用机制见[统一安装说明](<../docs/installation.md>)。纯 JavaScript 包，无第三方依赖、无安装脚本。提交生成的 `client.js`；修改模型、视图、样式或字典后运行 build。`preview.mjs` 用最小 React→SVG 适配器渲染全部图案，便于对比猫、狗等小尺寸辨识度；它不进入运行时包。首次安装支持 live activation，替换已安装模块是否需要重启以安装结果为准。
 
 图案是本项目用 SVG 基本图元绘制的原创图形；`build.mjs` 将视图与图案工厂一起内联进 `client.js`，运行时不需要外部图片。
 
