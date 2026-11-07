@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Static checks for the three education skill bundles.
+ * Static checks for the four education skill bundles.
  *
  * Usage: node scripts/check-skills.mjs
  * Exit code 1 when an error is found.
@@ -9,8 +9,9 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, basename, extname } from 'node:path'
 
 const ROOT = new URL('..', import.meta.url).pathname
-const BUNDLES = ['learn', 'math-low', 'chinese-reading']
-const ENTRIES = new Set(['start', 'learn', 'feynman', 'profile', 'save'])
+const BUNDLES = ['learn', 'math-primary-low', 'chinese-reading', 'english']
+const ENTRIES = new Set(['learn-start', 'learn', 'learn-feynman', 'learn-profile', 'learn-save', 'learn-clean'])
+const USER_ONLY = new Set(['learn-start', 'learn', 'learn-clean'])
 const MODES = new Set(['learn', 'feynman', 'diagnose', 'start', 'revise', 'assess'])
 const SUBMODES = new Set([
   'learn', 'practice', 'review', 'feynman', 'student_problem',
@@ -24,14 +25,18 @@ const BANNED = [
   [/\bhobbies\b/, 'old field `hobbies`; use `personal.interests`'],
   [/\beasy_areas\b|\bhard_areas\b/, 'old field `easy_areas`/`hard_areas`; use `easy_topics`/`hard_topics`'],
   [/\bteach_readiness\b/, 'old field `teach_readiness`; use `feynman_readiness`'],
-  [/pending_teach_/, 'old field `pending_teach_*`; use `pending_feynman_*`'],
+  [/pending_(teach|feynman|transfer)_/, 'stale `pending_*` on current_state; restore from session log context'],
   [/\bPython\b/, 'do not assume Python or any one language; verify with a calculation command the current environment has'],
   [/\bbash\b/, 'do not require bash; it is unavailable on Windows'],
   [/\bplugin\b/i, 'Pi wording `plugin`; use `skill` or plain language'],
   [/@\.pi/, 'Pi path notation'],
-  [/\/teach\b/, 'stale `/teach`; the entry is `/feynman`'],
+  [/\/teach\b/, 'stale `/teach`; the entry is `/learn-feynman`'],
+  // Slash-command names only; allow path suffixes like /profile.json or /feynman-mode.md
+  [/\/start(?![-\w.])/, 'stale `/start`; the entry is `/learn-start`'],
+  [/\/save(?![-\w.])/, 'stale `/save`; the entry is `/learn-save`'],
+  [/\/profile(?![-\w.])/, 'stale `/profile`; the entry is `/learn-profile`'],
+  [/\/feynman(?![-\w.])/, 'stale `/feynman`; the entry is `/learn-feynman`'],
   [/"mode":\s*"feynman_handoff"/, 'dead `feynman_handoff` mode'],
-  [/student_centered/, 'undeclared tone value'],
   [/via `@`/, 'dead Pi `@` reference convention'],
 ]
 
@@ -100,6 +105,12 @@ for (const bundle of BUNDLES) {
     if (skills.has(fm.name)) errors.push(`duplicate skill name "${fm.name}"`)
     skills.set(fm.name, { bundle, file, fm, text })
 
+    if (USER_ONLY.has(fm.name) && fm['disable-model-invocation'] !== 'true') {
+      errors.push(`${file}: user-only entry must set disable-model-invocation: true`)
+    }
+    if (!USER_ONLY.has(fm.name) && fm['disable-model-invocation'] === 'true') {
+      errors.push(`${file}: model-loadable skill must not disable model invocation`)
+    }
     const internal = !ENTRIES.has(fm.name)
     if (internal && fm['user-invocable'] !== 'false') {
       errors.push(`${file}: internal skill must set user-invocable: false`)
