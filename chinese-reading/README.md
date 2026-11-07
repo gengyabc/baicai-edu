@@ -46,18 +46,15 @@ chinese-reading/
 ## 安装
 
 ```bash
-dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/chinese-reading
+# 在仓库根目录运行，自动安装 learn 与本包
+node scripts/install.mjs chinese-reading --profile web
 ```
 
 安装后刷新 Web 会话，模型目录中会出现上述 skill。它们都是内部 skill（`user-invocable: false`），从 `/learn` 进入语文后由模型自动按需加载。
 
 ## 依赖
 
-本包依赖 `dsh-edu-learn`：
-
-```bash
-dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/learn
-```
+本包在 `dependencies` 中声明依赖 `dsh-edu-learn`，上述统一入口会自动补齐；不需要单独再安装共享包。此前手动禁用的 bundle 保持禁用，需在 DSH 插件管理中明确启用。详见[统一安装说明](<../docs/installation.md>)。
 
 - `chinese-session` 路由前加载 `learn-core` 与 `learn-data`。
 - 各子 skill 用 `learn-core` 的共享语气、按需确认、年级段、结束信号、费曼规则。

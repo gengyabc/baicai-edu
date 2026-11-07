@@ -12,7 +12,8 @@ user-invocable: false
 
 - 语文教学子 skill 只经 `/learn` 或 `/learn-feynman` 的共享生命周期、由 `chinese-session` 路由进入。会话、学生与快照已由入口检查并传入，这里不重复检查或重读；没有入口交接（无快照）时请学生输入 `/learn`。
 - `grade_band` 来自快照，年级段规则见 `learn-data` 的 `references/grade-band-defaults.md`。
-- 个性化输入：`personal.interests`、`personal.most_exciting_event`、`profile.preferences`、`self_report.easy_topics/hard_topics`、`memory.preferred_scaffolds` / `recent_error_patterns` / `expression_traits` / `stable_strengths` / `stable_difficulties`。目标选择另看 `priority_targets`、`developing_topics` 与最近 `error_history`。
+- 个性化输入：`personal.interests`、`personal.most_exciting_event`、`profile.preferences`、`self_report.easy_topics/hard_topics`、`memory.preferred_scaffolds` / `recent_error_patterns` / `expression_traits` / `stable_strengths` / `stable_difficulties` / `material_difficulty`。目标选择另看 `priority_targets`、`developing_topics` 与最近 `error_history`。
+- 生成或调整文本前，若 `memory.profile_memory.material_difficulty` 不是 `standard`，按 `learn-core` 的 `references/difficulty-adjustment.md` 调文本长度或问题层数。
 
 ## 读取规则
 
