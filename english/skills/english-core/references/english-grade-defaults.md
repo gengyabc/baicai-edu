@@ -1,6 +1,6 @@
 # 英语年级默认
 
-年级到年级段、段内具体程度、以及 `tone` 以 `learn-data` 的 `references/grade-band-defaults.md` 为准。本文是英语 `active_domain`、初始水平、默认任务与推进顺序的唯一来源。不要从共享 schema 的示例抄初始值。
+年级到年级段、段内具体程度以 `learn-data` 的 `references/grade-band-defaults.md` 为准。本文是英语 `active_domain`、初始水平、默认任务与推进顺序的唯一来源。不要从共享 schema 的示例抄初始值。
 
 ## 初始化
 

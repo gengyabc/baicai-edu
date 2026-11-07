@@ -53,12 +53,13 @@ english/
 
 ## 进入方式
 
-先安装共享包并安装本包：
+在仓库根目录用统一入口自动安装共享包与本包：
 
 ```bash
-dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/learn
-dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/english
+node scripts/install.mjs english --profile web
 ```
+
+按 DSH 输出决定是否重启，再刷新页面。不要只 link 英语包：间接依赖不会自动启用；此前手动禁用的 bundle 也不会被重装强行启用。详见[统一安装说明](<../docs/installation.md>)。
 
 刷新 Web 会话后：
 

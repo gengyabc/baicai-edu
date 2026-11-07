@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "description": "English teaching skills for dsh-edu: story input, dialogic interaction, output, scaffolding, tasks, usage-based patterns, spaced retrieval, and child-friendly news reading.",
+  "dependencies": {
+    "dsh-edu-learn": "file:../learn"
+  },
   "files": [
     "cordis.patch.yml",
     "skills",

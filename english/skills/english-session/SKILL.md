@@ -26,12 +26,12 @@ user-invocable: false
 
 ## 1. 定焦点与分支
 
-1. 优先 `target_context.topic`，否则用生命周期恢复的 `focus` 与动作；仍无目标时按生命周期第 2 步的档案候选顺序，默认领域取 `english-core` 的 `references/english-grade-defaults.md`。
+1. 优先 `target_context.topic`，否则用生命周期恢复的 `focus` 与动作；仍无目标时按生命周期 Resolve Target 的档案候选顺序，默认领域取 `english-core` 的 `references/english-grade-defaults.md`。
 2. 文件目标：从 `material_refs` 指向的 extracted 内容选本轮焦点；已有学生答案时先核对答案，再决定理解、表达或修改。
 3. 宽泛目标先选一个具体焦点：一个故事、一个场景、一个句型、一组词或一个任务，不一次覆盖整单元。
 4. 定 `submode`：新主题 `learn`，近邻练习 `practice`，旧表达回想 `review`，费曼 `feynman`。
 5. `mode: feynman` 优先；本轮只让学生讲，追问点按其实际表达选一个。
-6. 按 `english-core` 的 `references/english-teaching-core.md` 唯一方法表，根据 `target_context.type` 与当前观察选择并加载主方法（新闻即 `child-news-reader`）。本 skill 是唯一调度者；coach 的跨轮计划与辅助建议也由本 skill 取舍，不自动展开整套方法。
+6. 按 `english-core` 的 `references/english-teaching-core.md` 唯一方法表，根据 `target_context.type` 与当前观察选择并加载主方法（新闻即 `child-news-reader`）。本 skill 是唯一调度者；coach 的跨轮计划与辅助建议也由本 skill 取舍，不自动展开整套方法。选定后按 `english-core` 的 `references/english-turn-arc.md` 排 2–4 个角度，本轮只执行第一个。
 7. 待答步骤优先；每轮只保留一个主要待答问题，不因活动切换再追加一组问题。
 
 完成条件：一个焦点、明确模式、一个主方法和一个下一动作；待答问题仍在时接着它。
@@ -41,7 +41,7 @@ user-invocable: false
 按 `english-core` 的 `references/english-teaching-core.md` 执行：
 
 - 先按共享确认协议核对完整消息，再判断有无回答。学生用中文、单词、半句或手势回应都按参与处理。
-- 给一段可理解的材料，只问一个真问题，停在问题并等待；问题后不附“你可以说……”“先跟我读……”或完整答案。
+- 给一段可理解的材料，问回合串的第一个问题，停在问题并等待；问题后不附“你可以说……”“先跟我读……”或完整答案。学生回答后留在同一材料，按 `english-core` 的 `references/english-turn-arc.md` 换下一个角度。
 - 有回答时按教学核心的反馈规则承接意思；记录证据按 segment 字段约定，不在本 skill 另设标准。
 - 无响应按共享协议保留待答问题或降低表达负担；不把空消息当失败，不在同轮追加提示。
 - 生成或调整材料前读 `english-core` 的 `references/english-input-adaptation.md`；学生明确求助或卡住时读其 `references/english-scaffolding.md`，不必额外加载方法才能给提示。
@@ -50,7 +50,7 @@ user-invocable: false
 - 写作：以短句和仿写为主，保留学生自己的意思；只改一处最影响可读性的地方，不替学生重写整段。
 - 新的 `session_id` 不沿用上一场的故事、单词表或未答问题；档案里的下一步只用来选新的英语目标。
 
-等待时交入口同步 `context.turn_state`：共享的当前题、已收到回答、待答问题，加上 `active_method`（当前主方法）、`method_step`、已用提示和必要活动计划；新闻另存已呈现文章、来源引用和阅读步骤。辅助方法提供局部支持，不覆盖原活动计划和主步骤；提示次数按同一卡点累计，不因换方法重置。完整文章已呈现后只接当前问题，不重复检索或重新分级；多问题计划逐轮推进，未答内容不算表现。无持久 extracted 引用的文本存 `context.materials`，已有引用则复用，不复制原始学生数据。
+等待时交入口同步 `context.turn_state`：共享的当前题、已收到回答、待答问题，加上 `active_method`（当前主方法）、`method_step`、回合串已覆盖的角度、已用提示和必要活动计划；新闻另存已呈现文章、来源引用和阅读步骤。辅助方法提供局部支持，不覆盖原活动计划和主步骤；提示次数按同一卡点累计，不因换方法重置。完整文章已呈现后只接当前问题，不重复检索或重新分级；多问题计划逐轮推进，未答内容不算表现。无持久 extracted 引用的文本存 `context.materials`，已有引用则复用，不复制原始学生数据。
 
 同一日志恢复时先处理 lifecycle 的显式结束、模式或主题请求，再接 active_method 与步骤；旧日志缺标记时按已有材料和待答问题恢复，缺关键信息只问一处。方法收束后清除活动标记，新 session 不继承旧待答状态。
 
@@ -58,7 +58,7 @@ user-invocable: false
 
 ## 3. 收束与回传
 
-已有理解或表达证据时，用一句学生能复述的话总结，给一个小的下一步；待答时保留当前问题。结束、保存或换主题交共享生命周期。
+已有理解或表达证据时，用一句学生能复述的话总结，给一个小的下一步；待答时保留当前问题。单个角度答对时继续下一个角度，只有回合串的角度走完，或学生明确要走时才收束并给下一步选项。结束、保存或换主题交共享生命周期。
 
 读 `english-core` 的 `references/english-segment-fields.md`，回传唯一 `session_segment`：`subject: english`，`mode` 沿用调用方，`submode` 如上，`source` 对齐 `target_context.source`。方法 skill 的证据并入同一记录，不另记一轮。`diagnosis` 只用一个主标签；`current_levels` 只在有足够证据时给部分更新。
 

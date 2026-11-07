@@ -113,11 +113,11 @@ Use flexibly, not as a compulsory interrogation:
 
 - **Before:** optionally plan one curiosity question to activate relevant knowledge; if asked this turn, wait for the reply before presenting the next step.
 - **During:** present the whole adapted article first, not one sentence at a time. Follow the shared on-demand vocabulary and scaffolding rules when the child asks for help.
-- **After:** internally plan 1–3 varied questions, starting with the main idea and optionally reaching a detail, cause/effect or opinion. Present only one main pending question per turn and advance after the student's response; distinguish opinion from factual recall.
+- **After:** internally plan 1–3 varied questions, starting with the main idea and optionally reaching a detail, cause/effect or opinion. Spread them across 2–4 turns of the same article: main idea, one fact or number, cause/effect, then picture/headline or the child's view. Present only one main pending question per turn and advance after the student's response to the next angle; a correct answer does not end the article. Distinguish opinion from factual recall.
 - **Output / review:** after comprehension, optionally suggest a retelling, prediction or reuse of an expression to session as a later step, never appended to a pending question.
 - **Exit / switch:** return the request and evidence to session; lifecycle handles continuing, switching, ending and saving.
 
-Keep a pending task unless the student explicitly switches. Do not pressure the child to continue.
+Keep a pending task unless the student explicitly switches. Keep the same article open across turns: do not re-present it or replace it after one answer. Do not pressure the child to continue.
 
 ## 9. Output contracts
 
