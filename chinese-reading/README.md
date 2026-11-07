@@ -33,7 +33,7 @@ chinese-reading/
 
 ## 个性化
 
-语文不是只读年级。`/start` 会把兴趣写进共享档案的 `personal.interests`，语文 skill 会用它来：
+语文不是只读年级。`/learn-start` 会把兴趣写进共享档案的 `personal.interests`，语文 skill 会用它来：
 
 - 阅读：选一个与文本情感/情境相近的具体经验打开话题，再回到原文证据。
 - 写作：从兴趣里找具体素材和题目角度，不硬塞。

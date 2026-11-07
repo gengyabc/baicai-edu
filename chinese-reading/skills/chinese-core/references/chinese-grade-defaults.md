@@ -9,7 +9,7 @@
 | `lower_primary` | `writing` |
 | `upper_primary` | `reading` |
 
-`profile.preferences` 三个键初始全部为 `false`；`/start` 只把选中的一项设为 `true`。键见 `references/chinese-profile-fields.md`。
+`profile.preferences` 三个键初始全部为 `false`；`/learn-start` 只把选中的一项设为 `true`。键见 `references/chinese-profile-fields.md`。
 
 初始 `profile.current_levels` 四项都是 `L1`：
 

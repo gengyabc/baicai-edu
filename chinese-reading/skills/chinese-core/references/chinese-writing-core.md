@@ -58,4 +58,4 @@ L1-L4 描述能力发展；作品一至四档由 `references/chinese-assessment-
 | 4-6 年级 | 提炼 2-3 个，可含定格、对话、侧面描写、结构与视角 |
 | 5-6 年级进阶 | 可涉及悬念、长短句节奏、首尾回扣、视角转换及反差张力 |
 
-迁移题按同一 base directory 的 `references/chinese-task-generation.md` 换主题并给学段支架；陪写由 `chinese-read-write-transfer` 执行；写后点评按 `references/chinese-assessment-rubric.md` 的技巧运用分支。
+迁移题按 `references/chinese-task-generation.md` 换主题并给学段支架；陪写由 `chinese-read-write-transfer` 执行；写后点评按 `references/chinese-assessment-rubric.md` 的技巧运用分支。

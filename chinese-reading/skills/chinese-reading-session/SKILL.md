@@ -8,21 +8,13 @@ user-invocable: false
 
 一轮只处理一个阅读目标，先证据、后结论。无答案的材料进入 `learn`，已有答案需要评判时进入 `diagnose`，学生讲解阅读依据时进入 `feynman`。
 
-## 会话门槛
+## 开始与输入
 
-本 skill 只由 `chinese-session`、`/learn` 或 `/feynman` 路由进入。没有 `session.json` 或 `student_id` 为空时，先引导学生运行 `/start`，不要开始阅读教学。
-
-## 输入
-
-- 文章或材料原文、阅读题目、学生答案（可能只有其中一部分）。
-- `focus`：本轮锁定的一段、一句或一个题型。
-- `grade_band`：来自快照 `profile.json`；年级段规则见 `learn-data/references/grade-band-defaults.md`。
-- 快照中的 `priority_targets`、`developing_topics`、`error_history` 最近几条。
-- 个性化：`personal.interests`、`personal.most_exciting_event`、`profile.preferences`、`self_report.easy_topics/hard_topics`、`memory.preferred_scaffolds` / `recent_error_patterns` / `expression_traits` / `stable_strengths` / `stable_difficulties`。
+加载 `chinese-core`，按其“开始门槛与输入”与共用读取规则执行。本 skill 另需：文章或材料原文、阅读题目、学生答案（可能只有其中一部分）；`focus` 为本轮锁定的一段、一句或一个题型。
 
 ## 读取规则
 
-按需调用 `skill` 工具加载，已加载的不重复加载：
+在 `chinese-core` 共用读取之外，按需读取：
 
 | 需要什么 | 加载 | 读哪个文件 |
 |---|---|---|
@@ -30,26 +22,17 @@ user-invocable: false
 | 反馈流程、标签用法、方法提炼 | `chinese-core` | `references/chinese-feedback-core.md` |
 | learn 提炼写法时：技巧提取标准与学段 | `chinese-core` | `references/chinese-writing-core.md` 的“行文技巧提取与读写迁移” |
 | 已定位失分点、选择标签与记录诊断前 | `chinese-core` | `references/chinese-error-labels.md` |
-| 默认语气（Guided Coach）；诊断回合叠加 Socratic Tutor | `learn-core` | `references/pedagogy-core.md` 的 Voice And Feedback |
-| 确认学生答案或解释前 | `learn-core` | `references/confirm-before-accept.md` |
-| 学生连续不回应引导 | `learn-core` | `references/guidance-non-response-handling.md` |
-| 输出技能追踪字段前（所有模式） | `learn-core` | `references/feynman-skill-whitelist.md` |
-| 费曼模式 | `learn-core` | `references/feynman-mode.md` |
 | 能复述字面，但因生活经验缺口进不去情感、意境或人物处境 | `chinese-core` | 按其“内部动作”的经验桥接执行 |
-| 使用兴趣、偏好、易/难的共享边界 | `learn-core` | `references/prestart-settings-interpretation.md` |
-| 这些信息在语文中的用法 | `chinese-core` | `references/chinese-personalization.md` |
-
-`chinese-core` 的加载结果会给出 base directory；参考文件按 `<base_directory>/references/<文件名>.md` 读取。
 
 ## learn 模式（文章，无答案）
 
 1. 先核对材料和目标；缺原文则索取，已有学生初读回应则复用，否则问“你第一遍读，最先注意到什么？”。得到一个具体观察后再推进。
 2. 按已读 `references/chinese-reading-core.md` 的“薛法根文本解读法”选择一个方法，一次只拆一段或一句。可从 `personal.interests` 选相近经验开场；学生指出待讨论的词句后进入证据分析。
 3. 让学生自己指认关键证据：“你从哪一句看出来的？”。找到可核对的原文词句后，区分字面事实与学生推断。
-4. 讨论作者意图与深层含义；学生能把结论与该处证据连起来，才完成本次理解检查。低年级按学段要求确认，不强求术语。
+4. 讨论作者意图与深层含义；学生能把结论与该处证据连起来，才完成本次理解检查。定位原句、说出人物特点、在提示后选中结论，分别按实际表现认可；需要理解证据与结论的关系时，检查学生已有表达，关系尚未展示就只补一个缺口。低年级可说出具体物品、动作或词语带来的意思，不强求术语；教师补出的解释只算支架。同一缺口的追问预算沿用共享确认规则，仍卡住就给局部支持或换近邻任务。
 5. 确认生活经验缺口时，按 `chinese-core` 的内部动作表执行经验桥接，再接回当前阅读焦点；证据并入本轮段，失败换方法，危机停止教学。
 6. 按 `references/chinese-writing-core.md` 的“行文技巧提取与读写迁移”提炼写法；复用已有提取结果，完成该处的原文证据、效果、迁移提示与学段检查。
-7. 用一句学生能复述的方法句收束，并留一个自然的下一步（练一道题、做读写迁移、讲给 AI 听），不要硬性结束。
+7. 当前理解检查通过后，再用一句方法句收束；后续出口统一按“结束状态规则”交给入口执行。方法句是教师总结，不作为学生已会运用方法的证据。
 
 ## diagnose 模式（有答案要评）
 
@@ -59,7 +42,7 @@ user-invocable: false
 4. 用具体文本证据说明“分丢在哪”，不说“理解不深”这类老师话。
 5. 针对主问题示范一句修正，保留学生思路和用词；请学生补改另一处，能说明改法与证据的关系后才确认纠偏。
 6. 给一个同题型的小练习，换一句话或一段检验；收到学生独立作答前，只记录已观察到的困难与提示后表现。
-7. 把主标签写进本轮 `session_segment.diagnosis`：`domain: "reading"`、`label`（如 `reading:证据不足`）、`evidence`（原文 + 学生原话）。finalize 会写成 `error_history` 诊断条目；不要在现场向学生展示标签或 JSON。
+7. 把主标签写进本轮 `session_segment.diagnosis`：`domain: "reading"`、`label`（如 `reading:证据不足`）、`evidence`（原文 + 学生原话）。finalize 会写成 `error_history` 诊断条目。
 8. 同一标签在 `error_history` 里反复出现时，在 `diagnosis.evidence` 里写清是重复模式，并在 `recommended_targets` 里保留该标签对应的训练点。
 
 ## feynman 模式
@@ -73,16 +56,23 @@ user-invocable: false
 
 ## 会话段
 
-按 `chinese-core` 的回合交付规则返回唯一内存 `session_segment`，入口负责写日志与下一步选择。只输出当前步骤，教学提问后等待；费曼不套教师讲解模板。
+按 `chinese-core` 的回合交付规则返回唯一内存 `session_segment`。只输出当前步骤，教学提问后等待；费曼不套教师讲解模板。
 
 领域字段：
 
 - `subject` 固定 `chinese`；`source` 固定 `reading`。
 - `mode` 取 `learn` / `diagnose` / `feynman`；`submode` 取 `learn` / `review` / `feynman`。
-- `confirmed_skills` 与 `skill_errors_observed` 的可追踪技能名、独立性和确认门槛统一读取 `learn-core` 的 `references/feynman-skill-whitelist.md`；只返回本轮可核实的阅读证据，不在这里另设阈值。
+- `confirmed_skills` 与 `skill_errors_observed` 按共用读取的白名单门槛，只返回本轮可核实的阅读证据，不在这里另设阈值。
 - `diagnosis` 有明确主标签时填写，否则省略；`evidence` 同时包含原文依据与学生原话。
 - 其余通用字段与证据要求遵循 `chinese-core` 的“回合交付规则”。
 
 ## 结束状态规则
 
-用一句阶段小结交回入口；入口负责呈现下一步选择或按 `learn-data` finalize，教学子 skill 保持会话可接续。
+每轮交回当前理解证据与一个可执行的下一步。关系尚未讲清时给一个具体教学问题；目标闭环时给一句阶段小结与 `next_step_candidate`，由入口在同一轮按 `learn-data` 的 `references/next-step.md` 呈现阶段选择。学生已选择继续或已明确指定下一任务时直接路由执行。实际结束与 finalize 统一遵循共享结束信号。
+
+推进时按“目标—证据—缺口—任务”决策：
+
+1. 明确当前目标要求学生理解的关系，区分信息定位、字面理解与表达效果，不把完成前一层直接视为完成后一层。
+2. 对照学生已发生的表现核实证据，分别标明独立完成、提示后完成与教师示范；只有摘句和教师的解释时，仍保留关系待确认。
+3. 选择阻碍当前理解的最小缺口，生成一个学生能直接作答的任务。字面关系未清先澄清对象与事实；字面已清再连接关键词、情境与人物或作者意图。一次只推进一个关系，复用已明确的证据。
+4. 收到回答后重新判断缺口是否补齐。已有充分证据时直接交下一步选择；仍有缺口则按共享支架规则调整任务，避免重复索要同一个理由。

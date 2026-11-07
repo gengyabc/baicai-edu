@@ -4,7 +4,7 @@
 
 ## preferences
 
-| 键 | `/start` 选项 |
+| 键 | `/learn-start` 选项 |
 |---|---|
 | `likes_model_text` | 读文章 |
 | `likes_oral_explanation` | 讲想法 |

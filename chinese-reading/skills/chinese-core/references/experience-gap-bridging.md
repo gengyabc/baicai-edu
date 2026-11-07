@@ -10,8 +10,6 @@
 
 ## 条件读取
 
-跨技能先按名加载，再按返回的 base directory 定位；已加载内容复用。
-
 | 条件 | 规则 |
 |---|---|
 | 需见人法或文本层次 | `chinese-core` 的 `references/chinese-reading-core.md` |

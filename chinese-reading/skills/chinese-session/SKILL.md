@@ -8,37 +8,30 @@ user-invocable: false
 
 每轮只选一个子 skill，把上下文原样交给它；教学、诊断、出题与会话段均由子 skill 负责。
 
-## 输入
+## 输入与加载
 
-入口传入学生身份、`subject: chinese`、目标、模式、焦点、快照与个性化字段；完整交接字段见“移交控制”。
+入口已按共享生命周期检查会话、解析 `target_context` 并传入快照；本路由器不重复检查、补读或重新解析。完整交接字段见“移交控制”。
 
-- `target_context.type`：`reading_material` | `writing_prompt` | `writing_draft` | `task_generation` | `assessment` | `error_files` | `profile`。
-- `target_context.intent`：`learn_reading` | `start_writing` | `revise_writing` | `assess_reading` | `assess_writing` | `generate_reading_tasks` | `generate_writing_task` | `transfer_read_write`。
+- `target_context.type` / `intent`：取值与判定只由 `chinese-core` 的 `references/chinese-target.md` 定义；另有共享的 `error_files` / `profile`。
 - `mode`：`learn` | `feynman`。
 - `focus`：本轮主题字符串；为空时由子 skill 从档案或材料中确定。
 
-如果入口没有给出 `target_context`，按 `learn-data` 的 `references/target-parsing.md` 补齐；仍无法确定流程分支时，用 `ask_user_question` 提供对应的阅读/写作或动作选项，得到选择后再路由。
+尚未加载时加载 `chinese-core`（`learn-core`、`learn-data` 已由入口加载）。路由器只用本文件判断方向，不读 `chinese-core` 的 reference；具体规则由被路由到的子 skill 读取。
 
-## 首先加载
+科目不匹配或科目文件缺失时交回入口处理；本路由器不切换科目、不创建或修改学生数据。本轮只路由一次，不在一次回复里加载多个子 skill 的教学内容。
 
-如果本会话尚未加载，按顺序调用 `skill` 工具加载：
+## 附加选项与迁移恢复
 
-1. `learn-core`
-2. `learn-data`
-3. `chinese-core`
+普通阅读或写作的阶段出口回传 `stage_options`：`label: 写一写`、`action: transfer`。学生选择或直接提出同义请求后，交入口按共享生命周期记录迁移状态，保留原材料、来源领域和已提炼技巧；接续与恢复均由本技能按 `context.activity: transfer` 处理：
 
-路由器只需要读规则来判断方向，不必读 `chinese-core` 的全部 reference；具体规则由被路由到的子 skill 读取。
+- 来源为阅读：设置 `intent: transfer_read_write`，进入下方读写迁移分支。
+- 来源为写作：设置 `type: writing_draft`、`intent: revise_writing`，进入已有写作修改分支；本次写作迁移最多 2 轮，阶段与轮数由子技能回传到 `context.turn_state`，轮数用尽交回入口，不自动结束整个会话。
 
-## 前置条件
-
-1. 优先复用入口已读的 `session.json` 与学生快照，确认 `student_id` 存在且 `subject = chinese`；已提供的部分不重复读取。
-2. 仅当必要会话信息或快照字段缺失时，按 `learn-data` 的 Read Snapshot 补读缺失部分；会话不存在或 `student_id` 为空则引导 `/start`，停止路由。科目不匹配则交回入口确认，不在这里切换或写回。
-3. 科目文件缺失时交回入口按 `learn-data` 初始化，再使用入口返回快照；本路由器不创建、初始化或修改任何学生数据。
-4. 本轮只路由一次；不要在一次回复里加载多个子 skill 的教学内容。
+`mode = feynman` 优先于迁移。迁移来源不足时先补问，不按旧 intent 猜测。
 
 ## 路由表
 
-依次完成文件归类、确定领域、选择子 skill。明确 `intent` 优先于旧 `type`：按共享分类器补齐匹配类别，保留原始目标与材料；两者表达了互相冲突的明确请求时，用 `ask_user_question` 确认一个动作后再路由。`mode = feynman` 优先决定教学方式，出题/迁移目标仅保留其阅读或写作领域。
+明确 `intent` 优先于旧 `type`；两者表达了互相冲突的明确请求时，用 `ask_user_question` 确认一个动作后再路由。`mode = feynman` 优先决定教学方式，出题/迁移目标仅保留其阅读或写作领域。
 
 | 条件 | 路由到 | 传入 mode |
 |---|---|---|
@@ -52,52 +45,35 @@ user-invocable: false
 | `type = assessment` 且 `intent = assess_writing` | `chinese-writing-session` | `assess` |
 | `type = assessment` 且 `intent = assess_reading` | `chinese-reading-session` | `diagnose` |
 | `type = reading_material` | `chinese-reading-session` | `learn` |
-| `type = error_files` | 仅未处理文件交入口解析；已处理时复用提取内容并归类 | 见下 |
 | `type = profile`，选定阅读 | `chinese-reading-session` | `learn` |
 | `type = profile`，选定写作 | `chinese-writing-session` | `start` |
+
+`submode` 与 segment 字段由被路由的子 skill 按其“会话段”填写，路由器不另行映射。
 
 ## 路由规则
 
 1. 费曼模式只在开头路由一次；随后不再因为学生的新句子反复切换领域。
-2. 文件目标的共享交接见 `learn-data` 的 `references/target-parsing.md`；语文归类见 `chinese-core` 的 `references/chinese-target.md`：
-   - 入口已归类并传 `files_processed: true` 时，直接使用其阅读/写作类别、intent、提取内容和 material_refs；不再加载 `learn-errors` 或追问自我诊断。
-   - 兼容仍为 `error_files` 但已处理的目标：读取 material_refs 指向的 extracted 内容，归为阅读/写作类别；不再分析旧 raw 路径。
-   - 尚未处理时交回共享生命周期调用一次 `learn-errors`，取得结果后再路由；本路由器不进行文件持久化。
-   - 阅读答案用 `assessment + assess_reading`；作文批改用 `assessment + assess_writing`，其余按材料归类。仍不清楚用 `ask_user_question` 问“这是阅读题还是作文？”，选项为「阅读题」「作文」。
+2. 文件目标：`files_processed: true` 时（含仍标为 `error_files` 的旧目标），读取 `material_refs` 指向的 extracted 内容，按 `chinese-core` 的 `references/chinese-target.md` 归为阅读/写作类别后查路由表；不再加载 `learn-errors`、分析旧 raw 路径或追问自我诊断。尚未处理的文件交回入口按共享生命周期处理，取得结果后再路由。仍分不清时用 `ask_user_question` 问“这是阅读题还是作文？”，选项为「阅读题」「作文」。
 3. `type = profile` 选定领域的顺序：
    1. `session_history[0].next_step` 明确指向阅读或写作时，用它。
    2. 否则用科目档案 `learning_state.active_domain`。
-   3. 仍然没有，用 `chinese-core` 的 `references/chinese-grade-defaults.md`。年级段与语气仍见 `learn-data` 的 `references/grade-band-defaults.md`。
+   3. 仍然没有，用 `chinese-core` 的 `references/chinese-grade-defaults.md`。
    4. 只选一个领域，不并列两个。
 4. 已明确 `intent` 时，不要用模糊描述重新推断阅读还是写作。
-5. 阅读结束后学生提出“我想试试自己写”时，不要重新走写作 start；路由 `chinese-read-write-transfer`，保留当前阅读材料与已提取技巧。
-6. 路由完成后，由子 skill 负责本轮全部教学动作、规则读取、输出形状和 `session_segment`；路由器不再补充学科建议。
-
-## submode 映射
-
-| 实际动作 | mode | submode |
-|---|---|---|
-| 阅读材料学习（文章、无答案） | `learn` | `learn` |
-| 阅读答案诊断 | `diagnose` | `review` |
-| 写作 start | `start` | `learn` |
-| 写作 revise / assess | `revise` / `assess` | `review` |
-| 读写迁移 | `learn` | `read_write_transfer` |
-| 出题 | `learn` | `generate_tasks` |
-| 费曼（阅读或写作） | `feynman` | `feynman` |
+5. 路由完成后，由子 skill 负责本轮全部教学动作、规则读取、输出形状和 `session_segment`；路由器不再补充学科建议。
 
 ## 移交控制
 
 调用目标子 skill 时，传齐：
 
-- `student_id`、`subject: chinese`
-- `mode`、`submode`
-- `target_context`（已按共享分类器归类的目标，保留原意图与材料引用；入口持有原始输入）
+- `student_id`、`subject: chinese`、`mode`
+- `target_context`（已归类的目标，保留原意图与材料引用；入口持有原始输入）
 - 恢复时的 `context.activity`、`context.turn_state`（迁移来源、技巧、阶段、轮数、待答问题）
 - `focus`
-- 入口已读会话与快照，以及按「前置条件」补读的缺失部分（子 skill 复用，不重复读文件）
-- 个性化输入：`personal.interests`、`personal.most_exciting_event`、`profile.preferences`、`self_report.easy_topics/hard_topics`、`memory.preferred_scaffolds` / `recent_error_patterns` / `expression_traits` / `stable_strengths` / `stable_difficulties`
+- 入口已读会话与快照
+- `chinese-core` “开始门槛与输入”列出的个性化输入
 - 阅读材料或草稿原文，以及学生本轮最新一句原话
 
 路由完成条件：目标子 skill 已收到以上上下文并接管本轮；仅需补问或等待入口处理文件时停在当前步骤。教学、反馈及唯一 `session_segment` 均由该子 skill 产出，路由器只交接，不追加教学或记录。
 
-每次子 skill 返回后，把唯一段及最新阶段交回入口，按 `learn-data` 的 `references/session-lifecycle.md` 记录、恢复或切换；finalize 时机与持久化均由入口负责。
+每次子 skill 返回后，把唯一段及最新阶段交回入口，按 `learn-data` 的 `references/session-lifecycle.md` 记录、恢复或切换。

@@ -8,18 +8,13 @@ user-invocable: false
 
 一轮只推进一篇作文的一步，让学生自己写得更具体：有题无稿用 `start`，修改草稿用 `revise`，批改看档次用 `assess`，学生讲写作或修改选择用 `feynman`。
 
-## 输入
+## 开始与输入
 
-- 作文题与要求，或学生草稿原文。
-- `focus`：本轮只改的一个点（一个定格、一个开头、一处结尾）。
-- `grade_band` 与年级；`priority_targets`、`developing_topics`、`error_history` 最近的写作标签。
-- 个性化：`personal.interests`、`personal.most_exciting_event`、`profile.preferences`、`self_report.easy_topics/hard_topics`、`memory.preferred_scaffolds` / `expression_traits`。
-
-## 会话门槛
-
-本 skill 只由 `chinese-session`、`/learn` 或 `/feynman` 路由进入。没有 `session.json` 或 `student_id` 为空时，先引导学生运行 `/start`，不要开始写作教学。
+加载 `chinese-core`，按其“开始门槛与输入”与共用读取规则执行。本 skill 另需：作文题与要求，或学生草稿原文；`focus` 为本轮只改的一个点（一个定格、一个开头、一处结尾）；`error_history` 只看最近的写作标签。
 
 ## 读取规则
+
+在 `chinese-core` 共用读取之外，按需读取：
 
 | 需要什么 | 加载 | 读哪个文件 |
 |---|---|---|
@@ -28,15 +23,6 @@ user-invocable: false
 | 反馈流程、建议怎么写、方法提炼 | `chinese-core` | `references/chinese-feedback-core.md` |
 | 发现明确写作问题、记录诊断前 | `chinese-core` | `references/chinese-error-labels.md` |
 | 需要给新题或变式题 | `chinese-core` | `references/chinese-task-generation.md` |
-| 默认语气；评改回合叠加追问 | `learn-core` | `references/pedagogy-core.md` 的 Voice And Feedback |
-| 确认学生选材或改法前 | `learn-core` | `references/confirm-before-accept.md` |
-| 学生卡住、连续短答 | `learn-core` | `references/guidance-non-response-handling.md` |
-| 输出技能追踪字段前（所有模式） | `learn-core` | `references/feynman-skill-whitelist.md` |
-| 费曼模式 | `learn-core` | `references/feynman-mode.md` |
-| 使用兴趣、偏好、易/难的共享边界 | `learn-core` | `references/prestart-settings-interpretation.md` |
-| 这些信息在语文中的用法 | `chinese-core` | `references/chinese-personalization.md` |
-
-`chinese-core` 的加载结果会给出 base directory；参考文件按 `<base_directory>/references/<文件名>.md` 读取。
 
 ## 教学边界
 
@@ -66,7 +52,7 @@ user-invocable: false
 
 1. 读取 `references/chinese-assessment-rubric.md`，按六步流程及普通作文 / 迁移作文差异评改，使用其档位与输出格式；评价作品而非学生本人。
 2. 每个适用维度都有原文依据或明确的缺失说明，且修改建议能转成局部任务后，评改完成；把下一步交入口作为练习候选。
-3. 按 `references/chinese-error-labels.md` 选择有证据的写作主标签，输出到本轮 `session_segment.diagnosis`：`domain: "writing"`、`label`、`evidence`（原文 + 问题）；无明确错误则省略诊断。标签只供内部记录。
+3. 按 `references/chinese-error-labels.md` 选择有证据的写作主标签，输出到本轮 `session_segment.diagnosis`：`domain: "writing"`、`label`、`evidence`（原文 + 问题）；无明确错误则省略诊断。
 
 ## feynman 模式
 
@@ -79,16 +65,16 @@ user-invocable: false
 
 ## 会话段
 
-按 `chinese-core` 的回合交付规则返回唯一内存 `session_segment`，入口负责日志与下一步选择。start / revise 只输出当前步骤，提问后等待；assess 按量规格式，费曼按角色流程。
+按 `chinese-core` 的回合交付规则返回唯一内存 `session_segment`。start / revise 只输出当前步骤，提问后等待；assess 按量规格式，费曼按角色流程。
 
 领域字段：
 
 - `subject` 固定 `chinese`；`source` 固定 `writing`。
 - `mode` 取 `start` / `revise` / `assess` / `feynman`；`submode` 取 `learn` / `review` / `feynman`。
-- `confirmed_skills` 与 `skill_errors_observed` 的技能名、独立性和确认门槛统一读取 `learn-core` 的 `references/feynman-skill-whitelist.md`；只返回本轮真实写作证据，不另设阈值。
+- `confirmed_skills` 与 `skill_errors_observed` 按共用读取的白名单门槛，只返回本轮真实写作证据，不另设阈值。
 - `diagnosis` 有明确主标签时填写，否则省略；证据用实际草稿及学生表现，AI 示范只作为提示过程。
 - 其余通用字段与证据要求遵循 `chinese-core` 的“回合交付规则”。
 
 ## 结束状态规则
 
-用阶段小结交回入口；入口负责呈现下一步选择或按 `learn-data` finalize，教学子 skill 保持会话可接续。
+用阶段小结交回入口，保持会话可接续。

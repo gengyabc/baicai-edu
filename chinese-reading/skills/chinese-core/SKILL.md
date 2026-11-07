@@ -6,9 +6,30 @@ user-invocable: false
 
 # 语文规则
 
-1. 教学前加载 `learn-core`，共享语气、确认机制、年级适配、结束信号、费曼、技能追踪与安全边界均按它执行；使用兴趣、偏好、易/难主题或经历时，先读其 `references/prestart-settings-interpretation.md` 的共享边界，再读本 skill 的 `references/chinese-personalization.md`。
-2. 没有 `session.json` 时引导 `/start`。具体回合由 `chinese-session` 路由到子 skill；本 skill 只提供规则，不产生学生可见回复、`session_segment` 或学生数据写入。
-3. 语文专属规则以本 skill 的 references 为准，按下表读取，不一次全部读入。加载 skill 返回 base directory 后，用 `<base_directory>/references/<文件名>.md` 定位；跨 skill 引用先按名称加载，不拼跨 skill 相对路径。
+本 skill 只提供规则，不产生学生可见回复、`session_segment` 或学生数据写入。具体回合由 `chinese-session` 路由到子 skill；子 skill 只写自己的流程与领域字段，下面的门槛、输入与共用读取不再重复。
+
+## 开始门槛与输入
+
+- 语文教学子 skill 只经 `/learn` 或 `/learn-feynman` 的共享生命周期、由 `chinese-session` 路由进入。会话、学生与快照已由入口检查并传入，这里不重复检查或重读；没有入口交接（无快照）时请学生输入 `/learn`。
+- `grade_band` 来自快照，年级段规则见 `learn-data` 的 `references/grade-band-defaults.md`。
+- 个性化输入：`personal.interests`、`personal.most_exciting_event`、`profile.preferences`、`self_report.easy_topics/hard_topics`、`memory.preferred_scaffolds` / `recent_error_patterns` / `expression_traits` / `stable_strengths` / `stable_difficulties`。目标选择另看 `priority_targets`、`developing_topics` 与最近 `error_history`。
+
+## 读取规则
+
+按条件读取，不一次全部读入，已读的不重复读。
+
+所有语文教学子 skill 共用：
+
+| 条件 | 加载 | 读取 |
+|---|---|---|
+| 默认语气（Guided Coach）；诊断、评改回合叠加 Socratic 追问 | `learn-core` | `references/pedagogy-core.md` 的 Voice And Feedback |
+| 确认学生答案、解释、选材或改法前 | `learn-core` | `references/confirm-before-accept.md` |
+| 学生卡住、连续短答、沉默或不愿解释 | `learn-core` | `references/guidance-non-response-handling.md`，再读本 skill 的 `references/chinese-non-response.md` |
+| 输出 `confirmed_skills` / `skill_errors_observed` 前（所有模式） | `learn-core` | `references/feynman-skill-whitelist.md` |
+| 费曼模式 | `learn-core` | `references/feynman-mode.md` |
+| 使用兴趣、偏好、易/难主题或经历 | `learn-core` | `references/prestart-settings-interpretation.md`，再读本 skill 的 `references/chinese-personalization.md` |
+
+语文专属规则以本 skill 的 references 为准：
 
 | 条件 | 读取 |
 |---|---|
@@ -18,11 +39,17 @@ user-invocable: false
 | 生成阅读题或写作题前 | `references/chinese-task-generation.md` |
 | 批改作文、判断档位或选择最值得改的 3 处前 | `references/chinese-assessment-rubric.md` |
 | 每次选择阅读/写作错误标签、记录诊断前 | `references/chinese-error-labels.md` |
-| 短答、沉默、不愿解释后的探查对照 | `references/chinese-non-response.md` |
-| 使用兴趣、偏好、易/难主题或经历 | `references/chinese-personalization.md` |
-| 分类学习目标或文件交接后的语文目标 | `references/chinese-target.md` |
-| 初始化、重选年级或选择默认领域与题型 | `references/chinese-grade-defaults.md` |
-| 写语文偏好、水平或科目档案 | `references/chinese-profile-fields.md` |
+
+## 学科契约
+
+`subject: chinese`，教学入口 `chinese-session`，包 `dsh-edu-chinese-reading`。角色含义见 `learn-data` 的 `references/subject-contract.md`；入口与本包分支同样从这里读取。
+
+| 角色 | 读取 |
+|---|---|
+| 目标分类：`type` / `intent` 取值、文件交接后的语文目标 | `references/chinese-target.md` |
+| 年级默认：初始化、重选年级或选择默认领域与题型 | `references/chinese-grade-defaults.md` |
+| 档案字段：偏好键与 `/learn-start` 选项、水平键、写科目档案 | `references/chinese-profile-fields.md` |
+| 诊断规则：阅读/写作标签与 `domain` | `references/chinese-error-labels.md` |
 
 ## 内部动作
 
@@ -37,9 +64,7 @@ user-invocable: false
 ## 回合交付规则
 
 - 教学步骤跨学生消息推进：提出思考问题后等待回答，再按确认规则判断是否进入下一步。输出当前步骤所需内容，后续任务只作候选；费曼按其角色规则说话，追问点见 `references/chinese-personalization.md`。
-- 每次回复由当前教学子 skill 返回一个内存 `session_segment`，桥接结果并入阅读段；入口是唯一日志写入方。通用字段契约按 `learn-data` 的 `references/profile-schema.md` 的 Session Segment，子 skill 只补充领域约束。
+- 每次回复由当前教学子 skill 返回一个内存 `session_segment`，桥接结果并入阅读段。日志、下一步选择卡与保存都由入口负责，子 skill 只返回结果，不再各自声明。通用字段契约按 `learn-data` 的 `references/session-schema.md` 的 Session Segment，子 skill 只补充领域约束。
 - `strategy_summary` 区分独立完成与提示后表现；`strengths`、`difficulties`、`diagnosis` 和技能追踪均以已发生的学生表现为依据。尚未作答、只有 AI 示范或只有出题时，相关表现字段留空；无明确主标签时省略 `diagnosis`。
 - `next_step_candidate` 是建议，`feynman_handoff_recommended` 是入口的候选提示，均不代表学生已选择或已完成。下一步流程选择由入口用 `ask_user_question` 呈现。
 - 需确认或撤销技能时读取 `learn-core` 的 `references/feynman-skill-whitelist.md`；诊断标签及与技能错误的分工只由本 skill 的 `references/chinese-error-labels.md` 定义。
-
-需要读写学生数据时，由调用方加载 `learn-data` 并按其协议执行；需要处理错题文件时，由调用方加载 `learn-errors`。本 skill 不承担教学、诊断或持久化。

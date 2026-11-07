@@ -4,7 +4,7 @@
 
 ## 常见问题与纠偏
 
-诊断定义与标签只用同一 base directory 的 `references/chinese-error-labels.md`；本表提供纠偏动作。
+诊断定义与标签只用 `references/chinese-error-labels.md`；本表提供纠偏动作。
 
 | 问题 | 纠偏 |
 |---|---|
