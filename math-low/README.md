@@ -12,7 +12,7 @@
 | `math-practice` | 诊断、对比、变式、连接；一次一题，目的不是等级 |
 | `math-student-problem` | 学生编题、AI 验算回答、学生检查；费曼故意错同轮纠正 |
 
-五个均为 `user-invocable: false`，由 `/learn`、`/feynman` 或数学技能按名加载，不进 `/` 菜单。诊断与练习可相互调用；证据不足不仓促换分支。错题文件统一交 `learn-errors`。
+五个均为 `user-invocable: false`，不进 `/` 菜单。`/learn`、`/learn-feynman` 经 lifecycle 统一进入 `math-session`；仅 session 调度三个 leaf，leaf 只回传证据与下一动作信号，不互调。等待学生时保留原步骤；证据足够且无待答问题时，同轮最多两次 leaf 调度。仅 session 合并唯一 segment，lifecycle 记录与 finalize。此为指令层集中调度约定，不是运行时调用隔离。错题文件仅由 lifecycle 调用一次 `learn-errors`，学科读取处理结果。
 
 ## 安装
 
@@ -21,7 +21,7 @@ dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/learn
 dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/math-low
 ```
 
-刷新 Web 会话后，在 `/learn` 或 `/feynman` 选择数学。共享依赖：`learn-core` 管教学、角色与确认；`learn-data` 管快照、记录和 finalize；`learn-errors` 管投放文件。缺少 learn 包无法正常教学。
+刷新 Web 会话后，在 `/learn` 或 `/learn-feynman` 选择数学。共享依赖：`learn-core` 管教学、角色与确认；`learn-data` 管快照、记录和 finalize；`learn-errors` 管投放文件。缺少 learn 包无法正常教学。
 
 ## 数学画板
 

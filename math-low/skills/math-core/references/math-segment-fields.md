@@ -1,10 +1,18 @@
 # 数学 Segment 字段约定
 
-产出数学学习记录或合并内部子流程证据前，先读 `learn-data` 的 Session Segments 与其 `references/profile-schema.md` 的 Session Segment。完整结构、必填字段、枚举和写回映射归共享 schema；本文只定义数学增量语义。路径相对于各 skill 的 base directory。
+产出数学学习记录或合并内部子流程证据前，先读 `learn-data` 的 Session Segments 与其 `references/session-schema.md` 的 Session Segment。完整结构、必填字段、枚举和写回映射归共享 schema；本文只定义数学增量语义。
 
 ## 一轮一条记录
 
-直接由入口调用的数学教学分支回传一个 `session_segment`；作为 `math-session` 的子流程时回传本轮证据，由外层合并为一个 segment。`math-diagnose` 始终只回传诊断结论。日志由调用方追加，档案与 finalize 由共享流程写入。
+仅 `math-session` 产出本轮唯一 `session_segment`；三个 leaf 只回传证据、控制信号与待答状态，供 session 合并。信号不作为 segment 字段。日志由 lifecycle 追加，档案与 finalize 由共享流程写入。
+
+合并规则：
+
+- `mode` 沿用调用方，费曼时 `submode: feynman`；普通学习按本轮学生实际作答的主任务选 submode：练习为 `practice`，学生出题/检查为 `student_problem`，诊断纠错为 `review`，其余为 `learn`。多分支时优先最后一个已有学生表现证据的任务；新提出的未答问题不覆盖前一任务，无作答证据时按当前任务记录但不推定表现。
+- `source` 对齐 `target_context.source`，文件来源按共享 target 协议归一化；进入练习、诊断或学生出题不自动改写来源。leaf 的分支元信息用于理解证据，不覆盖该字段。
+- `strategy_summary` 按实际发生顺序区分诊断、练习和出题中的证据，同一表现去重；示例后解释、提示后表现和独立完成分开。
+- 结论冲突时保留任务范围、支持条件与未知，不能拼接成更强的掌握结论；`diagnosis` 仍只选一个证据最充分的主标签，`current_levels` 只给有充分证据且无未解冲突的部分更新。
+- `next_step_candidate` 由 session 选一个具体下一步；待执行的建议、未回答的题或 AI 演示不计入学生表现。
 
 `focus` 记录本轮实际焦点；等待学生下一次回答时只记已观察到的证据，后续演示、判断和掌握状态留待后续回合。出题本身不构成学生表现证据。
 
@@ -12,7 +20,7 @@
 
 | 字段 | 数学约定 |
 |---|---|
-| `subject` / `mode` / `submode` / `source` | `subject: math`，`mode` 沿用调用方；教学分支按 `math-session` 选 `submode` / `source`，练习与学生出题分支按各自约定 |
+| `subject` / `mode` / `submode` / `source` | `subject: math`，`mode` 沿用调用方；`submode` / `source` 由 session 按上方合并规则统一确定 |
 | `strategy_summary` | 当前题的数量关系/未知量、学生实际动作或所用已知关系；说明工具在推理中的作用，区分独立方法、解释教师示例与提示后完成，不只写答案或“用了画板” |
 | `strengths` / `difficulties` | 数量、单位、表示、计算、验证与支架响应的实际证据；表达短、画得不整齐、未作答或方法不够快不单独记为数学困难 |
 | `next_step_candidate` / `recommended_targets` | 一个保守、具体的小步骤与近邻目标 |

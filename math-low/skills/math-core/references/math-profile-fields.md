@@ -4,7 +4,7 @@
 
 ## preferences
 
-| 键 | `/start` 选项 |
+| 键 | `/learn-start` 选项 |
 |---|---|
 | `likes_visual` | 画一画 |
 | `likes_story_context` | 讲一讲 |

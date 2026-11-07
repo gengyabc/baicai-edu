@@ -63,6 +63,22 @@
 | 全新题只答正确结果；一次追问后仍只给结果 | 认可答案，策略暂未知；降低负担或转近邻任务 | 同义改写“怎么想的”连续盘问，或把短答记为错误 |
 | 学生明确算14−6=9 | 核对后围绕真实差错问一个不含正确拆分的问题 | 写出正确拆法，或为减少追问而直接认可错误答案 |
 
+## 集中调度与恢复
+
+以下为纸面路径及模型回放验收，尚不代表已运行的模型行为测试。
+
+| 场景与输入 | 应观察的行为 | 失败信号 |
+|---|---|---|
+| 主线连续两轮卡住，错因不明 | session 加载 diagnose；诊断提出一个问题后以 `await_student` 停止，保存 active_leaf/leaf_step | leaf 互调；诊断未答便追加练习题 |
+| 诊断已有关系证据，只需巩固，无待答问题 | diagnose 回 `continue_practice`，session 决定加载 practice；合并唯一 segment | diagnose 自行加载 practice；拆成两个 segment |
+| 阶段选择「练一练」 | session 根据入口事件加载 practice，围绕当前关系出一题 | 把阶段选择误作 leaf 回传；入口直达 practice |
+| 学生出题后连续卡住，尚无明确错因 | student-problem 回 `continue_diagnose`，session 发起本轮第二次调度；diagnose 提问即停止 | student-problem 自行调用 diagnose；诊断又转练习形成第三次调度 |
+| 恢复 activity=transfer，日志有当前题、已解释结果和待答检查问题 | lifecycle → session → student-problem，从原步骤接续 | lifecycle 直达 leaf；重开题或重复揭示答案 |
+| 日志 active_leaf 为 practice，学生回答原题 | session 续接 practice，只核对当前回答；收束后清除 leaf 标记 | 每条消息重做目标分类，丢失原待答问题 |
+| transfer 恢复时学生明确要求当小老师 | lifecycle 切为 feynman / teaching，session 保持学生主讲，清理迁移步骤 | 旧 active_leaf 或迁移状态覆盖显式费曼请求 |
+| 出题菜单选继续、回原学习、结束，或跳过 | 分别回 continue_student_problem、return_teaching、request_end；跳过按 return_teaching；session 处理，结束归 lifecycle | leaf 直接路由或 finalize；未选择就开下一题 |
+| 文件错题诊断后进入练习；前段有独立关系解释，后段只有提示后解释 | source 保持 error_analysis；合并时区分支持条件和任务，不提高掌握结论 | source 被 practice 覆盖；拼接为稳定独立掌握 |
+
 ## 执行记录
 
 回放时另记模型、日期、输入历史、实际回复、通过/失败及对应规则。未实际回放的场景保持未测试；静态检查和文档审阅不等同模型行为通过。

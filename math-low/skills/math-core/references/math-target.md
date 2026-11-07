@@ -14,4 +14,4 @@
 - `topic` 为最值得训练的错误关系
 - `source: error_analysis`
 
-仍保存 `files_processed` 与 `material_refs`。分类只产出目标，不另做路由。普通教学进入 `math-session`；`context.activity: transfer` 进入 `math-student-problem`。
+仍保存 `files_processed` 与 `material_refs`。分类只产出目标，不另做路由。一律进入 `math-session`；`context.activity: transfer` 由 session 再加载 `math-student-problem`，`mode: feynman` 优先。

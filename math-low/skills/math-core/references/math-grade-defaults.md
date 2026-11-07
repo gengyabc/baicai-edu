@@ -9,7 +9,7 @@
 | `lower_primary` | `addition_subtraction_word_problems` |
 | `upper_primary` | `fractions` |
 
-`profile.preferences` 三个键初始全部为 `false`；`/start` 只把选中的一项设为 `true`。键见 `references/math-profile-fields.md`。
+`profile.preferences` 三个键初始全部为 `false`；`/learn-start` 只把选中的一项设为 `true`。键见 `references/math-profile-fields.md`。
 
 初始 `profile.current_levels`：
 
