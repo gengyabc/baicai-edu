@@ -76,7 +76,7 @@
 
 **返回**：学生可见回复、一个 segment 及可选 `stage_options`；内部诊断、桥接等结果并入该 segment，不另记一轮。
 
-**写回**：按 Session Segments 契约追加 segment，教师猜测与学生确认分开记录；同步 context 与 `context.turn_state` 的当前题、作答要求、已收到的回答和最新待答问题（字段见 schema）。发现此前漏读或误判时，先更正受影响的日志与状态并留更正说明，再继续。
+**写回**：按 Session Segments 契约追加 segment，教师猜测与学生确认分开记录；同步 context 与 `context.turn_state` 的当前题、作答要求、已收到的回答和最新待答问题（字段见 schema），学生本轮提出难度要求时写 `context.difficulty_request`。发现此前漏读或误判时，先更正受影响的日志与状态并留更正说明，再继续。
 
 ## 7. Continue
 

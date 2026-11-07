@@ -66,7 +66,12 @@
     "expression_traits": [],
     "stable_strengths": [],
     "stable_difficulties": [],
-    "preferred_persona": "guided_coach"
+    "preferred_persona": "guided_coach",
+    "material_difficulty": {
+      "direction": "standard",
+      "note": "",
+      "updated_at": null
+    }
   },
   "learning_memory": {
     "recent_focus": "",
@@ -95,6 +100,8 @@
 
 新建 memory 时，把已有 `learning_state.mastered_topics` 种进 `confirmed_skills`（对象，按 `skill` 去重）。`session_segment.confirmed_skills` 只写技能名；finalize 补上 `domain` 和 `confirmed_at`，`domain` 由学科包选择。确认、错误计数和撤销只遵循 `learn-core` 的 `references/feynman-skill-whitelist.md`。`mastered_topics` 只在该 topic 的技能连续两个会话留在 `confirmed_skills` 且没有 `skill_errors` 时加入。
 
+`profile_memory.material_difficulty` 由 finalize 从日志 `context.difficulty_request` 写入：`direction` 为 `standard` / `easier` / `harder`，`note` 是学生原话概括与对象，`updated_at` 取请求时间。它只影响新材料、题目或文本的呈现，不是水平，不改 `current_levels`，也不作为掌握证据。
+
 ### How Memory Is Consumed
 
 这些字段在快照时读取并使用：
@@ -106,6 +113,7 @@
 | `profile_memory.expression_traits` | 当前学科会话 | 学科使用该字段时，对齐长短和口语/书面偏好。 |
 | `profile_memory.stable_strengths` / `stable_difficulties` | 入口与学科的目标选择 | `session_history` 为空时做决胜。 |
 | `profile_memory.preferred_persona` | `learn-core` 的 `references/pedagogy-core.md` Voice And Feedback | `guided_coach` 或 `socratic_tutor`。 |
+| `profile_memory.material_difficulty` | 当前学科生成新材料、题目或文本前 | 按学生最近一次要求定负荷；`direction` 为 `easier` / `harder` / `standard`，不改 `current_levels`。 |
 | `learning_memory.recent_focus` / `recent_modes` | 入口第一轮 | 用“上次我们在…”接上。 |
 | `learning_memory.recent_error_patterns` | 当前学科的练习或诊断 | 优先打重复出现的模式。 |
 | `learning_memory.recommended_next_moves` | `next-step` | 先提供已记录的下一步。 |

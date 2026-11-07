@@ -18,7 +18,7 @@ disable-model-invocation: true
 
 | 选项 | subject id | 学科包 |
 |---|---|---|
-| 数学 | `math` | `dsh-edu-math-low` |
+| 数学 | `math` | `dsh-edu-math-primary-low` |
 | 语文 | `chinese` | `dsh-edu-chinese-reading` |
 | 英语 | `english` | `dsh-edu-english` |
 

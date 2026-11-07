@@ -11,6 +11,7 @@ user-invocable: false
 | 时机 | 读取 |
 |---|---|
 | 学生给出答案、判断、解释 | `references/confirm-before-accept.md` |
+| 学生要求降低或提高难度，或要沿用上次的难度要求 | `references/difficulty-adjustment.md` |
 | 只给答案或短答、未回应引导、声称理解但缺少展示：先探查再决定支架 | `references/guidance-non-response-handling.md` |
 | 判断结束或换主题 | `references/session-end-signals.md` |
 | 费曼模式 | `references/feynman-mode.md`、`references/feynman-skill-whitelist.md` |

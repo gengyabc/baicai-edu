@@ -26,6 +26,7 @@
 ```
 
 - `context` 对旧日志可选。新会话和恢复后的会话在目标确定、模式或 activity 变化、以及每一轮之后都写入。这里的 `mode` 是交互模式（`learn` / `feynman`），和学科 segment 自己的 mode 不是一回事。
+- `context.difficulty_request`（可选）保存学生最近一次明确的难度要求：`{ "direction": "easier" | "harder" | "standard", "note": "...", "requested_at": "..." }`。finalize 写入 `profile_memory.material_difficulty`；没有请求时省略。
 - `activity`：`teaching` / `transfer`。普通教学的 `turn_state` 保存 `current_task`（当前题原文）、`response_format`（作答要求）、`student_response`（已收到的回答，未答为 null）、`pending_question`（最新待答问题，已无则 null）。新题替换当前题及回答；解释追问仍保留原题与答案。恢复时先核对本条消息，再接最新待答问题。迁移把来源领域、已提取手法、当前阶段、轮次和待答问题也放在 `turn_state`，恢复时不重启阶段。
 - `target_context` 的形状、文件处理标记和引用见 `references/target-parsing.md`。`materials` 只在没有持久文件时存放必要的粘贴文本、草稿或作答；已有文件用工作区引用。不把危机或私人经历写在这里。
 - 没有 `context` 的旧日志：恢复最后一段，缺材料或意图就问，不推断。已有 `error_history` 里的 extracted 引用可以读，不重新处理 raw。

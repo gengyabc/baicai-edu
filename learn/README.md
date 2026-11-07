@@ -1,6 +1,6 @@
 # dsh-edu-learn
 
-共享学习入口与教学底座，配合 `dsh-edu-math-low`、`dsh-edu-chinese-reading`、`dsh-edu-english` 使用。
+共享学习入口与教学底座，配合 `dsh-edu-math-primary-low`、`dsh-edu-chinese-reading`、`dsh-edu-english` 使用。
 
 ## 提供的入口
 
@@ -21,7 +21,7 @@
 
 ## 共享内部技能
 
-- `learn-core`：中文语气、以学生为中心、年级适配、按需确认、引导无响应、结束信号、人格、费曼规则。
+- `learn-core`：中文语气、以学生为中心、年级适配、难度调整、按需确认、引导无响应、结束信号、人格、费曼规则。
 - `learn-data`：`outputs/students/` JSON 数据协议、快照、建档、写回、finalize。
 - `learn-errors`：用户投放文件解析、`data/.../raw/` 只读、备份、extracted 写入、error_history 更新。
 
@@ -29,12 +29,13 @@
 
 ## 规则所有权
 
-- `learn-core`：跨学科教学行为；年级默认、费曼角色与白名单分别由其 references 定义。
+- `learn-core`：跨学科教学行为；年级默认、难度调整、费曼角色与白名单分别由其 references 定义。
 - `learn-data/references/session-lifecycle.md`：`/learn` 与 `/learn-feynman` 的唯一会话循环。模式切换沿用日志与 entry_point，不重开会话。
 - `learn-data/references/subject-contract.md`：入口与学科包的约定。入口按 `<subject>-session` / `<subject>-core` 命名找到学科包，从 core 的「学科契约」读取目标分类、年级默认、档案字段与诊断规则；可选科目只在 `/learn-start` 的科目表维护。
 - `learn-data/references/session-schema.md`：每轮读取的日志与 segment 外壳。
 - `learn-data/references/profile-schema.md`：档案、记忆、状态、错题与里程碑模板，建档与 finalize 时读取；偏好键、水平、领域、标签和目标分类由学科包定义。
 - `learn-core/references/prestart-settings-interpretation.md`：个性化不得覆盖什么、隐私与用量。字段路径归 `profile-schema`；学科怎么用归学科包。
+- `learn-core/references/difficulty-adjustment.md`：学生要求降低或提高难度时的判定、当轮调整、日志记录与后续沿用；存储字段归 `profile-schema`。
 - `learn-data/references/finalize-session.md`：统一保存流程；保留策略归 `session-retention.md`。
 - 学科 references：方法、量规、标签与题型的唯一正文；学科 SKILL 保留分流、执行步骤和独有输出。
 
@@ -63,10 +64,13 @@
 ## 安装
 
 ```bash
-dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/learn
+# 单独安装共享能力（在仓库根目录运行）
+node scripts/install.mjs learn --profile web
+# 教学使用时选学科即可，自动补齐本包；数学还会配齐画板
+node scripts/install.mjs math-primary-low --profile web
 ```
 
-安装后刷新 Web 会话：`/` 菜单出现 6 个入口命令；模型目录出现 `learn-feynman`、`learn-profile`、`learn-save` 和学科包的内部 skill。输入 `/learn-start` 即可开始。
+按 DSH 输出决定是否重启，再刷新 Web 会话：`/` 菜单出现 6 个入口命令；模型目录出现 `learn-feynman`、`learn-profile`、`learn-save`，已安装学科包还会提供内部 skill。共享包不反向安装所有学科。统一入口及重复安装、手动禁用行为见[安装说明](<../docs/installation.md>)。
 
 ## 数据目录
 
@@ -76,7 +80,7 @@ dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/learn
 
 ## 依赖
 
-- `math-low`、`chinese-reading` 与 `english` 的 skill 会按名称加载 `learn-core`、`learn-data`、`learn-errors`。
-- 单独安装本包只能使用入口、档案、保存和通用错题处理；学科教学需要安装 `math-low`、`chinese-reading` 或 `english`。
-- 接入新学科：学科包提供 `<subject>-session` 与带「学科契约」节的 `<subject>-core`，再在 `learn-start` 的科目表加一行；其他入口无需修改。现有学科包有 `math-low`、`chinese-reading`、`english`。
+- `math-primary-low`、`chinese-reading` 与 `english` 的 skill 会按名称加载 `learn-core`、`learn-data`、`learn-errors`。
+- 单独安装本包只能使用入口、档案、保存和通用错题处理；学科教学需要安装 `math-primary-low`、`chinese-reading` 或 `english`。
+- 接入新学科：学科包提供 `<subject>-session` 与带「学科契约」节的 `<subject>-core`，再在 `learn-start` 的科目表加一行；其他入口无需修改。现有学科包有 `math-primary-low`、`chinese-reading`、`english`。
 - `personal.interests` 是跨学科个性化字段，各学科 skill 都会读取；具体用法在学科包里。

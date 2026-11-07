@@ -94,6 +94,7 @@ Every segment with a `diagnosis` object produces one diagnosis entry. File-based
 - 达到确认条件的技能名转成 `{ "skill", "domain", "confirmed_at" }`，按 `skill` 去重；错误计数持久化为 `{ "skill", "error_count", "last_error_at" }`。撤销后的旧确认不得被无序合并重新加入。
 - `feynman_readiness` 取 `unknown` / `ready` / `not_ready`。
 - `preferred_scaffolds`、`motivation_signals`、`expression_traits` 在观察到稳定模式时更新，下一轮要读出来用。
+- `material_difficulty`：取 `session_log.json` 的 `context.difficulty_request`，原样写入 `profile_memory.material_difficulty`；没有请求时保留原值。它记录呈现偏好，不改 `current_levels`，也不作为掌握证据。
 
 ## current_state_patch
 
