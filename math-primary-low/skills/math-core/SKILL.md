@@ -12,9 +12,10 @@ user-invocable: false
 
 所有数学分支共用，子 skill 不再重复：
 
-- 只经 `/learn` 或 `/learn-feynman` 的共享生命周期进入；会话、学生、快照与交接字段已由入口检查并传入（见 `learn-data` 的 `references/session-lifecycle.md` 第 3 步）。没有入口交接（无快照）时请学生输入 `/learn`。
+- 只经 `/learn` 或 `/learn-feynman` 的共享生命周期进入；会话、学生、快照与交接字段已由入口检查并传入（见 `learn-data` 的 `references/session-lifecycle.md` 的 Route And Record）。没有入口交接（无快照）时请学生输入 `/learn`。
 - `learn-core`、`learn-data` 已由入口加载。语气、确认、无响应、费曼角色与白名单、个性化边界、结束与安全都按 `learn-core` 的条件表；`mode: feynman` 时先读其 `references/feynman-mode.md`，保持学生听众角色。
 - 题目按 CGI，题面形式按 `references/problem-design.md`；兴趣只在 `references/math-personalization.md` 的搭桥条件成立时进入题目。
+- 生成题目或提示前，若 `memory.profile_memory.material_difficulty` 不是 `standard`，按 `learn-core` 的 `references/difficulty-adjustment.md` 调一个负荷因素（数字、表示或提示量），不改策略阶段。
 - 文件只由入口调用一次 `learn-errors`。收到 `files_processed: true` 时读 `material_refs` 指向的 extracted 分析；教学中途出现未处理的图片、Markdown 或 raw 扫描请求时交回入口。本包不直接调用 `learn-errors`。
 - 子流程（诊断、练习、学生出题）回传证据，由 `math-session` 合并为本轮唯一 segment；日志、档案与 finalize 交共享流程。
 
@@ -38,7 +39,9 @@ user-invocable: false
 
 ## 学科契约
 
-`subject: math`，教学入口 `math-session`，包 `dsh-edu-math-low`。角色含义见 `learn-data` 的 `references/subject-contract.md`；入口与本包分支同样从这里读取。
+`subject: math`，教学入口 `math-session`，包 `dsh-edu-math-primary-low`。角色含义见 `learn-data` 的 `references/subject-contract.md`；入口与本包分支同样从这里读取。
+
+本包以低年级为主，用 CGI 的语气和方法教学；年级只调整语言与呈现，不是内容门槛；学生想探究高年级内容时继续教，不劝退、不要求回到年级内的题目。
 
 | 角色 | 读取 |
 |---|---|

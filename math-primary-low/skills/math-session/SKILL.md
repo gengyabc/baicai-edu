@@ -50,7 +50,7 @@ user-invocable: false
 
 ## 1. 定焦点与分支
 
-1. 优先 `target_context.topic`，否则用生命周期恢复的 focus 与动作；仍无目标时按生命周期第 2 步的档案候选顺序，默认领域取 `math-core` 的 `references/math-grade-defaults.md`。
+1. 优先 `target_context.topic`，否则用生命周期恢复的 focus 与动作；仍无目标时按生命周期 Resolve Target 的档案候选顺序，默认领域取 `math-core` 的 `references/math-grade-defaults.md`。
 2. 文件目标：从 `material_refs` 指向的 extracted 分析，按最近发生 → 当前领域 → 学生自述难点选焦点。
 3. 宽泛目标先选一题；起点确需补证、连续两轮引导卡住或自述与表现不符时交 `math-diagnose`，不默认先测所有新主题。
 4. 定 `submode`：新主题 `learn`，巩固/近邻变式 `practice`，纠错 `review`，费曼 `feynman`。

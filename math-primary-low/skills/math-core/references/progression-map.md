@@ -31,7 +31,7 @@ After stage 4, move to comparison, equivalence, and operations grounded in quant
 
 ## Grade-Band Emphasis
 
-Grade band, concreteness, and `tone`: `learn-data` 的 `references/grade-band-defaults.md`.
+Grade band and concreteness: `learn-data` 的 `references/grade-band-defaults.md`.
 
 Math focus domains and sequences: `references/math-grade-defaults.md`.
 

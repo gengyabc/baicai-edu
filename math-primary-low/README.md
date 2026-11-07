@@ -1,6 +1,6 @@
-# dsh-edu-math-low
+# dsh-edu-math-primary-low
 
-小学数学指令包，依赖 `dsh-edu-learn`，不提供工具或运行时。
+以小学低年级（1–3 年级）为主的 CGI 数学指令包，年级只调整语气、语言和呈现，不限制学生探究高年级内容；依赖 `dsh-edu-learn` 与 `dsh-edu-math-board`，自身不提供工具或运行时，画板由独立依赖包提供。4–6 年级对应目录为 [`math-primary-high/`](../math-primary-high/)（尚未打包为本仓库的 DSH bundle）。
 
 ## 技能
 
@@ -17,11 +17,11 @@
 ## 安装
 
 ```bash
-dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/learn
-dsh plugin --profile web add link:/Users/yugeng/programming/dsh-edu/math-low
+# 在仓库根目录运行，一次安装 learn、math-board、math-primary-low
+node scripts/install.mjs math-primary-low --profile web
 ```
 
-刷新 Web 会话后，在 `/learn` 或 `/learn-feynman` 选择数学。共享依赖：`learn-core` 管教学、角色与确认；`learn-data` 管快照、记录和 finalize；`learn-errors` 管投放文件。缺少 learn 包无法正常教学。
+按 DSH 输出决定是否重启，再刷新 Web 会话，在 `/learn` 或 `/learn-feynman` 选择数学。共享依赖：`learn-core` 管教学、角色与确认；`learn-data` 管快照、记录和 finalize；`learn-errors` 管投放文件。安装器补齐依赖，但不会重新启用此前手动禁用的 bundle；不要以单独 link 数学包替代完整安装。详见[统一安装说明](<../docs/installation.md>)。
 
 ## 数学画板
 

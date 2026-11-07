@@ -26,7 +26,6 @@
 
 ```json
 {
-  "tone": "concise_guiding",
   "updated_at": "2026-10-04T12:00:00Z",
   "profile": {
     "preferences": {
