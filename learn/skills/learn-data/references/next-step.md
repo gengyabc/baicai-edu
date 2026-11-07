@@ -1,20 +1,34 @@
 # Next Step
 
-普通学习一轮结束、尚未触发结束信号时，选一个足够小的下一步。输入是最新 segment、subject、focus、学生本轮表现，以及 memory 中的 recommended_next_moves、motivation_signals、feynman_readiness（分别位于 learning_memory / profile_memory 的对应字段，以 profile-schema 为准）。
+普通学习按回应自然接续；一次作答不是一次结束决策。输入：最新 segment、subject、focus、学生本轮表现，以及 memory 的 `recommended_next_moves`、`motivation_signals`、`feynman_readiness`（字段位置见 profile-schema）。
 
 ## Choose
 
-1. 从本轮成功点和未解决点中选一个目标；类型可为稳定、变式、连接或轻微抽象。
-2. 生成一个 `next_step` 和 1-3 个 `recommended_targets`，优先参考 memory，不覆盖学生显式目标。
-3. 用 `ask_user_question` 给出下一步：低年级选项为「继续」「结束」；高年级最多三个，可用「当小老师」或「换个迁移任务」替换「继续」，避免一次抛出四个分支。标签与 Apply Choice 的分支一一对应；学生自己输入时按语义映射。
-4. `feynman_readiness = not_ready` 时不主动推荐当小老师；学生主动要求仍可切换并降低难度。
-5. 学生说“随便”“都行”或跳过选项时选最合适的一步，不反复追问。
+1. 从本轮成功点和未解决点中选一个目标：稳定、变式、连接或轻微抽象。
+2. 生成一个 `next_step` 和 1-3 个 `recommended_targets`，优先参考 memory；学生的显式目标优先。
+3. 当前目标尚待练习或确认：直接给一个教学下一步并等待；待答问题仍在时接着它。
+4. 目标闭环，或学生主动问接下来做什么：用 `ask_user_question` 合并呈现基础菜单与当前学科的 `stage_options`。
+   - 附加选项含 `label`（显示文字）、`action`（学科动作）和可选 `description`；它是回传元数据，不另记教学段。
+   - 没有附加项时只显示基础菜单；合并后遵守共享选择卡的数量限制。
+   - 年级只调整措辞和任务难度，不裁剪阶段选项。
+   - 结束意图有歧义时，改用结束信号规定的确认菜单。
+5. `feynman_readiness` 只决定费曼选项是否标推荐、以及进入后的支架难度；`not_ready` 时照常显示但不标推荐，学生选择后降低讲解难度。
+6. 学生说“随便”“都行”或跳过选项时，选最合适的一步直接执行。
 
 ## Apply Choice
 
-- 继续：一个同类问题或小变式。
-- 当小老师：切换到 `feynman`；写 `pending_feynman_handoff: true` 与 `pending_feynman_focus`，真正接上后清空这一对字段。
-- 迁移：按入口声明的学科迁移动作执行。写 `pending_transfer_phase: true` 与 `pending_transfer_focus`，完成后清空这一对字段。
-- 结束：按共享生命周期进入 finalize，不另写 pending patch。
+学生已经选定动作就执行，不再询问是否继续。基础动作按 `references/session-lifecycle.md` 第 4–5 步；附加选项按 `action` 交回当前学科主技能，子技能与参数由学科确定，迁移状态由入口统一持久化。学生直接输入同义请求时，也由该学科识别，不要求重新点选。
 
-教学动作由共享生命周期路由，不在此执行第二次调用或记录。只推荐一个主要下一步；结束判断依据具体目标与学生意愿，不用“已经学了很多”替代证据。
+## 回合出口
+
+每次普通学习回复完成前，入口落实一个学生可执行的出口：
+
+- 目标未闭环时提出一个具体教学问题并等待；
+- 目标闭环时在同一轮用 `ask_user_question` 呈现上述阶段选择；
+- 学生已选择或明确指定下一任务时直接路由执行。
+
+`next_step_candidate`、方法总结和“下次可以……”只是内部候选，须落实为当前问题、选择卡或已接上的任务，才算完成交接。
+
+若上一条回复只有总结、没有待答问题或阶段选择，下一条空消息到来时按已有证据补上出口；有待答问题则简短重呈该问题。空消息不新增学习表现，也不视为结束。
+
+只推荐一个主要下一步。结束判断依据具体目标与学生意愿，不用“已经学了很多”替代证据。

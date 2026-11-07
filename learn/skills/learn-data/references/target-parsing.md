@@ -1,6 +1,6 @@
 # Parse Learning Target
 
-`/learn`、`/feynman` 与恢复流程共用的 `target_context` 形状。输入为显式用户文本、当前 subject 和已有材料；mode 由入口指定，不参与材料类别判定。学科对剩余文本和文件交接后的归类由入口指定的学科目标分类完成，本文件不列举科目。
+`/learn`、`/learn-feynman` 与恢复流程共用的 `target_context` 形状。输入为显式用户文本、当前 subject 和已有材料；mode 由入口指定，不参与材料类别判定。学科对剩余文本和文件交接后的归类由入口指定的学科目标分类完成，本文件不列举科目。
 
 ## Shape
 
@@ -35,4 +35,4 @@
 
 ## Source Values
 
-segment 的 source 枚举归 `references/profile-schema.md` 的 Session Segment，本文件不另定义。分类器只产出目标，不执行第二次路由；路由由入口声明。
+segment 的 source 枚举归 `references/session-schema.md` 的 Session Segment，本文件不另定义。分类器只产出目标，不执行第二次路由；路由由入口声明。

@@ -1,6 +1,6 @@
 # Rule: Session End Signals
 
-`/learn`、`/feynman` 与学科技能用本规则判断结束、歧义、危机、跳过和换主题。每条学生消息先归类，再决定要不要开展新教学。结束由 `learn-data` 的 finalize 写回；换主题由它的 `references/session-lifecycle.md` 写回。
+`/learn`、`/learn-feynman` 与学科技能用本规则判断结束、歧义、危机、跳过和换主题。每条学生消息先归类，再决定要不要开展新教学。结束由 `learn-data` 的 finalize 写回；换主题由它的 `references/session-lifecycle.md` 写回。
 
 ## 1. 这句话在要什么
 
@@ -20,11 +20,5 @@
 
 只看当前小目标有没有证据。
 
-- 已经闭环，或再练只会重复已有证据：先给一句阶段总结，再 finalize。learn 的闭环是能讲清当前目标，并能用它解决同类问题。feynman 的闭环是能讲完，并能回答关键步骤或理由上的追问；学生表明这段讲解已经讲完，同样算闭环。
-- 还没有闭环：按 lifecycle 给一个下一步，等学生回应。
-
-## Related Rules
-
-- `references/llm-safety-boundaries.md`
-- `references/guidance-non-response-handling.md`
-- `learn-data` 的 `references/session-lifecycle.md`
+- 已经闭环，或再练只会重复已有证据：给一句阶段总结，按 lifecycle 的当前模式菜单提供阶段选择（普通学习用 `learn-data` 的 `references/next-step.md`）。知识点完成与结束今天的学习分开判断；学生选结束才 finalize。learn 的闭环是能讲清当前目标，并能用它解决同类问题；feynman 是能讲完并回答关键理由追问，或学生明确表示这段讲解已经讲完。
+- 还没有闭环：按 lifecycle 自然给一个下一步，等学生回应。阶段收束依据目标完成证据，结束依据学生意愿；回答形式和固定题数不作为结束依据。

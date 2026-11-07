@@ -30,9 +30,3 @@
 - 追问预算以确认协议为准。降负担后仍无证据时，保留“策略待确认”，转近邻任务或按结束信号确认下一步；不要求先补完口头解释。
 - 支架最多 3 次；仍卡住则交学科诊断，观察与未知分开传递。
 - 日志写可观察事实（如“只给结论，策略待确认”）；困难、错误、阶段调整需任务证据，教师思路不算学生独立证据。
-
-## Related Rules
-
-- `references/confirm-before-accept.md`：理解证据与最终确认。
-- `learn-data` 的 `references/grade-band-defaults.md`：语言与材料适配。
-- `references/session-end-signals.md`：跳过、换题、结束与歧义。

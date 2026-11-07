@@ -21,4 +21,4 @@ Within a band, use the same concreteness; only the subject package changes the t
 | `lower_primary` | `supportive_concrete` |
 | `upper_primary` | `concise_guiding` |
 
-When creating or retargeting a subject profile, take `tone` from this table. Take `learning_state.active_domain`, `profile.current_levels`, and `profile.preferences` keys from the subject package named by the entry. Do not copy example values from `profile-schema.md`.
+When creating or retargeting a subject profile, take `tone` from this table. Take `learning_state.active_domain`, `profile.current_levels`, and `profile.preferences` keys from the subject package's grade-default and profile-field references (see `references/subject-contract.md`). Do not copy example values from `profile-schema.md`.

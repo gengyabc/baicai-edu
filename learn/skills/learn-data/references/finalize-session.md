@@ -1,6 +1,6 @@
 # Finalize Session
 
-执行前读取本 skill 的 `references/profile-schema.md`、`references/session-retention.md` 和 `learn-core` 的 `references/feynman-skill-whitelist.md`。将 `session_segments` 汇总为科目档案、诊断历史、记忆、当前状态、里程碑五个 patch，合并写入四个科目文件后清空日志。
+执行前读取本 skill 的 `references/profile-schema.md`、`references/session-schema.md`、`references/session-retention.md` 和 `learn-core` 的 `references/feynman-skill-whitelist.md`。将 `session_segments` 汇总为科目档案、诊断历史、记忆、当前状态、里程碑五个 patch，合并写入四个科目文件后清空日志。
 
 ## Inputs
 
@@ -22,7 +22,7 @@
 - `student_id`、`subject`、`session_id`、`session_segments` 必填。
 - `status` 只能是 `completed` 或 `interrupted`，默认 `completed`。
 - `status = "interrupted"` 时，`interrupted_at` 与 `last_topic` 必填。
-- `entry_point` 取 `learn`、`feynman`、`save` 之一。
+- `entry_point` 取 `learn`、`learn-feynman`、`learn-save` 之一。
 - `session_segments` 优先从 `session_log.json` 读取；模型上下文中的副本只是缓存。
 
 ## Idempotency Gate
@@ -44,8 +44,8 @@
 8. 生成 `final_summary`。
 9. 生成五个 patch（见下）；科目档案和诊断历史两个 patch 合并进同一个科目 profile 文件。
 10. 读取四个完整科目文件，在内存中合并为四份最终 JSON；先执行下面的 Commit And Recovery，禁止边生成 patch 边写科目文件。
-11. 提交成功后清理日志临时内容，保留 session_id、entry_point、started_at 并更新 updated_at。
-12. 告诉学生一句简短总结；不展示 JSON。
+11. 提交成功后按 Cleanup 清理日志。
+12. 告诉学生一句简短总结。
 
 ## Commit And Recovery
 
@@ -53,10 +53,10 @@
 
 1. **Prepare**：在任何科目文件写入前，先将 `finalize_plan` 写入当前日志并确认成功。plan 包含匹配的 `session_id`、`student_id`、`subject`、`final_summary`，以及 `target_files` 下 `profile`、`memory`、`milestones`、`current_state` 四份完整最终 JSON。时间戳和错误计数在准备时确定；current_state 的最终镜像含本次 marker。目标路径由数据协议计算，不接收计划中的任意路径。
 2. **Commit**：按 `profile → memory → milestones → current_state` 顺序逐一先读目标文件，再写计划中的最终镜像。marker 只能在最后一个科目文件中写入；四文件全部成功前不清日志。重试始终重放相同镜像，不能基于已部分写入的文件重新合并、重新前插历史或再次加错误计数。
-3. **Failure**：准备计划失败时不写任何科目文件；提交途中失败时保留完整 plan 与 segments，明确未完成保存并停止新教学。下次 `/save` 或恢复优先重放该 plan。持有 plan 期间同一学生/科目不得执行新的 `/profile` 编辑或 `learn-errors` 写入；先完成/恢复保存，不覆盖中途外部修改。若发现人工修改冲突，停止并请用户选择恢复方式。
-4. **Cleanup**：marker 写成功后，清空 segments、移除 context 与 finalize_plan。此时重试即使只剩日志清理，也只做清理，不重复写科目数据。下次教学新建身份。
+3. **Failure**：准备计划失败时不写任何科目文件；提交途中失败时保留完整 plan 与 segments，明确未完成保存并停止新教学。下次 `/learn-save` 或恢复优先重放该 plan。持有 plan 期间同一学生/科目不得执行新的 `/learn-profile` 编辑或 `learn-errors` 写入；先完成/恢复保存，不覆盖中途外部修改。若发现人工修改冲突，停止并请用户选择恢复方式。
+4. **Cleanup**：marker 写成功后，清空 segments、移除 context 与 finalize_plan；日志只保留 `session_id`、`entry_point`、`started_at`、`updated_at` 与 `segments: []`。此时重试只做清理，不重复写科目数据。下一次 `/learn` 新建会话。
 
-该计划只存在当前未完成日志中，清理后不保留旧快照，不写 raw 或共享档案。它解决本协议的顺序写入失败重放，不提供多进程锁或任意文件损坏恢复。
+该计划只存在当前未完成日志中，用于顺序写入失败后的重放，不提供多进程锁或任意文件损坏恢复。
 
 ## final_summary
 
@@ -69,7 +69,6 @@
 - `profile.current_levels` 只在有证据时更新；不确定时保留原值。证据来自 segment 的 `current_levels` 或 `diagnosis`。键名由学科包定义。空对象只说明字段位置，不要用它覆盖已有水平。
 - 空 `session_history` 仅占位；前插上节生成的最新 `final_summary`，保留中断字段，按 `references/session-retention.md` 保留旧记录。
 - `learning_state` 只覆盖 patch 中出现的字段。`mastered_topics` 的加入门槛见 `references/profile-schema.md` 的 Subject Memory。
-- 不改共享 `profile.json` 的姓名、年级、兴趣、经历字段。
 
 ## error_history_patch
 
@@ -100,9 +99,7 @@ Every segment with a `diagnosis` object produces one diagnosis entry. File-based
 
 按 Current Learning State 模板覆盖本次要改的字段。
 
-- 结束时清空四个 pending 字段：两个布尔写 `false`，两个 focus 写 `""`。
 - 写入 `last_finalized_session_id` 作为幂等标记。
-- 不使用旧的 slash-command / apply 词汇。
 
 ## milestones_patch
 
@@ -113,10 +110,6 @@ Every segment with a `diagnosis` object produces one diagnosis entry. File-based
 - 先合并重复 focus，保留最近一次。
 - 排序、上限和超限压缩按 `references/session-retention.md`。
 - 只记录长期有意义的变化：策略阶段变化、主题掌握、反复成功、明显跃迁。
-
-## Session Log After Finalize
-
-移除 `context` 与 `finalize_plan`。`session_log.json` 只保留 `session_id`、`entry_point`、`started_at`、`updated_at`，`segments` 为 `[]`。下一次 `/learn` 会开新会话；`/save` 也不会重复写已经 finalize 的段。
 
 ## No-op
 
@@ -137,9 +130,6 @@ Every segment with a `diagnosis` object produces one diagnosis entry. File-based
 
 ## Persistence Rules
 
-- 每次完整学习会话写一条 summary。
-- `learn -> feynman` 算一次完整会话。
-- 不写共享 `profile.json` 的姓名、年级、兴趣、经历字段。
-- 不生成 `shared_profile_patch`。
-- 不在 finalize 里修改 `data/.../raw/`。
-- 提交失败与清理失败分别按 Commit And Recovery 处理，不把已提交会话重复汇总；未提交时保留 plan 与 segments，可用 `/save` 重试。
+- 每次完整学习会话写一条 summary；`learn -> feynman` 算一次完整会话。
+- 只写四个科目文件：共享 `profile.json`（姓名、年级、兴趣、经历）与 `data/.../raw/` 都不在 finalize 写入范围内，不生成 `shared_profile_patch`。
+- 提交失败与清理失败分别按 Commit And Recovery 处理。

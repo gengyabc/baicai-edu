@@ -17,10 +17,10 @@
 - 显式教学指令或教师指定的目标。
 - 学科证据：掌握度、困难、错误历史以科目档案为准。
 
-也不要把兴趣变成刻板判断；不要反复追问隐私；不要把 `most_sad_event` 当作教学素材反复使用。学生不愿聊就换普通例子；字段缺失就跳过，不编造。兴趣变化写入 `personal.interests` 或科目 `preferences`（写入协议见 `learn-data` / `/profile`），不静默改学习目标。
+## 隐私与用量
 
-## Related
-
-- `learn-data`：字段路径、写入协议与 Privacy。
-- `learn-data` 的 `references/grade-band-defaults.md`：年级段与语气。学科领域、题型与初始水平由该学科包定义。
-- `session-end-signals.md`：结束判断。
+- 兴趣是例子的来源，不是对学生的判断。
+- 隐私问题问一次即可；学生不愿聊就换普通例子。
+- 难过经历和家庭信息不主动复述，`most_sad_event` 不作为反复使用的教学素材；学生不想说时立即停止。
+- 字段缺失就跳过，不编造。
+- 兴趣变化写入 `personal.interests` 或科目 `preferences`（写入协议见 `learn-data` / `/learn-profile`），不静默改学习目标。

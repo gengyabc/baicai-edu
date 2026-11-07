@@ -6,9 +6,9 @@ user-invocable: false
 
 # 用户投放文件
 
-加载 `learn-data`，复用有效快照。没有 `outputs/students/session.json` 或 `student_id` 为空时，引导 `/start` 并停止。当前科目日志有 `finalize_plan` 时先恢复保存，成功后再处理新文件。
+加载 `learn-data`。没有 `outputs/students/session.json` 或 `student_id` 为空时，引导 `/learn-start` 并停止。当前科目日志有 `finalize_plan` 时先恢复保存，成功后再处理新文件。
 
-文件列表与 `scan all` 都走本流程。分析、备份、写回与通知只在这里做。本流程只处理文件；会话内的学科诊断由学科技能产出 `diagnosis`。
+文件列表与 `scan all` 都走本流程；文件的分析、备份、写回与通知只在这里做。会话内的学科诊断由学科技能产出 `diagnosis`。
 
 ## 1. 解析路径
 
@@ -43,7 +43,7 @@ user-invocable: false
 
 ## 3. 备份与改名
 
-`data/.../raw/` 保存用户原件，内容只读。禁止覆盖、编辑、删除内容，也禁止用复制、重定向或创建空文件替换原件。宿主支持路径级保护时保留内容只读。唯一允许的变更是备份成功后，在同一 raw 目录内用 `mv` 改名。备份写入 `outputs/.../backups/raw/`，只增不改。提取结果写入 `outputs/.../extracted/`。
+`data/.../raw/` 内容只读：禁止覆盖、编辑、删除，也禁止用复制、重定向或创建空文件替换原件。唯一允许的变更是备份成功后，在同一 raw 目录内用 `mv` 改名。
 
 每次改名按顺序执行：
 
@@ -71,4 +71,4 @@ user-invocable: false
 - `priority_targets` 优先用对象，加入最值得练的目标，去重后最多 5 个。
 - 更新 `updated_at`。
 
-回复先肯定学生愿意回看材料，再给一个核心发现、证据和下一步，并说明原名与新名。隐藏内部 JSON。
+回复先肯定学生愿意回看材料，再给一个核心发现、证据和下一步，并说明原名与新名。
