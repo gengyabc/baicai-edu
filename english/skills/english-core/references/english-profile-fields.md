@@ -4,7 +4,7 @@
 
 ## preferences
 
-| 键 | `/start` 选项 |
+| 键 | `/learn-start` 选项 |
 |---|---|
 | `likes_stories` | 听故事 |
 | `likes_games` | 玩英语游戏 |

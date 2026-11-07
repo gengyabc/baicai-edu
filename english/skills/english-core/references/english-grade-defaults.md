@@ -9,7 +9,7 @@
 | `lower_primary` | `listening_speaking` |
 | `upper_primary` | `reading` |
 
-`profile.preferences` 的四个键初始全部为 `false`；`/start` 只把学生选中的一项设为 `true`。键见 `references/english-profile-fields.md`。
+`profile.preferences` 的四个键初始全部为 `false`；`/learn-start` 只把学生选中的一项设为 `true`。键见 `references/english-profile-fields.md`。
 
 初始 `profile.current_levels` 四项都是 `pre_a1`：
 

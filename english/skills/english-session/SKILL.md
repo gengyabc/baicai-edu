@@ -10,9 +10,8 @@ user-invocable: false
 
 加载 `english-core`，按其“开始与输入”执行，并按其条件表读 reference。入口已检查会话、学生与快照；本 skill 不重复检查或重读。
 
-- `mode: feynman` 时先按 `learn-core` 的费曼规则保持学生听众角色，本轮让学生讲，不新开新闻检索或新的写作任务。
+- `mode: feynman` 时先按 `learn-core` 的费曼规则由 AI 扮演同龄听众，本轮让学生主讲，不新开新闻检索或新的写作任务。
 - `target_context` 已由入口按 `english-target` 归类；本 skill 不重新解析材料类别，只选本轮动作。
-- 文件：`files_processed: true` 时读 `material_refs`；未处理文件交回入口，本 skill 不直接调用 `learn-errors`。
 
 ## 附加选项
 
@@ -32,18 +31,8 @@ user-invocable: false
 3. 宽泛目标先选一个具体焦点：一个故事、一个场景、一个句型、一组词或一个任务，不一次覆盖整单元。
 4. 定 `submode`：新主题 `learn`，近邻练习 `practice`，旧表达回想 `review`，费曼 `feynman`。
 5. `mode: feynman` 优先；本轮只让学生讲，追问点按其实际表达选一个。
-6. 按 `target_context.type` 与当前观察选一个主方法：
-   - `news` → `child-news-reader`
-   - `reading_material` → `comprehensible-input`
-   - `speaking_practice` → `interaction-hypothesis` 或 `output-hypothesis`
-   - `language_focus` → `usage-based-language-learning` 或 `spaced-retrieval`
-   - `activity` → `task-based-language-learning`
-   - `writing_task` → `output-hypothesis`，需要句型支持时补 `usage-based-language-learning`
-   - `student_problem` → `output-hypothesis` 或 `usage-based-language-learning`，学生出题考 AI，AI 作答后由学生核对
-   - `assessment` → 按答案类型选一个理解或表达方法，只核对并给一个可改点
-   - `topic` / `profile` → 按年级默认领域选一个方法
-   - 学生只想自由玩或一次要组合多种方法 → `child-english-coach`
-7. 只在需要时再加载一个辅助方法；本轮仍只保留一个主要待答问题。
+6. 按 `english-core` 的 `references/english-teaching-core.md` 唯一方法表，根据 `target_context.type` 与当前观察选择并加载主方法（新闻即 `child-news-reader`）。本 skill 是唯一调度者；coach 的跨轮计划与辅助建议也由本 skill 取舍，不自动展开整套方法。
+7. 待答步骤优先；每轮只保留一个主要待答问题，不因活动切换再追加一组问题。
 
 完成条件：一个焦点、明确模式、一个主方法和一个下一动作；待答问题仍在时接着它。
 
@@ -53,13 +42,17 @@ user-invocable: false
 
 - 先按共享确认协议核对完整消息，再判断有无回答。学生用中文、单词、半句或手势回应都按参与处理。
 - 给一段可理解的材料，只问一个真问题，停在问题并等待；问题后不附“你可以说……”“先跟我读……”或完整答案。
-- 有回答时先回应意思，再选择性重述一个形式；不要求重复、不逐句纠错、不把答对一个词升级成掌握。
-- 当前这条未保存日志里，未回答时把材料或问题缩短、换具体一点再给一次；仍无回应就停在问题，不连续盘问。
-- 学生明确求助或卡住时，按 `scaffolding-zpd` 一次给一级提示；提示后退让，依新回应调整。
+- 有回答时按教学核心的反馈规则承接意思；记录证据按 segment 字段约定，不在本 skill 另设标准。
+- 无响应按共享协议保留待答问题或降低表达负担；不把空消息当失败，不在同轮追加提示。
+- 生成或调整材料前读 `english-core` 的 `references/english-input-adaptation.md`；学生明确求助或卡住时读其 `references/english-scaffolding.md`，不必额外加载方法才能给提示。
 - 阅读题、作业或写的句子：只核对当前一处，指出一个最值得改的点；不给分数或等级。
-- 新闻：按 `child-news-reader` 的来源核对、年龄筛选和改写规则执行；没有可靠来源时不编造内容，明确说无法核实。
+- 新闻：按 `child-news-reader` 执行；没有可靠来源时明确说无法核实，不编造。
 - 写作：以短句和仿写为主，保留学生自己的意思；只改一处最影响可读性的地方，不替学生重写整段。
 - 新的 `session_id` 不沿用上一场的故事、单词表或未答问题；档案里的下一步只用来选新的英语目标。
+
+等待时交入口同步 `context.turn_state`：共享的当前题、已收到回答、待答问题，加上 `active_method`（当前主方法）、`method_step`、已用提示和必要活动计划；新闻另存已呈现文章、来源引用和阅读步骤。辅助方法提供局部支持，不覆盖原活动计划和主步骤；提示次数按同一卡点累计，不因换方法重置。完整文章已呈现后只接当前问题，不重复检索或重新分级；多问题计划逐轮推进，未答内容不算表现。无持久 extracted 引用的文本存 `context.materials`，已有引用则复用，不复制原始学生数据。
+
+同一日志恢复时先处理 lifecycle 的显式结束、模式或主题请求，再接 active_method 与步骤；旧日志缺标记时按已有材料和待答问题恢复，缺关键信息只问一处。方法收束后清除活动标记，新 session 不继承旧待答状态。
 
 完成条件：提出一个可回答的英语问题，或处理当前回答后给一个动作；依赖新回应的步骤等待，只凭证据确认理解或水平。
 
