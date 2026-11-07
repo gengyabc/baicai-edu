@@ -10,11 +10,11 @@ disable-model-invocation: true
 
 ## 选择目标
 
-按生命周期第 2 步解析（`learn-data` 的 `references/target-parsing.md` 加 `<subject>-core` 学科契约中的目标分类）。本入口另有一条：空参数 `/learn` 后，学生的第一条回复若给出主题、材料或路径，就采用它作为目标；只有“好”“开始吧”这类回应才从档案选。
+按生命周期的 Resolve Target 解析（`learn-data` 的 `references/target-parsing.md` 加 `<subject>-core` 学科契约中的目标分类）。本入口另有一条：空参数 `/learn` 后，学生的第一条回复若给出主题、材料或路径，就采用它作为目标；只有“好”“开始吧”这类回应才从档案选。
 
 ## 学科路由
 
-生命周期第 3 步加载 `<subject>-session`。普通教学、附加动作与迁移恢复都先进入它；子技能、参数和轮数限制由学科维护。
+生命周期的 Route And Record 加载 `<subject>-session`。普通教学、附加动作与迁移恢复都先进入它；子技能、参数和轮数限制由学科维护。
 
 ## 继续
 

@@ -1,6 +1,6 @@
 # Create Student
 
-仅在 `/learn-start` 收齐并确认入学信息后执行。字段外壳读取本技能的 `references/profile-schema.md`。年级段与语气读取本技能的 `references/grade-band-defaults.md`。偏好键、`current_levels` 与 `active_domain` 读取学科契约的档案字段与年级默认（`references/subject-contract.md`）。示例值不是初始化默认值。
+仅在 `/learn-start` 收齐并确认入学信息后执行。字段外壳读取本技能的 `references/profile-schema.md`。年级段读取本技能的 `references/grade-band-defaults.md`。偏好键、`current_levels` 与 `active_domain` 读取学科契约的档案字段与年级默认（`references/subject-contract.md`）。示例值不是初始化默认值。
 
 1. 姓名转小写拼音或英文 slug，加 4 位随机 hex，生成 `stu_<slug>_<4hex>`。按 Data Root 发现已有学生，核对 id 唯一后再写入。
 2. 按 Base Profile 模板写 `outputs/students/<id>/profile.json`：姓名、年级、年级段、语言、共享 `personal`、创建与更新时间来自本次确认的信息；可跳过项未提供时留空，不套用模板经历。

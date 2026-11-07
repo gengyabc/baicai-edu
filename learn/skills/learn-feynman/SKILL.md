@@ -14,7 +14,7 @@ description: 费曼学习。学生想当小老师、讲给 AI 听、检查自己
 
 ## 选择目标
 
-只在需要新目标时选择：`/learn-feynman` 后的文本或学生说出的讲解目标优先，其次 `current_state.active_focus`，再按生命周期第 2 步的档案候选顺序。显式新目标按生命周期第 2 步解析（`learn-data` 的 `references/target-parsing.md` 加 `<subject>-core` 学科契约中的目标分类），以 `mode: feynman` 路由到 `<subject>-session`；费曼优先于学科迁移。当前会话没有新目标时保留 focus 与 target_context。缺少学科所需材料时只问一个具体问题，不猜原文。
+只在需要新目标时选择：`/learn-feynman` 后的文本或学生说出的讲解目标优先，其次 `current_state.active_focus`，再按生命周期 Resolve Target 的档案候选顺序。显式新目标按生命周期的 Resolve Target 解析（`learn-data` 的 `references/target-parsing.md` 加 `<subject>-core` 学科契约中的目标分类），以 `mode: feynman` 路由到 `<subject>-session`；费曼优先于学科迁移。当前会话没有新目标时保留 focus 与 target_context。缺少学科所需材料时只问一个具体问题，不猜原文。
 
 ## 回合
 

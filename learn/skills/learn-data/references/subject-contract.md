@@ -4,7 +4,7 @@
 
 ## 命名
 
-- `<subject>-session`：该学科每轮教学的唯一入口。生命周期第 3 步加载它；它再决定子技能、附加动作与迁移参数。
+- `<subject>-session`：该学科每轮教学的唯一入口。生命周期的 Route And Record 加载它；它再决定子技能、附加动作与迁移参数。
 - `<subject>-core`：学科规则，不产出学生回复或 segment。其 SKILL.md 有一节「学科契约」，为下表每个角色给出一份 reference。
 
 `<subject>` 就是 `session.json` 的 `subject` 值。

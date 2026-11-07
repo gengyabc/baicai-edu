@@ -25,20 +25,15 @@
 }
 ```
 
-## Initialization Defaults By Grade Band
-
-新建缺失的科目档案时，年级映射和 `tone` 读取本技能的 `references/grade-band-defaults.md`。`learning_state.active_domain`、`profile.preferences` 的键、初始 `profile.current_levels` 由入口点名的学科包给出。下面的科目 JSON 只是外壳。
-
-`profile.preferences` 初始全为 `false`；`/learn-start` 把学生选中的那一项设为 `true`。
-
 ## Subject Profile
 
 - Path: `outputs/students/<student_id>/<subject>/profile.json`
-- 偏好键、`current_levels` 的键、`active_domain` 的取值由学科包定义。
+- 下面的 JSON 是外壳，键都要保留。偏好键、`current_levels` 的键、`active_domain` 的取值由学科包定义：新建时年级段读 `references/grade-band-defaults.md`，初始领域、水平与偏好键读学科契约（`references/subject-contract.md`）。
+- `profile.preferences` 初始全为 `false`；`/learn-start` 把学生选中的那一项设为 `true`。
+- 各科都用 `easy_topics` / `hard_topics`，不用 `easy_areas` / `hard_areas`。
 
 ```json
 {
-  "tone": "concise_guiding",
   "updated_at": "2026-10-04T12:00:00Z",
   "profile": {
     "preferences": {},
@@ -58,10 +53,6 @@
   "session_history": []
 }
 ```
-
-模板里的这些键都要在：`tone`、`updated_at`、`profile.preferences`、`profile.self_report.easy_topics`、`profile.self_report.hard_topics`、`profile.current_levels`、`learning_state`、`error_history`、`session_history`。
-
-各科都用 `easy_topics` / `hard_topics`，不用 `easy_areas` / `hard_areas`。
 
 ## Subject Memory
 
@@ -90,9 +81,13 @@
 }
 ```
 
+`confirmed_skills` 的一条：
+
 ```json
 { "skill": "示例技能", "domain": "subject_domain", "confirmed_at": "2026-10-02T10:00:00Z" }
 ```
+
+`skill_errors` 的一条：
 
 ```json
 { "skill": "示例技能", "error_count": 1, "last_error_at": "2026-10-02T11:00:00Z" }
@@ -141,10 +136,10 @@
 
 ## Write Assumptions
 
-先读完整文件，在内存中合并，再写完整合法 JSON。
+写入步骤以本技能的 Write Protocol 为准。
 
-- 一个学生、一个会话、一个进程。同一文件不并行写。没有跨进程锁或事务。
-- `student_id` 必须匹配 `stu_<name>_<4hex>`，且不含 `/`、`\`、`..`。
+- 一个学生、一个会话、一个进程。没有跨进程锁或事务。
+- `student_id` 符合 Data Root 的 `stu_<slug>_<4hex>`，且不含 `/`、`\`、`..`。
 
 ## Error History
 

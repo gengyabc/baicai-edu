@@ -17,7 +17,7 @@
 
 ## Apply Choice
 
-学生已经选定动作就执行，不再询问是否继续。基础动作按 `references/session-lifecycle.md` 第 4–5 步；附加选项按 `action` 交回当前学科主技能，子技能与参数由学科确定，迁移状态由入口统一持久化。学生直接输入同义请求时，也由该学科识别，不要求重新点选。
+学生已经选定动作就执行，不再询问是否继续。基础动作按 `references/session-lifecycle.md` 的 Dispatch 与 Finalize Or Switch Topic；附加选项按 `action` 交回当前学科主技能，子技能与参数由学科确定，迁移状态由入口统一持久化。学生直接输入同义请求时，也由该学科识别，不要求重新点选。
 
 ## 回合出口
 

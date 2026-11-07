@@ -6,7 +6,7 @@ user-invocable: false
 
 # Learn Data
 
-学生数据的读取、初始化与保存协议。本 skill 的 `references/...` 都相对于本技能目录；跨 skill 文件先按名称加载该 skill，再按其返回的 base directory 定位。这条定位规则适用于所有包的所有 skill，各处不再重复说明。
+学生数据的读取、初始化与保存协议。本 skill 的 `references/...` 都相对于本技能目录；跨 skill 文件先按名称加载该 skill，再按其返回的 base directory 定位。这条定位规则适用于所有包的所有 skill。
 
 ## Data Root
 
@@ -52,7 +52,7 @@ outputs/students/
 
 - `session.json` 缺失或 `student_id` 为空：告诉学生先运行 `/learn-start`。
 - 共享档案缺失：转 `/learn-start` 建档，不凭空生成。
-- 科目 `profile.json` 缺失：确认共享档案存在后，按 `references/profile-schema.md` 初始化；语气读 `references/grade-band-defaults.md`，默认领域、初始水平与偏好键读学科契约（`references/subject-contract.md`）。
+- 科目 `profile.json` 缺失：确认共享档案存在后，按 `references/profile-schema.md` 初始化；年级段读 `references/grade-band-defaults.md`，默认领域、初始水平与偏好键读学科契约（`references/subject-contract.md`）。
 - `memory.json` / `current_state.json` / `milestones.json` 缺失：按 `references/profile-schema.md` 的默认值创建。
 - `session_log.json` 缺失（读取工具返回 `not found`）是正常状态，表示没有未完成会话，需要时按 `references/session-lifecycle.md` 新建。只有权限、I/O 或内容损坏错误才报告读取故障，并停止依赖该文件的操作。
 

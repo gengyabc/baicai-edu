@@ -52,7 +52,7 @@ disable-model-invocation: true
 
 收齐后用一句话复述姓名、年级和偏好，用 `ask_user_question` 请学生确认，选项为「都对」「要改一下」；学生选「要改一下」时再用文字问要改哪一项。确认后读取并执行 `learn-data` 的 `references/create-student.md`：
 
-- 年级段与 `tone` 读取 `learn-data` 的 `references/grade-band-defaults.md`。
+- 年级段读取 `learn-data` 的 `references/grade-band-defaults.md`。
 - `active_domain`、`current_levels` 与偏好键读取 `<subject>-core` 学科契约中的年级默认与档案字段。
 - 偏好先全部设为 `false`，再按档案字段的选项与键对应，将选中项设为 `true`。
 - 兴趣写入共享 `personal.interests` 数组。

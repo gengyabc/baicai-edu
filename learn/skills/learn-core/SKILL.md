@@ -6,7 +6,7 @@ user-invocable: false
 
 # 教学规则
 
-教学前读取 `references/pedagogy-core.md`，按一个小目标推进；按年级选择语气或具体程度前读取 `learn-data` 的 `references/grade-band-defaults.md`。学科领域、题型、初始水平与策略阶段由当前学科包定义。其余规则在下表条件命中时读取并执行；`references/...` 相对于本技能目录。
+教学前读取 `references/pedagogy-core.md`，按一个小目标推进；按年级选择具体程度前读取 `learn-data` 的 `references/grade-band-defaults.md`。学科领域、题型、初始水平与策略阶段由当前学科包定义。其余规则在下表条件命中时读取并执行；`references/...` 相对于本技能目录。
 
 | 时机 | 读取 |
 |---|---|

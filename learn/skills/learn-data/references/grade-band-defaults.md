@@ -1,6 +1,6 @@
 # Grade Band Defaults
 
-Shared grade-band mapping, concreteness, and `tone`. Subject domains, task types, preference keys, and initial levels live in the current subject package. Do not restate those here.
+Shared grade-band mapping and concreteness. Subject domains, task types, preference keys, and initial levels live in the current subject package. Do not restate those here.
 
 ## Grade Band Mapping
 
@@ -14,11 +14,4 @@ Within a band, use the same concreteness; only the subject package changes the t
 - Grades 4-5: explanation, comparison, and justification; still concrete first.
 - Grade 6: freer choice, longer reasoning; still no lecture.
 
-## Tone
-
-| Grade band | `tone` |
-|---|---|
-| `lower_primary` | `supportive_concrete` |
-| `upper_primary` | `concise_guiding` |
-
-When creating or retargeting a subject profile, take `tone` from this table. Take `learning_state.active_domain`, `profile.current_levels`, and `profile.preferences` keys from the subject package's grade-default and profile-field references (see `references/subject-contract.md`). Do not copy example values from `profile-schema.md`.
+When creating or retargeting a subject profile, take `grade_band` from this mapping. Take `learning_state.active_domain`, `profile.current_levels`, and `profile.preferences` keys from the subject package's grade-default and profile-field references (see `references/subject-contract.md`). Do not copy example values from `profile-schema.md`.
