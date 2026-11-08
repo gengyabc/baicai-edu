@@ -26,6 +26,7 @@ user-invocable: false
 | 条件 | 读取 |
 |---|---|
 | 所有数学教学，包括诊断、练习、学生出题 | `references/math-teaching-core.md` |
+| 进入新题、新活动、新主题前（含跳题、教师下一题、旧主题 finalize 成功后）；同题流程切换需辨别边界时 | `references/board-task-boundary.md` |
 | 快照含兴趣、偏好、易/难主题或经历，或学生做不出当前题 | `references/math-personalization.md` |
 | 选择下一目标、判断策略阶段 | `references/progression-map.md` |
 | 选题、改题、变式；加减乘除、位值、多位数 | `references/problem-design.md` |

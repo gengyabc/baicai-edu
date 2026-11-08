@@ -16,6 +16,8 @@ user-invocable: false
 
 ### 入口事件
 
+进入新题、新活动或新主题前，先执行 `math-core` 的 `references/board-task-boundary.md`（唯一边界规则），无画板附件也适用。入口跳题、教师主动下一题、leaf 内下一题均覆盖；换主题由 lifecycle 先 finalize 旧主题，成功后本入口在开展新主题前处理边界。leaf 调度、恢复与费曼切换本身不代表新任务。
+
 - 阶段选项「练一练」由本 skill 加载 `math-practice`。
 - 阶段选项「迁移」、`context.activity: transfer` 或学生主动出题，由本 skill 加载 `math-student-problem`。
 - `mode: feynman` 优先于迁移恢复与上述阶段动作；按共享费曼规则接回学生主讲，不自动进入出题流程。
