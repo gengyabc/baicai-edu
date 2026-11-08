@@ -23,16 +23,23 @@ const text = (node) => typeof node === 'string' || typeof node === 'number' ? St
 /** Stateful hooks with persistent refs, dependency-aware effects, and explicit rendering. */
 function mount(options = {}) {
   const storage = options.storage || new Map();
-  const old = { window: globalThis.window, localStorage: globalThis.localStorage,
+  const old = { window: globalThis.window, navigator: Object.getOwnPropertyDescriptor(globalThis, 'navigator'), localStorage: globalThis.localStorage,
     createObjectURL: URL.createObjectURL, revokeObjectURL: URL.revokeObjectURL };
-  globalThis.window = { matchMedia: () => ({ matches: true }) };
+  globalThis.window = { matchMedia: () => ({ matches: true }), location: { hostname: '127.0.0.1' } };
+  globalThis.document = { addEventListener() {}, removeEventListener() {} };
+  Object.defineProperty(globalThis, 'navigator', { configurable: true, value: {
+    locks: options.noLocks ? undefined : { request(_key, _options, task) {
+      if (options.lockQueue) { options.lockQueue.push(task); return Promise.resolve(); }
+      task(); return Promise.resolve();
+    } },
+  } });
   globalThis.localStorage = { getItem: (name) => storage.get(name) ?? null,
     setItem: (name, value) => {
       if (options.storageFail?.(name)) throw new Error('Quota exceeded');
       storage.set(name, String(value));
     } };
   const slots = []; const dom = new Map(); const effects = [];
-  let cursor = 0; let dirty = false; let tree; let config = options.config || null;
+  let cursor = 0; let dirty = false; let tree; let config = options.config || null; let clear = options.clear || null;
   const exports = []; const files = []; const batches = []; const attached = new Set();
   const removed = []; const released = []; const inserted = []; let persisted = 0; let sent = 0;
   URL.createObjectURL = (blob) => { exports.push(blob); return `blob:test-${exports.length}`; };
@@ -77,7 +84,7 @@ function mount(options = {}) {
   const ctx = { locale: { subscribe: () => () => {}, getSnapshot: () => 'zh' },
     get: (name) => { assert.equal(name, 'conversation'); return conversation; } };
   const Board = createBoardView(React, M, ctx, t, '', createShapeArt(React), applyHostConfig, T);
-  const props = { sessionId: 'integration', useProjection: () => config, useInput: () => 'plain', inputActions };
+  const props = { sessionId: 'integration', useProjection: (name) => name === 'eduBoardClear' ? clear : config, useInput: () => 'plain', inputActions };
   function render() {
     cursor = 0; dirty = false; tree = Board(props);
     for (const node of walk(tree)) if (node.props.ref && typeof node.props.ref === 'object') {
@@ -147,9 +154,13 @@ function mount(options = {}) {
     board: () => M.validate(JSON.parse(storage.get(key))),
     trace: () => T.validate(JSON.parse(storage.get(traceKey)).trace),
     setConfig(next) { config = next; refresh(); },
+    setClear(next) { clear = next; refresh(); },
     unmount() {
       for (const slot of slots) slot?.cleanup?.();
       globalThis.window = old.window; globalThis.localStorage = old.localStorage;
+      delete globalThis.document;
+      if (old.navigator) Object.defineProperty(globalThis, 'navigator', old.navigator);
+      else delete globalThis.navigator;
       URL.createObjectURL = old.createObjectURL; URL.revokeObjectURL = old.revokeObjectURL;
     },
   };
@@ -231,6 +242,173 @@ test('clear wipes the canvas and the process record, and the next task starts fr
     assert.equal(h.trace().totalChanges, 1); assert.equal(h.trace().priorUnknown, false);
     assert.equal(h.trace().entries[0].type, 'add');
   });
+});
+
+test('host task clear is atomic, preserves settings and attachments, and cannot be undone or replayed', async (context) => {
+  let now = 1000;
+  context.mock.method(Date, 'now', () => now);
+  const storage = new Map();
+  const request = { revision: 1, requestId: 'clear-1', requestedAt: 2000 };
+  const h = mount({ storage });
+  try {
+    h.add(); h.note('old object explanation'); h.clearSelection(); h.note('old task');
+    h.click(t('insert'));
+    const attachments = [...h.attached];
+    const settings = h.board().settings;
+    now = 2001; h.setClear(request);
+    assert.equal(h.board().objects.length, 0);
+    assert.equal(h.board().note, ''); assert.deepEqual(h.trace(), T.empty());
+    assert.deepEqual(h.board().settings, settings);
+    assert.deepEqual([...h.attached], attachments); assert.equal(h.sent, 0);
+    assert.equal(h.button(t('undo')).props.disabled, true);
+    assert.equal(h.find(node => node.type === 'dialog').props.ref.current.open, false);
+    h.add(); h.setClear({ ...request });
+    assert.equal(h.board().objects.length, 1, 'same request never erases later work');
+    assert.equal(h.trace().totalChanges, 1);
+  } finally { h.unmount(); }
+  withMount({ storage, clear: request }, h => {
+    assert.equal(h.board().objects.length, 1, 'refresh preserves work after the reset');
+    assert.equal(h.trace().totalChanges, 1);
+  });
+});
+
+test('a reset received while unmounted applies before editing and only once', (context) => {
+  context.mock.method(Date, 'now', () => 3000);
+  const storage = new Map([[key, M.serialize(M.reduce(M.empty(), { type: 'add', shape: 'cat' }))]]);
+  const request = { revision: 2, requestId: 'closed-clear', requestedAt: 2000 };
+  withMount({ storage, clear: request }, h => {
+    assert.equal(h.board().objects.length, 0);
+    h.add(); assert.equal(h.board().objects.length, 1);
+  });
+  withMount({ storage, clear: request }, h => assert.equal(h.board().objects.length, 1));
+});
+
+test('the task-clear notice waits in the workbench until the student actually opens it', (context) => {
+  let now = 1000;
+  context.mock.method(Date, 'now', () => now);
+  withMount({}, (h) => {
+    h.add();
+    now = 2000;
+    h.setClear({ revision: 1, requestId: 'notice', requestedAt: 2000 });
+    assert.equal(h.board().objects.length, 0);
+    h.find(node => node.props.role === 'status' && text(node) === t('autoClearDone'));
+    h.click(t('title'));
+    h.find(node => node.props.role === 'status' && text(node) === t('autoClearDone'));
+    h.click(t('backToChat'));
+    assert.equal(walk(h.find(node => node.props.className === 'eb-workbench'))
+      .some(node => node.props.role === 'status'), false, 'the seen notice does not linger');
+  });
+});
+
+test('late and out-of-order resets preserve newer edits, including edits across refresh', (context) => {
+  context.mock.method(Date, 'now', () => 4000);
+  const storage = new Map();
+  withMount({ storage }, h => h.add());
+  withMount({ storage }, h => {
+    h.setClear({ revision: 2, requestId: 'late', requestedAt: 3000 });
+    assert.equal(h.board().objects.length, 1);
+    h.find(node => node.props.role === 'status' && text(node) === t('autoClearSkipped'));
+    h.setClear({ revision: 1, requestId: 'older', requestedAt: 2000 });
+    assert.equal(h.board().objects.length, 1);
+  });
+});
+
+test('quota failure never clears in-memory work or persists a successful reset marker', (context) => {
+  let fail = false;
+  context.mock.method(Date, 'now', () => 6000);
+  withMount({ storageFail: name => fail && name === `${key}:clear-v1` }, h => {
+    h.add(); const before = h.board();
+    fail = true;
+    h.setClear({ revision: 1, requestId: 'quota', requestedAt: 5999 });
+    assert.deepEqual(h.board(), before);
+    assert.equal(JSON.parse(h.storage.get(`${key}:clear-v1`)).revision, 0);
+    h.find(node => node.props.role === 'status' && text(node) === t('autoClearError'));
+    fail = false;
+    h.click(t('clear')); h.click(t('confirmClear'));
+    h.add(); assert.equal(h.board().objects.length, 1, 'manual recovery unblocks editing');
+  });
+});
+
+test('an atomic reset envelope wins over a stale legacy canvas after interrupted mirroring', (context) => {
+  context.mock.method(Date, 'now', () => 8000);
+  const old = M.reduce(M.empty(), { type: 'add', shape: 'cat' });
+  const storage = new Map([[key, M.serialize(old)], [`${key}:clear-v1`, JSON.stringify({
+    revision: 1, requestId: 'atomic', lastEditAt: 0, board: M.empty(), trace: T.empty(), attach: false,
+  })]]);
+  withMount({ storage, clear: { revision: 1, requestId: 'atomic', requestedAt: 7000 } }, h => {
+    assert.equal(h.board().objects.length, 0); assert.deepEqual(h.trace(), T.empty());
+    assert.equal(h.attachChecked, false);
+  });
+});
+
+test('missing browser locks fails safe and manual clear remains available', (context) => {
+  context.mock.method(Date, 'now', () => 9000);
+  const old = M.reduce(M.empty(), { type: 'add', shape: 'cat' });
+  withMount({ noLocks: true, storage: new Map([[key, M.serialize(old)]]),
+    clear: { revision: 1, requestId: 'unsupported', requestedAt: 8000 } }, h => {
+    assert.equal(h.board().objects.length, 1);
+    h.find(node => node.props.role === 'status' && text(node) === t('autoClearError'));
+    h.click(t('clear')); h.click(t('confirmClear'));
+    assert.equal(h.board().objects.length, 0);
+  });
+});
+
+test('a queued clear rechecks the latest draft inside its lock instead of overwriting a newer save', (context) => {
+  context.mock.method(Date, 'now', () => 15000);
+  const options = {};
+  const h = mount(options);
+  try {
+    h.add();
+    options.lockQueue = [];
+    h.setClear({ revision: 1, requestId: 'queued', requestedAt: 14000 });
+    const saved = JSON.parse(h.storage.get(`${key}:clear-v1`));
+    const newer = M.reduce(saved.board, { type: 'add', shape: 'cat' });
+    h.storage.set(`${key}:clear-v1`, JSON.stringify({ ...saved, board: newer, lastEditAt: 16000 }));
+    while (options.lockQueue.length) { options.lockQueue.shift()(); h.refresh(); }
+    assert.equal(JSON.parse(h.storage.get(`${key}:clear-v1`)).board.objects.length, 2);
+    assert.equal(JSON.parse(h.storage.get(`${key}:clear-v1`)).revision, 1);
+    h.find(node => node.props.role === 'status' && text(node) === t('autoClearSkipped'));
+  } finally { h.unmount(); }
+});
+
+test('remote-host clocks are not treated as authorization to erase local edits', (context) => {
+  context.mock.method(Date, 'now', () => 20000);
+  withMount({}, h => {
+    h.add();
+    window.location.hostname = 'example.com';
+    h.setClear({ revision: 1, requestId: 'remote', requestedAt: 19000 });
+    assert.equal(h.board().objects.length, 1);
+    h.find(node => node.props.role === 'status' && text(node) === t('autoClearError'));
+  });
+});
+
+test('explicit clear repairs a corrupt atomic envelope and survives remount', () => {
+  const storage = new Map([[`${key}:clear-v1`, '{broken']]);
+  withMount({ storage }, h => {
+    h.click(t('clear')); h.click(t('confirmClear')); h.add();
+    assert.equal(h.board().objects.length, 1);
+    assert.equal(JSON.parse(storage.get(`${key}:clear-v1`)).board.objects.length, 1);
+  });
+  withMount({ storage }, h => assert.equal(h.board().objects.length, 1));
+});
+
+test('a picker opened on the old task cannot import after a task clear', async (context) => {
+  let now = 10000;
+  context.mock.method(Date, 'now', () => now);
+  const h = mount();
+  try {
+    h.add();
+    let resolveFile;
+    window.showOpenFilePicker = async () => [{ getFile: () => new Promise(resolve => { resolveFile = resolve; }) }];
+    h.openMore();
+    const opening = h.click(t('import'));
+    await Promise.resolve();
+    now = 12000; h.setClear({ revision: 1, requestId: 'during-picker', requestedAt: 11000 });
+    resolveFile(new File([M.serialize(M.reduce(M.empty(), { type: 'add', shape: 'cat' }))], 'old.json'));
+    await opening; h.refresh();
+    assert.equal(h.board().objects.length, 0);
+    assert.deepEqual(h.trace(), T.empty());
+  } finally { h.unmount(); }
 });
 
 test('undo and redo append semantic facts instead of replacing the trace with snapshot history', () => {

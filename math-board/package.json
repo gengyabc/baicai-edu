@@ -13,6 +13,7 @@
   "files": [
     "index.js",
     "config-bridge.js",
+    "clear-bridge.js",
     "model.js",
     "trace.js",
     "view.js",

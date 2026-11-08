@@ -35,6 +35,10 @@ test('creation colour defaults to 1 and synchronizes previews and new objects', 
       const walk = (node) => { if (!node || typeof node !== 'object') return; nodes.push(node); node.children?.flat(Infinity).forEach(walk); };
       walk(tree); return nodes;
     };
+    render();
+    // This render-only harness omits effects; model completion of draft loading
+    // before exercising editing (the stateful integration harness tests loading).
+    states[2] = true;
     let nodes = render();
     let tool = nodes.find((n) => n.props.className === 'eb-shape-tool');
     assert.ok(tool.props.title.endsWith('1'));

@@ -97,6 +97,12 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
     const legacyKey = `dsh-edu-math-board:v2:${props.sessionId}`;
     const oldKey = `dsh-edu-math-board:v3:${props.sessionId}`;
     const watermarkKey = `${key}:config`;
+    // One atomic local envelope pairs the reset watermark with the surviving
+    // draft. Never persist a reset marker separately from its canvas.
+    const clearKey = `${key}:clear-v1`;
+    const clearMark = React.useRef({ revision: 0, requestId: null });
+    const lastEditAt = React.useRef(0);
+    const clearRequest = props.useProjection('eduBoardClear');
     const [opened, setOpened] = React.useState(false);
     const [board, setBoard] = React.useState(M.empty);
     const boardRef = React.useRef(board);
@@ -157,18 +163,28 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
     React.useEffect(() => {
       revision.current++;
       try {
-        const current = localStorage.getItem(key) ?? localStorage.getItem(oldKey) ?? localStorage.getItem(legacyKey);
+        const envelope = JSON.parse(localStorage.getItem(clearKey) || 'null');
+        if (envelope && (!Number.isSafeInteger(envelope.revision) || envelope.revision < 0
+          || !(envelope.requestId === null || typeof envelope.requestId === 'string')
+          || !Number.isSafeInteger(envelope.lastEditAt) || envelope.lastEditAt < 0)) throw Error('Invalid clear envelope');
+        const current = envelope ? JSON.stringify(envelope.board)
+          : localStorage.getItem(key) ?? localStorage.getItem(oldKey) ?? localStorage.getItem(legacyKey);
         const next = current ? M.validate(JSON.parse(current)) : M.empty();
+        if (envelope) {
+          clearMark.current = { revision: envelope.revision, requestId: envelope.requestId };
+          lastEditAt.current = envelope.lastEditAt;
+        }
         boardRef.current = next; setBoard(next);
         let restored = T.empty(current !== null);
         try {
-          const saved = JSON.parse(localStorage.getItem(traceKey) || 'null');
+          const saved = envelope ? { board: JSON.stringify(next), trace: envelope.trace, attach: envelope.attach }
+            : JSON.parse(localStorage.getItem(traceKey) || 'null');
           if (saved && typeof saved.attach === 'boolean') setAttachTrace(saved.attach);
           if (saved && saved.board === JSON.stringify(next)) restored = T.validate(saved.trace);
         } catch { setStatus(t('traceLoadError')); }
         traceRef.current = restored; setTrace(restored);
         setHistory({ past: [], future: [] });
-        const mark = localStorage.getItem(watermarkKey) ?? localStorage.getItem(`${oldKey}:config`) ?? localStorage.getItem(`${legacyKey}:config`);
+        const mark = envelope?.configWatermark ?? localStorage.getItem(watermarkKey) ?? localStorage.getItem(`${oldKey}:config`) ?? localStorage.getItem(`${legacyKey}:config`);
         const parsed = mark === null ? -1 : Number(mark);
         watermark.current = Number.isFinite(parsed) ? parsed : -1;
         pendingWatermark.current = null;
@@ -179,8 +195,15 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
 
     React.useEffect(() => {
       if (!ready || storageBlocked) return;
+      let live = true;
+      const version = revision.current;
+      withDraftLock(() => {
+      if (!live || version !== revision.current || boardRef.current !== board) return;
       try {
+        const saved = JSON.parse(localStorage.getItem(clearKey) || 'null');
+        if (saved && (saved.revision > clearMark.current.revision || saved.lastEditAt > lastEditAt.current)) return;
         const serialized = JSON.stringify(board);
+        saveClearEnvelope(board, trace, attachTrace);
         localStorage.setItem(key, serialized);
         localStorage.setItem(traceKey, JSON.stringify({ board: serialized, trace, attach: attachTrace }));
         if (pendingWatermark.current !== null) {
@@ -188,6 +211,8 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
           pendingWatermark.current = null;
         }
       } catch { setStatus(t('storageError')); }
+      }, () => setStatus(t('storageError')));
+      return () => { live = false; };
     }, [board, trace, attachTrace, ready, storageBlocked, key]);
 
     // New shapes that land below the visible part of a tall board scroll it down so
@@ -236,6 +261,47 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
     }, [config, ready]);
 
     React.useEffect(() => {
+      if (!ready || !clearRequest || !Number.isSafeInteger(clearRequest.revision)
+        || clearRequest.revision <= clearMark.current.revision || !clearRequest.requestId
+        || !Number.isSafeInteger(clearRequest.requestedAt) || clearRequest.requestedAt <= 0) return;
+      // Local host and browser share the system clock. A remote host's wall
+      // clock cannot establish edit causality; fail safe rather than guess.
+      const localHost = ['localhost', '127.0.0.1', '[::1]', '::1'].includes(window.location?.hostname);
+      if (storageBlocked || !localHost) { setStatus(t('autoClearError')); return; }
+      let live = true;
+      withDraftLock(() => {
+      if (!live || clearRequest.revision <= clearMark.current.revision) return;
+      try {
+        // Another tab may have edited this same session while this tab was idle.
+        const saved = JSON.parse(localStorage.getItem(clearKey) || 'null');
+        if (saved && saved.revision >= clearRequest.revision) {
+          clearMark.current = { revision: saved.revision, requestId: saved.requestId };
+          lastEditAt.current = saved.lastEditAt;
+          resetCanvas(M.validate(saved.board), T.validate(saved.trace));
+          return;
+        }
+        const editedAt = Math.max(lastEditAt.current, saved?.lastEditAt || 0);
+        const late = editedAt >= clearRequest.requestedAt || clearRequest.requestedAt > Date.now();
+        if (saved && saved.lastEditAt > lastEditAt.current) {
+          publish(M.validate(saved.board)); publishTrace(T.validate(saved.trace));
+          lastEditAt.current = saved.lastEditAt;
+        }
+        const next = late ? boardRef.current : { ...M.empty(), settings: boardRef.current.settings };
+        const nextTrace = late ? traceRef.current : T.empty();
+        const mark = { revision: clearRequest.revision, requestId: clearRequest.requestId };
+        // Persist first: a quota failure must not publish a destructive change.
+        saveClearEnvelope(next, nextTrace, attachTrace, mark);
+        clearMark.current = mark;
+        if (!late) {
+          resetCanvas(next, nextTrace);
+          setStatus(t('autoClearDone'));
+        } else setStatus(t('autoClearSkipped'));
+      } catch { setStatus(t('autoClearError')); }
+      }, () => setStatus(t('autoClearError')), true);
+      return () => { live = false; };
+    }, [clearRequest, ready, storageBlocked]);
+
+    React.useEffect(() => {
       const node = dialog.current;
       if (opened && !node.open) node.showModal();
       if (!opened && node.open) node.close();
@@ -250,7 +316,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
       return () => { live = false; };
     }, []);
     React.useEffect(() => {
-      if (!status) return;
+      if (!status || [t('autoClearError'), t('autoClearSkipped'), t('autoClearDone')].includes(status)) return;
       const timer = setTimeout(() => setStatus(''), 5200);
       return () => clearTimeout(timer);
     }, [status]);
@@ -283,6 +349,26 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
       const active = dialog.current?.ownerDocument.activeElement;
       if (active && dialog.current.contains(active) && active.matches('input,textarea,select')) active.blur();
     }
+    function withDraftLock(task, failed, required = false) {
+      const locks = globalThis.navigator?.locks;
+      if (!locks?.request) {
+        if (required) { failed(); return; }
+        task(); return;
+      }
+      try { locks.request(clearKey, { mode: 'exclusive' }, task).catch(failed); }
+      catch { failed(); }
+    }
+    function saveClearEnvelope(next, nextTrace, attach, mark = clearMark.current) {
+      localStorage.setItem(clearKey, JSON.stringify({ ...mark, lastEditAt: lastEditAt.current,
+        board: next, trace: nextTrace, attach, configWatermark: watermark.current }));
+    }
+    function touchDraft() { lastEditAt.current = Math.max(Date.now(), lastEditAt.current + 1); }
+    function resetCanvas(next, nextTrace) {
+      revision.current++; gesture.current = null; setPreview(null);
+      publish(next); publishTrace(nextTrace);
+      setHistory({ past: [], future: [] });
+      selectIds([]); setAppend(false); setOverlay(null); revealRef.current = [];
+    }
     function publish(next) { boardRef.current = next; setBoard(next); }
     function publishTrace(next) { traceRef.current = next; setTrace(next); }
     function recordChange(before, after, change, origin = 'student') {
@@ -298,30 +384,51 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
     function commit(next, change) {
       const before = boardRef.current;
       if (JSON.stringify(next) === JSON.stringify(before)) {
-        if (change?.type === 'import') recordChange(before, next, change);
+        if (change?.type === 'import') { touchDraft(); recordChange(before, next, change); }
         return;
       }
+      touchDraft();
       gesture.current = null; setPreview(null); revision.current++;
       setHistory((old) => ({ past: [...old.past.slice(-39), before], future: [] }));
       const recorded = recordChange(before, next, change);
       publish(next);
       if (recorded) setStatus('');
     }
+    function canEdit() {
+      if (!ready || (clearRequest?.revision > clearMark.current.revision)) {
+        setStatus(t('autoClearError')); return false;
+      }
+      try {
+        const saved = JSON.parse(localStorage.getItem(clearKey) || 'null');
+        if (saved && (saved.revision > clearMark.current.revision || saved.lastEditAt > lastEditAt.current)) {
+          clearMark.current = { revision: saved.revision, requestId: saved.requestId };
+          lastEditAt.current = saved.lastEditAt;
+          resetCanvas(M.validate(saved.board), T.validate(saved.trace));
+          return false;
+        }
+      } catch { /* Ordinary editing remains possible when browser storage is blocked. */ }
+      return true;
+    }
     function action(a) {
+      if (!canEdit()) return null;
       try { const next = M.reduce(boardRef.current, a); commit(next, a); return next; }
       catch (error) { setStatus(`${t('failed')}: ${error.message}`); return null; }
     }
     function batch(actions) { return action({ type: 'batch', actions }); }
     function selectIds(ids) { setSelection(ids); }
     function undo() {
+      if (!canEdit()) return;
       const prev = history.past.at(-1); if (!prev) return;
+      touchDraft();
       gesture.current = null; setPreview(null); revision.current++;
       setHistory({ past: history.past.slice(0, -1), future: [boardRef.current, ...history.future].slice(0, 40) });
       const recorded = recordChange(boardRef.current, prev, { type: 'undo' });
       publish(prev); selectIds([]); setAppend(false); if (recorded) setStatus('');
     }
     function redo() {
+      if (!canEdit()) return;
       const next = history.future[0]; if (!next) return;
+      touchDraft();
       gesture.current = null; setPreview(null); revision.current++;
       setHistory({ past: [...history.past, boardRef.current].slice(-40), future: history.future.slice(1) });
       const recorded = recordChange(boardRef.current, next, { type: 'redo' });
@@ -394,7 +501,8 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
       return [...new Set([...ids, ...extra])];
     }
     function pointerDown(e) {
-      if (e.button !== 0) return;
+      if (e.button !== 0 || !canEdit()) return;
+      touchDraft();
       flushEditor();
       const p = point(e), objectId = e.target.closest?.('[data-object]')?.getAttribute('data-object');
       revision.current++;
@@ -452,19 +560,33 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
         e.preventDefault(); batch((selection.includes(o.id) ? selection : [o.id]).map((id) => ({ type: 'delete', id }))); selectIds([]);
       }
     }
-    function close() { flushEditor(); gesture.current = null; setPreview(null); setOverlay(null); setColorMenu(false); setMoreOpen(false); setAppend(false); setOpened(false); }
+    function close() {
+      flushEditor(); gesture.current = null; setPreview(null); setOverlay(null);
+      setColorMenu(false); setMoreOpen(false); setAppend(false); setOpened(false);
+      // Persistent task notices are acknowledged once the student has seen them.
+      if ([t('autoClearError'), t('autoClearSkipped'), t('autoClearDone')].includes(status)) setStatus('');
+    }
+    function recoverDraft(next, nextTrace, message) {
+      const version = revision.current;
+      withDraftLock(() => {
+        if (version !== revision.current) { setStatus(t('storageError')); return; }
+        try {
+          const mark = clearRequest?.revision > clearMark.current.revision && clearRequest.requestId
+            ? { revision: clearRequest.revision, requestId: clearRequest.requestId } : clearMark.current;
+          touchDraft();
+          // Explicit recovery replaces a poisoned envelope without parsing it.
+          saveClearEnvelope(next, nextTrace, attachTrace, mark);
+          clearMark.current = mark;
+          resetCanvas(next, nextTrace);
+          setStorageBlocked(false); setStatus(t(message));
+        } catch { setStatus(t('storageError')); }
+      }, () => setStatus(t('storageError')));
+    }
     function confirmClearBoard() {
-      revision.current++; gesture.current = null; setPreview(null);
-      const next = M.empty();
-      next.settings = boardRef.current.settings;
-      publish(next);
-      publishTrace(T.empty());
-      setHistory({ past: [], future: [] });
-      selectIds([]); setAppend(false); setOverlay(null);
-      setStorageBlocked(false);
-      setStatus(t('clearDone'));
+      recoverDraft({ ...M.empty(), settings: boardRef.current.settings }, T.empty(), 'clearDone');
     }
     function insert() {
+      if (!canEdit()) return;
       flushEditor();
       const conversation = ctx.get('conversation');
       let drafts = [];
@@ -521,15 +643,19 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
       downloadAnchor.current.href = url.current; downloadAnchor.current.click();
       setStatus(t('fileDownloaded'));
     }
-    async function loadOpenedFile(file) {
-      const rev = ++revision.current; gesture.current = null; setPreview(null);
+    async function loadOpenedFile(file, rev = ++revision.current) {
+      if (rev !== revision.current) return;
+      gesture.current = null; setPreview(null);
       if (file.size > 262144) throw Error(t('fileTooLarge'));
       const next = M.validate(JSON.parse(await file.text()));
       if (rev !== revision.current) return;
-      commit(next, { type: 'import' }); setStorageBlocked(false); selectIds([]); setAppend(false); setStatus(t('imported'));
+      if (storageBlocked) { recoverDraft(next, T.empty(true), 'imported'); return; }
+      if (!canEdit()) return;
+      commit(next, { type: 'import' }); selectIds([]); setAppend(false); setStatus(t('imported'));
     }
     async function openFile() {
       flushEditor();
+      const rev = ++revision.current;
       if (typeof window !== 'undefined' && window.showOpenFilePicker) {
         try {
           const options = { multiple: false, types: JSON_TYPES };
@@ -540,8 +666,10 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
             if (error?.name === 'TypeError' && options.startIn) { delete options.startIn; handles = await window.showOpenFilePicker(options); }
             else throw error;
           }
-          const handle = handles?.[0]; if (!handle) return;
-          await loadOpenedFile(await handle.getFile());
+          const handle = handles?.[0]; if (!handle || rev !== revision.current) return;
+          const file = await handle.getFile();
+          if (rev !== revision.current) return;
+          await loadOpenedFile(file, rev);
           fileHandle.current = handle; setFileName(handle.name || '');
           try { await rememberHandle(handle); } catch { /* remembering is best effort */ }
           setMoreOpen(false);
@@ -766,7 +894,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
       h('div', { className: `eb-overlay-card eb-overlay-${overlay.kind}`, role: 'dialog', 'aria-modal': 'true', 'aria-label': overlay.kind === 'note' ? t('note') : overlay.kind === 'name' ? t('alias') : overlay.kind === 'library' ? t('morePatterns') : t('clear') },
         overlay.kind === 'name' && h(React.Fragment, null,
           h('h2', null, overlay.group ? t('groupAlias') : t('alias')),
-          h('input', { ref: nameRef, type: 'text', maxLength: 30, defaultValue: overlay.value, placeholder: overlay.group ? t('groupHint') : t('aliasHint'),
+          h('input', { ref: nameRef, onChange: touchDraft, type: 'text', maxLength: 30, defaultValue: overlay.value, placeholder: overlay.group ? t('groupHint') : t('aliasHint'),
             onKeyDown: (event) => { if (event.key === 'Enter') { event.preventDefault(); applyName(); } } }),
           h('div', { className: 'eb-overlay-actions' },
             button(t('cancel'), () => setOverlay(null)),
@@ -774,7 +902,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
         overlay.kind === 'note' && h(React.Fragment, null,
           h('h2', null, t('note')),
           h('p', { className: 'eb-overlay-context' }, overlay.target ? `${t('noteAbout')} ${overlay.label}` : t('noteGeneral')),
-          h('textarea', { ref: noteRef, maxLength: 500, defaultValue: overlay.value, placeholder: t('noteHint') }),
+          h('textarea', { ref: noteRef, onChange: touchDraft, maxLength: 500, defaultValue: overlay.value, placeholder: t('noteHint') }),
           h('div', { className: 'eb-overlay-actions' },
             button(t('cancel'), () => setOverlay(null)),
             button(t('save'), applyNote, { className: 'eb-primary' }))),

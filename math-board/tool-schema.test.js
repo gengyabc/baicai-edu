@@ -25,11 +25,11 @@ function harnessValidatorPath() {
 
 async function registeredTool() {
   const module = await import(pathToFileURL(path.resolve(import.meta.dirname, 'index.js')).href);
-  const captured = { tool: null, command: null, prompts: [] };
+  const captured = { tool: null, tools: [], command: null, prompts: [] };
   const disposer = () => {};
   const ctx = {
     effect: fn => fn(),
-    tools: { register(definition) { captured.tool = definition; return disposer; } },
+    tools: { register(definition) { captured.tools.push(definition); if (definition.name === 'math_board_settings') captured.tool = definition; return disposer; } },
     commands: { register(definition) { captured.command = definition; return disposer; } },
     sessionProjections: { register: async () => ({ stateOf: () => null }) },
     systemPrompt: { section: entry => captured.prompts.push(entry.name) },
@@ -43,9 +43,16 @@ test('registered tool schemas stay inside the DSH keyword subset', async () => {
   const validatorPath = harnessValidatorPath();
   assert.ok(validatorPath, 'cannot locate @deepseek-ai/dsh-tools; set DSH_TOOLS_MODULE to its lib/index.js');
   const { assertSupportedJsonSchema } = await import(pathToFileURL(validatorPath).href);
-  const { tool } = await registeredTool();
-  assert.doesNotThrow(() => assertSupportedJsonSchema(tool.output.schema));
-  assert.doesNotThrow(() => assertSupportedJsonSchema(tool.parameters));
+  const { tools } = await registeredTool();
+  assert.equal(tools.length, 2);
+  for (const tool of tools) {
+    assert.doesNotThrow(() => assertSupportedJsonSchema(tool.output.schema));
+    assert.doesNotThrow(() => assertSupportedJsonSchema(tool.parameters));
+  }
+  const clear = tools.find(tool => tool.name === 'math_board_clear');
+  assert.deepEqual(clear.parameters.properties, {});
+  assert.deepEqual(clear.parameters.required, []);
+  assert.equal(clear.isConcurrencySafe, false);
 });
 
 test('settings tool keeps its contract after keyword removal', async () => {
@@ -57,5 +64,5 @@ test('settings tool keeps its contract after keyword removal', async () => {
   assert.deepEqual(tool.output.schema.required, ['kind', 'status', 'revision', 'settings']);
   assert.equal(tool.output.schema.properties.kind.const, 'edu-board-config');
   assert.equal(command.name, 'math-board-settings');
-  assert.deepEqual(prompts, ['edu-math-board-submission', 'edu-math-board-settings']);
+  assert.deepEqual(prompts, ['edu-math-board-clear', 'edu-math-board-submission', 'edu-math-board-settings']);
 });

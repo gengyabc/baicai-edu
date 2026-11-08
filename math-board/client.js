@@ -1071,6 +1071,12 @@ window.__ModuleLoader__.load({
     const legacyKey = `dsh-edu-math-board:v2:${props.sessionId}`;
     const oldKey = `dsh-edu-math-board:v3:${props.sessionId}`;
     const watermarkKey = `${key}:config`;
+    // One atomic local envelope pairs the reset watermark with the surviving
+    // draft. Never persist a reset marker separately from its canvas.
+    const clearKey = `${key}:clear-v1`;
+    const clearMark = React.useRef({ revision: 0, requestId: null });
+    const lastEditAt = React.useRef(0);
+    const clearRequest = props.useProjection('eduBoardClear');
     const [opened, setOpened] = React.useState(false);
     const [board, setBoard] = React.useState(M.empty);
     const boardRef = React.useRef(board);
@@ -1131,18 +1137,28 @@ window.__ModuleLoader__.load({
     React.useEffect(() => {
       revision.current++;
       try {
-        const current = localStorage.getItem(key) ?? localStorage.getItem(oldKey) ?? localStorage.getItem(legacyKey);
+        const envelope = JSON.parse(localStorage.getItem(clearKey) || 'null');
+        if (envelope && (!Number.isSafeInteger(envelope.revision) || envelope.revision < 0
+          || !(envelope.requestId === null || typeof envelope.requestId === 'string')
+          || !Number.isSafeInteger(envelope.lastEditAt) || envelope.lastEditAt < 0)) throw Error('Invalid clear envelope');
+        const current = envelope ? JSON.stringify(envelope.board)
+          : localStorage.getItem(key) ?? localStorage.getItem(oldKey) ?? localStorage.getItem(legacyKey);
         const next = current ? M.validate(JSON.parse(current)) : M.empty();
+        if (envelope) {
+          clearMark.current = { revision: envelope.revision, requestId: envelope.requestId };
+          lastEditAt.current = envelope.lastEditAt;
+        }
         boardRef.current = next; setBoard(next);
         let restored = T.empty(current !== null);
         try {
-          const saved = JSON.parse(localStorage.getItem(traceKey) || 'null');
+          const saved = envelope ? { board: JSON.stringify(next), trace: envelope.trace, attach: envelope.attach }
+            : JSON.parse(localStorage.getItem(traceKey) || 'null');
           if (saved && typeof saved.attach === 'boolean') setAttachTrace(saved.attach);
           if (saved && saved.board === JSON.stringify(next)) restored = T.validate(saved.trace);
         } catch { setStatus(t('traceLoadError')); }
         traceRef.current = restored; setTrace(restored);
         setHistory({ past: [], future: [] });
-        const mark = localStorage.getItem(watermarkKey) ?? localStorage.getItem(`${oldKey}:config`) ?? localStorage.getItem(`${legacyKey}:config`);
+        const mark = envelope?.configWatermark ?? localStorage.getItem(watermarkKey) ?? localStorage.getItem(`${oldKey}:config`) ?? localStorage.getItem(`${legacyKey}:config`);
         const parsed = mark === null ? -1 : Number(mark);
         watermark.current = Number.isFinite(parsed) ? parsed : -1;
         pendingWatermark.current = null;
@@ -1153,8 +1169,15 @@ window.__ModuleLoader__.load({
 
     React.useEffect(() => {
       if (!ready || storageBlocked) return;
+      let live = true;
+      const version = revision.current;
+      withDraftLock(() => {
+      if (!live || version !== revision.current || boardRef.current !== board) return;
       try {
+        const saved = JSON.parse(localStorage.getItem(clearKey) || 'null');
+        if (saved && (saved.revision > clearMark.current.revision || saved.lastEditAt > lastEditAt.current)) return;
         const serialized = JSON.stringify(board);
+        saveClearEnvelope(board, trace, attachTrace);
         localStorage.setItem(key, serialized);
         localStorage.setItem(traceKey, JSON.stringify({ board: serialized, trace, attach: attachTrace }));
         if (pendingWatermark.current !== null) {
@@ -1162,6 +1185,8 @@ window.__ModuleLoader__.load({
           pendingWatermark.current = null;
         }
       } catch { setStatus(t('storageError')); }
+      }, () => setStatus(t('storageError')));
+      return () => { live = false; };
     }, [board, trace, attachTrace, ready, storageBlocked, key]);
 
     // New shapes that land below the visible part of a tall board scroll it down so
@@ -1210,6 +1235,47 @@ window.__ModuleLoader__.load({
     }, [config, ready]);
 
     React.useEffect(() => {
+      if (!ready || !clearRequest || !Number.isSafeInteger(clearRequest.revision)
+        || clearRequest.revision <= clearMark.current.revision || !clearRequest.requestId
+        || !Number.isSafeInteger(clearRequest.requestedAt) || clearRequest.requestedAt <= 0) return;
+      // Local host and browser share the system clock. A remote host's wall
+      // clock cannot establish edit causality; fail safe rather than guess.
+      const localHost = ['localhost', '127.0.0.1', '[::1]', '::1'].includes(window.location?.hostname);
+      if (storageBlocked || !localHost) { setStatus(t('autoClearError')); return; }
+      let live = true;
+      withDraftLock(() => {
+      if (!live || clearRequest.revision <= clearMark.current.revision) return;
+      try {
+        // Another tab may have edited this same session while this tab was idle.
+        const saved = JSON.parse(localStorage.getItem(clearKey) || 'null');
+        if (saved && saved.revision >= clearRequest.revision) {
+          clearMark.current = { revision: saved.revision, requestId: saved.requestId };
+          lastEditAt.current = saved.lastEditAt;
+          resetCanvas(M.validate(saved.board), T.validate(saved.trace));
+          return;
+        }
+        const editedAt = Math.max(lastEditAt.current, saved?.lastEditAt || 0);
+        const late = editedAt >= clearRequest.requestedAt || clearRequest.requestedAt > Date.now();
+        if (saved && saved.lastEditAt > lastEditAt.current) {
+          publish(M.validate(saved.board)); publishTrace(T.validate(saved.trace));
+          lastEditAt.current = saved.lastEditAt;
+        }
+        const next = late ? boardRef.current : { ...M.empty(), settings: boardRef.current.settings };
+        const nextTrace = late ? traceRef.current : T.empty();
+        const mark = { revision: clearRequest.revision, requestId: clearRequest.requestId };
+        // Persist first: a quota failure must not publish a destructive change.
+        saveClearEnvelope(next, nextTrace, attachTrace, mark);
+        clearMark.current = mark;
+        if (!late) {
+          resetCanvas(next, nextTrace);
+          setStatus(t('autoClearDone'));
+        } else setStatus(t('autoClearSkipped'));
+      } catch { setStatus(t('autoClearError')); }
+      }, () => setStatus(t('autoClearError')), true);
+      return () => { live = false; };
+    }, [clearRequest, ready, storageBlocked]);
+
+    React.useEffect(() => {
       const node = dialog.current;
       if (opened && !node.open) node.showModal();
       if (!opened && node.open) node.close();
@@ -1224,7 +1290,7 @@ window.__ModuleLoader__.load({
       return () => { live = false; };
     }, []);
     React.useEffect(() => {
-      if (!status) return;
+      if (!status || [t('autoClearError'), t('autoClearSkipped'), t('autoClearDone')].includes(status)) return;
       const timer = setTimeout(() => setStatus(''), 5200);
       return () => clearTimeout(timer);
     }, [status]);
@@ -1257,6 +1323,26 @@ window.__ModuleLoader__.load({
       const active = dialog.current?.ownerDocument.activeElement;
       if (active && dialog.current.contains(active) && active.matches('input,textarea,select')) active.blur();
     }
+    function withDraftLock(task, failed, required = false) {
+      const locks = globalThis.navigator?.locks;
+      if (!locks?.request) {
+        if (required) { failed(); return; }
+        task(); return;
+      }
+      try { locks.request(clearKey, { mode: 'exclusive' }, task).catch(failed); }
+      catch { failed(); }
+    }
+    function saveClearEnvelope(next, nextTrace, attach, mark = clearMark.current) {
+      localStorage.setItem(clearKey, JSON.stringify({ ...mark, lastEditAt: lastEditAt.current,
+        board: next, trace: nextTrace, attach, configWatermark: watermark.current }));
+    }
+    function touchDraft() { lastEditAt.current = Math.max(Date.now(), lastEditAt.current + 1); }
+    function resetCanvas(next, nextTrace) {
+      revision.current++; gesture.current = null; setPreview(null);
+      publish(next); publishTrace(nextTrace);
+      setHistory({ past: [], future: [] });
+      selectIds([]); setAppend(false); setOverlay(null); revealRef.current = [];
+    }
     function publish(next) { boardRef.current = next; setBoard(next); }
     function publishTrace(next) { traceRef.current = next; setTrace(next); }
     function recordChange(before, after, change, origin = 'student') {
@@ -1272,30 +1358,51 @@ window.__ModuleLoader__.load({
     function commit(next, change) {
       const before = boardRef.current;
       if (JSON.stringify(next) === JSON.stringify(before)) {
-        if (change?.type === 'import') recordChange(before, next, change);
+        if (change?.type === 'import') { touchDraft(); recordChange(before, next, change); }
         return;
       }
+      touchDraft();
       gesture.current = null; setPreview(null); revision.current++;
       setHistory((old) => ({ past: [...old.past.slice(-39), before], future: [] }));
       const recorded = recordChange(before, next, change);
       publish(next);
       if (recorded) setStatus('');
     }
+    function canEdit() {
+      if (!ready || (clearRequest?.revision > clearMark.current.revision)) {
+        setStatus(t('autoClearError')); return false;
+      }
+      try {
+        const saved = JSON.parse(localStorage.getItem(clearKey) || 'null');
+        if (saved && (saved.revision > clearMark.current.revision || saved.lastEditAt > lastEditAt.current)) {
+          clearMark.current = { revision: saved.revision, requestId: saved.requestId };
+          lastEditAt.current = saved.lastEditAt;
+          resetCanvas(M.validate(saved.board), T.validate(saved.trace));
+          return false;
+        }
+      } catch { /* Ordinary editing remains possible when browser storage is blocked. */ }
+      return true;
+    }
     function action(a) {
+      if (!canEdit()) return null;
       try { const next = M.reduce(boardRef.current, a); commit(next, a); return next; }
       catch (error) { setStatus(`${t('failed')}: ${error.message}`); return null; }
     }
     function batch(actions) { return action({ type: 'batch', actions }); }
     function selectIds(ids) { setSelection(ids); }
     function undo() {
+      if (!canEdit()) return;
       const prev = history.past.at(-1); if (!prev) return;
+      touchDraft();
       gesture.current = null; setPreview(null); revision.current++;
       setHistory({ past: history.past.slice(0, -1), future: [boardRef.current, ...history.future].slice(0, 40) });
       const recorded = recordChange(boardRef.current, prev, { type: 'undo' });
       publish(prev); selectIds([]); setAppend(false); if (recorded) setStatus('');
     }
     function redo() {
+      if (!canEdit()) return;
       const next = history.future[0]; if (!next) return;
+      touchDraft();
       gesture.current = null; setPreview(null); revision.current++;
       setHistory({ past: [...history.past, boardRef.current].slice(-40), future: history.future.slice(1) });
       const recorded = recordChange(boardRef.current, next, { type: 'redo' });
@@ -1368,7 +1475,8 @@ window.__ModuleLoader__.load({
       return [...new Set([...ids, ...extra])];
     }
     function pointerDown(e) {
-      if (e.button !== 0) return;
+      if (e.button !== 0 || !canEdit()) return;
+      touchDraft();
       flushEditor();
       const p = point(e), objectId = e.target.closest?.('[data-object]')?.getAttribute('data-object');
       revision.current++;
@@ -1426,19 +1534,33 @@ window.__ModuleLoader__.load({
         e.preventDefault(); batch((selection.includes(o.id) ? selection : [o.id]).map((id) => ({ type: 'delete', id }))); selectIds([]);
       }
     }
-    function close() { flushEditor(); gesture.current = null; setPreview(null); setOverlay(null); setColorMenu(false); setMoreOpen(false); setAppend(false); setOpened(false); }
+    function close() {
+      flushEditor(); gesture.current = null; setPreview(null); setOverlay(null);
+      setColorMenu(false); setMoreOpen(false); setAppend(false); setOpened(false);
+      // Persistent task notices are acknowledged once the student has seen them.
+      if ([t('autoClearError'), t('autoClearSkipped'), t('autoClearDone')].includes(status)) setStatus('');
+    }
+    function recoverDraft(next, nextTrace, message) {
+      const version = revision.current;
+      withDraftLock(() => {
+        if (version !== revision.current) { setStatus(t('storageError')); return; }
+        try {
+          const mark = clearRequest?.revision > clearMark.current.revision && clearRequest.requestId
+            ? { revision: clearRequest.revision, requestId: clearRequest.requestId } : clearMark.current;
+          touchDraft();
+          // Explicit recovery replaces a poisoned envelope without parsing it.
+          saveClearEnvelope(next, nextTrace, attachTrace, mark);
+          clearMark.current = mark;
+          resetCanvas(next, nextTrace);
+          setStorageBlocked(false); setStatus(t(message));
+        } catch { setStatus(t('storageError')); }
+      }, () => setStatus(t('storageError')));
+    }
     function confirmClearBoard() {
-      revision.current++; gesture.current = null; setPreview(null);
-      const next = M.empty();
-      next.settings = boardRef.current.settings;
-      publish(next);
-      publishTrace(T.empty());
-      setHistory({ past: [], future: [] });
-      selectIds([]); setAppend(false); setOverlay(null);
-      setStorageBlocked(false);
-      setStatus(t('clearDone'));
+      recoverDraft({ ...M.empty(), settings: boardRef.current.settings }, T.empty(), 'clearDone');
     }
     function insert() {
+      if (!canEdit()) return;
       flushEditor();
       const conversation = ctx.get('conversation');
       let drafts = [];
@@ -1495,15 +1617,19 @@ window.__ModuleLoader__.load({
       downloadAnchor.current.href = url.current; downloadAnchor.current.click();
       setStatus(t('fileDownloaded'));
     }
-    async function loadOpenedFile(file) {
-      const rev = ++revision.current; gesture.current = null; setPreview(null);
+    async function loadOpenedFile(file, rev = ++revision.current) {
+      if (rev !== revision.current) return;
+      gesture.current = null; setPreview(null);
       if (file.size > 262144) throw Error(t('fileTooLarge'));
       const next = M.validate(JSON.parse(await file.text()));
       if (rev !== revision.current) return;
-      commit(next, { type: 'import' }); setStorageBlocked(false); selectIds([]); setAppend(false); setStatus(t('imported'));
+      if (storageBlocked) { recoverDraft(next, T.empty(true), 'imported'); return; }
+      if (!canEdit()) return;
+      commit(next, { type: 'import' }); selectIds([]); setAppend(false); setStatus(t('imported'));
     }
     async function openFile() {
       flushEditor();
+      const rev = ++revision.current;
       if (typeof window !== 'undefined' && window.showOpenFilePicker) {
         try {
           const options = { multiple: false, types: JSON_TYPES };
@@ -1514,8 +1640,10 @@ window.__ModuleLoader__.load({
             if (error?.name === 'TypeError' && options.startIn) { delete options.startIn; handles = await window.showOpenFilePicker(options); }
             else throw error;
           }
-          const handle = handles?.[0]; if (!handle) return;
-          await loadOpenedFile(await handle.getFile());
+          const handle = handles?.[0]; if (!handle || rev !== revision.current) return;
+          const file = await handle.getFile();
+          if (rev !== revision.current) return;
+          await loadOpenedFile(file, rev);
           fileHandle.current = handle; setFileName(handle.name || '');
           try { await rememberHandle(handle); } catch { /* remembering is best effort */ }
           setMoreOpen(false);
@@ -1740,7 +1868,7 @@ window.__ModuleLoader__.load({
       h('div', { className: `eb-overlay-card eb-overlay-${overlay.kind}`, role: 'dialog', 'aria-modal': 'true', 'aria-label': overlay.kind === 'note' ? t('note') : overlay.kind === 'name' ? t('alias') : overlay.kind === 'library' ? t('morePatterns') : t('clear') },
         overlay.kind === 'name' && h(React.Fragment, null,
           h('h2', null, overlay.group ? t('groupAlias') : t('alias')),
-          h('input', { ref: nameRef, type: 'text', maxLength: 30, defaultValue: overlay.value, placeholder: overlay.group ? t('groupHint') : t('aliasHint'),
+          h('input', { ref: nameRef, onChange: touchDraft, type: 'text', maxLength: 30, defaultValue: overlay.value, placeholder: overlay.group ? t('groupHint') : t('aliasHint'),
             onKeyDown: (event) => { if (event.key === 'Enter') { event.preventDefault(); applyName(); } } }),
           h('div', { className: 'eb-overlay-actions' },
             button(t('cancel'), () => setOverlay(null)),
@@ -1748,7 +1876,7 @@ window.__ModuleLoader__.load({
         overlay.kind === 'note' && h(React.Fragment, null,
           h('h2', null, t('note')),
           h('p', { className: 'eb-overlay-context' }, overlay.target ? `${t('noteAbout')} ${overlay.label}` : t('noteGeneral')),
-          h('textarea', { ref: noteRef, maxLength: 500, defaultValue: overlay.value, placeholder: t('noteHint') }),
+          h('textarea', { ref: noteRef, onChange: touchDraft, maxLength: 500, defaultValue: overlay.value, placeholder: t('noteHint') }),
           h('div', { className: 'eb-overlay-actions' },
             button(t('cancel'), () => setOverlay(null)),
             button(t('save'), applyNote, { className: 'eb-primary' }))),
@@ -1806,7 +1934,7 @@ window.__ModuleLoader__.load({
   };
 };
     const art = createArt(React);
-    const dictionaries = {"en":{"title":"Math board","workspaceSubtitle":"Place shapes · group them · name the amounts","toolbox":"Toolbox","tapToAdd":"Tap to place, or drag one in","shapes":"Patterns","circle":"Circle","square":"Square","rectangle":"Rectangle","triangle":"Triangle","star":"Star","hexagon":"Hexagon","diamond":"Diamond","heart":"Heart","oval":"Oval","cat":"Cat","dog":"Dog","car":"Car","person":"Person","apple":"Apple","fish":"Fish","rocket":"Rocket","flower":"Flower","butterfly":"Butterfly","house":"House","icecream":"Ice cream","settings":"Settings","settingsIntro":"You choose which patterns sit in the toolbox, what each stands for, and which colour marks which amount.","patterns":"Pattern library","patternsHint":"Tap a pattern to put it on the left rail; tap again to tuck it away. Shapes already on the canvas stay.","addPattern":"Add to toolbox","removePattern":"Tuck away","morePatterns":"More patterns","levelLadder":"Value ladder","level":"Level","colorName":"Colour","removeLevel":"Remove level","addLevel":"Add level","resetSettings":"Reset","shapeDefaults":"What these patterns stand for","applyFuture":"New shapes only","applyExisting":"Also change existing","settingsFutureDone":"Saved. New shapes use the new value.","settingsExistingDone":"Saved. Existing unmerged shapes also use the new value.","cancel":"Cancel","value":"Standing for","alias":"Name","aliasHint":"For example: apple","canvas":"Shape canvas","canvasEmpty":"Pick a shape on the left to begin","canvasEmptyHint":"Drag to arrange · box-select · Shift-click to add","gestureHint":"Drag to arrange · box-select · Shift-click to add","multiSelect":"Multi-select","focusMode":"Canvas only","zoomIn":"Zoom in","zoomOut":"Zoom out","fitView":"Fit width","selectionActions":"Selected shape actions","selectedCount":"Selected","makeGroup":"Group","ungroup":"Ungroup","merge":"Merge","split":"Split","copy":"Copy","crossOut":"Cross out","restore":"Restore","trash":"Delete selected","group":"Group","defaultGroup":"My group","groupAlias":"Group name","groupHint":"For example: Rabbit's share","groupedNoAlias":"Shapes in a group share its name instead of having their own.","duplicateGroup":"Duplicate group","mergedFrom":"Merged from","noSelection":"Select one shape or box-select several to name, group, or merge them.","mergeReason":"Merging needs the same shape, the same value, the same name, the same group, and a total that matches one of your levels.","hintGrouped":"A whole group is selected: renaming changes the group.","hintSelected":"Name, group or merge the selection.","hintEmpty":"Drag shapes to arrange; drag on empty space to select several.","myObjects":"My thinking","myGroup":"My group","inspectorHint":"Select shapes to name them here","note":"My explanation","noteHint":"What do these shapes mean? How did you think about it?","noteGeneral":"Whole board · not tied to particular shapes","noteAbout":"About","hasNote":"Has an explanation","creationColor":"Creation colour","files":"Files","moreActions":"More actions","canvasTools":"Board tools","appendSelect":"Add to selection","appendDone":"Finish selecting","appendHint":"Tap shapes to add or remove them; useful on touch screens","apply":"Apply","save":"Save","done":"Done","fileSaved":"Saved to the last location.","fileDownloaded":"Board file downloaded.","fileOpenFallback":"Using the standard file picker; the browser may not remember the last location.","undo":"Undo","redo":"Redo","group2":"Group","close":"Close","gear":"Settings","minus":"Remove","plus":"Add","cross":"Cross out","multi":"Multi-select","focus":"Focus","export":"Save JSON","import":"Open JSON","clear":"Clear canvas","clearQuestion":"Clear the canvas and this modification record? Files already added to an answer stay. This cannot be undone.","confirmClear":"Confirm clear","clearDone":"Canvas and modification record cleared.","insert":"Add to answer","inserted":"The board file is attached. Review it and send it yourself.","insertedNote":"The board file is attached, and your own words are in the composer. Review them and send yourself.","insertFailed":"Cannot insert now. Wait until the composer is editable and try again.","attachmentName":"my-math-board.json","backToChat":"Back to chat","localDraft":"Your draft stays here until you send it.","failed":"Action not completed","fileTooLarge":"Choose a board JSON smaller than 256 KB.","imported":"Board opened.","storageError":"Cannot save this browser draft. Save JSON to keep your work.","loadError":"Cannot read the draft. Original data was not overwritten.","configApplied":"Your spoken values and colours are now applied.","configGap":"Settings history had a gap; retained changes were replayed with their original scopes.","configError":"A settings update could not be applied; earlier successful changes were kept.","removed":"Crossed out","active":"Kept","traceTitle":"Modification record","traceAttach":"Attach modification record (optional)","tracePreview":"View modifications","traceHide":"Hide modifications","traceNewAttempt":"Start a new attempt","traceClear":"Clear record","traceNotice":"Changes stay in this browser, without times or drag paths. Your teacher sees them only if attached and sent; sent files remain with the conversation.","traceScope":"Retained modifications to this draft so far, not necessarily one continuous sitting. These are observations, not correctness judgments; omitted details are marked.","tracePriorUnknown":"Earlier process unknown: the starting board may have content, or history has a gap.","traceTotals":"{count} changes recorded; {omitted} changes omitted in the middle.","traceEmpty":"No modifications recorded yet.","traceGap":"… Intermediate modifications omitted …","traceResetQuestion":"Keep the board and delete its local modification record to start anew? Existing draft/sent attachments remain. Undo history will also be cleared.","traceResetConfirm":"Confirm new attempt","traceResetDone":"New attempt started; board kept, earlier process marked unknown.","traceLoadError":"Earlier modifications could not be restored and are marked unknown. The board remains usable.","traceRecordError":"This change could not be added to the modification record; later process is marked unknown. The board itself is saved.","traceSkipped":"Modification record unavailable. The board file is attached; review and send yourself.","traceAttachmentName":"my-modifications.json","traceOrigin_student":"My action","traceOrigin_system":"Chat settings sync","traceType_add":"Add","traceType_batch":"Batch change","traceType_group":"Change groups","traceType_merge":"Merge","traceType_split":"Split","traceType_delete":"Delete","traceType_note":"Edit explanation","traceType_configure":"Change settings","traceType_move":"Move or arrange","traceType_undo":"Undo","traceType_redo":"Redo","traceType_clear":"Clear board","traceType_import":"Open board file","traceType_update":"Edit shape","traceType_duplicate":"Duplicate","traceField_count":"Shape count","traceField_activeCount":"Kept shapes","traceField_removedCount":"Crossed-out shapes","traceField_value":"Kept total value","traceField_removedValue":"Crossed-out value","traceField_groupCount":"Group count","traceField_groupedCount":"Grouped shapes","traceField_mergedCount":"Merged shapes","traceField_objects":"Composition (pattern:value ×count)","traceField_aliases":"Shape names","traceField_colors":"Level colour indices","traceField_groups":"Groups (name:count/value)","traceField_note":"My explanation (excerpt)","traceField_settings_levels":"Levels (value:colour index)","traceField_settings_defaults":"Default meanings (pattern:value:name)","traceField_settings_shapes":"Toolbox patterns","traceField_movedCount":"Shapes moved in this step","traceField_changedCount":"Other changes","traceField_detailsOmitted":"Details omitted in this step"},"zh":{"title":"数学画板","workspaceSubtitle":"摆图形 · 圈一组 · 自己说数量","toolbox":"工具箱","tapToAdd":"点一下放到画布；也可以拖进来","shapes":"图案","circle":"圆形","square":"方块","rectangle":"矩形","triangle":"三角形","star":"星形","hexagon":"六边形","diamond":"菱形","heart":"爱心","oval":"椭圆","cat":"小猫","dog":"小狗","car":"汽车","person":"人","apple":"苹果","fish":"小鱼","rocket":"火箭","flower":"小花","butterfly":"蝴蝶","house":"房子","icecream":"冰淇淋","settings":"设置","settingsIntro":"你来决定工具箱里有哪些图案、每个图案代表多少，以及哪个数值用哪种颜色。","patterns":"图案库","patternsHint":"点一下图案就放到左侧图案轨，再点一下收起来；已经摆好的图形不会消失。","addPattern":"添加到工具箱","removePattern":"从工具箱收起","morePatterns":"更多图案","levelLadder":"数值阶梯","level":"第几级","colorName":"颜色","removeLevel":"删除这一级","addLevel":"增加一级","resetSettings":"恢复默认","shapeDefaults":"这些图案默认代表多少","applyFuture":"只用于新图形","applyExisting":"也改已有图形","settingsFutureDone":"已保存设置，新添加的图形按新数值。","settingsExistingDone":"已保存设置，未合并的已有图形也改成新数值。","cancel":"取消","value":"代表","alias":"名字","aliasHint":"例如：苹果","canvas":"图形画布","canvasEmpty":"从左边选一个图形，开始摆一摆","canvasEmptyHint":"拖动摆放 · 空白处框选 · Shift 点击加选","gestureHint":"拖动摆放 · 空白处框选 · Shift 点击加选","multiSelect":"多选","focusMode":"只看画布","zoomIn":"放大画布","zoomOut":"缩小画布","fitView":"适应宽度","selectionActions":"所选图形操作","selectedCount":"已选","makeGroup":"圈为一组","ungroup":"解散组","merge":"合并","split":"拆开","copy":"复制","crossOut":"划去","restore":"恢复","trash":"删除所选","group":"组","defaultGroup":"我的一组","groupAlias":"这一组的名字","groupHint":"例如：小兔的一份","groupedNoAlias":"组里的图形不单独起名字；改名后整组一起变。","duplicateGroup":"复制这一组","mergedFrom":"由这些图形合并而来","noSelection":"点一个图形，或框选几个，就能起名字、圈组、合并。","mergeReason":"合并需要同一形状、同一数值、同一个名字、同属一组，而且总量正好是你设定的一级。","hintGrouped":"已选中一整组：改名只影响这一组。","hintSelected":"选中后可起名字、圈组或合并。","hintEmpty":"拖动摆放图形；空白处拖框可一次选中多个。","myObjects":"我的想法","myGroup":"我的一组","inspectorHint":"选中图形后在这里起名字","note":"我想说","noteHint":"这些图形代表什么？你是怎么想的？","noteGeneral":"整张画板 · 未关联特定图形","noteAbout":"针对","hasNote":"有说明","creationColor":"创建颜色","files":"文件","moreActions":"更多操作","canvasTools":"画板工具","appendSelect":"追加选择","appendDone":"完成选择","appendHint":"点按图形追加或移出选择，适合触屏","apply":"应用","save":"保存","done":"完成","fileSaved":"已保存到上次的位置。","fileDownloaded":"已下载画板文件。","fileOpenFallback":"将使用普通文件选择，浏览器可能无法记住上次的位置。","undo":"撤销","redo":"重做","group2":"圈组","close":"关闭","gear":"设置","minus":"减少","plus":"增加","cross":"划去","multi":"多选","focus":"专注","export":"保存 JSON","import":"打开 JSON","clear":"清空画布","clearQuestion":"要清空画布和这次的修改记录吗？已经放进回答的文件还在。清空后不能撤销。","confirmClear":"确认清空","clearDone":"已清空画布和修改记录。","insert":"放入回答","inserted":"已附上画板文件；请检查后自己发送。","insertedNote":"已附上画板文件，你写的话也放进输入框了；请检查后自己发送。","insertFailed":"暂时无法放入回答，请等输入框可编辑后重试。","attachmentName":"我的画板.json","backToChat":"返回对话","localDraft":"草稿还没发送，老师看不到；发送前随时可以改。","failed":"操作未完成","fileTooLarge":"文件太大，请选择小于 256 KB 的画板 JSON。","imported":"已打开画板。","storageError":"浏览器无法保存草稿，请保存 JSON 以免丢失。","loadError":"草稿无法读取，原数据未覆盖。","configApplied":"已按你刚才说的，更新了图形数值和颜色。","configGap":"设置历史有缺口；已按保留记录的作用范围回放。","configError":"有一条设置更新未能应用；更早成功的修改已保留。","removed":"已划去","active":"保留","traceTitle":"修改记录","traceAttach":"回答时附上修改记录（可取消）","tracePreview":"查看修改记录","traceHide":"收起修改记录","traceNewAttempt":"开始新的尝试","traceClear":"清除记录","traceNotice":"修改记录保存在这个浏览器，不记时间和拖动轨迹。附上并发送后，老师才能看到；会随对话保留。","traceScope":"这是这份草稿到目前为止保留的修改，不一定来自一次连续操作。数字与文字是修改事实，不是对错结论；省略的细节以省略标记说明。","tracePriorUnknown":"此前过程未知：起点可能已有内容，或记录有缺口。","traceTotals":"共记录 {count} 次变更，中间省略 {omitted} 次。","traceEmpty":"还没有记录到修改。","traceGap":"……中间修改已省略……","traceResetQuestion":"保留当前画板，删去本地修改记录并开始新的尝试？已放入回答或发送的附件不会删除，撤销历史也将清空。","traceResetConfirm":"确认重新开始","traceResetDone":"已开始新的尝试，画板保留，此前过程标为未知。","traceLoadError":"此前修改记录无法恢复，已标为未知；画板仍可使用。","traceRecordError":"这次修改没能记进修改记录，此后的过程标为未知；画板本身已保存。","traceSkipped":"修改记录不可用，已附上画板文件；请检查后自己发送。","traceAttachmentName":"我的修改记录.json","traceOrigin_student":"我的操作","traceOrigin_system":"对话设置同步","traceType_add":"添加","traceType_batch":"批量修改","traceType_group":"修改分组","traceType_merge":"合并","traceType_split":"拆开","traceType_delete":"删除","traceType_note":"修改说明","traceType_configure":"修改设置","traceType_move":"移动或整理","traceType_undo":"撤销","traceType_redo":"重做","traceType_clear":"清空画板","traceType_import":"打开画板文件","traceType_update":"修改图形","traceType_duplicate":"复制","traceField_count":"图形数","traceField_activeCount":"保留图形数","traceField_removedCount":"划去图形数","traceField_value":"保留图形代表的总量","traceField_removedValue":"划去图形代表的总量","traceField_groupCount":"组数","traceField_groupedCount":"已分组图形数","traceField_mergedCount":"合并图形数","traceField_objects":"图形组成（图案:代表值 ×个数）","traceField_aliases":"图形名字","traceField_colors":"量级颜色编号","traceField_groups":"各组（名字:个数/代表总量）","traceField_note":"我想说（节选）","traceField_settings_levels":"量级（数值:颜色编号）","traceField_settings_defaults":"默认含义（图案:数值:名字）","traceField_settings_shapes":"工具箱图案","traceField_movedCount":"本步移动的图形数","traceField_changedCount":"其他变更数","traceField_detailsOmitted":"本步省略细节数"}};
+    const dictionaries = {"en":{"title":"Math board","workspaceSubtitle":"Place shapes · group them · name the amounts","toolbox":"Toolbox","tapToAdd":"Tap to place, or drag one in","shapes":"Patterns","circle":"Circle","square":"Square","rectangle":"Rectangle","triangle":"Triangle","star":"Star","hexagon":"Hexagon","diamond":"Diamond","heart":"Heart","oval":"Oval","cat":"Cat","dog":"Dog","car":"Car","person":"Person","apple":"Apple","fish":"Fish","rocket":"Rocket","flower":"Flower","butterfly":"Butterfly","house":"House","icecream":"Ice cream","settings":"Settings","settingsIntro":"You choose which patterns sit in the toolbox, what each stands for, and which colour marks which amount.","patterns":"Pattern library","patternsHint":"Tap a pattern to put it on the left rail; tap again to tuck it away. Shapes already on the canvas stay.","addPattern":"Add to toolbox","removePattern":"Tuck away","morePatterns":"More patterns","levelLadder":"Value ladder","level":"Level","colorName":"Colour","removeLevel":"Remove level","addLevel":"Add level","resetSettings":"Reset","shapeDefaults":"What these patterns stand for","applyFuture":"New shapes only","applyExisting":"Also change existing","settingsFutureDone":"Saved. New shapes use the new value.","settingsExistingDone":"Saved. Existing unmerged shapes also use the new value.","cancel":"Cancel","value":"Standing for","alias":"Name","aliasHint":"For example: apple","canvas":"Shape canvas","canvasEmpty":"Pick a shape on the left to begin","canvasEmptyHint":"Drag to arrange · box-select · Shift-click to add","gestureHint":"Drag to arrange · box-select · Shift-click to add","multiSelect":"Multi-select","focusMode":"Canvas only","zoomIn":"Zoom in","zoomOut":"Zoom out","fitView":"Fit width","selectionActions":"Selected shape actions","selectedCount":"Selected","makeGroup":"Group","ungroup":"Ungroup","merge":"Merge","split":"Split","copy":"Copy","crossOut":"Cross out","restore":"Restore","trash":"Delete selected","group":"Group","defaultGroup":"My group","groupAlias":"Group name","groupHint":"For example: Rabbit's share","groupedNoAlias":"Shapes in a group share its name instead of having their own.","duplicateGroup":"Duplicate group","mergedFrom":"Merged from","noSelection":"Select one shape or box-select several to name, group, or merge them.","mergeReason":"Merging needs the same shape, the same value, the same name, the same group, and a total that matches one of your levels.","hintGrouped":"A whole group is selected: renaming changes the group.","hintSelected":"Name, group or merge the selection.","hintEmpty":"Drag shapes to arrange; drag on empty space to select several.","myObjects":"My thinking","myGroup":"My group","inspectorHint":"Select shapes to name them here","note":"My explanation","noteHint":"What do these shapes mean? How did you think about it?","noteGeneral":"Whole board · not tied to particular shapes","noteAbout":"About","hasNote":"Has an explanation","creationColor":"Creation colour","files":"Files","moreActions":"More actions","canvasTools":"Board tools","appendSelect":"Add to selection","appendDone":"Finish selecting","appendHint":"Tap shapes to add or remove them; useful on touch screens","apply":"Apply","save":"Save","done":"Done","fileSaved":"Saved to the last location.","fileDownloaded":"Board file downloaded.","fileOpenFallback":"Using the standard file picker; the browser may not remember the last location.","undo":"Undo","redo":"Redo","group2":"Group","close":"Close","gear":"Settings","minus":"Remove","plus":"Add","cross":"Cross out","multi":"Multi-select","focus":"Focus","export":"Save JSON","import":"Open JSON","clear":"Clear canvas","clearQuestion":"Clear the canvas and this modification record? Files already added to an answer stay. This cannot be undone.","confirmClear":"Confirm clear","clearDone":"Canvas and modification record cleared.","autoClearDone":"Canvas and modifications cleared for the new task. Existing answer attachments remain.","autoClearSkipped":"A late clear was skipped to keep later edits. Clear manually before using the board.","autoClearError":"Automatic clear did not complete. Clear manually before using the board.","insert":"Add to answer","inserted":"The board file is attached. Review it and send it yourself.","insertedNote":"The board file is attached, and your own words are in the composer. Review them and send yourself.","insertFailed":"Cannot insert now. Wait until the composer is editable and try again.","attachmentName":"my-math-board.json","backToChat":"Back to chat","localDraft":"Your draft stays here until you send it.","failed":"Action not completed","fileTooLarge":"Choose a board JSON smaller than 256 KB.","imported":"Board opened.","storageError":"Cannot save this browser draft. Save JSON to keep your work.","loadError":"Cannot read the draft. Original data was not overwritten.","configApplied":"Your spoken values and colours are now applied.","configGap":"Settings history had a gap; retained changes were replayed with their original scopes.","configError":"A settings update could not be applied; earlier successful changes were kept.","removed":"Crossed out","active":"Kept","traceTitle":"Modification record","traceAttach":"Attach modification record (optional)","tracePreview":"View modifications","traceHide":"Hide modifications","traceNewAttempt":"Start a new attempt","traceClear":"Clear record","traceNotice":"Changes stay in this browser, without times or drag paths. Your teacher sees them only if attached and sent; sent files remain with the conversation.","traceScope":"Retained modifications to this draft so far, not necessarily one continuous sitting. These are observations, not correctness judgments; omitted details are marked.","tracePriorUnknown":"Earlier process unknown: the starting board may have content, or history has a gap.","traceTotals":"{count} changes recorded; {omitted} changes omitted in the middle.","traceEmpty":"No modifications recorded yet.","traceGap":"… Intermediate modifications omitted …","traceResetQuestion":"Keep the board and delete its local modification record to start anew? Existing draft/sent attachments remain. Undo history will also be cleared.","traceResetConfirm":"Confirm new attempt","traceResetDone":"New attempt started; board kept, earlier process marked unknown.","traceLoadError":"Earlier modifications could not be restored and are marked unknown. The board remains usable.","traceRecordError":"This change could not be added to the modification record; later process is marked unknown. The board itself is saved.","traceSkipped":"Modification record unavailable. The board file is attached; review and send yourself.","traceAttachmentName":"my-modifications.json","traceOrigin_student":"My action","traceOrigin_system":"Chat settings sync","traceType_add":"Add","traceType_batch":"Batch change","traceType_group":"Change groups","traceType_merge":"Merge","traceType_split":"Split","traceType_delete":"Delete","traceType_note":"Edit explanation","traceType_configure":"Change settings","traceType_move":"Move or arrange","traceType_undo":"Undo","traceType_redo":"Redo","traceType_clear":"Clear board","traceType_import":"Open board file","traceType_update":"Edit shape","traceType_duplicate":"Duplicate","traceField_count":"Shape count","traceField_activeCount":"Kept shapes","traceField_removedCount":"Crossed-out shapes","traceField_value":"Kept total value","traceField_removedValue":"Crossed-out value","traceField_groupCount":"Group count","traceField_groupedCount":"Grouped shapes","traceField_mergedCount":"Merged shapes","traceField_objects":"Composition (pattern:value ×count)","traceField_aliases":"Shape names","traceField_colors":"Level colour indices","traceField_groups":"Groups (name:count/value)","traceField_note":"My explanation (excerpt)","traceField_settings_levels":"Levels (value:colour index)","traceField_settings_defaults":"Default meanings (pattern:value:name)","traceField_settings_shapes":"Toolbox patterns","traceField_movedCount":"Shapes moved in this step","traceField_changedCount":"Other changes","traceField_detailsOmitted":"Details omitted in this step"},"zh":{"title":"数学画板","workspaceSubtitle":"摆图形 · 圈一组 · 自己说数量","toolbox":"工具箱","tapToAdd":"点一下放到画布；也可以拖进来","shapes":"图案","circle":"圆形","square":"方块","rectangle":"矩形","triangle":"三角形","star":"星形","hexagon":"六边形","diamond":"菱形","heart":"爱心","oval":"椭圆","cat":"小猫","dog":"小狗","car":"汽车","person":"人","apple":"苹果","fish":"小鱼","rocket":"火箭","flower":"小花","butterfly":"蝴蝶","house":"房子","icecream":"冰淇淋","settings":"设置","settingsIntro":"你来决定工具箱里有哪些图案、每个图案代表多少，以及哪个数值用哪种颜色。","patterns":"图案库","patternsHint":"点一下图案就放到左侧图案轨，再点一下收起来；已经摆好的图形不会消失。","addPattern":"添加到工具箱","removePattern":"从工具箱收起","morePatterns":"更多图案","levelLadder":"数值阶梯","level":"第几级","colorName":"颜色","removeLevel":"删除这一级","addLevel":"增加一级","resetSettings":"恢复默认","shapeDefaults":"这些图案默认代表多少","applyFuture":"只用于新图形","applyExisting":"也改已有图形","settingsFutureDone":"已保存设置，新添加的图形按新数值。","settingsExistingDone":"已保存设置，未合并的已有图形也改成新数值。","cancel":"取消","value":"代表","alias":"名字","aliasHint":"例如：苹果","canvas":"图形画布","canvasEmpty":"从左边选一个图形，开始摆一摆","canvasEmptyHint":"拖动摆放 · 空白处框选 · Shift 点击加选","gestureHint":"拖动摆放 · 空白处框选 · Shift 点击加选","multiSelect":"多选","focusMode":"只看画布","zoomIn":"放大画布","zoomOut":"缩小画布","fitView":"适应宽度","selectionActions":"所选图形操作","selectedCount":"已选","makeGroup":"圈为一组","ungroup":"解散组","merge":"合并","split":"拆开","copy":"复制","crossOut":"划去","restore":"恢复","trash":"删除所选","group":"组","defaultGroup":"我的一组","groupAlias":"这一组的名字","groupHint":"例如：小兔的一份","groupedNoAlias":"组里的图形不单独起名字；改名后整组一起变。","duplicateGroup":"复制这一组","mergedFrom":"由这些图形合并而来","noSelection":"点一个图形，或框选几个，就能起名字、圈组、合并。","mergeReason":"合并需要同一形状、同一数值、同一个名字、同属一组，而且总量正好是你设定的一级。","hintGrouped":"已选中一整组：改名只影响这一组。","hintSelected":"选中后可起名字、圈组或合并。","hintEmpty":"拖动摆放图形；空白处拖框可一次选中多个。","myObjects":"我的想法","myGroup":"我的一组","inspectorHint":"选中图形后在这里起名字","note":"我想说","noteHint":"这些图形代表什么？你是怎么想的？","noteGeneral":"整张画板 · 未关联特定图形","noteAbout":"针对","hasNote":"有说明","creationColor":"创建颜色","files":"文件","moreActions":"更多操作","canvasTools":"画板工具","appendSelect":"追加选择","appendDone":"完成选择","appendHint":"点按图形追加或移出选择，适合触屏","apply":"应用","save":"保存","done":"完成","fileSaved":"已保存到上次的位置。","fileDownloaded":"已下载画板文件。","fileOpenFallback":"将使用普通文件选择，浏览器可能无法记住上次的位置。","undo":"撤销","redo":"重做","group2":"圈组","close":"关闭","gear":"设置","minus":"减少","plus":"增加","cross":"划去","multi":"多选","focus":"专注","export":"保存 JSON","import":"打开 JSON","clear":"清空画布","clearQuestion":"要清空画布和这次的修改记录吗？已经放进回答的文件还在。清空后不能撤销。","confirmClear":"确认清空","clearDone":"已清空画布和修改记录。","autoClearDone":"新任务已清空画布和修改记录；已放入回答的文件仍保留。","autoClearSkipped":"为保留后续修改，已跳过迟到的清空请求。请先手动清空再用画板。","autoClearError":"自动清空未完成，请先手动清空再用画板。","insert":"放入回答","inserted":"已附上画板文件；请检查后自己发送。","insertedNote":"已附上画板文件，你写的话也放进输入框了；请检查后自己发送。","insertFailed":"暂时无法放入回答，请等输入框可编辑后重试。","attachmentName":"我的画板.json","backToChat":"返回对话","localDraft":"草稿还没发送，老师看不到；发送前随时可以改。","failed":"操作未完成","fileTooLarge":"文件太大，请选择小于 256 KB 的画板 JSON。","imported":"已打开画板。","storageError":"浏览器无法保存草稿，请保存 JSON 以免丢失。","loadError":"草稿无法读取，原数据未覆盖。","configApplied":"已按你刚才说的，更新了图形数值和颜色。","configGap":"设置历史有缺口；已按保留记录的作用范围回放。","configError":"有一条设置更新未能应用；更早成功的修改已保留。","removed":"已划去","active":"保留","traceTitle":"修改记录","traceAttach":"回答时附上修改记录（可取消）","tracePreview":"查看修改记录","traceHide":"收起修改记录","traceNewAttempt":"开始新的尝试","traceClear":"清除记录","traceNotice":"修改记录保存在这个浏览器，不记时间和拖动轨迹。附上并发送后，老师才能看到；会随对话保留。","traceScope":"这是这份草稿到目前为止保留的修改，不一定来自一次连续操作。数字与文字是修改事实，不是对错结论；省略的细节以省略标记说明。","tracePriorUnknown":"此前过程未知：起点可能已有内容，或记录有缺口。","traceTotals":"共记录 {count} 次变更，中间省略 {omitted} 次。","traceEmpty":"还没有记录到修改。","traceGap":"……中间修改已省略……","traceResetQuestion":"保留当前画板，删去本地修改记录并开始新的尝试？已放入回答或发送的附件不会删除，撤销历史也将清空。","traceResetConfirm":"确认重新开始","traceResetDone":"已开始新的尝试，画板保留，此前过程标为未知。","traceLoadError":"此前修改记录无法恢复，已标为未知；画板仍可使用。","traceRecordError":"这次修改没能记进修改记录，此后的过程标为未知；画板本身已保存。","traceSkipped":"修改记录不可用，已附上画板文件；请检查后自己发送。","traceAttachmentName":"我的修改记录.json","traceOrigin_student":"我的操作","traceOrigin_system":"对话设置同步","traceType_add":"添加","traceType_batch":"批量修改","traceType_group":"修改分组","traceType_merge":"合并","traceType_split":"拆开","traceType_delete":"删除","traceType_note":"修改说明","traceType_configure":"修改设置","traceType_move":"移动或整理","traceType_undo":"撤销","traceType_redo":"重做","traceType_clear":"清空画板","traceType_import":"打开画板文件","traceType_update":"修改图形","traceType_duplicate":"复制","traceField_count":"图形数","traceField_activeCount":"保留图形数","traceField_removedCount":"划去图形数","traceField_value":"保留图形代表的总量","traceField_removedValue":"划去图形代表的总量","traceField_groupCount":"组数","traceField_groupedCount":"已分组图形数","traceField_mergedCount":"合并图形数","traceField_objects":"图形组成（图案:代表值 ×个数）","traceField_aliases":"图形名字","traceField_colors":"量级颜色编号","traceField_groups":"各组（名字:个数/代表总量）","traceField_note":"我想说（节选）","traceField_settings_levels":"量级（数值:颜色编号）","traceField_settings_defaults":"默认含义（图案:数值:名字）","traceField_settings_shapes":"工具箱图案","traceField_movedCount":"本步移动的图形数","traceField_changedCount":"其他变更数","traceField_detailsOmitted":"本步省略细节数"}};
     return {
       inject: ['slots', 'locale'],
       apply(ctx) {
