@@ -138,6 +138,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
     const revealRef = React.useRef([]);
     const nameRef = React.useRef(null), noteRef = React.useRef(null);
     const fileHandle = React.useRef(null);
+    const fileInputRevision = React.useRef(null);
     const phase = props.useInput((s) => s.phase);
     const selected = board.objects.filter((o) => selection.includes(o.id));
     const single = selected.length === 1 ? selected[0] : null;
@@ -196,9 +197,10 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
     React.useEffect(() => {
       if (!ready || storageBlocked) return;
       let live = true;
-      const version = revision.current;
       withDraftLock(() => {
-      if (!live || version !== revision.current || boardRef.current !== board) return;
+      // Selection and file pickers change the interaction revision, not the draft.
+      // Only a replaced draft (or a cleaned-up effect) invalidates this save.
+      if (!live || boardRef.current !== board || traceRef.current !== trace) return;
       try {
         const saved = JSON.parse(localStorage.getItem(clearKey) || 'null');
         if (saved && (saved.revision > clearMark.current.revision || saved.lastEditAt > lastEditAt.current)) return;
@@ -275,9 +277,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
         // Another tab may have edited this same session while this tab was idle.
         const saved = JSON.parse(localStorage.getItem(clearKey) || 'null');
         if (saved && saved.revision >= clearRequest.revision) {
-          clearMark.current = { revision: saved.revision, requestId: saved.requestId };
-          lastEditAt.current = saved.lastEditAt;
-          resetCanvas(M.validate(saved.board), T.validate(saved.trace));
+          restoreSavedDraft(saved);
           return;
         }
         const editedAt = Math.max(lastEditAt.current, saved?.lastEditAt || 0);
@@ -363,6 +363,13 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
         board: next, trace: nextTrace, attach, configWatermark: watermark.current }));
     }
     function touchDraft() { lastEditAt.current = Math.max(Date.now(), lastEditAt.current + 1); }
+    function restoreSavedDraft(saved) {
+      const next = M.validate(saved.board);
+      const nextTrace = T.validate(saved.trace);
+      clearMark.current = { revision: saved.revision, requestId: saved.requestId };
+      lastEditAt.current = saved.lastEditAt;
+      resetCanvas(next, nextTrace);
+    }
     function resetCanvas(next, nextTrace) {
       revision.current++; gesture.current = null; setPreview(null);
       publish(next); publishTrace(nextTrace);
@@ -401,9 +408,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
       try {
         const saved = JSON.parse(localStorage.getItem(clearKey) || 'null');
         if (saved && (saved.revision > clearMark.current.revision || saved.lastEditAt > lastEditAt.current)) {
-          clearMark.current = { revision: saved.revision, requestId: saved.requestId };
-          lastEditAt.current = saved.lastEditAt;
-          resetCanvas(M.validate(saved.board), T.validate(saved.trace));
+          restoreSavedDraft(saved);
           return false;
         }
       } catch { /* Ordinary editing remains possible when browser storage is blocked. */ }
@@ -447,14 +452,17 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
       const value = board.settings.defaults.find((entry) => entry.shape === shape)?.value;
       return levels.find((level) => level.value === value) || toolLevel;
     }
-    function add(shape, point) {
+    function createAndReveal(a, selectCreated = true) {
       const before = new Set(boardRef.current.objects.map((o) => o.id));
-      const extra = point ? { x: point.x, y: point.y } : {};
-      const next = action({ type: 'add', shape, value: creationLevel(shape).value, ...extra });
+      const next = action(a);
       if (!next) return;
       const added = next.objects.filter((o) => !before.has(o.id)).map((o) => o.id);
-      selectIds(added);
-      if (added.length) revealRef.current = added;
+      selectIds(selectCreated ? added : []);
+      revealRef.current = added;
+    }
+    function add(shape, point) {
+      const extra = point ? { x: point.x, y: point.y } : {};
+      createAndReveal({ type: 'add', shape, value: creationLevel(shape).value, ...extra });
     }
     function updateSelected(patch) { batch(selected.map((o) => ({ type: 'update', id: o.id, patch }))); }
     function groupSelection() {
@@ -469,25 +477,12 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
       if (created) setSelection(next.objects.filter((item) => item.groupId === created.id).map((item) => item.id));
     }
     function ungroup() { if (completeGroup) { action({ type: 'deleteGroup', id: completeGroup.id }); setSelection([]); } }
-    function duplicate() {
-      const before = new Set(boardRef.current.objects.map((o) => o.id));
-      const next = action({ type: 'duplicateSelected', ids: selection });
-      if (!next) return;
-      const added = next.objects.filter((o) => !before.has(o.id)).map((o) => o.id);
-      selectIds(added);
-      if (added.length) revealRef.current = added;
-    }
+    function duplicate() { createAndReveal({ type: 'duplicateSelected', ids: selection }); }
     function mergeSelection() {
       const next = action({ type: 'merge', ids: activeSelected.map((o) => o.id) });
       if (next) selectIds([]);
     }
-    function splitSelection() {
-      const before = new Set(boardRef.current.objects.map((o) => o.id));
-      const next = action({ type: 'split', id: single.id });
-      if (!next) return;
-      revealRef.current = next.objects.filter((o) => !before.has(o.id)).map((o) => o.id);
-      selectIds([]);
-    }
+    function splitSelection() { createAndReveal({ type: 'split', id: single.id }, false); }
     function removeSelected() { batch(selected.map((o) => ({ type: 'delete', id: o.id }))); selectIds([]); }
     function crossOut() { batch(activeSelected.map((o) => ({ type: 'update', id: o.id, patch: { removed: true } }))); }
 
@@ -643,7 +638,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
       downloadAnchor.current.href = url.current; downloadAnchor.current.click();
       setStatus(t('fileDownloaded'));
     }
-    async function loadOpenedFile(file, rev = ++revision.current) {
+    async function loadOpenedFile(file, rev) {
       if (rev !== revision.current) return;
       gesture.current = null; setPreview(null);
       if (file.size > 262144) throw Error(t('fileTooLarge'));
@@ -683,12 +678,16 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
           // Permission denial must not prevent opening an ordinary local file.
         }
       }
+      if (rev !== revision.current) return;
+      fileInputRevision.current = rev;
       setStatus(t('fileOpenFallback'));
       fileInput.current.click();
     }
     async function importInput(event) {
-      const file = event.target.files?.[0]; event.target.value = ''; if (!file) return;
-      try { await loadOpenedFile(file); } catch (error) { setStatus(`${t('failed')}: ${error.message}`); }
+      const rev = fileInputRevision.current;
+      fileInputRevision.current = null;
+      const file = event.target.files?.[0]; event.target.value = ''; if (!file || rev === null) return;
+      try { await loadOpenedFile(file, rev); } catch (error) { setStatus(`${t('failed')}: ${error.message}`); }
     }
 
     function noteTargetFor(items, group) {

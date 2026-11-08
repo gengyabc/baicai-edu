@@ -353,6 +353,38 @@ test('missing browser locks fails safe and manual clear remains available', (con
   });
 });
 
+test('a selection-only click does not lose a queued draft save across remount', () => {
+  const storage = new Map();
+  const lockQueue = [];
+  withMount({ storage, lockQueue }, h => {
+    while (lockQueue.length) { lockQueue.shift()(); h.refresh(); }
+    h.add('cat');
+    h.clearSelection();
+    while (lockQueue.length) { lockQueue.shift()(); h.refresh(); }
+  });
+  withMount({ storage }, h => {
+    h.find(node => node.props['data-object'] && node.props['aria-label'].startsWith(t('cat')));
+    assert.equal(h.trace().totalChanges, 1);
+  });
+});
+
+test('cancelling a file picker does not lose a queued draft save across remount', async () => {
+  const storage = new Map();
+  const lockQueue = [];
+  const h = mount({ storage, lockQueue });
+  try {
+    while (lockQueue.length) { lockQueue.shift()(); h.refresh(); }
+    h.add('cat');
+    window.showOpenFilePicker = async () => { throw new DOMException('Cancelled', 'AbortError'); };
+    h.openMore(); await h.click(t('import'));
+    while (lockQueue.length) { lockQueue.shift()(); h.refresh(); }
+  } finally { h.unmount(); }
+  withMount({ storage }, restored => {
+    restored.find(node => node.props['data-object'] && node.props['aria-label'].startsWith(t('cat')));
+    assert.equal(restored.trace().totalChanges, 1);
+  });
+});
+
 test('a queued clear rechecks the latest draft inside its lock instead of overwriting a newer save', (context) => {
   context.mock.method(Date, 'now', () => 15000);
   const options = {};
@@ -409,6 +441,36 @@ test('a picker opened on the old task cannot import after a task clear', async (
     assert.equal(h.board().objects.length, 0);
     assert.deepEqual(h.trace(), T.empty());
   } finally { h.unmount(); }
+});
+
+test('a fallback picker opened on the old task cannot restore it after a task clear', async (context) => {
+  let now = 10000;
+  context.mock.method(Date, 'now', () => now);
+  for (const denied of [false, true]) {
+    const storage = new Map();
+    const h = mount({ storage });
+    try {
+      h.add();
+      if (denied) window.showOpenFilePicker = async () => { throw new DOMException('Denied', 'NotAllowedError'); };
+      h.openMore();
+      await h.click(t('import'));
+      now = 12000;
+      h.setClear({ revision: 1, requestId: 'during-fallback-picker', requestedAt: 11000 });
+      const input = h.find(node => node.type === 'input' && node.props.type === 'file');
+      await input.props.onChange({ target: { value: '', files: [
+        new File([M.serialize(M.reduce(M.empty(), { type: 'add', shape: 'cat' }))], 'old.json'),
+      ] } });
+      h.refresh();
+      assert.equal(h.board().objects.length, 0);
+      assert.deepEqual(h.trace(), T.empty());
+      assert.equal(h.button(t('undo')).props.disabled, true);
+    } finally { h.unmount(); }
+    withMount({ storage }, restored => {
+      assert.equal(walk(restored.render()).filter(node => node.props['data-object']).length, 0);
+      assert.deepEqual(restored.trace(), T.empty());
+    });
+    now = 10000;
+  }
 });
 
 test('undo and redo append semantic facts instead of replacing the trace with snapshot history', () => {
@@ -525,6 +587,7 @@ test('opening a board identical to the current one only marks earlier process un
   try {
     h.add(); h.clearSelection(); h.note('Same content');
     const before = h.trace(); const boardBefore = h.board();
+    h.openMore(); await h.click(t('import'));
     const input = h.find((node) => node.type === 'input' && node.props.type === 'file');
     await input.props.onChange({ target: {
       files: [new File([M.serialize(boardBefore)], 'same.json', { type: 'application/json' })], value: '',
