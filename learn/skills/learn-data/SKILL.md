@@ -52,13 +52,13 @@ outputs/students/
 
 - `session.json` 缺失或 `student_id` 为空：告诉学生先运行 `/learn-start`。
 - 共享档案缺失：转 `/learn-start` 建档，不凭空生成。
-- 科目 `profile.json` 缺失：确认共享档案存在后，按 `references/profile-schema.md` 初始化；年级段读 `references/grade-band-defaults.md`，默认领域、初始水平与偏好键读学科契约（`references/subject-contract.md`）。
+- 科目 `profile.json` 缺失：确认共享档案存在后，先读 `references/teaching-resolver.md` 解析 teaching，再按 `references/profile-schema.md` 初始化；阶段读 `references/grade-band-defaults.md`，默认领域、初始水平与偏好键读解析实现的学科契约（`references/subject-contract.md`）。通用或未知起点 current_levels/preferences 为空，不拿小学水平初始化成人；已有科目文件一律保留。
 - `memory.json` / `current_state.json` / `milestones.json` 缺失：按 `references/profile-schema.md` 的默认值创建。
 - `session_log.json` 缺失（读取工具返回 `not found`）是正常状态，表示没有未完成会话，需要时按 `references/session-lifecycle.md` 新建。只有权限、I/O 或内容损坏错误才报告读取故障，并停止依赖该文件的操作。
 
 读取后：
 
-- 快照留在内存。写回成功的对象同步更新缓存；不确定缓存是否有效时只重读受影响的文件。普通轮次和模式切换不重读整份快照。
+- 快照先按 `references/teaching-resolver.md` 过滤证据来源；通用进度不作为专门掌握，保留真实身份与 scope_id。共享 learning_preferences 只作学生明确目标/偏好输入，历史支持事实使用前核对情境与更正。快照留在内存。写回成功的对象同步更新缓存；不确定缓存是否有效时只重读受影响的文件。普通轮次和模式切换不重读整份快照。
 - 个性化输入交给教学 skill：共享档案的 `personal.interests`、`personal.most_exciting_event`，科目档案的 `profile.preferences`、`profile.self_report.easy_topics/hard_topics`。
 - `memory.json` 的 `preferred_scaffolds`、`motivation_signals`、`recent_error_patterns`、`recommended_next_moves`、`feynman_readiness` 按 `references/profile-schema.md` 的“How Memory Is Consumed”使用，写入的字段要读出来用。
 
@@ -73,7 +73,7 @@ outputs/students/
 }
 ```
 
-- `subject` 是入口写入的科目 id。
+- `subject` 是入口写入的真实科目或中性任务 id，身份规则按 `references/teaching-resolver.md`。session 可选带 `scope_id`、`target_title`（学生可识别的目标描述）、`teaching`；首次选择目标后写入，恢复优先日志 context，未选目标可缺。旧文件缺失不迁移；新目标另建 scope_id，相同未完成目标沿用。跨科切换先成功保存旧科目再整文件激活新身份；旧日志和 plan 仍留原科目，不搬移。
 - 切换学生或科目时整文件覆盖写。已选科目、尚未选学生的过渡状态里 `student_id` 为 `null`，读取时按空处理，引导 `/learn-start`。
 
 ## Create Student
@@ -92,7 +92,7 @@ outputs/students/
 
 写入方（不混写）：
 
-- **共享** `outputs/students/<id>/profile.json`：姓名、年级、`personal`。只由 Create Student、`/learn-start` 和 `/learn-profile` 写；不改 `student_id`、`created_at`。
+- **共享** `outputs/students/<id>/profile.json`：姓名、年级、`personal`、可选 education_stage / learning_context / learning_preferences。只由 Create Student、`/learn-start` 和 `/learn-profile` 写；不改 `student_id`、`created_at`。
 - **科目** `profile.json`、`memory.json`、`current_state.json`、`milestones.json`：由 finalize、`/learn-profile`、`learn-errors` 写。合并细则（前插、去重、截断、嵌套位置）以 `references/finalize-session.md` 与 `references/session-retention.md` 为准。
 - **日志** `session_log.json`：只由 `references/session-lifecycle.md` 与 finalize 写。
 

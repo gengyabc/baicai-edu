@@ -1,6 +1,6 @@
 # dsh-edu
 
-小学自学教学技能包，从 Pi 的 `xiaoxue/.pi` 配置迁移到 DeepSeek Harness 的原生 skill 体系。
+以小学教学为重点的通用学习支持技能包，采用 DeepSeek Harness 原生 skill 体系；支持全年龄任务学习与按需学习支持，缺少适用学科包时也可使用通用教学。
 
 ## 包
 
@@ -33,7 +33,7 @@ node scripts/install.mjs all --dry-run
 
 ## 使用
 
-1. `/learn-start`：选数学、语文或英语，识别已有学生或逐轮建档；会记录 `personal.interests`。语文用它选择阅读角度和写作题目。数学仍读取该字段；题目按 CGI，题面以生活故事为主，同一关系换场景检验迁移；只在学生做不出当前题时用一个兴趣细节搭桥。英语用它选择故事、任务和例句内容，不让兴趣覆盖当前语言目标。
+1. `/learn-start`：选数学、语文、英语或描述其他目标，识别已有学生或逐轮建档；阶段、年级和偏好可选。缺少适用学科包时进入通用任务教学；会记录 `personal.interests`。语文用它选择阅读角度和写作题目。数学仍读取该字段；题目按 CGI，题面以生活故事为主，同一关系换场景检验迁移；只在学生做不出当前题时用一个兴趣细节搭桥。英语用它选择故事、任务和例句内容，不让兴趣覆盖当前语言目标。
 2. `/learn 分数减法`：进入自适应学习；也可以直接 `/learn` 从档案选目标。英语可以写 `/learn 颜色` 或直接 `/learn`。
 3. `/learn-feynman`：费曼模式，学生讲、AI 当学生提问。
 4. `/learn-profile`：查看或修改档案。
@@ -69,7 +69,8 @@ outputs/students/
 
 ## 设计文档
 
-- [技能调用关系与使用场景](./docs/skill-map/call-graph.md)（包依赖、调用面、Mermaid 调用图与场景时序）
+- [技能调用关系与使用场景](<docs/skill-map/call-graph.md>)（包依赖、调用面、Mermaid 调用图与场景时序）
+- [学习支持总体设计](<docs/learn-support-design.md>)与[合成场景验收](<learn/tests/learning-support-scenarios.md>)：全年龄、通用任务教学、五类支持及证据隔离。
 - [DSH 教学插件产品方案](./docs/DSH教学插件_最终技术与产品方案.md)
 - [跨 Harness 技能与多用户 Agent 平台方案](./docs/跨Harness技能与多用户Agent平台总体实施方案_v1.1_Python优先.md)
 
@@ -85,9 +86,9 @@ node --test scripts/install.test.mjs
 
 # 静态检查：frontmatter、名称、内部入口、失效引用、旧字段/Pi 残留
 node scripts/check-skills.mjs
-node --test scripts/skill-contracts.test.mjs
+node --test scripts/*.test.mjs
 ```
 
 交互检查：新开会话输入 `/learn-start`，第一步应在输入区出现「数学」「语文」「英语」选项卡片；点选一个再按「提交」，模型才能收到回答。卡片也允许直接输入或跳过。
 
-仓库提供 31 个 skill 定义：3 个纯用户入口（`learn-start`、`learn`、`learn-clean`）+ 3 个双开入口（`learn-feynman`、`learn-profile`、`learn-save`）+ 25 个内部 skill。经验桥接由 `chinese-core` 按需定位参考文档，不再独立注册；数学诊断与练习保留独立调用；英语由 `english-session` 按条件加载方法 skill。
+入口保持 3 个纯用户入口（`learn-start`、`learn`、`learn-clean`）和 3 个双开入口（`learn-feynman`、`learn-profile`、`learn-save`）；内部增加 `learn-general-core`、`learn-general-session` 与 `learn-support`，实际技能数以静态检查输出为准。经验桥接由 `chinese-core` 按需定位参考文档，不再独立注册；数学诊断与练习保留独立调用；英语由 `english-session` 按条件加载方法 skill。

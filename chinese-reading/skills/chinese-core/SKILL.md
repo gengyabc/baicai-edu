@@ -43,6 +43,8 @@ user-invocable: false
 
 ## 学科契约
 
+`supported_stages: lower_primary, upper_primary`。这是默认表达与流程的适配声明，不是内容门槛；其他阶段由统一解析选择通用教学。
+
 `subject: chinese`，教学入口 `chinese-session`，包 `dsh-edu-chinese-reading`。角色含义见 `learn-data` 的 `references/subject-contract.md`；入口与本包分支同样从这里读取。
 
 | 角色 | 读取 |

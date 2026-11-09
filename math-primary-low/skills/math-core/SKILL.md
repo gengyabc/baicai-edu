@@ -42,6 +42,8 @@ user-invocable: false
 
 ## 学科契约
 
+`supported_stages: lower_primary, upper_primary`。这是默认表达与流程的适配声明，不是内容门槛；其他阶段由统一解析选择通用教学。
+
 `subject: math`，教学入口 `math-session`，包 `dsh-edu-math-primary-low`。角色含义见 `learn-data` 的 `references/subject-contract.md`；入口与本包分支同样从这里读取。
 
 本包以低年级为主，用 CGI 的语气和方法教学；年级只调整语言与呈现，不是内容门槛；学生想探究高年级内容时继续教，不劝退、不要求回到年级内的题目。

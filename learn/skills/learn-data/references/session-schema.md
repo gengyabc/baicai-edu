@@ -31,7 +31,45 @@
 - `target_context` 的形状、文件处理标记和引用见 `references/target-parsing.md`。`materials` 只在没有持久文件时存放必要的粘贴文本、草稿或作答；已有文件用工作区引用。不把危机或私人经历写在这里。
 - 没有 `context` 的旧日志：恢复最后一段，缺材料或意图就问，不推断。已有 `error_history` 里的 extracted 引用可以读，不重新处理 raw。
 - `finalize_plan` 只由 `references/finalize-session.md` 定义。计划未完成时，先做完保存，再教学、改档案或写错题。
-- `/learn` 与 `/learn-feynman` 都经 `references/session-lifecycle.md` 追加唯一的学科 segment 并更新 context。Finalize 提交四个科目文件后，再清 segments、context 和 plan。
+- `/learn` 与 `/learn-feynman` 都经 `references/session-lifecycle.md` 追加唯一的学科 segment 并更新 context。只有实际学生表现才追加；其他轮次 segment 为 null，只写 context。Finalize 提交四个科目文件后，再清 segments、context 和 plan。
+
+## 教学实现与支持状态
+
+新 context 增加 `scope_id`（选定目标的稳定身份）与 `teaching`，结果及旧日志缺省规则只按 `references/teaching-resolver.md`。新 segment 也带同一 scope_id/teaching；旧段无此字段视为 specialist，不迁移改写。`activity` 另允许 `support`：纯支持时 focus、target_context 可为 null，turn_state 不造当前题；有真实任务时支持叠加其上，保留原 activity、材料、模式与待答题。
+
+可选 `context.learning_support`：
+
+```json
+{
+  "primary_need": "confidence",
+  "status": "hypothesis",
+  "evidence": [{ "source": "student_statement", "observation": "担心当前任务学不会", "date": "2026-11-09T08:00:00Z" }],
+  "method": null,
+  "observation_goal": "观察学生在最小提示后是否愿意尝试当前步骤",
+  "outcome": { "statement": null, "participation": null, "task_performance": null },
+  "resume_question": null
+}
+```
+
+primary_need 为 value / confidence / autonomy / strategies / persistence；status 为 hypothesis / clarified / active / observing / declined。evidence.source 为 student_statement / observed_action，推断不能冒充事实，不能记录危机细节或无关私生活。outcome 三项分别是学生自述、参与及任务表现的中性观察，未知用 null；不是动机分或掌握度。拒绝后 declined 只阻止重复同一讨论，直到学生主动重开或新目标有明确新需求。
+
+日志顶层可选 `support_events`，只在学生明确要求长期保存具体中性计划时加入：
+
+```json
+{
+  "id": "plan_20261109_a3f2",
+  "date": "2026-11-09T08:00:00Z",
+  "scope_id": "scope_a3f2",
+  "kind": "plan",
+  "summary": "下次先独立回忆一个例子，再核对材料",
+  "student_requested_save": true,
+  "source": "student_statement"
+}
+```
+
+该例是一项事件，support_events 为其数组；id 在写日志前生成，重试沿用。没有明确保存意愿不创建事件。事件不进入 segment、diagnosis 或 confirmed_skills；finalize 只将白名单字段写入 memory.learning_support_memory.plans。纯支持仍持久化最小 context 以便恢复，长期计划保存与恢复状态写入分别报告。
+
+`ability_evidence` 是新 segment 可选数组，每项 `{kind, observation, conditions}`；kind 为 independent / supported / ai_collaboration / exposure。独立能力、支持下表现、AI 协作能力按任务目标评价，不排成单一等级；观看 AI 结果仅 exposure。不能用参与意愿或作品整齐代替掌握证据。general_v1 的表现只进入隔离通用历史，不更新专门等级；旧段缺字段不推断补填。
 
 ## 临时学习推荐
 
@@ -53,6 +91,8 @@
   ]
 }
 ```
+
+新 recommendation 可选带 teaching；候选可带 subject、scope_id、teaching，跨领域候选必须有目标 subject 或中性任务身份与明确目标描述。subject 顶层始终是发起推荐的原身份，防止跨科误消费。已有合法选择先保存在原日志，新目标 context 成功写入后才消费；实际切换按生命周期处理。旧对象缺扩展字段时仍按当前科目处理。
 
 `mode` 保留发起推荐时的模式，供无教学 context 时恢复；已有 context 时以 context.mode 为准。选定后可选 `selected_id` 必须对应一个候选，由生命周期在 finalize 前先持久化；它表示学生已经授权的目标，不能由首选标记或跳过推导。候选 id 在同一份推荐中唯一，preferred_id 必须对应其中一个；target_context 遵循目标分类契约，不复用不相关旧材料。该对象仅供中断恢复选择，不是已选 focus，也不是 segment 的 recommended_targets。由 `learn-recommend` 形成，生命周期写回；推荐期间保留旧 context 与 segments，选择/拒绝不生成表现。选定目标写入 context 成功后、取消或结束时清除。最终保存不把推荐对象汇总进档案；清理日志时移除未选推荐，保留已有 selected_id 的推荐直至新目标 context 写入成功，用于保存失败后的恢复。仅保存不自动开始新教学。没有此对象的旧日志照常恢复，不迁移旧档案。
 

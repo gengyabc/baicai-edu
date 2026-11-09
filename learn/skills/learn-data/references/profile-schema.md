@@ -25,6 +25,10 @@
 }
 ```
 
+教育阶段与学习配置为可选兼容扩展：`education_stage` 取 lower_primary / upper_primary / junior_secondary / senior_secondary / higher_education / adult，缺失按 `references/grade-band-defaults.md` 推导或未知。`grade` / `grade_band` 可缺省，非小学不强填；已有值保留，阶段冲突按学生更正处理，不猜能力。可选 `learning_context` 只记学生明确提供的学习情境，不含私人困境。
+
+`learning_preferences` 形状为 `{ "goals": [], "support_preferences": [] }`，缺失按空。只保存学生明确设置的跨科长期目标与支持偏好；不由一次答题、低信心或拖延推断。只由建档/start/profile 指定写入者写，finalize 不写共享档案。
+
 ## Subject Profile
 
 - Path: `outputs/students/<student_id>/<subject>/profile.json`
@@ -102,6 +106,15 @@
 
 `profile_memory.material_difficulty` 由 finalize 从日志 `context.difficulty_request` 写入：`direction` 为 `standard` / `easier` / `harder`，`note` 是学生原话概括与对象，`updated_at` 取请求时间。它只影响新材料、题目或文本的呈现，不是水平，不改 `current_levels`，也不作为掌握证据。
 
+### 隔离通用进度与学习支持
+
+memory 可选新增 `general_progress: []` 与 `learning_support_memory: { "plans": [], "observations": [] }`，旧文件缺失按空，不迁移旧心理描述。具体白名单与更正只按 `references/finalize-session.md`。
+
+- general_progress 保存带 scope_id、teaching 和实际能力归属的通用任务进度；恢复/推荐只消费当前目标，不转入专门 confirmed_skills、current_levels 或 mastered_topics。
+- plans 保存学生明确要求的中性计划，不是教学表现；observations 是注明来源/时间/适用情境的历史事实，不是心理等级。superseded 条目不再用于建议。
+- `/learn-profile` 可只读展示计划、事实及日期来源；教学先核对旧观察是否适用于当前目标，学生更正优先。不默认跨科传播这些记录或敏感内容。
+- 仅 finalize 写 memory；support_events 是计划/更正的唯一交接，不由支持方法或档案展示直接改写。保留上限与排序以 `references/session-retention.md` 为准。
+
 ### How Memory Is Consumed
 
 这些字段在快照时读取并使用：
@@ -109,7 +122,7 @@
 | Field | Read by | Use |
 |---|---|---|
 | `profile_memory.preferred_scaffolds` | 当前学科会话 | 先用已记录的支架，再考虑新的。 |
-| `profile_memory.motivation_signals` | `learn`、`feynman`、`next-step` | 决定夸什么、下一步怎么说。 |
+| `profile_memory.motivation_signals` | `learn`、`feynman`、`next-step` | 历史参考，仅决定具体反馈与措辞；无来源旧条目不当作当前心理事实，学生更正优先，不跨科传播。 |
 | `profile_memory.expression_traits` | 当前学科会话 | 学科使用该字段时，对齐长短和口语/书面偏好。 |
 | `profile_memory.stable_strengths` / `stable_difficulties` | 入口与学科的目标选择 | `session_history` 为空时做决胜。 |
 | `profile_memory.preferred_persona` | `learn-core` 的 `references/pedagogy-core.md` Voice And Feedback | `guided_coach` 或 `socratic_tutor`。 |

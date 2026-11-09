@@ -1,6 +1,6 @@
 ---
 name: learn
-description: 按主题、材料、错题或档案目标开始自适应学习，支持已安装的学科包（数学、语文、英语等）。
+description: 按主题、材料、错题或档案目标开始自适应学习；优先适用学科包，缺包时使用通用任务教学，支持不同教育阶段。
 disable-model-invocation: true
 ---
 
@@ -16,7 +16,7 @@ disable-model-invocation: true
 
 ## 学科路由
 
-生命周期的 Route And Record 加载 `<subject>-session`。普通教学、附加动作与迁移恢复都先进入它；子技能、参数和轮数限制由学科维护。
+按 `learn-data` 的 `references/teaching-resolver.md` 复用 teaching；Route And Record 加载 teaching.session_skill（专门路径为 `<subject>-session`，缺包或不适配时为通用任务教学）。目标分类也读该实现的 core 契约，不另猜包名。普通教学、附加动作与迁移恢复都先进入当前教学主导者；通用支持不另建循环。
 
 ## 继续
 

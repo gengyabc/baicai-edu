@@ -35,7 +35,8 @@ test('shared learn files leave subject teaching rules to subject packages', () =
   ])
   const subjectSpecific = /数学|语文|英语|(?:^|[^a-z])math(?:[^a-z]|$)|(?:^|[^a-z])chinese(?:[^a-z]|$)|(?:^|[^a-z])english(?:[^a-z]|$)/i
   for (const path of markdownFiles('learn')) {
-    if (entries.has(path)) continue
+    // Acceptance fixtures may name subjects; shared runtime teaching rules may not.
+    if (entries.has(path) || path.startsWith('learn/tests/')) continue
     assert.doesNotMatch(text(path), subjectSpecific, path)
   }
 })
@@ -111,6 +112,7 @@ test('existing metadata and reference checks pass', () => {
 test('stable public and subject interfaces remain installed without a bridge skill shell', () => {
   assert.deepEqual(skills.map(({ name }) => name).sort(), [
     'learn-start', 'learn', 'learn-feynman', 'learn-profile', 'learn-save', 'learn-clean', 'learn-core', 'learn-data', 'learn-errors', 'learn-recommend',
+    'learn-general-core', 'learn-general-session', 'learn-support',
     'math-core', 'math-session', 'math-diagnose', 'math-practice', 'math-student-problem',
     'chinese-core', 'chinese-session', 'chinese-reading-session', 'chinese-writing-session',
     'chinese-read-write-transfer', 'chinese-generate-tasks',
@@ -467,7 +469,9 @@ test('math target and segment contract keep routing and evidence ownership centr
   assert.doesNotMatch(graph, /数学内联|数学直达|由生命周期\*\*直达\*\*/)
   assert.doesNotMatch(graph, /\b(?:MD|MP|MSP)\s*(?:-->|-\.->|->>|-->>|<-->)(?:\|[^\n]*?\|)?\s*(?:MD|MP|MSP)\b/)
   assert.doesNotMatch(graph, /\bSL\s*(?:-->|-\.->|->>|-->>|<-->)(?:\|[^\n]*?\|)?\s*MSP\b/)
-  assert.match(dataRef('session-lifecycle'), /加载 `<subject>-session`/)
+  assert.match(dataRef('session-lifecycle'), /加载 `teaching\.session_skill`/)
+  assert.match(dataRef('teaching-resolver'), /<subject>-session/)
+  assert.match(dataRef('teaching-resolver'), /learn-general-session/)
   assert.doesNotMatch(dataRef('session-lifecycle'), /math-(?:diagnose|practice|student-problem)/)
 })
 

@@ -1,6 +1,6 @@
 # Subject Contract
 
-入口与学科包之间的唯一约定。入口只认 `session.json` 的 `subject` id，按下面的命名找到学科包；学科名称、选项、领域、标签和初始水平都留在学科包里。可选科目列表只在 `/learn-start` 的科目表中维护。
+入口与教学实现之间的唯一约定。先读 `references/teaching-resolver.md`，以真实 subject 与当前阶段解析 teaching；所有调用者复用该结果。专门包仍按下面的命名找到；通用路径使用解析结果的 core_skill/session_skill，不能将 subject 改成通用服务名。学科名称、选项、领域、标签和初始水平都留在学科包里。可选科目列表只在 `/learn-start` 的科目表中维护。
 
 ## 命名
 
@@ -25,7 +25,7 @@
 
 ## 未安装
 
-按名加载 `<subject>-core` 或 `<subject>-session` 失败：告诉学生需要先安装该学科包，停止教学路由，保留已有日志与档案。
+按名加载 `<subject>-core` 或 `<subject>-session` 失败：按 `references/teaching-resolver.md` 使用基础包中的通用任务教学，保留真实 subject、目标与材料；已有任务不热替换，先完成恢复/保存交接。不因缺包拒教、不自动安装包。
 
 ## 可选扩展
 

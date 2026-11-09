@@ -10,6 +10,8 @@
 - `milestones` 最多 20 条。先按 `importance`（`high` > `medium` > `low`），再按时间从新到旧。
 - 更早的会话压成 milestone，不逐字保留。
 - 长期进展在 `outputs/students/<student_id>/<subject>/milestones.json`。
+- memory.general_progress 保留最近 20 项，按 date 倒序，session_id + scope_id 去重；不压成专门里程碑。
+- memory.learning_support_memory.plans 保留最近 10 项，按 date 倒序、id 去重；observations 保留最近 10 项，优先移除已被更正的 superseded 条目。超限不合成心理标签；这些不是纵向研究档案。
 
 ## Rules
 

@@ -36,6 +36,8 @@ node scripts/install.mjs math-primary-low --profile web --dry-run
 | `chinese-reading` | `learn` |
 | `english` | `learn` |
 
+`learn` 自带 `learn-general-core`、`learn-general-session` 与 `learn-support`，单独安装即可使用通用任务教学和五类支持；不按年龄另装包，不反向安装所有学科。专门包仍提供各自教学方法，缺包不妨碍通用路径。此源码变更本身不表示正在使用的 profile 已更新或启用。
+
 依赖只声明在各包的 `package.json` → `dependencies`。所有包目前都是私有的相邻目录包，使用 `file:../learn`、`file:../math-board`；这不是可直接发布到 registry 的版本依赖。未来发布前必须替换为已发布版本并重新验证安装，不要把带相邻目录依赖的单独 tarball 当成自包含发行物。
 
 安装器从这些声明递归生成依赖优先、按包去重的闭包，然后执行**一次**：

@@ -1,6 +1,6 @@
 # dsh-edu-learn
 
-共享学习入口与教学底座，配合 `dsh-edu-math-primary-low`、`dsh-edu-chinese-reading`、`dsh-edu-english` 使用。
+全年龄共享学习入口与教学底座，以小学教学为重点。优先采用适用的专门学科包；缺包或阶段不适配时，用随本包提供的通用任务教学继续帮助，不要求另装通用包。
 
 ## 提供的入口
 
@@ -24,7 +24,9 @@
 - `learn-core`：中文语气、以学生为中心、年级适配、难度调整、按需确认、引导无响应、结束信号、人格、费曼规则。
 - `learn-data`：`outputs/students/` JSON 数据协议、快照、建档、写回、finalize。
 - `learn-errors`：用户投放文件解析、`data/.../raw/` 只读、备份、extracted 写入、error_history 更新。
-- `learn-recommend`：根据当前学科记录推荐具体小目标，标明首选与中文理由；内容、难度与排序由学科推荐契约决定。
+- `learn-recommend`：根据当前学科记录推荐具体小目标，标明首选与中文理由；内容、难度与排序由教学契约决定，通用路径可按学生请求探索跨领域目标。
+- `learn-general-core` / `learn-general-session`：通用任务契约与实际教学；真实科目身份不变，记录不自动升级为专门等级。
+- `learn-support`：价值、信心、自主性、学习策略、持续学习的按需方法；理论依据与阶段/情境参考按需读取，不增加固定动机问卷或第二教学调度者。
 
 入口 skill 分两档：`learn-start` / `learn` / `learn-clean` 设置 `disable-model-invocation: true`，只能由用户键入命令发起，不进入模型目录；`learn-feynman` / `learn-profile` / `learn-save` 保留模型入口，支持对话内自动加载（“我来给你讲”“看看我的档案”“保存一下”）。上述内部 skill 保持模型可加载，只通过 `user-invocable: false` 从 `/` 菜单隐藏。
 
@@ -32,7 +34,7 @@
 
 - `learn-core`：跨学科教学行为；年级默认、难度调整、费曼角色与白名单分别由其 references 定义。
 - `learn-data/references/session-lifecycle.md`：`/learn` 与 `/learn-feynman` 的唯一会话循环。模式切换沿用日志与 entry_point，不重开会话。
-- `learn-data/references/subject-contract.md`：入口与学科包的约定。入口按 `<subject>-session` / `<subject>-core` 命名找到学科包，从 core 的「学科契约」读取目标分类、年级默认、档案字段、诊断规则与学习推荐；可选科目只在 `/learn-start` 的科目表维护。
+- [教学解析](<skills/learn-data/references/teaching-resolver.md>)与[教学契约](<skills/learn-data/references/subject-contract.md>)：统一开始、初始化、目标分类、推荐和恢复；专门包仍按 `<subject>-session` / `<subject>-core` 定位，缺包采用同接口的通用路径。可选科目只在 `/learn-start` 科目表维护，其他目标可直接描述。
 - `learn-data/references/session-schema.md`：每轮读取的日志与 segment 外壳。
 - `learn-data/references/profile-schema.md`：档案、记忆、状态、错题与里程碑模板，建档与 finalize 时读取；偏好键、水平、领域、标签和目标分类由学科包定义。
 - `learn-core/references/prestart-settings-interpretation.md`：个性化不得覆盖什么、隐私、用量与自评优先级。字段路径归 `profile-schema`；学科怎么用归学科包。
@@ -40,7 +42,7 @@
 - `learn-data/references/finalize-session.md`：统一保存流程；保留策略归 `session-retention.md`。
 - 学科 references：方法、量规、标签与题型的唯一正文；学科 SKILL 保留分流、执行步骤和独有输出。
 
-验证：`node scripts/check-skills.mjs`；协议回归检查：`node --test scripts/skill-contracts.test.mjs`。这些是静态检查，不替代真实对话验证。
+验证：`node scripts/check-skills.mjs`；协议回归检查：`node --test scripts/*.test.mjs`。这些是静态检查，不替代真实对话验证。
 
 日志新增可选 `context`（目标、材料引用、模式与当前动作）及临时 `finalize_plan`（部分保存失败重放），旧日志仍可恢复，无需迁移学生档案。提交顺序和清理以 finalize reference 为准；同一学生/科目有待完成保存时先恢复，再编辑档案或处理新错题。
 
@@ -93,6 +95,8 @@ node scripts/install.mjs math-primary-low --profile web
 ## 依赖
 
 - `math-primary-low`、`chinese-reading` 与 `english` 的 skill 会按名称加载 `learn-core`、`learn-data`、`learn-errors`。
-- 单独安装本包只能使用入口、档案、保存和通用错题处理；学科教学需要安装 `math-primary-low`、`chinese-reading` 或 `english`。
+- 单独安装本包也能使用通用任务教学及五类支持；安装适用学科包后可使用专门教学，不自动重解释旧通用证据或热替换未完成任务。
+- 教育阶段、年级和情境可选；旧小学档案无需迁移，成人不强填小学年级。纯支持讨论可恢复；学生明确要求保存的中性计划与学科表现分开保存，仍走同一 finalize。
+- 设计与完整验收见[总体设计](<../docs/learn-support-design.md>)与[学习支持验收](<tests/learning-support-scenarios.md>)；静态检查不代表模型教学、故障注入或纵向成效已验证。
 - 接入新学科：学科包提供 `<subject>-session` 与带「学科契约」节的 `<subject>-core`，再在 `learn-start` 的科目表加一行；其他入口无需修改。现有学科包有 `math-primary-low`、`chinese-reading`、`english`。
 - `personal.interests` 是跨学科个性化字段，各学科 skill 都会读取；具体用法在学科包里。

@@ -9,6 +9,6 @@ description: 保存当前学习会话。学生明确要求保存进度或记录�
 
 1. 加载尚未加载的 `learn-core`、`learn-data`。按 Read Snapshot 确认当前学生并获取日志；没有学生时引导 `/learn-start`，停止。
 2. 日志有 `session_id`（即使 segments 为空）：保留该身份与原 `entry_point`，先执行 finalize 的幂等检查，已保存则直接告知。
-3. 没有日志：从对话中确知的学习表现组装一个最小 segment（契约见 `learn-data` 的 Session Segments）：`source: save`，mode/submode 按实际对话填写，未知观察用空数组/空字符串，不为保存补做诊断或编造证据。没有可保存内容则告知并停止。先写新日志，`entry_point: learn-save`，`session_id` 按 `learn-data` 的 `references/session-lifecycle.md` 的 Open Or Resume 生成。
+3. 没有日志：若学生要求保存的是中性计划而非学科表现，由生命周期建立 activity: support 的日志及经学生确认的 support_events（形状与更正按 `learn-data` 的 session-schema / finalize-session），不造 segment；只有临时情绪则说明没有长期学习记录可汇总。确有教学表现时，从对话中确知的学习表现组装一个最小 segment（契约见 `learn-data` 的 Session Segments）：`source: save`，mode/submode 按实际对话填写，未知观察用空数组/空字符串，不为保存补做诊断或编造证据。没有可保存内容则告知并停止。先写新日志，`entry_point: learn-save`，`session_id` 按 `learn-data` 的 `references/session-lifecycle.md` 的 Open Or Resume 生成。
 4. 读取并执行 `learn-data` 的 `references/finalize-session.md`。保存成功即结束原活跃循环，之后继续学习开新日志。
-5. 成功只回复一句“这次已经保存好了，下次可以接着练<focus>”；失败明确说明未保存成功，保留日志可重试。
+5. 成功按实际内容回复一句：学科表现“这次已经保存好了，下次可以接着练<focus>”；通用进度说明任务进度已保存；仅计划说明“学习计划已保存”。空内容 no-op 说明没有长期记录可汇总，不将临时情绪写成长久计划；失败明确说明未保存成功，保留日志可重试。

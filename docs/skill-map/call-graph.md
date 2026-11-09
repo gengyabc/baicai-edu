@@ -1,7 +1,7 @@
 # 教学技能调用关系与使用场景
 
 > 覆盖 `learn/`、`math-primary-low/`、`chinese-reading/`、`english/` 四个 DSH 技能包。  
-> 调用边以各 `SKILL.md` 与 `learn-data/references/session-lifecycle.md` 为准；本文件是运行时总览。入口按 `<subject>-session` / `<subject>-core` 命名定位学科包，约定见 `learn-data/references/subject-contract.md`。
+> 调用边以各 `SKILL.md` 与 `learn-data/references/session-lifecycle.md` 为准；本文件是运行时总览。入口经[教学解析](<../../learn/skills/learn-data/references/teaching-resolver.md>)选择适用专门包或通用路径；真实 subject 与教学实现分开。专门包仍按 `<subject>-session` / `<subject>-core` 定位。
 
 ## 1. 包依赖
 
@@ -11,7 +11,7 @@
 flowchart TB
   subgraph learn_pkg["learn / dsh-edu-learn"]
     L_entries["入口: learn-start · learn · learn-feynman · learn-profile · learn-save · learn-clean"]
-    L_shared["底座: learn-core · learn-data · learn-errors · learn-recommend"]
+    L_shared["底座: learn-core · learn-data · learn-errors · learn-recommend<br/>通用教学: learn-general-core · learn-general-session<br/>按需支持: learn-support"]
   end
 
   subgraph math_pkg["math-primary-low / dsh-edu-math-primary-low"]
@@ -108,9 +108,13 @@ flowchart TB
   English["英语线 → 见 3.5"]
   LE["learn-errors<br/>投放文件处理一次"]
 
-  SL -->|math| Math
-  SL -->|chinese| Chinese
-  SL -->|english| English
+  SL --> Resolver["teaching-resolver<br/>真实 subject + 阶段 + 任务范围"]
+  Resolver -->|适用专门包 math| Math
+  Resolver -->|适用专门包 chinese| Chinese
+  Resolver -->|适用专门包 english| English
+  Resolver -->|缺包或不适配| General["learn-general-core<br/>learn-general-session"]
+  SL -.->|明确支持需求| Support["learn-support<br/>方法建议，不另开教学循环"]
+  Support -.->|由当前教学主导者实施| General
   SL -.->|路径 / scan all| LE
   learn -.->|费曼| learn_feynman
 ```
@@ -158,7 +162,15 @@ flowchart LR
   Choice -->|选定 / 明确委托| SL["生命周期保存门槛 → subject-session"]
 ```
 
-只在当前学科内推荐，分科教学法决定内容、难度与排序；普通恢复顺序不变。英语推荐理由也用中文。闭环先显示「换个内容」，点击后才展开候选；合并菜单超限时用「更多活动」保留分科动作。推荐不是教学轮，不生成 segment、不改原 focus、不提前 finalize 或清画板；待选状态可从日志恢复。具体规则以 `learn-recommend` 与生命周期推荐闸门为准。
+学科内推荐仍由分科教学法决定内容、难度与排序；通用路径可按学生请求探索跨领域目标，但选定前不切换身份或混用能力证据。普通恢复顺序不变。英语推荐理由也用中文。闭环先显示「换个内容」，点击后才展开候选；合并菜单超限时用「更多活动」保留分科动作。推荐不是教学轮，不生成 segment、不改原 focus、不提前 finalize 或清画板；待选状态可从日志恢复。具体规则以 `learn-recommend` 与生命周期推荐闸门为准。
+
+### 通用教学与按需支持
+
+`learn-start` 在识别阶段后复用教学解析；建档、档案修改、推荐、恢复和教学使用同一结果。阶段/情境默认由 `learn-support` 参考按需读取，不按年龄另建包。缺包使用随 learn 安装的通用契约与教学，专门包安装后也不热替换旧任务。
+
+五类支持只返回 action / observe / exit / support_update，当前专门会话或通用会话仍是唯一主导者。支持可叠加当前任务；无任务时 activity 为 support，不补造表现。真实教学每轮至多一段；仅示范、支持或选择时可为 null。纯支持计划明确要求保存后进入 support_events，与 general_progress、专门掌握分开处理；三者仍走同一四镜像 finalize 和 marker-last 重放。
+
+细则见[支持技能](<../../learn/skills/learn-support/SKILL.md>)、[会话结构](<../../learn/skills/learn-data/references/session-schema.md>)和[保存协议](<../../learn/skills/learn-data/references/finalize-session.md>)。完整场景见[验收清单](<../../learn/tests/learning-support-scenarios.md>)；静态守卫不代表对话或故障注入已执行。
 
 ### 3.2 数学调用子图
 
