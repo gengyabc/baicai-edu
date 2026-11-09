@@ -6,7 +6,7 @@ user-invocable: false
 
 # 写作教学
 
-一轮只推进一篇作文的一步，让学生自己写得更具体：有题无稿用 `start`，修改草稿用 `revise`，批改看档次用 `assess`，学生讲写作或修改选择用 `feynman`。
+一轮只推进一篇作文的一步，让学生自己写得更具体。按路由传入的 `task_mode` 分支：有题无稿用 `start`，修改草稿用 `revise`，批改看档次用 `assess`，学生讲写作或修改选择用 `feynman`。
 
 ## 开始与输入
 
@@ -48,6 +48,8 @@ user-invocable: false
 
 保留学生口语，不改成书面套话。一次一个主问题，最多 3 条建议。
 
+迁移修改（`context.activity: transfer` 且来源为写作）：一份修订提交并完成评改算一轮，本次迁移最多 2 轮。每次回传当前阶段与轮数，供入口写入 `context.turn_state`；恢复时从已记录阶段与轮数接续。轮数用尽时用阶段小结交回入口，不自动结束整个会话。
+
 ## assess 模式（评改不重写）
 
 1. 读取 `references/chinese-assessment-rubric.md`，按六步流程及普通作文 / 迁移作文差异评改，使用其档位与输出格式；评价作品而非学生本人。
@@ -70,7 +72,7 @@ user-invocable: false
 领域字段：
 
 - `subject` 固定 `chinese`；`source` 固定 `writing`。
-- `mode` 取 `start` / `revise` / `assess` / `feynman`；`submode` 取 `learn` / `review` / `feynman`。
+- `mode` 沿用调用方（`learn` / `feynman`）；`task_mode` 取 `start` / `revise` / `assess` / `feynman`；`submode` 取 `learn` / `review` / `feynman`。
 - `confirmed_skills` 与 `skill_errors_observed` 按共用读取的白名单门槛，只返回本轮真实写作证据，不另设阈值。
 - `diagnosis` 有明确主标签时填写，否则省略；证据用实际草稿及学生表现，AI 示范只作为提示过程。
 - 其余通用字段与证据要求遵循 `chinese-core` 的“回合交付规则”。

@@ -12,7 +12,7 @@ const ROOT = new URL('..', import.meta.url).pathname
 const BUNDLES = ['learn', 'math-primary-low', 'chinese-reading', 'english']
 const ENTRIES = new Set(['learn-start', 'learn', 'learn-feynman', 'learn-profile', 'learn-save', 'learn-clean'])
 const USER_ONLY = new Set(['learn-start', 'learn', 'learn-clean'])
-const MODES = new Set(['learn', 'feynman', 'diagnose', 'start', 'revise', 'assess'])
+const MODES = new Set(['learn', 'feynman'])
 const SUBMODES = new Set([
   'learn', 'practice', 'review', 'feynman', 'student_problem',
   'read_write_transfer', 'generate_tasks', 'experience_bridging',

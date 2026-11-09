@@ -18,28 +18,31 @@ user-invocable: false
 
 尚未加载时加载 `chinese-core`（`learn-core`、`learn-data` 已由入口加载）。路由器只用本文件判断方向，不读 `chinese-core` 的 reference；具体规则由被路由到的子 skill 读取。
 
-科目不匹配或科目文件缺失时交回入口处理；本路由器不切换科目、不创建或修改学生数据。本轮只路由一次，不在一次回复里加载多个子 skill 的教学内容。
+科目不匹配或科目文件缺失时交回入口处理；本路由器不切换科目、不创建或修改学生数据。
 
-## 附加选项与迁移恢复
 
-普通阅读或写作的阶段出口回传 `stage_options`：`label: 写一写`、`action: transfer`。学生选择或直接提出同义请求后，交入口按共享生命周期记录迁移状态，保留原材料、来源领域和已提炼技巧；接续与恢复均由本技能按 `context.activity: transfer` 处理：
+## 阶段选项与迁移恢复
 
-- 来源为阅读：设置 `intent: transfer_read_write`，进入下方读写迁移分支。
-- 来源为写作：设置 `type: writing_draft`、`intent: revise_writing`，进入已有写作修改分支；本次写作迁移最多 2 轮，阶段与轮数由子技能回传到 `context.turn_state`，轮数用尽交回入口，不自动结束整个会话。
+普通阅读或写作的阶段出口回传 `stage_options`：`label: 写一写`、`action: transfer`。学生选择它或直接提出同义请求（如沿用本文技巧写一段）时，都交入口按共享生命周期记录迁移状态，保留原材料、来源领域和已提炼技巧。此后接续与恢复按 `context.activity: transfer` 先归一化目标，再查路由表：
 
-`mode = feynman` 优先于迁移。迁移来源不足时先补问，不按旧 intent 猜测。
+- 来源为阅读：设置 `intent: transfer_read_write`。
+- 来源为写作：设置 `type: writing_draft`、`intent: revise_writing`；轮数上限与回传由 `chinese-writing-session` 的迁移修改规则执行。
+
+迁移来源不足时先补问，不按旧 intent 猜测。费曼优先按路由表。
 
 ## 路由表
 
 明确 `intent` 优先于旧 `type`；两者表达了互相冲突的明确请求时，用 `ask_user_question` 确认一个动作后再路由。`mode = feynman` 优先决定教学方式，出题/迁移目标仅保留其阅读或写作领域。
 
-| 条件 | 路由到 | 传入 mode |
+`mode` 原样传递，不被改写；`task_mode` 是子 skill 内的分支，只在下表指定，不写回 context。
+
+| 条件 | 路由到 | 传入 `task_mode` |
 |---|---|---|
 | `mode = feynman`，目标是阅读类 | `chinese-reading-session` | `feynman` |
 | `mode = feynman`，目标是写作类 | `chinese-writing-session` | `feynman` |
 | `mode = feynman`，目标是 `profile` 或中文默认 | 先选定一个领域，再路由到对应子 skill | `feynman` |
-| `intent = transfer_read_write`，或学生明确要求沿用本文技巧写作（非费曼） | `chinese-read-write-transfer` | `learn` |
-| `type = task_generation` | `chinese-generate-tasks` | `learn` |
+| `intent = transfer_read_write`（非费曼） | `chinese-read-write-transfer` | 不传 |
+| `type = task_generation` | `chinese-generate-tasks` | 不传 |
 | `type = writing_prompt` | `chinese-writing-session` | `start` |
 | `type = writing_draft` | `chinese-writing-session` | `revise` |
 | `type = assessment` 且 `intent = assess_writing` | `chinese-writing-session` | `assess` |
@@ -60,13 +63,12 @@ user-invocable: false
    3. 仍然没有，用 `chinese-core` 的 `references/chinese-grade-defaults.md`。
    4. 只选一个领域，不并列两个。
 4. 已明确 `intent` 时，不要用模糊描述重新推断阅读还是写作。
-5. 路由完成后，由子 skill 负责本轮全部教学动作、规则读取、输出形状和 `session_segment`；路由器不再补充学科建议。
 
 ## 移交控制
 
 调用目标子 skill 时，传齐：
 
-- `student_id`、`subject: chinese`、`mode`
+- `student_id`、`subject: chinese`、`mode`，以及路由表指定的 `task_mode`
 - `target_context`（已归类的目标，保留原意图与材料引用；入口持有原始输入）
 - 恢复时的 `context.activity`、`context.turn_state`（迁移来源、技巧、阶段、轮数、待答问题）
 - `focus`

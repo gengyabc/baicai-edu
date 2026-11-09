@@ -23,9 +23,9 @@ chinese-reading/
 | 技能 | 作用 |
 |---|---|
 | `chinese-core` | 语文规则底座：阅读核心与六种深读方法、写作核心与六圈展开、反馈流程、出题规则、批改量规、统一错误标签。子 skill 按需读取 `references/` 下的文件。 |
-| `chinese-session` | 语文路由器。接收 `target_context`、`mode`、`focus`，只决定本轮进阅读、写作、读写迁移还是出题，不复述学科教学动作。 |
-| `chinese-reading-session` | 阅读教学与诊断。learn 模式用六种深读方法拆文本，diagnose 模式按统一阅读标签诊断，费曼模式让学生讲证据。 |
-| `chinese-writing-session` | 写作教学。start 用六圈展开搭定格，revise 只做局部升格，assess 用六步量规给档位与最值得改的 3 处，费曼模式讲写作选择。 |
+| `chinese-session` | 语文路由器。接收 `target_context`、`mode`、`focus`，按表传入 `task_mode`，只决定本轮进阅读、写作、读写迁移还是出题，不复述学科教学动作。 |
+| `chinese-reading-session` | 阅读教学与诊断。按 `task_mode`：`learn` 用六种深读方法拆文本，`diagnose` 按统一阅读标签诊断，`feynman` 让学生讲证据。segment 的 `mode` 沿用调用方。 |
+| `chinese-writing-session` | 写作教学。按 `task_mode`：`start` 用六圈展开搭定格，`revise` 只做局部升格，`assess` 用六步量规给档位与最值得改的 3 处，`feynman` 讲写作选择。segment 的 `mode` 沿用调用方。 |
 | `chinese-read-write-transfer` | 读写迁移。提炼 1-3 个有原文证据的写法，换主题出题，陪写，按六步量规评改（技巧运用必查），最多两轮。 |
 | `chinese-generate-tasks` | 出题。阅读题与写作题，匹配年级难度，给参考答案、命题意图、判分标准；句子填空题说明合理边界。 |
 
