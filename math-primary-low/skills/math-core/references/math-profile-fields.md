@@ -1,6 +1,6 @@
 # 数学档案字段
 
-共享科目档案的外壳见 `learn-data` 的 `references/profile-schema.md`。本文只定义数学增量。示例不是另一套初始值；初始领域与水平以 `references/math-grade-defaults.md` 为准。
+共享科目档案外壳见 `learn-data` 的 `references/profile-schema.md`。本文只定义数学增量；`self_report`、`learning_state` 数组与 `error_history` / `session_history` 不在此重复。初始领域与水平以 `references/math-grade-defaults.md` 为准。
 
 ## preferences
 
@@ -16,45 +16,10 @@
 
 - `overall`
 - `arithmetic_strategy_stage`
+- `multidigit_strategy_stage`
 - `fraction_strategy_stage`
 
-阶段取值见 `references/progression-map.md`。没有新证据时不要改写。
-
-## 科目档案示例
-
-`upper_primary` 的形状。`active_domain` 与水平按年级默认填写，不要照抄下面的占位。
-
-```json
-{
-  "updated_at": "2026-10-04T12:00:00Z",
-  "profile": {
-    "preferences": {
-      "likes_visual": false,
-      "likes_story_context": false,
-      "likes_direct_calculation": false
-    },
-    "self_report": {
-      "easy_topics": [],
-      "hard_topics": []
-    },
-    "current_levels": {
-      "overall": "L1",
-      "arithmetic_strategy_stage": "direct_modeling",
-      "fraction_strategy_stage": "equal_sharing_no_coordination"
-    }
-  },
-  "learning_state": {
-    "active_domain": "fractions",
-    "mastered_topics": [],
-    "developing_topics": [],
-    "priority_targets": []
-  },
-  "error_history": [],
-  "session_history": []
-}
-```
-
-`self_report` 使用 `easy_topics` / `hard_topics`。
+阶段取值与旧值的读法见 `references/progression-map.md`。没有新证据时不要改写；旧档案缺 `multidigit_strategy_stage` 时按 `unknown` 读。
 
 ## 文件分析的 domain
 

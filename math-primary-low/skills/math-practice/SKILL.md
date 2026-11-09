@@ -8,16 +8,16 @@ user-invocable: false
 
 ## 开始与输入
 
-加载 `math-core`，按其“开始与输入”执行。另读 `math-core` 的 `references/math-teaching-core.md` 与 `references/targeted-practice-rules.md`（统一目的、题量、适配与逐题调整）。
+加载 `math-core`，按其“开始与输入”执行。另读 `math-core` 的 `references/math-teaching-core.md` 与 `references/targeted-practice-rules.md`（统一目的、题量、逐题调整与完成条件）。
 
 重点看快照中的 `profile.current_levels`、`profile.preferences`、`self_report`、`error_history` 与 extracted 分析、`learning_state.active_domain` / `priority_targets`、`learning_memory.recent_error_patterns`，以及已有的 `math-diagnose` 结论。兴趣不进入选题，只按个性化参考搭桥。
 
 ## 执行
 
 1. **定起点**：复用诊断；只需查重复错误可用第1层，需估阶段或澄清不明错因则回传 `continue_diagnose` 与已有证据，由 session 决定下一动作。完成条件：一个待检验/巩固模式，不重查已确定结论。
-2. **选目的**：按练习参考选择诊断、对比、变式或连接，设计当前一题。完成条件：目的有证据、目标单一、题量不超限；四类不是等级，连接不以计算稳定为前提。
+2. **选目的**：按练习参考选定当前目的并设计一题。完成条件：目的与题目符合参考。
 3. **逐题推进**：按参考出题、等待、确认、调整。完成条件：当前题待答，或已有证据决定继续、重选目的或返回；后续确认等待回应。
-4. **收束**：目的满足、题量到上限或需重定位卡点时，总结已展示关系/待解问题，回传 `return_teaching`；需诊断时回传 `continue_diagnose`，由 session 决定下一动作。完成条件：区分证据与未知，给具体下一步；不因到上限宣告掌握或追加题单。
+4. **收束**：达到参考的停止或完成条件，或需重定位卡点时，按参考收束并回传 `return_teaching`；需诊断时回传 `continue_diagnose`，由 session 决定下一动作。完成条件：区分证据与未知。
 
 ## 回传
 
