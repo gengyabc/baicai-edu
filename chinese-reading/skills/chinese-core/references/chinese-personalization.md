@@ -1,6 +1,6 @@
 # 语文个性化
 
-共享边界（不得覆盖目标、隐私、每轮一个细节）按 `learn-core` 的 `references/prestart-settings-interpretation.md`。本文只规定这些信息在语文里怎么用。
+共享边界（不得覆盖目标、隐私、每轮一个细节、自评优先级）按 `learn-core` 的 `references/prestart-settings-interpretation.md`。本文只规定这些信息在语文里怎么用。
 
 ## 兴趣与经历
 
@@ -20,10 +20,6 @@
 - `likes_oral_explanation`：先让学生口头说，再决定要不要落笔。
 - `likes_revision`：在已有草稿上做局部修改，不另起一篇。
 
-## 易 / 难
+## 费曼追问
 
-易/难支架边界按 prestart。`easy_topics` 可作进入当前目标的起点；显式目标和当轮表现优先于自评。
-
-## 费曼与确认
-
-费曼追问追原文证据、写作选择或修改理由，不套步骤口诀。换角度确认时回到一处文本证据；证据已经支持结论就停止。
+费曼追问原文证据、写作选择或修改理由。换角度确认时回到一处文本证据。停止条件按 `learn-core` 的 `references/confirm-before-accept.md`。

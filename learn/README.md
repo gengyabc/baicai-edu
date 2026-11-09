@@ -24,17 +24,18 @@
 - `learn-core`：中文语气、以学生为中心、年级适配、难度调整、按需确认、引导无响应、结束信号、人格、费曼规则。
 - `learn-data`：`outputs/students/` JSON 数据协议、快照、建档、写回、finalize。
 - `learn-errors`：用户投放文件解析、`data/.../raw/` 只读、备份、extracted 写入、error_history 更新。
+- `learn-recommend`：根据当前学科记录推荐具体小目标，标明首选与中文理由；内容、难度与排序由学科推荐契约决定。
 
-入口 skill 分两档：`learn-start` / `learn` / `learn-clean` 设置 `disable-model-invocation: true`，只能由用户键入命令发起，不进入模型目录；`learn-feynman` / `learn-profile` / `learn-save` 保留模型入口，支持对话内自动加载（“我来给你讲”“看看我的档案”“保存一下”）。上面 3 个内部 skill 保持模型可加载，只通过 `user-invocable: false` 从 `/` 菜单隐藏。
+入口 skill 分两档：`learn-start` / `learn` / `learn-clean` 设置 `disable-model-invocation: true`，只能由用户键入命令发起，不进入模型目录；`learn-feynman` / `learn-profile` / `learn-save` 保留模型入口，支持对话内自动加载（“我来给你讲”“看看我的档案”“保存一下”）。上述内部 skill 保持模型可加载，只通过 `user-invocable: false` 从 `/` 菜单隐藏。
 
 ## 规则所有权
 
 - `learn-core`：跨学科教学行为；年级默认、难度调整、费曼角色与白名单分别由其 references 定义。
 - `learn-data/references/session-lifecycle.md`：`/learn` 与 `/learn-feynman` 的唯一会话循环。模式切换沿用日志与 entry_point，不重开会话。
-- `learn-data/references/subject-contract.md`：入口与学科包的约定。入口按 `<subject>-session` / `<subject>-core` 命名找到学科包，从 core 的「学科契约」读取目标分类、年级默认、档案字段与诊断规则；可选科目只在 `/learn-start` 的科目表维护。
+- `learn-data/references/subject-contract.md`：入口与学科包的约定。入口按 `<subject>-session` / `<subject>-core` 命名找到学科包，从 core 的「学科契约」读取目标分类、年级默认、档案字段、诊断规则与学习推荐；可选科目只在 `/learn-start` 的科目表维护。
 - `learn-data/references/session-schema.md`：每轮读取的日志与 segment 外壳。
 - `learn-data/references/profile-schema.md`：档案、记忆、状态、错题与里程碑模板，建档与 finalize 时读取；偏好键、水平、领域、标签和目标分类由学科包定义。
-- `learn-core/references/prestart-settings-interpretation.md`：个性化不得覆盖什么、隐私与用量。字段路径归 `profile-schema`；学科怎么用归学科包。
+- `learn-core/references/prestart-settings-interpretation.md`：个性化不得覆盖什么、隐私、用量与自评优先级。字段路径归 `profile-schema`；学科怎么用归学科包。
 - `learn-core/references/difficulty-adjustment.md`：学生要求降低或提高难度时的判定、当轮调整、日志记录与后续沿用；存储字段归 `profile-schema`。
 - `learn-data/references/finalize-session.md`：统一保存流程；保留策略归 `session-retention.md`。
 - 学科 references：方法、量规、标签与题型的唯一正文；学科 SKILL 保留分流、执行步骤和独有输出。
@@ -43,10 +44,21 @@
 
 日志新增可选 `context`（目标、材料引用、模式与当前动作）及临时 `finalize_plan`（部分保存失败重放），旧日志仍可恢复，无需迁移学生档案。提交顺序和清理以 finalize reference 为准；同一学生/科目有待完成保存时先恢复，再编辑档案或处理新错题。
 
+### 学习推荐
+
+学生说「不知道学什么」「接下来学什么」或想换内容时，推荐当前学科的 2–3 个小目标，给出首选及中文理由；英语推荐理由同样用中文，选定后的教学语言不变。一段学习完成后的阶段选择增加「换个内容」，选中才展开推荐。明确给出目标则直接教学，普通进入不强行推荐。
+
+记录不足时说明是探索性建议，不强制先测、不虚构薄弱项；合适候选不足时不凑数。推荐和选择只保存临时候选，不算学习表现、不直接更新长期档案；用户选定或明确说「你选吧」后才切任务。跳过推荐卡或空消息不代表同意切换，推荐本身不触发画板清空。
+
 ### 对话验收场景（需实际运行）
 
 | 场景 | 验收结果 |
 |---|---|
+| 有待答题时问「不知道接下来学什么」，随后取消 | 只推荐当前学科，理由有依据；不产 segment、不 finalize，取消后保留原题与画板 |
+| 阶段闭环并有四个学科附加项 | 第一层含「换个内容」且不超过 6 项，更多活动仍可进入；选换内容才展开候选 |
+| 记录不足、明确委托首选、拒绝全部、跳过或空回应 | 探索性说明、不凑数；仅明确委托才开始，拒绝不重复推，跳过/空回应不切任务 |
+| 推荐中断后恢复，或推荐后切主题保存失败 | 恢复同一候选；选择不计表现，旧主题保存成功前不开始新任务 |
+| 英语学习推荐 | 推荐理由中文，选定后恢复英语教学，不在推荐时调方法技能发题 |
 | `/learn` 中选择当小老师，再结束 | 同一 session_id 与 entry_point，仅模式改变；只写一条会话 summary |
 | 直接 `/learn-feynman`，给出该科材料或答案 | 保留学科意图，AI 用学生角色按该学科的追问点提问 |
 | 已解析错题后重启会话 | 从 extracted 引用恢复材料，不重复改名、分析或问自我诊断 |

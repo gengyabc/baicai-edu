@@ -25,13 +25,36 @@
 }
 ```
 
-- `context` 对旧日志可选。新会话和恢复后的会话在目标确定、模式或 activity 变化、以及每一轮之后都写入。这里的 `mode` 是交互模式（`learn` / `feynman`），和学科 segment 自己的 mode 不是一回事。
+- `context` 对旧日志可选。新会话和恢复后的会话在目标确定、模式或 activity 变化、以及每一轮之后都写入。这里的 `mode` 是交互模式（`learn` / `feynman`），与 segment 的 `mode` 同义；学科内部分支不写进 `mode`。
 - `context.difficulty_request`（可选）保存学生最近一次明确的难度要求：`{ "direction": "easier" | "harder" | "standard", "note": "...", "requested_at": "..." }`。finalize 写入 `profile_memory.material_difficulty`；没有请求时省略。
 - `activity`：`teaching` / `transfer`。普通教学的 `turn_state` 保存 `current_task`（当前题原文）、`response_format`（作答要求）、`student_response`（已收到的回答，未答为 null）、`pending_question`（最新待答问题，已无则 null）。新题替换当前题及回答；解释追问仍保留原题与答案。恢复时先核对本条消息，再接最新待答问题。迁移把来源领域、已提取手法、当前阶段、轮次和待答问题也放在 `turn_state`，恢复时不重启阶段。
 - `target_context` 的形状、文件处理标记和引用见 `references/target-parsing.md`。`materials` 只在没有持久文件时存放必要的粘贴文本、草稿或作答；已有文件用工作区引用。不把危机或私人经历写在这里。
 - 没有 `context` 的旧日志：恢复最后一段，缺材料或意图就问，不推断。已有 `error_history` 里的 extracted 引用可以读，不重新处理 raw。
 - `finalize_plan` 只由 `references/finalize-session.md` 定义。计划未完成时，先做完保存，再教学、改档案或写错题。
 - `/learn` 与 `/learn-feynman` 都经 `references/session-lifecycle.md` 追加唯一的学科 segment 并更新 context。Finalize 提交四个科目文件后，再清 segments、context 和 plan。
+
+## 临时学习推荐
+
+日志顶层可选 `recommendation`，独立于教学 context，尚无目标时也可存在：
+
+```json
+{
+  "subject": "subject_id",
+  "mode": "learn",
+  "preferred_id": "r1",
+  "candidates": [
+    {
+      "id": "r1",
+      "focus": "一个具体小目标",
+      "target_context": { "type": "topic", "topic": "一个具体小目标", "source": "manual_topic", "files": [], "intent": null },
+      "reason": "适合现在学习的中文理由",
+      "basis": "已有记录支持的事实或探索性说明"
+    }
+  ]
+}
+```
+
+`mode` 保留发起推荐时的模式，供无教学 context 时恢复；已有 context 时以 context.mode 为准。选定后可选 `selected_id` 必须对应一个候选，由生命周期在 finalize 前先持久化；它表示学生已经授权的目标，不能由首选标记或跳过推导。候选 id 在同一份推荐中唯一，preferred_id 必须对应其中一个；target_context 遵循目标分类契约，不复用不相关旧材料。该对象仅供中断恢复选择，不是已选 focus，也不是 segment 的 recommended_targets。由 `learn-recommend` 形成，生命周期写回；推荐期间保留旧 context 与 segments，选择/拒绝不生成表现。选定目标写入 context 成功后、取消或结束时清除。最终保存不把推荐对象汇总进档案；清理日志时移除未选推荐，保留已有 selected_id 的推荐直至新目标 context 写入成功，用于保存失败后的恢复。仅保存不自动开始新教学。没有此对象的旧日志照常恢复，不迁移旧档案。
 
 ## Session Segment
 
@@ -68,7 +91,7 @@
 枚举：
 
 - `subject`：入口写入的 id。本文件不列举科目。
-- `mode`：`learn` / `feynman`。学科包可以增加自己的 segment mode，并写在学科文档里。
+- `mode`：`learn` / `feynman`，沿用调用方的交互模式，学科包不扩展。学科内部分支另用学科字段记录，写在学科文档里。
 - `submode`：`learn` / `practice` / `review` / `feynman`。学科包可以增加取值。已存的旧值保留，不在这里新造。
 - `source`：`profile` / `manual_topic` / `error_analysis` / `diagnosis` / `practice` / `save` / `focus`。学科包可以增加。
 - `error_history.source` 另算：`file_analysis` / `diagnosis`。

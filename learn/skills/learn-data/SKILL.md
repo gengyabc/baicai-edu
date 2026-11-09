@@ -107,6 +107,7 @@ outputs/students/
 | 按 subject 定位学科 skill 与学科字段 | `references/subject-contract.md` |
 | 产出或消费 segment、写日志 | `references/session-schema.md`（每轮不必读完整 `references/profile-schema.md`） |
 | 普通学习给下一步 | `references/next-step.md` |
+| 学习内容推荐或恢复待选候选 | 加载 `learn-recommend`；临时状态见 `references/session-schema.md`，只由生命周期写日志，不产教学 segment |
 | 结束或手动保存 | `references/finalize-session.md`、`references/session-retention.md` |
 
 ## Session Segments

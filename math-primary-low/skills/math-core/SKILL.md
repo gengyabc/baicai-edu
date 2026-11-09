@@ -1,10 +1,12 @@
 ---
 name: math-core
-description: 数学共享规则。数学教学、策略诊断、分层练习或学生出题考 AI 前加载；生成数学学习记录时读取字段约定。
+description: 数学共享规则，按 CGI（Cognitively Guided Instruction）教学。数学教学、策略诊断、分层练习或学生出题考 AI 前加载；生成数学学习记录时读取字段约定。
 user-invocable: false
 ---
 
 # 数学规则
+
+本包按 Cognitively Guided Instruction（CGI）教学：题型、策略判断、提问与支架都以 CGI 为准，细则见 `references/math-teaching-core.md`。
 
 共享数学规则，由 `math-session`、`math-diagnose`、`math-practice`、`math-student-problem` 按名加载；本 skill 不产出学生回复或 segment。
 
@@ -17,7 +19,7 @@ user-invocable: false
 - 题目按 CGI，题面形式按 `references/problem-design.md`；兴趣只在 `references/math-personalization.md` 的搭桥条件成立时进入题目。
 - 生成题目或提示前，若 `memory.profile_memory.material_difficulty` 不是 `standard`，按 `learn-core` 的 `references/difficulty-adjustment.md` 调一个负荷因素（数字、表示或提示量），不改策略阶段。
 - 文件只由入口调用一次 `learn-errors`。收到 `files_processed: true` 时读 `material_refs` 指向的 extracted 分析；教学中途出现未处理的图片、Markdown 或 raw 扫描请求时交回入口。本包不直接调用 `learn-errors`。
-- 子流程（诊断、练习、学生出题）回传证据，由 `math-session` 合并为本轮唯一 segment；日志、档案与 finalize 交共享流程。
+- 诊断、练习、学生出题只回传证据，不产出 segment；调度与合并归 `math-session`，日志、档案与 finalize 交共享流程。
 
 ## 按分支读取
 
@@ -26,14 +28,14 @@ user-invocable: false
 | 条件 | 读取 |
 |---|---|
 | 所有数学教学，包括诊断、练习、学生出题 | `references/math-teaching-core.md` |
-| 进入新题、新活动、新主题前（含跳题、教师下一题、旧主题 finalize 成功后）；同题流程切换需辨别边界时 | `references/board-task-boundary.md` |
+| 进入新题、新活动、新主题前（含跳题、教学助手下一题、旧主题 finalize 成功后）；同题流程切换需辨别边界时 | `references/board-task-boundary.md` |
 | 快照含兴趣、偏好、易/难主题或经历，或学生做不出当前题 | `references/math-personalization.md` |
 | 选择下一目标、判断策略阶段 | `references/progression-map.md` |
 | 选题、改题、变式；加减乘除、位值、多位数 | `references/problem-design.md` |
 | 分数意义、等分、等值、比较、运算或小数 | `references/fraction-relations.md` |
 | 准备提示、学生嫌麻烦、求新办法或提示无效 | `references/scaffold-calibration.md` |
 | 消息带画板附件或修改记录附件（`我的画板.json` / `我的修改记录.json`），或学生问画板怎么用 | `references/structured-drawing.md` |
-| 判断算术/分数策略阶段或分析错因 | `references/strategy-diagnosis-rules.md` |
+| 判断算术/多位数/分数策略阶段或分析错因 | `references/strategy-diagnosis-rules.md` |
 | 学生出题考 AI，设计 AI 回答 | `references/math-student-problem-design.md` |
 | 生成诊断/对比/变式/连接练习 | `references/targeted-practice-rules.md` |
 | 产出数学 segment 或合并子流程证据 | `references/math-segment-fields.md` |
@@ -47,6 +49,7 @@ user-invocable: false
 | 角色 | 读取 |
 |---|---|
 | 目标分类：分类学习目标或文件交接后的数学目标 | `references/math-target.md` |
+| 学习推荐：生成、比较或重排数学小目标 | `references/learning-recommendations.md` |
 | 年级默认：初始化、重选年级或选择默认领域 | `references/math-grade-defaults.md` |
 | 档案字段：偏好键与 `/learn-start` 选项、水平键、写科目档案 | `references/math-profile-fields.md` |
-| 诊断规则：错因、`error_type` 与 `label` | `references/strategy-diagnosis-rules.md` |
+| 诊断规则：错因、`error_type` 与 `label` | `references/strategy-diagnosis-rules.md`（与上方条件表同一份） |

@@ -17,8 +17,11 @@
 | 年级默认 | `/learn-start`、`/learn-profile`、Read Snapshot 初始化 | `learning_state.active_domain` 与 `profile.current_levels` 初值 |
 | 档案字段 | `/learn-start` 建档、`/learn-profile` 修改 | `profile.preferences` 键、`/learn-start` 偏好选项与键的对应、`current_levels` 键 |
 | 诊断规则 | `learn-errors`、文件目标交接 | `error_type`、`label` 与 `domain` 的取值 |
+| 学习推荐 | `learn-recommend` | 依据既有快照与最新表现，按本学科教学方法决定候选内容、难度、排序和推荐理由；不执行教学 |
 
 按名加载 `<subject>-core` 后，以其返回的 base directory 定位上表文件，不拼仓库路径。
+
+学习推荐角色返回候选供 `learn-recommend` 组织选择，每项包含具体 focus、目标分类可接收的 target_context、中文 reason 与支持判断的 basis（记录事实或探索性说明）。候选数、呈现、选择与写回边界以 `learn-recommend` 为准。普通恢复仍沿用生命周期固定候选顺序；只有显式推荐模式允许重排。推荐流程不调用 `<subject>-session` 开始教学，用户选定后才进入它。
 
 ## 未安装
 

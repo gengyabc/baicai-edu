@@ -28,7 +28,7 @@
 ## Idempotency Gate
 
 1. 读完整 `session_log.json` 与 `current_state.json`，验证 student/subject/session_id 与本次保存一致。
-2. `last_finalized_session_id` 相同表示四个科目文件已提交：不重复写科目文件或累计错误。若同一日志仍有 segments/context/finalize_plan，只清理这些已提交的临时内容；清理失败说明“学习记录已保存，日志清理未完成”，下次重试清理，不误报学习数据未保存。
+2. `last_finalized_session_id` 相同表示四个科目文件已提交：不重复写科目文件或累计错误。若同一日志仍有 segments/context/finalize_plan，只清理这些已提交的临时内容；已选 recommendation 不是旧教学残留，按 Cleanup 保留；清理失败说明“学习记录已保存，日志清理未完成”，下次重试清理，不误报学习数据未保存。
 3. marker 不同且日志有匹配的 `finalize_plan`：直接执行下节的 Commit And Recovery，不重新生成 summary/patch、不在半写入文件上再次前插或计数。
 4. marker 不同且无 plan：继续 Process。旧日志/文件形状均兼容，只有新 finalize 才产生 plan。
 
@@ -54,7 +54,7 @@
 1. **Prepare**：在任何科目文件写入前，先将 `finalize_plan` 写入当前日志并确认成功。plan 包含匹配的 `session_id`、`student_id`、`subject`、`final_summary`，以及 `target_files` 下 `profile`、`memory`、`milestones`、`current_state` 四份完整最终 JSON。时间戳和错误计数在准备时确定；current_state 的最终镜像含本次 marker。目标路径由数据协议计算，不接收计划中的任意路径。
 2. **Commit**：按 `profile → memory → milestones → current_state` 顺序逐一先读目标文件，再写计划中的最终镜像。marker 只能在最后一个科目文件中写入；四文件全部成功前不清日志。重试始终重放相同镜像，不能基于已部分写入的文件重新合并、重新前插历史或再次加错误计数。
 3. **Failure**：准备计划失败时不写任何科目文件；提交途中失败时保留完整 plan 与 segments，明确未完成保存并停止新教学。下次 `/learn-save` 或恢复优先重放该 plan。持有 plan 期间同一学生/科目不得执行新的 `/learn-profile` 编辑或 `learn-errors` 写入；先完成/恢复保存，不覆盖中途外部修改。若发现人工修改冲突，停止并请用户选择恢复方式。
-4. **Cleanup**：marker 写成功后，清空 segments、移除 context 与 finalize_plan；日志只保留 `session_id`、`entry_point`、`started_at`、`updated_at` 与 `segments: []`。此时重试只做清理，不重复写科目数据。下一次 `/learn` 新建会话。
+4. **Cleanup**：marker 写成功后，清空 segments、移除 context、finalize_plan 与未选 recommendation；日志保留 `session_id`、`entry_point`、`started_at`、`updated_at` 与 `segments: []`。若 recommendation 已有合法 selected_id，则原样保留该对象（含 mode）直到生命周期成功写入新目标 context；它不参与 summary/patch。明确结束或取消由生命周期清除它。此时重试只做清理，不重复写科目数据。下一次 `/learn` 新建会话并承接已选目标；仅 `/learn-save` 不自动开始新教学。
 
 该计划只存在当前未完成日志中，用于顺序写入失败后的重放，不提供多进程锁或任意文件损坏恢复。
 

@@ -14,6 +14,7 @@ user-invocable: false
 | 学生要求降低或提高难度，或要沿用上次的难度要求 | `references/difficulty-adjustment.md` |
 | 只给答案或短答、未回应引导、声称理解但缺少展示：先探查再决定支架 | `references/guidance-non-response-handling.md` |
 | 判断结束或换主题 | `references/session-end-signals.md` |
+| 不知道学什么、询问学什么、想换内容或阶段选「换个内容」 | 加载 `learn-recommend`，由生命周期推荐闸门承接，选定前保留原任务 |
 | 费曼模式 | `references/feynman-mode.md`、`references/feynman-skill-whitelist.md` |
 | 使用姓名、年级、兴趣、偏好、易/难主题或经历 | `references/prestart-settings-interpretation.md` |
 | 学生说出自伤、被伤害、被欺凌、身处危险或不想活 | `references/llm-safety-boundaries.md` |

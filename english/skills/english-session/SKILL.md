@@ -13,6 +13,12 @@ user-invocable: false
 - `mode: feynman` 时先按 `learn-core` 的费曼规则由 AI 扮演同龄听众，本轮让学生主讲，不新开新闻检索或新的写作任务。
 - `target_context` 已由入口按 `english-target` 归类；本 skill 不重新解析材料类别，只选本轮动作。
 
+## 学习推荐闸门
+
+学生不知道学什么、问“学什么”、想换内容但未给具体目标，或阶段选择「换个内容」时，在教学、费曼或方法恢复前加载 `learn-recommend`。交入口已有快照、当前焦点与最新真实表现，由它读取 `english-core` 契约的「学习推荐」角色；停在推荐选择，不调用 coach 或其他方法开展教学/诊断、不产 `session_segment`、不修改 `context.focus` 或长期档案、不清画板。已明确新目标则交共享生命周期处理，不再要求推荐选择。
+
+推荐理由统一中文，推荐卡片与流程标签可中文；选定后恢复英语教学。候选内容与排序由角色文件决定，可重排普通恢复候选；选定后的方法调度仍只按本 session 与 `english-teaching-core.md` 唯一方法表执行。
+
 ## 附加选项
 
 普通学习目标闭环时，回传 `stage_options`，由入口按 `learn-data` 的 `references/next-step.md` 展示：

@@ -48,6 +48,7 @@ user-invocable: false
 | 角色 | 读取 |
 |---|---|
 | 目标分类：`type` / `intent` 取值、文件交接后的语文目标 | `references/chinese-target.md` |
+| 学习推荐：生成、比较或重排语文小目标 | `references/learning-recommendations.md` |
 | 年级默认：初始化、重选年级或选择默认领域与题型 | `references/chinese-grade-defaults.md` |
 | 档案字段：偏好键与 `/learn-start` 选项、水平键、写科目档案 | `references/chinese-profile-fields.md` |
 | 诊断规则：阅读/写作标签与 `domain` | `references/chinese-error-labels.md` |
