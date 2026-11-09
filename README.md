@@ -70,7 +70,7 @@ outputs/students/
 ## 设计文档
 
 - [技能调用关系与使用场景](<docs/skill-map/call-graph.md>)（包依赖、调用面、Mermaid 调用图与场景时序）
-- [学习支持总体设计](<docs/learn-support-design.md>)与[合成场景验收](<learn/tests/learning-support-scenarios.md>)：全年龄、通用任务教学、五类支持及证据隔离。
+- [学习支持总体设计](<docs/learn-support-design.md>)、[合成场景验收](<learn/tests/learning-support-scenarios.md>)与[支持性交流回放](<learn/tests/supportive-conversation-scenarios.md>)：全年龄、通用任务教学、五类支持、拒绝/退出与证据隔离。
 - [DSH 教学插件产品方案](./docs/DSH教学插件_最终技术与产品方案.md)
 - [跨 Harness 技能与多用户 Agent 平台方案](./docs/跨Harness技能与多用户Agent平台总体实施方案_v1.1_Python优先.md)
 

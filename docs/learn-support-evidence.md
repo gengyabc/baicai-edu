@@ -4,6 +4,12 @@
 
 核验日期：2026-11-09。以下区分实际读取的理论官网、论文正文、综述和摘要；不把搜索摘要或打不开的全文当已读实证。所有方法是需在当前任务观察的教学建议，不承诺确定效果；未引用原讨论稿中的未核验数字。
 
+## 关系支持背景（仅设计依据）
+
+- 来源：Emslander, Holzberger, Ofstad, Fischbach & Scherer (2025), [Teacher–student relationships and student outcomes: A systematic second-order meta-analytic review](https://doi.org/10.1037/bul0000461), *Psychological Bulletin*。已读取作者所属机构公开的[摘要页](https://www.uv.uio.no/cemo/english/about/news-events-and-publications/publications/2025/teacher%E2%80%93student-relationships-and-student-outcomes.html)，并核对摘要中的 26 项元分析、约 264 万名 pre-K–12 学生及 119 个元分析效应量。
+- 用途：只解释为何设计中保留真实拒绝权、稳定回应与非任务导向交流，不作为运行时规则或宣传数字。
+- 限制：这是对既有元分析的相关性二阶综合，不能证明改善关系会因果地提高成绩；研究对象是真人师生，不直接证明 AI 关系支持或本产品有效。运行时技能不引用该数字，也不承诺效果。
+
 ## SDT
 
 - 来源：Center for Self-Determination Theory 的 [Theory](https://selfdeterminationtheory.org/theory/)，已读取官网理论正文。官网列出 Ryan & Deci (2000)、Deci & Ryan (1985/2000) 等原始理论来源。

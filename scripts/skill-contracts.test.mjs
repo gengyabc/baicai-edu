@@ -16,6 +16,7 @@ const skills = bundles.flatMap((bundle) =>
   })),
 )
 const dataRef = (name) => text(`learn/skills/learn-data/references/${name}.md`)
+const supportRef = (name) => text(`learn/skills/learn-support/references/${name}.md`)
 
 function markdownFiles(dir) {
   return readdirSync(join(root, dir), { withFileTypes: true }).flatMap((entry) => {
@@ -216,6 +217,92 @@ test('support chat stays out of long-term learning data without promising platfo
   const privacy = text(skillPath('learn', 'learn-data')).split('## Privacy')[1] ?? ''
   for (const rule of ['学习档案写入', '平台消息留存', '未核实', '不承诺保密或不记录',
     '家长身份', 'support_events', 'learn-start', 'learn-profile']) assert.ok(privacy.includes(rule), rule)
+  assert.match(supportRef('supportive-conversation'),
+    /不承诺[^\n]*未核实的转述边界/)
+})
+
+test('supportive conversation reference is reachable from every support pathway', () => {
+  const reference = supportRef('supportive-conversation')
+  assert.match(text(skillPath('learn', 'learn-support')), /references\/supportive-conversation\.md/)
+  assert.match(text(skillPath('learn', 'learn-core')), /references\/supportive-conversation\.md/)
+  for (const name of ['autonomy', 'learner-stage']) {
+    assert.match(supportRef(name), /supportive-conversation\.md/)
+  }
+  assert.match(text('learn/skills/learn-core/references/assistant-positioning.md'),
+    /references\/supportive-conversation\.md/)
+  for (const section of ['回应与倾听', '公开邀请与真实拒绝权', '可靠帮助与边界', '退出与交回']) {
+    assert.ok(reference.includes(`## ${section}`), section)
+  }
+  const anchorLinks = ['autonomy', 'learner-stage', 'supportive-conversation']
+    .flatMap((name) => [...supportRef(name)
+      .matchAll(/\]\(([a-z-]+\.md)#([^\s)]*)\)/g)].map((match) => [name, ...match]))
+  for (const [source, , target, anchor] of anchorLinks) {
+    const linked = text(`learn/skills/learn-support/references/${target}`)
+    assert.ok(linked.toLowerCase().includes(`## ${anchor.toLowerCase()}`), `${source} -> ${target}#${anchor}`)
+  }
+  assert.doesNotMatch(supportRef('autonomy'), /## (回应与倾听|公开邀请与真实拒绝权|可靠帮助与边界|退出与交回)/)
+  assert.doesNotMatch(supportRef('learner-stage'), /## (回应与倾听|公开邀请与真实拒绝权|可靠帮助与边界|退出与交回)/)
+  assert.ok(!skills.some(({ name }) => name === 'learn-relationship'))
+})
+
+test('supportive conversation delegates state, positioning and cards to their owners', () => {
+  const reference = supportRef('supportive-conversation')
+  for (const rule of ['learn-core', '定位与非操纵原则', '提问与选项', 'learn-data',
+    '唯一教学主导者', '不另开教学或保存入口', '不模拟真人朋友或排他友谊']) {
+    assert.ok(reference.includes(rule), rule)
+  }
+  assert.doesNotMatch(reference, /ask_user_question/)
+  assert.doesNotMatch(reference, /support_events|session_log\.json/)
+  assert.match(reference, /不是必经步骤或固定“先聊聊”脚本/)
+})
+
+test('natural conversation stays text and cards are reserved for flow decisions', () => {
+  const core = text(skillPath('learn', 'learn-core'))
+  for (const rule of ['自然对话不是每轮流程分叉', '自然倾听、普通话题追问', '保持文字提问',
+    '只有实际需要流程决定时才用选择卡', '不把思考题或每句情绪表达做成菜单']) {
+    assert.ok(core.includes(rule), rule)
+  }
+  const reference = supportRef('supportive-conversation')
+  assert.match(reference, /自然提问与流程选择卡的边界按 `learn-core` 的“提问与选项”办理/)
+  assert.match(reference, /不立即改编成题目、训练或兴趣采集/)
+})
+
+test('pure support and refusal have explicit exits without re-invitation', () => {
+  const reference = supportRef('supportive-conversation')
+  for (const rule of ['支持不以最终做题', '不按轮数、时间或兴趣线索再次劝学',
+    '学生主动重开学习议题时才重新协商', '明确结束', '不因方法完成自动返回教学',
+    '不自动清空画板', '普通聊天不产生学科表现证据']) {
+    assert.ok(reference.includes(rule), rule)
+  }
+  const gate = dataRef('session-lifecycle').split('### 支持闸门')[1]?.split('**推荐闸门**')[0] ?? ''
+  for (const rule of ['无真实任务，只想交流', 'segment 为 null', '不自动推荐、做题或定时邀请',
+    'status: declined', '不按轮数或时间检查学习意愿', '要聊天则保留交流选择',
+    '要做题才接原任务', '要结束则按结束流程']) {
+    assert.ok(gate.includes(rule), rule)
+  }
+  assert.match(dataRef('session-schema'), /declined[\s\S]*主动重开/)
+})
+
+test('positioning is on demand and keeps necessary verification', () => {
+  const core = text(skillPath('learn', 'learn-core'))
+  for (const rule of ['理解、独立运用和学生认可的目标', '不以题量', '普通聊天无需包装成训练',
+    '承认学习可能费力', '不承诺零负担', '不把“能力提升”变成持续进步要求',
+    '首次介绍、学生询问助手用途，或明确担心刷题和任务压力时']) {
+    assert.ok(core.includes(rule), rule)
+  }
+  const positioning = text('learn/skills/learn-core/references/assistant-positioning.md')
+  for (const rule of ['不每轮宣讲', '成人或阶段未知']) {
+    assert.ok(positioning.includes(rule), rule)
+  }
+  assert.match(positioning, /不把定位说明当抵触后的反驳或劝学脚本/)
+  assert.match(positioning, /不承诺[^\n]*永远轻松/)
+  assert.match(positioning, /合理[^\n]*巩固/)
+  assert.match(positioning, /长期掌握/)
+  assert.match(positioning, /pedagogy-core\.md/)
+  const pedagogy = text('learn/skills/learn-core/references/pedagogy-core.md')
+  assert.match(pedagogy, /已能独立解释并运用就不为凑数量机械重复/)
+  assert.match(pedagogy, /保留稍后间隔验证/)
+  assert.match(pedagogy, /不另设默认题量门槛/)
 })
 
 test('completion offers opt-in recommendations without overflowing stage menus', () => {

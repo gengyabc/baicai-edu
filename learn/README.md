@@ -26,7 +26,7 @@
 - `learn-errors`：用户投放文件解析、`data/.../raw/` 只读、备份、extracted 写入、error_history 更新。
 - `learn-recommend`：根据当前学科记录推荐具体小目标，标明首选与中文理由；内容、难度与排序由教学契约决定，通用路径可按学生请求探索跨领域目标。
 - `learn-general-core` / `learn-general-session`：通用任务契约与实际教学；真实科目身份不变，记录不自动升级为专门等级。
-- `learn-support`：价值、信心、自主性、学习策略、持续学习的按需方法；理论依据与阶段/情境参考按需读取，不增加固定动机问卷或第二教学调度者。
+- `learn-support`：价值、信心、自主性、学习策略、持续学习的按需方法；自然回应、倾听、纠正、普通话题、公开邀请、拒绝与退出只由 `references/supportive-conversation.md` 维护，定位说明的时机归 `learn-core`。理论依据与阶段/情境参考按需读取，不增加固定动机问卷或第二教学调度者。
 
 入口 skill 分两档：`learn-start` / `learn` / `learn-clean` 设置 `disable-model-invocation: true`，只能由用户键入命令发起，不进入模型目录；`learn-feynman` / `learn-profile` / `learn-save` 保留模型入口，支持对话内自动加载（“我来给你讲”“看看我的档案”“保存一下”）。上述内部 skill 保持模型可加载，只通过 `user-invocable: false` 从 `/` 菜单隐藏。
 
@@ -97,6 +97,6 @@ node scripts/install.mjs math-primary-low --profile web
 - `math-primary-low`、`chinese-reading` 与 `english` 的 skill 会按名称加载 `learn-core`、`learn-data`、`learn-errors`。
 - 单独安装本包也能使用通用任务教学及五类支持；安装适用学科包后可使用专门教学，不自动重解释旧通用证据或热替换未完成任务。
 - 教育阶段、年级和情境可选；旧小学档案无需迁移，成人不强填小学年级。纯支持讨论可恢复；学生明确要求保存的中性计划与学科表现分开保存，仍走同一 finalize。
-- 设计与完整验收见[总体设计](<../docs/learn-support-design.md>)与[学习支持验收](<tests/learning-support-scenarios.md>)；静态检查不代表模型教学、故障注入或纵向成效已验证。
+- 设计与完整验收见[总体设计](<../docs/learn-support-design.md>)、[学习支持验收](<tests/learning-support-scenarios.md>)与[支持性交流回放](<tests/supportive-conversation-scenarios.md>)；静态检查与合成回放不代表真实模型教学、故障注入或纵向成效已验证。
 - 接入新学科：学科包提供 `<subject>-session` 与带「学科契约」节的 `<subject>-core`，再在 `learn-start` 的科目表加一行；其他入口无需修改。现有学科包有 `math-primary-low`、`chinese-reading`、`english`。
 - `personal.interests` 是跨学科个性化字段，各学科 skill 都会读取；具体用法在学科包里。

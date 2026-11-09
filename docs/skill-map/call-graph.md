@@ -168,9 +168,11 @@ flowchart LR
 
 `learn-start` 在识别阶段后复用教学解析；建档、档案修改、推荐、恢复和教学使用同一结果。阶段/情境默认由 `learn-support` 参考按需读取，不按年龄另建包。缺包使用随 learn 安装的通用契约与教学，专门包安装后也不热替换旧任务。
 
+学生不愿学、被要求学习、想先聊天或纠正处境理解时，交流方法只由 [`supportive-conversation.md`](<../../learn/skills/learn-support/references/supportive-conversation.md>) 维护；定位说明的时机与表达归 [`learn-core`](<../../learn/skills/learn-core/SKILL.md>) 的“定位与非操纵原则”，自然对话与选择卡边界归其“提问与选项”。拒绝后不按轮数、时间或兴趣线索再次邀请；纯支持不自动返回教学或推荐，也不会自动清空画板。
+
 五类支持只返回 action / observe / exit / support_update，当前专门会话或通用会话仍是唯一主导者。支持可叠加当前任务；无任务时 activity 为 support，不补造表现。真实教学每轮至多一段；仅示范、支持或选择时可为 null。纯支持计划明确要求保存后进入 support_events，与 general_progress、专门掌握分开处理；三者仍走同一四镜像 finalize 和 marker-last 重放。
 
-细则见[支持技能](<../../learn/skills/learn-support/SKILL.md>)、[会话结构](<../../learn/skills/learn-data/references/session-schema.md>)和[保存协议](<../../learn/skills/learn-data/references/finalize-session.md>)。完整场景见[验收清单](<../../learn/tests/learning-support-scenarios.md>)；静态守卫不代表对话或故障注入已执行。
+细则见[支持技能](<../../learn/skills/learn-support/SKILL.md>)、[会话结构](<../../learn/skills/learn-data/references/session-schema.md>)和[保存协议](<../../learn/skills/learn-data/references/finalize-session.md>)。完整场景见[验收清单](<../../learn/tests/learning-support-scenarios.md>)与[支持性交流回放记录](<../../learn/tests/supportive-conversation-scenarios.md>)；静态守卫和合成回放不代表真实 Web 对话或长期效果已验证。
 
 ### 3.2 数学调用子图
 

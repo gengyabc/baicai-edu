@@ -44,4 +44,6 @@
 
 2026-11-09 本会话半自动协议走查（agent 代教 + 合成学生 `stu_synth_*` 文件差异）：S01–S29 learn 全 PASS；除 S25 外 feynman 全 PASS；S22/S23 已做实际故障注入与同镜像重放。审计记录见 `.scratch/learn-support-acceptance/run.md`。标签为 `protocol-walkthrough`，**不**等同独立 DSH Web 模型会话录屏。
 
+2026-11-09 支持性交流 P01–P16 合成回放：16 PASS（P07 初版 FAIL，补隐私规则后重放 PASS）。提示输入、实际输出、逐条判定与未执行项见[支持性交流合成回放](<supportive-conversation-scenarios.md>)。标签 `synthetic-agent-replay`；不宣称真实 Web 会话、儿童心理或长期效果。
+
 以下仍保持“待运行”：已安装 Web 卡片/入口验证；真实安装环境中的独立模型对话验收；长期效果观察。研究来源核验见 `learn-support` 的理论参考，它不能替代上述验收，也不能证明长期效果。
