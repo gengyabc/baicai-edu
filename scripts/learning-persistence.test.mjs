@@ -27,3 +27,9 @@ test('support-only plans use the same prepared four-file replay and marker-last 
   const profile = read('profile-schema')
   for (const field of ['general_progress', 'learning_support_memory', 'support_preferences', 'education_stage']) assert.ok(profile.includes(field), field)
 })
+
+test('save prepares a newly requested support plan even when an empty or submitted log already exists', () => {
+  const save = readFileSync(new URL('../learn/skills/learn-save/SKILL.md', import.meta.url), 'utf8')
+  for (const rule of ['先处理本条', '已有纯支持', '旧 marker', '新 session_id', 'support_events', '更正']) assert.ok(save.includes(rule), rule)
+  assert.ok(save.indexOf('先处理本条') < save.indexOf('最终保存'), 'new request preparation precedes finalization')
+})

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 // Approved seam: skill entry/contract static guards. These are not model-behavior tests.
-// Synthetic lifecycle execution is owned by the lifecycle suite, not a duplicate simulator here.
+// Lifecycle guards are separate; real synthetic dialogue/file replay remains manual acceptance.
 const text = (name) => readFileSync(new URL(`../learn/skills/learn-support/${name}`, import.meta.url), 'utf8')
 const methodGuard = (name, checks) => {
   const method = text(`references/${name}.md`)
@@ -23,6 +23,13 @@ test('support entry is internal, advisory and preserves the current lifecycle ow
   for (const guard of ['一个主要方法', '一个辅助方法', '唯一教学主导者', '不写档案', 'declined', '明确结束优先', '费曼', '专门方法调度']) {
     assert.ok(entry.includes(guard), guard)
   }
+})
+
+test('optional support failure returns to teaching without losing task or claiming success', () => {
+  const lifecycle = readFileSync(new URL('../learn/skills/learn-data/references/session-lifecycle.md', import.meta.url), 'utf8')
+  assert.match(lifecycle, /支持技能或方法参考加载失败/)
+  assert.match(lifecycle, /保留原目标.*继续教学/)
+  assert.match(lifecycle, /不声称.*支持已生效/)
 })
 
 test('value support offers learner-generated relevance and a real task, not persuasion', () => {

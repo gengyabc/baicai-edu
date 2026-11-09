@@ -38,7 +38,7 @@ outputs/students/
 
 ## Read Snapshot
 
-快照只由入口读取一次：会话开始、上下文恢复后快照缺失、或切换学生/科目时。学科 skill 一律使用入口传入的快照；这条适用于所有学科 skill，各处不再重复说明。
+先读取 session.json；若含 pending_transition，在初始化目标文件或普通恢复前执行 `references/teaching-transition.md`，定向恢复源授权和目标 context，不能只从新科目默认开课。快照只由入口读取一次：会话开始、上下文恢复后快照缺失、或切换学生/科目时。学科 skill 一律使用入口传入的快照；这条适用于所有学科 skill，各处不再重复说明。
 
 1. `outputs/students/session.json`
 2. `outputs/students/<student_id>/profile.json`（共享档案）

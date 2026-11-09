@@ -43,6 +43,7 @@
 
 - 尚未选择：仅将技能返回的 `recommendation` 写入日志顶层并更新 `updated_at`，保留原 context、focus、segments 与身份，STOP；无原目标时允许只有 recommendation 而无 context。
 - 选择候选或明确委托首选：先把 `selected_id` 与当前 mode 写入日志 recommendation，成功后才将选中项的 focus 与 target_context 作为显式目标；写失败按 Invariants 停止，不 finalize。确实更换目标时才执行下表换主题流程，旧主题保存成功后新建并应用目标。仍是原目标则保留身份接续。模式沿用原 mode（无 context 时用 recommendation.mode），实际新主题使用 `activity: teaching`，不携带旧题材料与迁移进度。已选 recommendation 跨 finalize、失败重试与新建保留，写入新 context 成功后清除。本轮已解析为选定目标后不再命中推荐闸门；交学科的最新请求使用选定目标，不用原推荐请求再次触发推荐。
+- 跨科选择或显式跨科目标：完整执行 `references/teaching-transition.md` 的准备、旧主题保存、pending_transition、新 context 与双侧清理；以下同科换题流程不能代替此交接。session 指针先切换而 context 写失败时从源授权恢复，不从新科目另起目标。
 - 已有 `selected_id` 的恢复：不再问候选，复用已授权目标；危机、明确结束、取消或本条另有明确目标仍优先。旧主题未完成保存则先恢复保存，成功后才开始选定任务。仅保存请求不自动开课。
 - 保留原任务、改为自己定内容或拒绝全部：按技能出口清除或更新 recommendation，不新增 segment、不改长期档案。结束或用户直接指定其他目标时交下表；结束保存同时清除推荐。
 - 中断恢复先核对 recommendation 的 subject 与当前身份，匹配才承接候选；缺失或不匹配则重新推荐，不猜测旧选项。待完成保存优先处理，成功后若本条仍是推荐请求则承接，而不是丢掉请求。
@@ -67,6 +68,7 @@
 
 在安全、结束、待完成保存及已有推荐选择处理之后、Resolve Target/Route And Record 之前：学生明确请求五类支持、有可信线索待澄清，或 context.activity 为 support 时，按 `learn-core` 的按需规则加载 `learn-support`。现有推荐等待不能被支持流程消费为题目回答；明确支持请求但无目标时也不先强制推荐。
 
+- 支持技能或方法参考加载失败：保留原目标、材料、mode/activity 与待答题，交当前主导者继续教学，不要求安装方法后才学；纯支持无任务则简短说明当前帮助受限，问一个可执行小目标或尊重结束。不声称支持已生效、不写虚假 outcome，不反复重试同一失败加载。
 - 有真实任务：保留 focus、scope_id、teaching、材料、mode/activity 及原待答题，支持方法只给建议，仍由当前教学主导者落实；更新 context.learning_support。
 - 无真实任务：设 `activity: support`（即 context 的 activity 为 support），focus/target_context 允许 null；记录最小 resume_question。先以已知目标/条件澄清，不制造题目或表现。返回 segment 为 null，只写必要 context 并 STOP。
 - 纯支持后学生选择真实目标：在同一身份中补 Resolve Target；scope_id 沿用该支持计划关联的目标，新目标另建。支持转入教学不补造学科尝试，不因为换 activity 自动清画板。
@@ -81,7 +83,8 @@
 
 1. 用户本条的显式目标或模式/动作请求。
 2. 未完成会话的 focus 与日志 context。
-3. 档案候选顺序（入口与学科共用，学科不另写一份）：取第一个非空项——`session_history[0].next_step`、`learning_state.priority_targets`、`learning_state.developing_topics`、`learning_memory.recommended_next_moves`、`profile_memory.stable_difficulties`、最近 milestones、学科契约的年级默认。学科只补充领域选择等约束，不重排。这是普通恢复规则；显式学习推荐由 `learn-recommend` 与学科「学习推荐」角色重排候选，选定后回到第 1 项。
+3. **通用接续**：没有显式新目标、没有未完成 context，且 current_state.teaching.evidence_namespace 为 general_v1 时，按 `current_state.scope_id` 从 memory.general_progress 找同 subject/范围的最新记录；沿用该 scope_id 与 teaching，用 next_step（空则 focus）和已保存 target_context/材料引用接续到新 session_id。必要原文缺失则只问所需材料，不猜。找不到匹配记录时问一个想继续的任务，不回退到不相关专门历史。接续原通用目标不因新装包自动升级证据；学生明确另开专门任务时才重新解析。
+4. 专门路径的档案候选顺序（入口与学科共用，学科不另写一份）：取第一个非空项——`session_history[0].next_step`、`learning_state.priority_targets`、`learning_state.developing_topics`、`learning_memory.recommended_next_moves`、`profile_memory.stable_difficulties`、最近 milestones、学科契约的年级默认。学科只补充领域选择等约束，不重排。这是普通恢复规则；显式学习推荐由 `learn-recommend` 与学科「学习推荐」角色重排候选，选定后回到第 1 项。
 
 **文件**：入口调用一次 `learn-errors`（自我诊断问答、文件安全、写回），再按学科目标分类归类，设 `files_processed: true`，保留 extracted 引用与原意图。学科不再处理 raw 路径；已有 extracted 引用直接复用。
 
@@ -103,7 +106,7 @@
 
 ## Finalize Or Switch Topic
 
-执行 `references/finalize-session.md`（幂等门、空 segments 的 no-op、plan 重放与日志清理），本文件不另定义提交步骤。空 segments 返回 no-op（也无有效 support_events）且正在结束或切换时，由生命周期移除旧 recommendation 与临时 context/support_events；这仅清理临时选择与支持状态，不写长期档案。只有支持计划或更正事件时仍交 Finalize 按同一幂等协议提交；换题判定“非空”包括 support_events，不因无表现跳过已请求的计划保存。正常结束用 `status: completed`；中断旧主题用 `status: interrupted`、`interrupted_at`、`last_topic`。成功后结束、仅报告还是新建，由调用处的表格行决定。
+执行 `references/finalize-session.md`（幂等门、空 segments 的 no-op、plan 重放与日志清理），本文件不另定义提交步骤。空 segments 返回 no-op（也无有效 support_events）且正在结束或切换时，由生命周期移除旧 recommendation 与临时 context/support_events；这仅清理临时选择与支持状态，不写长期档案。跨科已选交接例外：保留 selected_id/transition，按 teaching-transition 的 source_closed 确认关闭；不能在新 context 成功前清源授权。只有支持计划或更正事件时仍交 Finalize 按同一幂等协议提交；换题判定“非空”包括 support_events，不因无表现跳过已请求的计划保存。正常结束用 `status: completed`；中断旧主题用 `status: interrupted`、`interrupted_at`、`last_topic`。成功后结束、仅报告还是新建，由调用处的表格行决定。
 
 - **提交失败**：保留日志、会话身份与 plan，说明“这次没有保存成功”，可用 `/learn-save` 重试；STOP。
 - **仅日志清理失败**：说明“学习记录已保存，日志清理未完成”；下次只重试清理，不重复提交科目数据。

@@ -34,3 +34,20 @@ test('public entries, initialization and recommendations share resolver and pres
   assert.match(ref('session-lifecycle'), /scope_id/)
   assert.match(read('learn/skills/learn-recommend/SKILL.md'), /跨领域目标探索/)
 })
+
+test('cross-subject activation carries a durable origin pointer until target context is committed', () => {
+  const transition = ref('teaching-transition')
+  for (const rule of ['pending_transition', 'from_subject', 'from_session_id', 'to_session_id',
+    'selected_id', '不搬移', '写入新 context 成功', '已有不同', '不重新生成']) assert.ok(transition.includes(rule), rule)
+  assert.match(read('learn/skills/learn-data/SKILL.md'), /pending_transition.*初始化/)
+  assert.match(ref('session-lifecycle'), /teaching-transition\.md/)
+})
+
+test('general continuation resolves saved progress before unrelated specialist history', () => {
+  const lifecycle = ref('session-lifecycle')
+  assert.match(lifecycle, /通用接续.*general_progress/)
+  assert.match(lifecycle, /current_state\.scope_id/)
+  assert.match(lifecycle, /不回退到.*专门历史/)
+  assert.match(ref('finalize-session'), /target_context.*材料引用/)
+  assert.match(ref('finalize-session'), /必须写.*active_focus.*teaching.*scope_id/)
+})

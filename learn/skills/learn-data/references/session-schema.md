@@ -92,7 +92,7 @@ primary_need 为 value / confidence / autonomy / strategies / persistence；stat
 }
 ```
 
-新 recommendation 可选带 teaching；候选可带 subject、scope_id、teaching，跨领域候选必须有目标 subject 或中性任务身份与明确目标描述。subject 顶层始终是发起推荐的原身份，防止跨科误消费。已有合法选择先保存在原日志，新目标 context 成功写入后才消费；实际切换按生命周期处理。旧对象缺扩展字段时仍按当前科目处理。
+新 recommendation 可选带 teaching；候选可带 subject、scope_id、teaching，跨领域候选必须有目标 subject 或中性任务身份与明确目标描述。subject 顶层始终是发起推荐的原身份，防止跨科误消费。已有合法选择先保存在原日志，新目标 context 成功写入后才消费；实际切换按生命周期处理。跨科推荐的 transition 和 session.pending_transition 形状及恢复/清理顺序只按 `references/teaching-transition.md`。旧对象缺扩展字段时仍按当前科目处理。
 
 `mode` 保留发起推荐时的模式，供无教学 context 时恢复；已有 context 时以 context.mode 为准。选定后可选 `selected_id` 必须对应一个候选，由生命周期在 finalize 前先持久化；它表示学生已经授权的目标，不能由首选标记或跳过推导。候选 id 在同一份推荐中唯一，preferred_id 必须对应其中一个；target_context 遵循目标分类契约，不复用不相关旧材料。该对象仅供中断恢复选择，不是已选 focus，也不是 segment 的 recommended_targets。由 `learn-recommend` 形成，生命周期写回；推荐期间保留旧 context 与 segments，选择/拒绝不生成表现。选定目标写入 context 成功后、取消或结束时清除。最终保存不把推荐对象汇总进档案；清理日志时移除未选推荐，保留已有 selected_id 的推荐直至新目标 context 写入成功，用于保存失败后的恢复。仅保存不自动开始新教学。没有此对象的旧日志照常恢复，不迁移旧档案。
 

@@ -52,7 +52,7 @@
 准备 plan 前按 teaching.evidence_namespace 分流（旧段无字段按 specialist）：
 
 - specialist 段才参与既有 final_summary、subject_profile_patch、error_history、confirmed_skills、current_levels 和里程碑流程；本文件其他合并步骤只以这些段为输入。
-- general_v1 段仅前插 memory.general_progress，字段白名单为 session_id、date、subject、scope_id、teaching、focus、strategy_summary、ability_evidence、next_step；源为实际段，不含专门诊断、等级或确认技能。按 session_id + scope_id 去重，使用保留策略；不参与专门掌握或学科 summary，current_state 可记录该实际 focus 供接续，但必须带 teaching/scope_id。
+- general_v1 段仅前插 memory.general_progress，字段白名单为 session_id、date、subject、scope_id、teaching、focus、strategy_summary、ability_evidence、next_step、target_context 与材料引用 material_refs；target_context/material_refs 从匹配 context 取得并保留学生原意图，不复制 raw 或敏感内容。没有持久来源的粘贴原文不写长期 memory，接续时必要材料缺失须重新提供；源为实际段，不含专门诊断、等级或确认技能。按 session_id + scope_id 去重，使用保留策略；不参与专门掌握或学科 summary。有实际表现时必须写 current_state 的 active_focus、source、submode、teaching 与 scope_id 作为接续游标：按时间最后一个真实表现段决定当前范围，混合记录也使用该最后一段的实现和 scope；不能被稍后的纯支持事件覆盖。若最后一段为通用，以对应 general_progress 接续；最后一段为专门，则走专门候选链。
 - support_events 中 kind: plan 且 student_requested_save: true 的事件写 memory.learning_support_memory.plans，只收 id/date/scope_id/summary/source；不更新表现、错误、等级或里程碑。kind: correction 按下面规则执行。
 - 没有 specialist 段时 final_summary 为 null，plan 增加 `record_kind: support_only`（仅支持事件）或 `record_kind: general`（有通用段）。保留 profile、milestones 的原镜像，不插入空的学科会话摘要。只有计划时不覆盖 current_state 的 active_focus/source/submode；只更新 marker 与 updated_at。混合记录使用 `record_kind: mixed`，specialist 的摘要也只根据 specialist 段。
 - 所有分支仍准备四份完整镜像，按原顺序提交，marker 最后。没有专门表现不是 no-op 的充分条件；没有任何有效段/事件才 no-op。回放同一 plan 用相同镜像，不重新汇总或计数。
