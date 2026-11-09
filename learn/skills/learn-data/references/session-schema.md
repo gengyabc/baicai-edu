@@ -51,7 +51,16 @@
 }
 ```
 
-primary_need 为 value / confidence / autonomy / strategies / persistence；status 为 hypothesis / clarified / active / observing / declined。evidence.source 为 student_statement / observed_action，推断不能冒充事实，不能记录危机细节或无关私生活。outcome 三项分别是学生自述、参与及任务表现的中性观察，未知用 null；不是动机分或掌握度。拒绝后 declined 只阻止重复同一讨论，直到学生主动重开或新目标有明确新需求。
+primary_need 为 value / confidence / autonomy / strategies / persistence；status 为 hypothesis / clarified / active / observing / declined。evidence.source 为 student_statement / observed_action，推断不能冒充事实，不能记录危机细节或无关私生活。outcome 三项分别是学生自述、参与及任务表现的中性观察，未知用 null；不是动机分或掌握度。普通聊天不生成 segment、掌握或里程碑，不把家庭、情绪和闲聊汇总为学习表现。
+
+### 临时交流选择与恢复
+
+复用 status 与 resume_question，不新增字段、朋友画像或关系分数：
+
+- `resume_question` 为可选的最小中性续接文本或 null，不要求是实际问句。纯支持或有任务但先聊时可记“继续普通交流，等待学生主动重开学习”；只说明流程选择，不抄聊天原文、不记私人话题或拒绝原因。已有任务的待答题与恢复位置仍完整留在 turn_state，不能被此字段替换。
+- `status: declined` 表示已拒绝当前邀请/讨论，不是低动机或能力标签。resume_question 可保留“先不讨论安排，继续交流”；仅拒绝某种支持但要继续做题时，清该续接文本，保留 declined 对同一讨论的限制。直到学生主动重开，或新目标出现明确新需求，才重开相应支持；闲聊、兴趣线索与时间流逝不重置拒绝。
+- 恢复时沿用 identity、teaching、scope_id、focus、材料、mode/activity、turn_state 与最小交流选择；不自动回题、补推荐或再次邀请。activity 为 support 时仍允许无目标交流；叠加支持则由 resume_question 的流程含义识别先聊选择，不因原 activity 为 teaching/transfer 就忽略它。不因恢复、短答或空消息推断意愿变化。
+- 缺失 learning_support 的旧日志不补造拒绝或交流选择；缺失 status 按未知处理，缺失 resume_question 视为 null。旧 activity: support 仍先核对本条意图，不强制生成学习目标；已有 declined 即使无续接文本也保留同一讨论的拒绝。只有与当前目标有关的必要事实才写临时状态，一般话题无需写日志。
 
 日志顶层可选 `support_events`，只在学生明确要求长期保存具体中性计划时加入：
 

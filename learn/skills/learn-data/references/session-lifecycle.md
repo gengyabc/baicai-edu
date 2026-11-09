@@ -18,13 +18,14 @@
 
 ## 2. Classify
 
-按 `learn-core` 的 `references/session-end-signals.md` 归类危机、结束、换主题、歧义、跳过或当前题回应，结果交第 4 节。危机走其安全流程，不 finalize、不记录细节，已有 plan 留待后续恢复，STOP。
+按 `learn-core` 的 `references/session-end-signals.md` 归类危机、结束、换主题、歧义、跳过或当前题回应，结果交第 4 节。危机走其安全流程，不 finalize、不记录细节，已有 plan 留待后续恢复，STOP。纯支持或已明确先聊时，普通话题不是偏题/未作答，不套用教学的连续偏题确认与阶段菜单；“今天不聊也不学”仍是明确结束。
 
 ## 3. Open Or Resume
 
 | 情况 | 动作 |
 |---|---|
 | 日志有 `finalize_plan`，或 marker 已匹配但仍有待清理教学内容（segments/context/support_events/plan；已选 recommendation 不属于它） | Finalize 恢复保存或仅清理；成功后旧身份结束，不接续旧循环。明确结束则清除已选推荐并 STOP；仅保存则保留已选目标、报告结果并 STOP。本条含 `/learn`、`/learn-feynman`、新教学请求或推荐请求则新建，优先承接持久化的已选目标（本条另有明确目标则覆盖）；否则报告结果，保留已选目标待继续，STOP |
+| 无待完成保存且非明确结束，本条明确只想交流，或恢复后仍保留交流选择且未主动学习 | 恢复原身份与 context.learning_support，交支持闸门；不把恢复本身当作学习授权，不自动承接已选 recommendation |
 | 旧主题已提交且无待清理教学内容，日志保留已选 recommendation | 本条明确结束则清除推荐并结束；明确取消选定任务则清除推荐、问一个想学的方向并 STOP；危机按第 2 节；仅保存则报告结果并保留已选目标。本条另有明确目标则覆盖已选目标；否则以推荐中的已选目标与 mode 新建，保留推荐至新 context 成功，进入第 4 节，不恢复旧教学 |
 | 正在回答恢复选择 | 恢复身份，选择交第 4 节执行 |
 | 已有活跃循环 | 保留身份、segments、context 与快照；无新目标时保留 focus 和材料 |
@@ -38,6 +39,23 @@
 - 恢复选择的回答承接上一次入口请求：`/learn-feynman` 后选「接着上次」，仍在第 4 节应用费曼模式。保存恢复后的新会话也保留本条的目标与模式请求。
 
 ## 4. Dispatch
+
+### 支持闸门
+
+安全、明确结束和待完成保存优先。其后在推荐闸门、模式/动作切换及 Resolve Target/Route And Record 之前核对本条意愿：学生明确请求五类支持、有可信线索待澄清、context.activity 为 support，或 learning_support.resume_question 保留了交流选择时，按 `learn-core` 的按需规则加载 `learn-support`。交流方法读其 `references/supportive-conversation.md`；状态字段按 `references/session-schema.md`。已有推荐的明确选择仍交推荐闸门；普通聊天不消费候选，也不自动启动以前已选的目标。无目标不等于请求推荐。
+
+| 情况 | 当前主导者的动作与出口 |
+|---|---|
+| 无真实任务，只想交流 | 沿用身份与 teaching，设 `activity: support`，focus/target_context 可为 null；只保存最小 resume_question，不造当前题。自然交流或尊重结束；不从档案候选补目标，不自动推荐、做题或定时邀请。segment 为 null，必要 context 写回后 STOP，不落入第 7 节 |
+| 已有任务，想先聊或暂停学习 | 保留 focus、scope_id、teaching、材料、mode/activity、整个 turn_state（原题、已答内容、待答问题和迁移阶段）。只在 learning_support.resume_question 记最小交流选择；原教学所有者承接交流，不另建路由器。segment 为 null，写回后 STOP，不把聊天当原题作答 |
+| 拒绝学习邀请或当前支持讨论 | 设 status: declined；要聊天则保留交流选择，要做题才接原任务，要结束则按结束流程。拒绝讨论本身不表示拒绝学习；拒绝学习也不表示结束。继续闲聊不重置 declined，不按轮数或时间检查学习意愿；短答、沉默或空消息不改判意愿、不造 outcome |
+| 主动请求学习或明确接受邀请 | 明确接回原任务：清除已完成的 resume_question，保留身份、模式与完整恢复位置，交第 6 节。尚无目标或接受的邀请未明确目标时，只澄清必要目标；同一身份的首次目标交第 5 节。真正换目标交下表保存/新建，新 scope_id；跨科按 `references/teaching-transition.md`，不能以交流或接受模糊邀请代替切换授权。学生主动重开支持或新目标有明确新需求时才重开相应支持状态，不抹去其他拒绝 |
+| 有任务且愿意接受方法帮助 | 支持仅叠加建议，当前教学主导者继续教学；保留原 mode/activity 与待答题，只更新必要 learning_support。实际表现才交第 6 节记段 |
+| 明确要求保存具体中性计划 | 生命周期把确认内容写 support_events（形状按 schema），再调用同一 Finalize；仅保存不自动开课。一般交流不创建事件、不改长期档案；恢复状态写入与长期计划保存分别报告 |
+
+- 支持技能或方法参考加载失败：保留原目标、材料、mode/activity 与待答题；仍按本闸门保留交流选择。学生已要学习才交当前主导者继续教学，纯支持可简短说明帮助受限后继续普通交流或尊重结束，不强求学习目标。不声称支持已生效、不写虚假 outcome，不反复重试同一失败加载。
+- declined 的恢复与最小续接信息按 schema；不逐轮重新触发动机追问。无支持状态的新普通聊天也不必补造需求标签。
+- 支持开始、持续、拒绝、恢复或转入教学均不自动清画板；只有另一个已获授权的新任务边界才按原规则处理。不得读取未发送画板，不迁移或删除旧证据。
 
 **推荐闸门**：危机、明确结束及待完成保存仍优先。其后，用户不知道学什么、询问学什么、想换但尚无具体目标、阶段选择「换个内容」，或日志有待选 `recommendation` 时，加载 `learn-recommend`，先处理推荐而不是把消息归为旧题回答或立即换主题。该分支在 Resolve Target、Route And Record 与任何新任务边界之前执行：
 
@@ -63,17 +81,6 @@
 - **切到费曼**：加载 `learn-feynman` 的角色规则，设 `mode: feynman`、`context.activity: teaching`；沿用 focus、材料与 entry_point，清除仅用于迁移的 intent 与 turn_state。这是唯一的切换点，`/learn-feynman` 入口直接执行本条；之后不再路由学生出题 / 读写迁移。
 - **切回普通学习**：设 `mode: learn`、`context.activity: teaching`，清理迁移进度。
 - **启动迁移**：设 `mode: learn`、`context.activity: transfer`，在 turn_state 记下来源领域与阶段；迁移完成后 activity 回到 teaching。
-
-### 支持闸门
-
-在安全、结束、待完成保存及已有推荐选择处理之后、Resolve Target/Route And Record 之前：学生明确请求五类支持、有可信线索待澄清，或 context.activity 为 support 时，按 `learn-core` 的按需规则加载 `learn-support`。现有推荐等待不能被支持流程消费为题目回答；明确支持请求但无目标时也不先强制推荐。
-
-- 支持技能或方法参考加载失败：保留原目标、材料、mode/activity 与待答题，交当前主导者继续教学，不要求安装方法后才学；纯支持无任务则简短说明当前帮助受限，问一个可执行小目标或尊重结束。不声称支持已生效、不写虚假 outcome，不反复重试同一失败加载。
-- 有真实任务：保留 focus、scope_id、teaching、材料、mode/activity 及原待答题，支持方法只给建议，仍由当前教学主导者落实；更新 context.learning_support。
-- 无真实任务：设 `activity: support`（即 context 的 activity 为 support），focus/target_context 允许 null；记录最小 resume_question。先以已知目标/条件澄清，不制造题目或表现。返回 segment 为 null，只写必要 context 并 STOP。
-- 纯支持后学生选择真实目标：在同一身份中补 Resolve Target；scope_id 沿用该支持计划关联的目标，新目标另建。支持转入教学不补造学科尝试，不因为换 activity 自动清画板。
-- 学生拒绝：设 status: declined，不重复同一动机追问；继续原任务或按其意愿结束。再次加载只限学生主动重开，或新目标出现明确新需求。
-- 学生明确要保存中性计划：生命周期把确认的计划写 support_events（形状按 schema），再调用同一 Finalize；不调用方法写档案。一般支持自述只留临时状态，不默认长期保存。
 
 ## 5. Resolve Target
 

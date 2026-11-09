@@ -169,6 +169,39 @@ test('recommendation recovery is temporary and does not change profile schemas',
   assert.match(lifecycle, /已选.*恢复.*[\s\S]*危机、明确结束、取消.*优先/)
   assert.match(dataRef('session-lifecycle'), /空 segments 返回 no-op.*移除旧 recommendation/)
 })
+test('support dispatch preserves conversation choice before recommendation or teaching', () => {
+  const lifecycle = dataRef('session-lifecycle')
+  assert.ok(lifecycle.indexOf('### 支持闸门') < lifecycle.indexOf('**推荐闸门**'))
+  const gate = lifecycle.split('### 支持闸门')[1]?.split('**推荐闸门**')[0] ?? ''
+  for (const rule of ['无目标不等于请求推荐', 'resume_question', 'status: declined',
+    '不按轮数或时间检查学习意愿', '短答、沉默或空消息', '不自动清画板',
+    '主动请求学习或明确接受邀请', 'teaching-transition.md', '不落入第 7 节']) {
+    assert.ok(gate.includes(rule), rule)
+  }
+  assert.match(gate, /加载失败[\s\S]*仍按本闸门保留交流选择/)
+  assert.match(lifecycle, /恢复[^\n]*learning_support[^\n]*不把恢复本身当作学习授权/)
+})
+
+test('support recovery reuses temporary fields without turning chat into evidence', () => {
+  const schema = dataRef('session-schema')
+  for (const rule of ['resume_question', 'null', '实际问句', '交流选择', '不新增字段',
+    '缺失 learning_support', '不因恢复、短答或空消息', '聊天原文', '家庭',
+    '不生成 segment、掌握或里程碑']) assert.ok(schema.includes(rule), rule)
+  assert.match(schema, /declined[\s\S]*主动重开/)
+  assert.match(schema, /恢复时[\s\S]*turn_state[\s\S]*不自动回题/)
+})
+
+test('support chat stays out of long-term learning data without promising platform secrecy', () => {
+  const finalize = dataRef('finalize-session')
+  assert.match(finalize, /普通聊天[\s\S]*不形成稳定支持观察/)
+  assert.match(finalize, /交流选择与 declined[\s\S]*不写入长期档案/)
+  assert.match(finalize, /没有有效段或事件[\s\S]*不写四个科目文件/)
+  assert.match(finalize, /support_events[\s\S]*四份完整镜像[\s\S]*marker 最后/)
+  const privacy = text(skillPath('learn', 'learn-data')).split('## Privacy')[1] ?? ''
+  for (const rule of ['学习档案写入', '平台消息留存', '未核实', '不承诺保密或不记录',
+    '家长身份', 'support_events', 'learn-start', 'learn-profile']) assert.ok(privacy.includes(rule), rule)
+})
+
 test('completion offers opt-in recommendations without overflowing stage menus', () => {
   const next = dataRef('next-step')
   assert.match(next, /选中「换个内容」才加载 `learn-recommend`/)

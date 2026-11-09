@@ -51,6 +51,8 @@
 
 准备 plan 前按 teaching.evidence_namespace 分流（旧段无字段按 specialist）：
 
+普通聊天、家庭和情绪自述不是表现或计划事件，也不形成稳定支持观察；即使反复出现也不自动提炼为长期兴趣、偏好或心理标签。交流选择与 declined 仅用于临时恢复，不写入长期档案。没有有效段或事件则走 No-op，不写四个科目文件；结束时仅由生命周期清临时日志。若先前确有教学表现或明确请求保存的 support_events，则仍按原证据与白名单保存，不把后续聊天混进摘要，也不迁移或删除既有证据。共享目标/偏好变更只交 `/learn-start` 或 `/learn-profile`，不能借支持保存旁路修改。
+
 - specialist 段才参与既有 final_summary、subject_profile_patch、error_history、confirmed_skills、current_levels 和里程碑流程；本文件其他合并步骤只以这些段为输入。
 - general_v1 段仅前插 memory.general_progress，字段白名单为 session_id、date、subject、scope_id、teaching、focus、strategy_summary、ability_evidence、next_step、target_context 与材料引用 material_refs；target_context/material_refs 从匹配 context 取得并保留学生原意图，不复制 raw 或敏感内容。没有持久来源的粘贴原文不写长期 memory，接续时必要材料缺失须重新提供；源为实际段，不含专门诊断、等级或确认技能。按 session_id + scope_id 去重，使用保留策略；不参与专门掌握或学科 summary。有实际表现时必须写 current_state 的 active_focus、source、submode、teaching 与 scope_id 作为接续游标：按时间最后一个真实表现段决定当前范围，混合记录也使用该最后一段的实现和 scope；不能被稍后的纯支持事件覆盖。若最后一段为通用，以对应 general_progress 接续；最后一段为专门，则走专门候选链。
 - support_events 中 kind: plan 且 student_requested_save: true 的事件写 memory.learning_support_memory.plans，只收 id/date/scope_id/summary/source；不更新表现、错误、等级或里程碑。kind: correction 按下面规则执行。

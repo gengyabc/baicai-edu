@@ -116,7 +116,8 @@ outputs/students/
 
 ## Privacy
 
-- 学生数据只写在工作区内。
+- 学习档案写入仅在工作区内，平台消息留存是另一层能力：不将家庭、情绪和普通聊天自动写入长期档案；临时续接只保留 `references/session-schema.md` 所需最小流程状态，不复制私人原话。明确要求保存中性计划才走 support_events/finalize，共享目标与偏好变更仍只由 `/learn-start` 或 `/learn-profile` 处理。
+- 学生问保密、告知家长或消息记录时，按已核实的平台权限说明；未核实访问、留存或删除能力就明确未知，不承诺保密或不记录。学习档案未写入、临时 context 清理或 `/learn-clean` 删除工作区文件，都不等于平台消息未留存/已删除；家长身份本身不授予私人讨论全量访问权。
 - 兴趣与经历的使用边界见 `learn-core` 的 `references/prestart-settings-interpretation.md`。
 - 批量删除生成文件或清空学习记录，只在用户主动输入 `/learn-clean` 后按该技能预览并再次确认；其他技能不自动加载它或执行这类清理。常规 finalize 与保留策略仍按各自协议执行。
 - `/learn-clean` 是显式删除的专属例外，不套用 Write Protocol 的合并保存与补档规则。普通清理保留共享身份、用户原件及原件备份；只有该技能的高风险分支在范围确认及独立手动短语确认后，才可删除这些数据。高风险范围、不可恢复警告与执行规则以该技能的 `references/high-risk-deletion.md` 为准。
