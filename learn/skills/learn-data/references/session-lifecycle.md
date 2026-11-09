@@ -25,14 +25,14 @@
 | 情况 | 动作 |
 |---|---|
 | 日志有 `finalize_plan`，或 marker 已匹配但仍有待清理教学内容（segments/context/support_events/plan；已选 recommendation 不属于它） | Finalize 恢复保存或仅清理；成功后旧身份结束，不接续旧循环。明确结束则清除已选推荐并 STOP；仅保存则保留已选目标、报告结果并 STOP。本条含 `/learn`、`/learn-feynman`、新教学请求或推荐请求则新建，优先承接持久化的已选目标（本条另有明确目标则覆盖）；否则报告结果，保留已选目标待继续，STOP |
-| 无待完成保存且非明确结束，本条明确只想交流，或恢复后仍保留交流选择且未主动学习 | 恢复原身份与 context.learning_support，交支持闸门；不把恢复本身当作学习授权，不自动承接已选 recommendation |
+| 有可恢复日志身份，且无待完成保存、非明确结束；本条明确只想交流，或恢复后仍保留交流选择且未主动学习 | 恢复原身份与 context.learning_support，交支持闸门；不把恢复本身当作学习授权，不自动承接已选 recommendation |
 | 旧主题已提交且无待清理教学内容，日志保留已选 recommendation | 本条明确结束则清除推荐并结束；明确取消选定任务则清除推荐、问一个想学的方向并 STOP；危机按第 2 节；仅保存则报告结果并保留已选目标。本条另有明确目标则覆盖已选目标；否则以推荐中的已选目标与 mode 新建，保留推荐至新 context 成功，进入第 4 节，不恢复旧教学 |
 | 正在回答恢复选择 | 恢复身份，选择交第 4 节执行 |
 | 已有活跃循环 | 保留身份、segments、context 与快照；无新目标时保留 focus 和材料 |
 | 有未完成 segments/context/support_events，本条明确结束或换主题 | 恢复，不为旧主题补问 |
 | 有未完成 segments/context/support_events，直接 `/learn-feynman` | 恢复身份，`ask_user_question` 给「接着上次」「开新的」，STOP |
 | 有未完成 segments/context/support_events，其他请求（含 `/learn`），或有待选 recommendation | 恢复；只有推荐时保留身份与候选，不补造 context |
-| 无待恢复记录 | 新建 |
+| 无待恢复记录 | 新建；首次纯支持也先新建日志身份，不补学习目标，再交支持闸门 |
 
 - **恢复**：取日志身份与 context（activity、材料、待答问题、迁移阶段），结构见 `references/session-schema.md`。旧日志无 context 时采用最后一段的 focus/mode，交第 5 节重建；只有 recommendation 而无教学段时直接进第 4 节推荐闸门，不补造旧焦点。
 - **新建**：`session_id` 用 `sess_<YYYYMMDD>_<HHmmss>_<随机hex>`，且不等于 `last_finalized_session_id`；mode 取入口初始值，换主题时沿用当前 mode。写入 `session_id`、`entry_point`、`started_at`、`updated_at`、`segments: []`。
@@ -47,9 +47,10 @@
 | 情况 | 当前主导者的动作与出口 |
 |---|---|
 | 无真实任务，只想交流 | 沿用身份与 teaching，设 `activity: support`，focus/target_context 可为 null；只保存最小 resume_question，不造当前题。自然交流或尊重结束；不从档案候选补目标，不自动推荐、做题或定时邀请。segment 为 null，必要 context 写回后 STOP，不落入第 7 节 |
+| 无真实任务，请求方法帮助而非闲聊 | 设 `activity: support`，focus/target_context 可为 null；按已知条件提供支持建议，确有必要才问一个澄清问题，不从历史补教学目标、不强制推荐或出题。只写必要 learning_support 与最小 resume_question，segment 为 null，STOP；学生随后明确授权真实任务才交首次目标解析 |
 | 已有任务，想先聊或暂停学习 | 保留 focus、scope_id、teaching、材料、mode/activity、整个 turn_state（原题、已答内容、待答问题和迁移阶段）。只在 learning_support.resume_question 记最小交流选择；原教学所有者承接交流，不另建路由器。segment 为 null，写回后 STOP，不把聊天当原题作答 |
 | 拒绝学习邀请或当前支持讨论 | 设 status: declined；要聊天则保留交流选择，要做题才接原任务，要结束则按结束流程。拒绝讨论本身不表示拒绝学习；拒绝学习也不表示结束。继续闲聊不重置 declined，不按轮数或时间检查学习意愿；短答、沉默或空消息不改判意愿、不造 outcome |
-| 主动请求学习或明确接受邀请 | 明确接回原任务：清除已完成的 resume_question，保留身份、模式与完整恢复位置，交第 6 节。尚无目标或接受的邀请未明确目标时，只澄清必要目标；同一身份的首次目标交第 5 节。真正换目标交下表保存/新建，新 scope_id；跨科按 `references/teaching-transition.md`，不能以交流或接受模糊邀请代替切换授权。学生主动重开支持或新目标有明确新需求时才重开相应支持状态，不抹去其他拒绝 |
+| 主动请求学习或明确接受邀请 | 明确接回原任务：清除已完成的 resume_question，保留身份与完整恢复位置；本条有显式模式/动作请求时先交下表切换，无切换请求才直接交第 6 节并沿用模式。尚无目标或接受的邀请未明确目标时，只澄清必要目标；同一身份的首次目标交第 5 节。真正换目标交下表保存/新建，新 scope_id；跨科按 `references/teaching-transition.md`，不能以交流或接受模糊邀请代替切换授权。支持状态的重开条件按 schema，不抹去其他拒绝 |
 | 有任务且愿意接受方法帮助 | 支持仅叠加建议，当前教学主导者继续教学；保留原 mode/activity 与待答题，只更新必要 learning_support。实际表现才交第 6 节记段 |
 | 明确要求保存具体中性计划 | 生命周期把确认内容写 support_events（形状按 schema），再调用同一 Finalize；仅保存不自动开课。一般交流不创建事件、不改长期档案；恢复状态写入与长期计划保存分别报告 |
 

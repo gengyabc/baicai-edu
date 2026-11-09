@@ -182,6 +182,22 @@ test('support dispatch preserves conversation choice before recommendation or te
   assert.match(lifecycle, /恢复[^\n]*learning_support[^\n]*不把恢复本身当作学习授权/)
 })
 
+test('support return honors explicit mode and action requests before resuming the task', () => {
+  const gate = dataRef('session-lifecycle').split('### 支持闸门')[1]?.split('**推荐闸门**')[0] ?? ''
+  assert.match(gate, /本条有显式模式\/动作请求[\s\S]*先交下表切换[\s\S]*无切换请求才直接交第 6 节/)
+})
+
+test('first support conversation creates a session before writing temporary context', () => {
+  const lifecycle = dataRef('session-lifecycle')
+  assert.match(lifecycle, /有可恢复日志身份，且无待完成保存、非明确结束[\s\S]*恢复原身份/)
+  assert.match(lifecycle, /首次纯支持也先新建日志身份，不补学习目标/)
+})
+
+test('untargeted method support does not fall through to an archived teaching target', () => {
+  const gate = dataRef('session-lifecycle').split('### 支持闸门')[1]?.split('**推荐闸门**')[0] ?? ''
+  assert.match(gate, /无真实任务，请求方法帮助而非闲聊[^\n]*activity: support[^\n]*不从历史补教学目标[^\n]*segment 为 null[^\n]*STOP/)
+})
+
 test('support recovery reuses temporary fields without turning chat into evidence', () => {
   const schema = dataRef('session-schema')
   for (const rule of ['resume_question', 'null', '实际问句', '交流选择', '不新增字段',
