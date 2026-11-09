@@ -54,7 +54,7 @@ test('entries locate subjects through the contract; only /learn-start lists them
     assert.match(text(skillPath('learn', name)), /<subject>-(core|session)/, name)
   }
   const contract = dataRef('subject-contract')
-  for (const role of ['目标分类', '年级默认', '档案字段', '诊断规则']) {
+  for (const role of ['目标分类', '年级默认', '档案字段', '诊断规则', '学习推荐']) {
     assert.ok(contract.includes(role), role)
     for (const [bundle, core] of [['math-primary-low', 'math-core'], ['chinese-reading', 'chinese-core'], ['english', 'english-core']]) {
       const section = text(skillPath(bundle, core)).split('## 学科契约')[1] ?? ''
@@ -110,7 +110,7 @@ test('existing metadata and reference checks pass', () => {
 
 test('stable public and subject interfaces remain installed without a bridge skill shell', () => {
   assert.deepEqual(skills.map(({ name }) => name).sort(), [
-    'learn-start', 'learn', 'learn-feynman', 'learn-profile', 'learn-save', 'learn-clean', 'learn-core', 'learn-data', 'learn-errors',
+    'learn-start', 'learn', 'learn-feynman', 'learn-profile', 'learn-save', 'learn-clean', 'learn-core', 'learn-data', 'learn-errors', 'learn-recommend',
     'math-core', 'math-session', 'math-diagnose', 'math-practice', 'math-student-problem',
     'chinese-core', 'chinese-session', 'chinese-reading-session', 'chinese-writing-session',
     'chinese-read-write-transfer', 'chinese-generate-tasks',
@@ -119,6 +119,85 @@ test('stable public and subject interfaces remain installed without a bridge ski
     'scaffolding-zpd', 'task-based-language-learning', 'usage-based-language-learning',
     'spaced-retrieval',
   ].sort())
+})
+
+test('recommendation is shared, subject-scoped and evidence-aware', () => {
+  const recommend = text(skillPath('learn', 'learn-recommend'))
+  for (const rule of ['<subject>-core', '学习推荐', '2–3', '首选', '探索性',
+    '不强制先测', '范围始终是当前学科', '不为凑数', '普通恢复的固定顺序保持不变',
+    '所有学科的推荐理由统一中文', '不扫描 raw', '不读取未发送草稿或画板']) {
+    assert.ok(recommend.includes(rule), rule)
+  }
+  assert.match(text(skillPath('learn', 'learn')), /加载 `learn-recommend`/)
+  assert.match(dataRef('subject-contract'), /学习推荐.*`learn-recommend`/)
+})
+test('recommendation pauses before target switching and records no teaching evidence', () => {
+  const lifecycle = dataRef('session-lifecycle')
+  const gate = lifecycle.split('**推荐闸门**')[1]?.split('| 事件')[0] ?? ''
+  for (const rule of ['Resolve Target、Route And Record', '尚未选择', 'STOP',
+    '保留原 context、focus、segments', '旧主题保存成功后', '不新增 segment',
+    '不改长期档案', '只有 recommendation 而无 context', '待完成保存优先处理']) {
+    assert.ok(gate.includes(rule), rule)
+  }
+  const end = text('learn/skills/learn-core/references/session-end-signals.md')
+  assert.ok(end.indexOf('想换学习内容但没指定目标') < end.indexOf('已指定另一个学习主题'))
+  const recommend = text(skillPath('learn', 'learn-recommend'))
+  for (const rule of ['明确委托', '跳过、空消息', '不是选择授权', '都不想学',
+    '不重复推同一批', '先不换', '不是学习表现', '不产 segment', '不清空画板']) {
+    assert.ok(recommend.includes(rule), rule)
+  }
+})
+test('recommendation recovery is temporary and does not change profile schemas', () => {
+  const schema = dataRef('session-schema')
+  for (const field of ['recommendation', 'preferred_id', 'candidates', 'target_context', 'reason', 'basis']) {
+    assert.ok(schema.includes(field), field)
+  }
+  assert.match(schema, /独立于教学 context/)
+  assert.match(schema, /不是 segment 的 recommended_targets/)
+  assert.match(schema, /不把推荐对象汇总进档案/)
+  const finalize = dataRef('finalize-session')
+  assert.match(finalize, /移除 context、finalize_plan 与未选 recommendation/)
+  assert.match(finalize, /已有合法 selected_id.*原样保留.*mode/)
+  assert.match(schema, /选定后可选 `selected_id`.*finalize 前先持久化/)
+  assert.match(schema, /`mode` 保留发起推荐时的模式/)
+  const lifecycle = dataRef('session-lifecycle')
+  assert.match(lifecycle, /写失败.*停止，不 finalize/)
+  assert.match(lifecycle, /已选 recommendation 跨 finalize、失败重试与新建保留/)
+  assert.match(lifecycle, /仅保存请求不自动开课/)
+  assert.match(lifecycle, /已选.*恢复.*[\s\S]*危机、明确结束、取消.*优先/)
+  assert.match(dataRef('session-lifecycle'), /空 segments 返回 no-op.*移除旧 recommendation/)
+})
+test('completion offers opt-in recommendations without overflowing stage menus', () => {
+  const next = dataRef('next-step')
+  assert.match(next, /选中「换个内容」才加载 `learn-recommend`/)
+  assert.match(next, /超过 6 项.*更多活动/)
+  assert.match(next, /第二张卡显示所有附加项及「返回」/)
+  assert.match(next, /学习推荐卡.*跳过和空消息按 `learn-recommend`/)
+  assert.match(next, /显式学习推荐可以呈现多个候选.*唯一首选/)
+})
+test('each subject owns recommendation pedagogy and stops before teaching', () => {
+  for (const [bundle, subject, anchor] of [
+    ['math-primary-low', 'math', '关系 × 策略 × 数字结构'],
+    ['chinese-reading', 'chinese', '目标—证据缺口—任务'],
+    ['english', 'english', '理解或表达'],
+  ]) {
+    const core = text(skillPath(bundle, `${subject}-core`))
+    assert.match(core, /学习推荐.*references\/learning-recommendations\.md/)
+    const reference = text(`${bundle}/skills/${subject}-core/references/learning-recommendations.md`)
+    assert.ok(reference.includes(anchor), subject)
+    assert.ok(reference.includes('中文'), subject)
+    assert.ok(reference.includes('首选'), subject)
+    const session = text(skillPath(bundle, `${subject}-session`))
+    const gate = session.split('## 学习推荐闸门')[1]?.split('\n## ')[0] ?? ''
+    for (const rule of ['learn-recommend', '快照', '不产 `session_segment`', '不修改 `context.focus`', '画板']) {
+      assert.ok(gate.includes(rule), `${subject}: ${rule}`)
+    }
+  }
+  const english = text(skillPath('english', 'english-core'))
+  assert.match(english, /明确例外.*推荐理由统一.*中文.*选定后恢复英语教学/)
+  const englishRules = text('english/skills/english-core/references/learning-recommendations.md')
+  assert.match(englishRules, /唯一方法表/)
+  assert.match(englishRules, /不先.*施测/)
 })
 
 test('invocation policy preserves user-only entries and model-loadable internals', () => {
@@ -188,7 +267,7 @@ test('news images use source-backed remote URLs with text fallback and recovery 
 test('english subject entry keeps method skills internal and one segment per turn', () => {
   const core = text(skillPath('english', 'english-core'))
   assert.match(core, /## 学科契约/)
-  for (const role of ['目标分类', '年级默认', '档案字段', '诊断规则']) {
+  for (const role of ['目标分类', '年级默认', '档案字段', '诊断规则', '学习推荐']) {
     assert.ok(core.split('## 学科契约')[1].includes(role), `english-core: ${role}`)
   }
   const session = text(skillPath('english', 'english-session'))
@@ -358,12 +437,12 @@ test('student problem keeps the author in control after grading', () => {
   const scenarios = text('math-primary-low/tests/teaching-scenarios.md')
   assert.match(leaf, /角色、批改回应与取证边界统一按设计参考的「角色边界与取证」执行/)
   assert.match(leaf, /把答案交学生批改，不附带要求学生证明理解的问题/)
-  assert.match(leaf, /学生求助并确认回到教师指导后/)
+  assert.match(leaf, /学生求助并确认回到教学助手指导后/)
   assert.doesNotMatch(leaf, /仅“对\/错”：开放问依据|按共享无响应协议降低负担|只补一个数量关系细节/)
   for (const boundary of ['出题者主导', '学生出题并批改，AI 是作答者',
-    '“对”“跟我一样”是有效批改，直接收束本题',
+    '“对”“跟我一样”：本轮无故意错误时直接收束',
     '批改后的缺省出口是收束', '不推定已独立验算',
-    '不是继续追问的理由', '恢复旧的教师式追问时']) {
+    '不是继续追问的理由', '恢复旧的验收式追问时']) {
     assert.ok(design.includes(boundary), boundary)
   }
   for (const input of ['你算的是对的', '我的办法跟你一样', '学生点评中有明确矛盾',
@@ -466,6 +545,47 @@ test('structured drawing guidance is conditionally discoverable in math-core onl
   assert.match(text('math-primary-low/README.md'), /skills\/math-core\/references\/structured-drawing\.md/)
 })
 
+test('math task-boundary clearing has one authority reached before entry and leaf tasks', () => {
+  const reference = 'references/board-task-boundary.md'
+  const boundary = text(`math-primary-low/skills/math-core/${reference}`)
+  const core = text(skillPath('math-primary-low', 'math-core'))
+  const session = text(skillPath('math-primary-low', 'math-session'))
+  const drawing = text('math-primary-low/skills/math-core/references/structured-drawing.md')
+  const scenarios = text('math-primary-low/tests/teaching-scenarios.md')
+  const row = core.split('\n').find((line) => line.includes(reference))
+  assert.ok(row, 'boundary remains discoverable without a drawing attachment')
+  for (const branch of ['新题', '新活动', '新主题', '跳题', '教学助手下一题', 'finalize']) {
+    assert.ok(row.includes(branch), branch)
+  }
+  assert.ok(session.includes(reference))
+  for (const entry of ['唯一边界规则', 'leaf 内下一题', '先 finalize 旧主题', '开展新主题前']) {
+    assert.ok(session.includes(entry), entry)
+  }
+  assert.ok(drawing.includes(reference))
+  assert.match(text('math-primary-low/README.md'), /skills\/math-core\/references\/board-task-boundary\.md/)
+  for (const guard of ['只用于 `math-primary-low`', '已发送对话', '同一边界只处理一次',
+    '新任务明确沿用旧图', '别清', '同题提示、换解法、诊断、练习或费曼切换',
+    '只提议换题', '无参数（`{}`）', '不再逐次询问', '不是清空或保留的配置授权',
+    '不查看、推断或索取未发送画板', '全部内容', '多选说明', '本地修改记录',
+    '撤销/重做历史', '保留数值、颜色', '已有附件、聊天与学生档案',
+    '只表示清空请求已记录', '不等于客户端已执行', '下次打开、编辑前应用一次',
+    '迟到请求', '新作品', '客户端明确确认应用后', '工具不可用、返回失败',
+    '继续教学', '请在画板里点', '不自动重放迟到请求']) {
+    assert.ok(boundary.includes(guard), guard)
+  }
+  assert.match(boundary, /调用 `math_board_clear`/)
+  for (const bundle of ['learn', 'chinese-reading', 'english']) {
+    for (const path of markdownFiles(`${bundle}/skills`)) {
+      assert.doesNotMatch(text(path), /math_board_clear|board-task-boundary\.md/, path)
+    }
+  }
+  for (const branch of ['跳过这题', '主动出近邻下一题', 'finalize 成功后',
+    '新活动实际开始', '同题给提示', '这题别清', '附件 note / alias',
+    '没有客户端确认', '画板未打开', '请求延迟到达', '工具不可用', '过期未应用']) {
+    assert.ok(scenarios.includes(branch), branch)
+  }
+})
+
 test('structured drawing contract preserves student submission and mathematical intent boundaries', () => {
   const drawing = text('math-primary-low/skills/math-core/references/structured-drawing.md')
   for (const field of [
@@ -510,24 +630,80 @@ test('board modification evidence stays optional, bounded and distinct from mast
 
 test('posing a math problem stops at the question', () => {
   const teaching = text('math-primary-low/skills/math-core/references/math-teaching-core.md')
-  const session = text('math-primary-low/skills/math-session/SKILL.md')
   const scaffold = text('math-primary-low/skills/math-core/references/scaffold-calibration.md')
-  assert.match(teaching, /问句是这一轮的最后一句/)
+  const scenarios = text('math-primary-low/tests/teaching-scenarios.md')
+  assert.match(teaching, /回复到问句为止/)
   assert.match(teaching, /尚未回答时只把原题再给一次/)
-  assert.match(teaching, /不把两个已知量收成一个做法/)
   assert.match(teaching, /新的 `session_id`/)
   assert.match(teaching, /上一场的题面/)
-  assert.match(session, /当前这条未保存日志里，无回答时把原题再给一次，停在问句并等待/)
-  assert.match(session, /新的 `session_id` 不沿用上一场的题面/)
   assert.match(text('math-primary-low/skills/math-core/references/structured-drawing.md'), /本场 `session_id`/)
   assert.match(text('math-primary-low/skills/math-core/references/structured-drawing.md'), /新的学习会话不读取上一场已发送的快照或修改记录/)
-  assert.match(scaffold, /出题和未答再给一次不使用本表，回复停在故事的问句/)
-  assert.match(scaffold, /两堆合起来是多少，都不在表内/)
+  assert.match(scaffold, /教学助手不主动示范、不点名解题策略/)
+  assert.match(scenarios, /停在问句/)
+  assert.match(scenarios, /两堆合起来是多少/)
 })
 
 // These guards cover document wiring and persisted field names, not teaching
 // behavior. Short-answer handling, continuation and grounded interpretation
 // require model conversation evaluation; wording or example matches cannot prove them.
+test('math stages follow CGI tracks without gating content', () => {
+  const map = text('math-primary-low/skills/math-core/references/progression-map.md')
+  const defaults = text('math-primary-low/skills/math-core/references/math-grade-defaults.md')
+  const design = text('math-primary-low/skills/math-core/references/problem-design.md')
+  assert.match(map, /`multidigit_strategy_stage`/)
+  assert.doesNotMatch(map, /^\d\. `(flexible_relational|structure_extension)`/m)
+  assert.match(map, /read `flexible_relational` and `structure_extension` as `derived_facts`/)
+  for (const key of ['arithmetic_strategy_stage', 'multidigit_strategy_stage', 'fraction_strategy_stage']) {
+    assert.match(defaults, new RegExp(`"${key}": "unknown"`), key)
+  }
+  assert.match(defaults, /策略阶段不作为进入某个领域的条件/)
+  assert.doesNotMatch(defaults, /→/)
+  for (const type of ['部分-整体', '比较', '包含除', '等分除']) {
+    assert.ok(design.includes(type), type)
+  }
+  assert.match(design, /给两三组数让学生选/)
+})
+test('legacy arithmetic mapping preserves independently observed multidigit stages', () => {
+  const map = text('math-primary-low/skills/math-core/references/progression-map.md')
+  const scenarios = text('math-primary-low/tests/teaching-scenarios.md')
+  assert.match(map, /Preserve any existing `multidigit_strategy_stage`/)
+  assert.match(map, /only a missing field is read as `unknown`/)
+  assert.match(map, /not as new evidence of fact derivation/)
+  assert.match(map, /This arithmetic mapping never changes the multidigit field/)
+  assert.doesNotMatch(map, /with `multidigit_strategy_stage` still `unknown`/)
+  assert.match(scenarios, /旧档案算术为 `structure_extension`，已有多位数 `modeling_tens_ones`/)
+  assert.match(scenarios, /旧档案算术为 `structure_extension`，缺少多位数字段/)
+})
+test('math diagnosis returns evidence for all three strategy tracks', () => {
+  const diagnose = text(skillPath('math-primary-low', 'math-diagnose'))
+  const row = diagnose.split('\n').find((line) => line.startsWith('| `current_levels` |'))
+  assert.ok(row)
+  assert.match(row, /算术\/多位数\/分数/)
+  assert.match(row, /仅本次有证据字段/)
+  for (const name of ['strategy-diagnosis-rules', 'math-segment-fields']) {
+    assert.match(text(`math-primary-low/skills/math-core/references/${name}.md`), /`multidigit_strategy_stage`/)
+  }
+})
+test('math variation separates number-structure evidence from context transfer', () => {
+  const design = text('math-primary-low/skills/math-core/references/problem-design.md')
+  const teaching = text('math-primary-low/skills/math-core/references/math-teaching-core.md')
+  const practice = text('math-primary-low/skills/math-core/references/targeted-practice-rules.md')
+  const personal = text('math-primary-low/skills/math-core/references/math-personalization.md')
+  const scenarios = text('math-primary-low/tests/teaching-scenarios.md')
+  assert.match(design, /数字结构的变化也算变式/)
+  assert.match(design, /可以有意重复数字或结果/)
+  assert.match(design, /检验情境迁移时再换场景/)
+  assert.match(teaching, /检验情境迁移时再换场景/)
+  assert.match(practice, /若目标是情境迁移，需有换场景后的证据/)
+  assert.match(personal, /下一题按 `references\/problem-design\.md` 的目的选题/)
+  assert.match(scenarios, /60\+20、60\+25、65\+20/)
+  for (const content of [design, teaching, practice, personal]) {
+    assert.doesNotMatch(content, /只换数字不算变式|不重复上一题的数和结果|变式有换场景后的迁移证据|下一题换一个与兴趣无关的日常场景/)
+  }
+})
+
+
+
 test('teaching references reach the shared confirmation and continuation policies', () => {
   const core = text(skillPath('learn', 'learn-core'))
   for (const reference of ['confirm-before-accept', 'session-end-signals']) {
@@ -546,9 +722,9 @@ test('reading completion distinguishes student reasoning from teacher scaffoldin
   assert.match(reading, /目标—证据—缺口—任务/)
   assert.match(reading, /区分信息定位、字面理解与表达效果/)
   assert.match(reading, /选择阻碍当前理解的最小缺口/)
-  assert.match(reading, /教师补出的解释只算支架/)
+  assert.match(reading, /教学助手补出的解释只算支架/)
   assert.match(reading, /同一缺口的追问预算沿用共享确认规则/)
-  assert.match(reading, /只有摘句和教师的解释时，仍保留关系待确认/)
+  assert.match(reading, /只有摘句和教学助手的解释时，仍保留关系待确认/)
   assert.match(reading, /已有充分证据时直接交下一步选择/)
   assert.match(reading, /references\/next-step\.md/)
 })
@@ -639,6 +815,14 @@ test('Chinese segment fields remain explicit after removing narrative JSON examp
   assert.match(transfer, /最多 2 轮/)
   assert.match(transfer, /收到学生明确提交的本轮作品后才进入评改/)
   assert.doesNotMatch(transfer, /三步确认/)
+
+  for (const name of ['chinese-reading-session', 'chinese-writing-session']) {
+    const content = text(skillPath('chinese-reading', name))
+    assert.match(content, /`mode` 沿用调用方（`learn` \/ `feynman`）；`task_mode` 取/, name)
+  }
+  assert.match(text(skillPath('chinese-reading', 'chinese-session')), /传入 `task_mode`/)
+  assert.match(text('docs/skill-map/call-graph.md'), /传入 `task_mode`/)
+  assert.doesNotMatch(text('docs/skill-map/call-graph.md'), /\| 条件 \| 子 skill \| mode \|/)
 })
 
 test('difficulty requests persist across sessions without becoming a level', () => {
