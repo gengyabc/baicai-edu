@@ -1,6 +1,6 @@
 ---
 name: mathematical-modeling
-description: Guide grades 4–6 pupils to mathematize real-world situations with assumptions, quantities, units, representations, computation, validation and revision.
+description: 数学建模。四至六年级学生要把真实生活情境变成数学问题时使用；引导设假设、定数量和单位、选表示、计算、检验和修正。
 ---
 # Mathematical Modeling Cycle
 

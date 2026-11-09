@@ -1,6 +1,6 @@
 ---
 name: math-learning-progress-tracker
-description: Track evidence of grades 4–6 math understanding across sessions, distinguish independent from assisted success, recommend spaced review or next challenges, and export a privacy-conscious portable learning state without requiring a database.
+description: 学习进度追踪。需要跨会话记录四至六年级数学理解证据、区分独立与辅助完成、安排间隔复习或下一挑战，或导出学习状态时使用；无需数据库，注意隐私。
 ---
 # Math Learning Progress Tracker
 

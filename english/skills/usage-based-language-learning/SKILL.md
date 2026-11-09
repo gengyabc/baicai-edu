@@ -1,6 +1,6 @@
 ---
 name: usage-based-language-learning
-description: Apply usage-based language learning and construction-learning ideas associated with Michael Tomasello and Nick Ellis to help children acquire useful English sentence patterns through meaningful varied examples.
+description: 句型学习。学生要学会用某个英语句型或搭配时加载；用多个有意义的变式例句建立句型。
 user-invocable: false
 ---
 # Usage-Based Language Learning

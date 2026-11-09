@@ -1,6 +1,6 @@
 ---
 name: child-news-reader
-description: Find and verify trustworthy child-friendly news, filter topics for age and emotional maturity, rewrite articles at a child's English-as-a-foreign-language reading level, and guide interactive reading. Use when a parent requests news for kids, graded news reading, current-events English practice, or adaptation of a news URL.
+description: 儿童新闻阅读。学生选择英语新闻或提供新闻链接时加载；核验来源、适龄筛选并改写到学生水平。
 user-invocable: false
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: variation-theory-math
-description: Use variation theory and carefully contrasted example/non-example sequences to help grades 4–6 learners discern essential mathematical structure, invariants, and misconceptions.
+description: 变式教学。四至六年级学生混淆相近概念、抓不住本质结构或误解顽固时使用；用对比的正例和反例序列突出不变量。
 ---
 # Variation Theory for Math
 

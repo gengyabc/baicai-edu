@@ -1,6 +1,6 @@
 ---
 name: polya-problem-solving
-description: Guide grades 4–6 learners through George Pólya's four-stage mathematical problem-solving cycle, especially multi-step word problems, unfamiliar tasks and strategy choice.
+description: 波利亚解题。四至六年级学生遇到多步应用题、陌生题，或不知道选什么策略时使用；按理解、计划、执行、回顾四步引导。
 ---
 # Pólya's Four Steps
 

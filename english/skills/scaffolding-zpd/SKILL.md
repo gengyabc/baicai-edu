@@ -1,6 +1,6 @@
 ---
 name: scaffolding-zpd
-description: Apply Vygotsky's Zone of Proximal Development and contingent scaffolding to children struggling with an English task, including graduated hints and fading support.
+description: 提示与退让。英语任务出现明确卡点，需要逐级提示再逐步撤除时辅助加载。
 user-invocable: false
 ---
 # Scaffolding and ZPD — Vygotsky

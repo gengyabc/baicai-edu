@@ -1,6 +1,6 @@
 ---
 name: task-based-language-learning
-description: Use Task-Based Language Teaching (TBLT) to design child-friendly English missions, role-play, games and projects with meaningful outcomes.
+description: 任务活动。为一个具体结果用英语交流（角色扮演、游戏、小项目）时加载；不包装机械练习。
 user-invocable: false
 ---
 # Task-Based Language Teaching

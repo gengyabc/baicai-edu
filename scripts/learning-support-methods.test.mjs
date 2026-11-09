@@ -52,13 +52,21 @@ test('persistence support respects real costs and interruption without coercion'
   methodGuard('persistence', ['现实成本', '如果', '恢复', '休息', '不自动', '承诺'])
 })
 
-test('theory reference discloses verified source scope and does not promise treatment effects', () => {
+const theorySections = ['## SDT', '## SEVT', '## Self-efficacy', '## SRL', '## Strategies', '## Implementation-intentions']
+const sourceIds = ['selfdeterminationtheory.org/theory/', 'PMC4610746', '2017.00422', '1529100612453266', 'PracticeGuide/1', '2020.00046']
+
+test('theory reference is self-contained methodology and does not promise treatment effects', () => {
   const evidence = text('references/evidence.md')
-  for (const section of ['## SDT', '## SEVT', '## Self-efficacy', '## SRL', '## Strategies', '## Implementation-intentions']) {
-    assert.ok(evidence.includes(section), section)
-  }
-  for (const term of ['研究对象', '机制', '限制', '核验', '未核验', '不是模型行为', 'selfdeterminationtheory.org/theory/', 'PMC4610746', '2017.00422', '1529100612453266', 'PracticeGuide/1', '2020.00046']) {
+  for (const term of [...theorySections, '不证明本系统干预有效', '自己说出', '不等于自尊', '证据强度', '没有带来学习收益', '不承诺']) {
     assert.ok(evidence.includes(term), term)
+  }
+  assert.doesNotMatch(evidence, /https?:\/\/|docs\//)
+})
+
+test('maintainer evidence archive discloses verified source scope', () => {
+  const archive = readFileSync(new URL('../docs/learn-support-evidence.md', import.meta.url), 'utf8')
+  for (const term of [...theorySections, ...sourceIds, '研究对象', '机制', '限制', '核验', '未核验', '不是模型行为']) {
+    assert.ok(archive.includes(term), term)
   }
 })
 

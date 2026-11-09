@@ -1,6 +1,6 @@
 ---
 name: inquiry-and-proof
-description: Develop mathematical conjecturing, counterexample search, and age-appropriate justification for grades 4–6, using guided inquiry rather than unsupported discovery.
+description: 猜想与说理。四至六年级学生已会基本做法，适合发现规律、找反例或说明为什么成立时使用；用有引导的探究，不放任自由发现。
 ---
 # Guided Inquiry and Mathematical Proof
 

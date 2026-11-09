@@ -1,6 +1,6 @@
 ---
 name: spaced-retrieval
-description: Apply spaced retrieval practice for children's English vocabulary and expressions. Use to revisit language across time, check unaided recall, and adapt review priorities.
+description: 间隔回忆。已有接触记录，需要不看提示回忆旧词汇和表达时加载；按记录调整复习优先级。
 user-invocable: false
 ---
 # Spaced Retrieval Practice

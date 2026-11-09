@@ -1,6 +1,6 @@
 ---
 name: learn-support
-description: 学习支持。当前教学发现价值、信心、自主选择、策略或持续学习的明确需求时加载；向当前教学主导者返回方法建议。
+description: 学习支持。学生问学这个有什么用、明确担心学不会、只是被动接受目标或把选择交给 AI、想学但不知道怎么学或方法无效、主动求助难以开始/坚持/中断后恢复时加载；单次答错、沉默或短答不触发。只向当前教学主导者返回方法建议。
 user-invocable: false
 ---
 
@@ -21,7 +21,7 @@ user-invocable: false
 
 返回给教学主导者：
 
-- `action`：一个主要方法，必要时最多一个辅助方法；说明教师下一动作和学生亲自尝试的一小步。一次方法建议合并到真实教学轮次。
+- `action`：一个主要方法，必要时最多一个辅助方法；说明教学主导者下一动作和学生亲自尝试的一小步。一次方法建议合并到真实教学轮次。
 - `observe`：分别观察自述、参与、任务表现，写清提示/示范条件；没有观察保持未知。
 - `exit`：本次方法何时返回教学、改为基础诊断、休息或结束；不以多聊或承诺为完成。
 - `support_update`：对 `context.learning_support` 的最小更新建议，由生命周期写入。状态和计划保存只遵循 `learn-data` 的 [会话结构](../learn-data/references/session-schema.md) 与 [生命周期](../learn-data/references/session-lifecycle.md)，这里不另造存储结构。

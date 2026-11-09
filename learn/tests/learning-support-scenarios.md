@@ -42,4 +42,6 @@
 
 自动化入口：`node scripts/check-skills.mjs`、`node --test scripts/*.test.mjs`。新增的入口、路由、支持方法与保存测试均标注静态协议范围。脚本语法可用 `node --check`；本变更没有 TypeScript 或新增运行时依赖。
 
-以下保持“待运行”，直到有隔离执行记录：S01–S29 的真实模型对话与文件差异；S22/S23 实际故障注入；已安装 Web 卡片/入口验证。研究来源核验见 `learn-support` 的理论参考，它不能替代这些验收，也不能证明长期效果。
+2026-11-09 本会话半自动协议走查（agent 代教 + 合成学生 `stu_synth_*` 文件差异）：S01–S29 learn 全 PASS；除 S25 外 feynman 全 PASS；S22/S23 已做实际故障注入与同镜像重放。审计记录见 `.scratch/learn-support-acceptance/run.md`。标签为 `protocol-walkthrough`，**不**等同独立 DSH Web 模型会话录屏。
+
+以下仍保持“待运行”：已安装 Web 卡片/入口验证；真实安装环境中的独立模型对话验收；长期效果观察。研究来源核验见 `learn-support` 的理论参考，它不能替代上述验收，也不能证明长期效果。

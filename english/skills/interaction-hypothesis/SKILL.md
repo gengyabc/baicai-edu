@@ -1,6 +1,6 @@
 ---
 name: interaction-hypothesis
-description: Apply Michael Long's Interaction Hypothesis in children's English conversation through clarification, confirmation, meaning negotiation, and reciprocal dialogue.
+description: 对话协商。英语口语中学生意思不清，需要澄清、确认和来回协商意思时加载。
 user-invocable: false
 ---
 # Interaction Hypothesis — Long

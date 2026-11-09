@@ -1,6 +1,6 @@
 ---
 name: adaptive-math-task-generator
-description: Generate and verify grade 4–6 math tasks matched to learner goals, prerequisite knowledge, selected teaching theory, difficulty and ability evidence, including solutions, hints, transfer checks and parent guidance.
+description: 高年级数学出题。需要按学生目标、先修基础、已选教学方法和能力证据生成四至六年级题目时使用；核验答案，并附解答、提示、迁移检查和家长指导。
 ---
 # Adaptive Math Task Generator
 

@@ -1,6 +1,6 @@
 ---
 name: upper-primary-math-coach
-description: Coordinate personalized mathematics learning for grades 4–6, choosing evidence-informed teaching methods, diagnosing misconceptions, adapting activities for school mastery, reasoning, enrichment, and middle-school transition. Use for parent-guided or child-facing math lessons and study plans.
+description: 高年级数学教学协调。四至六年级数学一对一教学、家长陪学或制定学习计划时使用；选择教学方法、诊断误解并安排巩固、推理、拓展或小初衔接活动。
 ---
 # Upper Primary Math Coach (四至六年级数学总控)
 

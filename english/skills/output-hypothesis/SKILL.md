@@ -1,6 +1,6 @@
 ---
 name: output-hypothesis
-description: Apply Merrill Swain's Output Hypothesis when children need to express ideas, retell, describe, ask questions or notice gaps in their English.
+description: 表达输出。学生意思明确但说不出或写不出、英语写作、学生出题或评价已有表达时加载；保留原意，不代写。
 user-invocable: false
 ---
 # Output Hypothesis — Swain

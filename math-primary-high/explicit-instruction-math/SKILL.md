@@ -1,6 +1,6 @@
 ---
 name: explicit-instruction-math
-description: Provide systematic, explicit and responsive mathematics instruction for grades 4–6 when prerequisites are weak, misconceptions persist, or the learner needs worked examples and cumulative practice.
+description: 显式教学。四至六年级学生先修薄弱、误解反复出现，或需要例题示范和累积练习时使用。
 ---
 # Explicit and Systematic Math Instruction
 

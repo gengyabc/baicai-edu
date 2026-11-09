@@ -1,6 +1,6 @@
 ---
 name: concrete-pictorial-abstract
-description: Teach grades 4–6 mathematics through the Concrete–Pictorial–Abstract (CPA) sequence, connecting manipulatives, diagrams and equations for fractions, decimals, ratios, geometry, and early algebra.
+description: 实物-图示-符号（CPA）。四至六年级学生学分数、小数、比、几何或早期代数时只会套符号、缺少直观理解时使用；用教具和图示连接到算式。
 ---
 # Concrete–Pictorial–Abstract (CPA)
 

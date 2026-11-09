@@ -25,6 +25,9 @@ node_modules/
 dist/
 .build/
 
+# Playwright MCP local dumps (console/page snapshots)
+.playwright-mcp/
+
 # Generated/private outputs (student data and future teaching artifacts)
 outputs/
 

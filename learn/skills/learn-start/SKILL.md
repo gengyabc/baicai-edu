@@ -30,11 +30,11 @@ disable-model-invocation: true
 
 ## 3. 识别学生
 
-按 `outputs/students/*/profile.json` 匹配共享档案，逐个读取 `student_id`、`name`、可选的 `grade`、`education_stage` 与 `personal.interests`。显示称呼；阶段/年级已知才附加说明，未知不显示“小学”或虚构年级。
+按 `outputs/students/*/profile.json` 匹配共享档案，逐个读取 `student_id`、`name`、可选的 `grade`、`education_stage` 与 `personal.interests`。显示称呼；阶段/年级已知才附加说明，未知不显示“小学”或虚构年级。定位已有学生一律用选择卡，不用开放提问；问姓名只属于第 4 步建档。
 
 - 无学生：进入建档。
 - 只有一人：用 `ask_user_question` 确认“我找到的是<name>，对吗？”，选项为「对，是我」「不是」。
-- 多人：用 `ask_user_question` 列出学生，每人一个选项；点选后激活。
+- 多人：按最近活跃（`current_state`、session 的 `updated_at`，缺失排后）取前 4 位，用 `ask_user_question` 列出称呼，末项为「都不是」；选「都不是」再按姓名分批翻页，每批 4 位加「都不是」，仍未找到才问是否新建。不一次列全，也不替学生猜身份。
 - 姓名重合：用文字问一个澄清问题，分别保留档案。
 - 姓名不存在：用 `ask_user_question` 问是否新建档案，确认后建档。
 
