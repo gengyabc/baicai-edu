@@ -5,14 +5,18 @@
 在此仓库中运行（需要 Node.js、可用的 `dsh` 及其 pnpm）：
 
 ```bash
-# 数学：同时安装 learn、math-board、math-primary-low
+# 低年级数学：安装 learn、math-board、math-primary-low
 node scripts/install.mjs math-primary-low --profile web
+# 高年级数学：只需 learn、math-primary-high，不自动安装画板
+node scripts/install.mjs math-primary-high --profile web
+# 高年级也可显式选装画板
+node scripts/install.mjs math-primary-high math-board --profile web
 
 # 语文或英语：同时安装 learn 和所选学科；不额外安装画板
 node scripts/install.mjs chinese-reading --profile web
 node scripts/install.mjs english --profile web
 
-# 一次装齐三个学科，共享包与画板各一份
+# 一次装齐三个学科（数学含两个年级段包），共享包与画板各一份
 node scripts/install.mjs all --profile web
 
 # 也可以组合选择，或独立安装共享包/画板
@@ -33,6 +37,7 @@ node scripts/install.mjs math-primary-low --profile web --dry-run
 | `learn` | 无 |
 | `math-board` | 无，可以独立使用 |
 | `math-primary-low` | `learn`、`math-board` |
+| `math-primary-high` | `learn`（`math-board` 可选，不自动安装） |
 | `chinese-reading` | `learn` |
 | `english` | `learn` |
 
@@ -43,10 +48,10 @@ node scripts/install.mjs math-primary-low --profile web --dry-run
 安装器从这些声明递归生成依赖优先、按包去重的闭包，然后执行**一次**：
 
 ```bash
-dsh plugin --profile web add link:<checkout>/learn link:<checkout>/math-board link:<checkout>/math-primary-low
+dsh plugin --profile web add link:<checkout>/learn link:<checkout>/math-board link:<checkout>/math-primary-low [link:<checkout>/math-primary-high]
 ```
 
-每个 bundle 成为 profile 的顶层依赖，由 DSH 原生处理安装与启用。各包仍只注册自己的技能或插件；学科 patch 不复制共享规则，不重复插入画板。`all` 只是三个已交付学科的快捷选择，不扫描实验目录为新学科。
+每个 bundle 成为 profile 的顶层依赖，由 DSH 原生处理安装与启用。各包仍只注册自己的技能或插件；学科 patch 不复制共享规则，不重复插入画板。`all` 只是三个已交付学科（数学两个年级段包）的快捷选择，不扫描实验目录为新学科。两个数学包互不依赖：科目 id 都是 `math`，由教学解析按学生阶段选择其中一个（见 `learn-data/references/teaching-resolver.md`），已安装但未被选中的包不影响正在进行的任务。
 
 ## 为什么不能只写 dependencies
 
@@ -54,6 +59,7 @@ dsh plugin --profile web add link:<checkout>/learn link:<checkout>/math-board li
 
 因此：
 
+- 只装了高年级包时，低年级学生会由解析回退到通用任务教学，而不是拒绝继续；反之亦然。想让两个年级段都可用，需分别安装或使用 `all`。
 - `dsh plugin ... add link:<checkout>/math-primary-low` **不是完整数学安装入口**：pnpm 的 `link:` 本身不安装目标目录的间接依赖，DSH 也不递归启用它们。
 - 改用 `file:` 让 pnpm 安装间接依赖，仍不能替代 bundle 启用。
 - 推荐使用上面的统一入口；手工安装时必须显式列出依赖闭包中的所有包。
@@ -78,4 +84,4 @@ node --test scripts/skill-contracts.test.mjs
 node --test math-board/*.test.js
 ```
 
-隔离实测时可指定临时 `DSH_HOME`，避免修改正在使用的 profile。新建 profile 安装数学后应在 dependencies 与 `dsh.profile.bundles` 中同时看到 `dsh-edu-learn`、`dsh-edu-math-board`、`dsh-edu-math-primary-low`；重装及加入语文、英语后，每个教育 bundle 仍只出现一次。通过配置展开确认画板与各技能 provider 各注册一次；实际工具栏显示与交互仍需在真实 Web 页面验收。
+隔离实测时可指定临时 `DSH_HOME`，避免修改正在使用的 profile。新建 profile 只安装高年级数学后，dependencies 与 `dsh.profile.bundles` 中应同时看到 `dsh-edu-learn`、`dsh-edu-math-primary-high`，没有 `dsh-edu-math-board`；显式选装画板后才增加它。低年级数学仍同时安装 `dsh-edu-learn`、`dsh-edu-math-board`、`dsh-edu-math-primary-low`。重装及加入其他学科后，每个教育 bundle 仍只出现一次。通过配置展开确认各技能 provider 及已选装的画板各注册一次；实际工具栏显示与交互仍需在真实 Web 页面验收。

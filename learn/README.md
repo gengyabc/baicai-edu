@@ -82,6 +82,7 @@
 node scripts/install.mjs learn --profile web
 # 教学使用时选学科即可，自动补齐本包；数学还会配齐画板
 node scripts/install.mjs math-primary-low --profile web
+node scripts/install.mjs math-primary-high --profile web
 ```
 
 按 DSH 输出决定是否重启，再刷新 Web 会话：`/` 菜单出现 6 个入口命令；模型目录出现 `learn-feynman`、`learn-profile`、`learn-save`，已安装学科包还会提供内部 skill。共享包不反向安装所有学科。统一入口及重复安装、手动禁用行为见[安装说明](<../docs/installation.md>)。
@@ -94,9 +95,9 @@ node scripts/install.mjs math-primary-low --profile web
 
 ## 依赖
 
-- `math-primary-low`、`chinese-reading` 与 `english` 的 skill 会按名称加载 `learn-core`、`learn-data`、`learn-errors`。
+- `math-primary-low`、`math-primary-high`、`chinese-reading` 与 `english` 的 skill 会按名称加载 `learn-core`、`learn-data`、`learn-errors`。
 - 单独安装本包也能使用通用任务教学及五类支持；安装适用学科包后可使用专门教学，不自动重解释旧通用证据或热替换未完成任务。
 - 教育阶段、年级和情境可选；旧小学档案无需迁移，成人不强填小学年级。纯支持讨论可恢复；学生明确要求保存的中性计划与学科表现分开保存，仍走同一 finalize。
 - 设计与完整验收见[总体设计](<../docs/learn-support-design.md>)、[学习支持验收](<tests/learning-support-scenarios.md>)与[支持性交流回放](<tests/supportive-conversation-scenarios.md>)；静态检查与合成回放不代表真实模型教学、故障注入或纵向成效已验证。
-- 接入新学科：学科包提供 `<subject>-session` 与带「学科契约」节的 `<subject>-core`，再在 `learn-start` 的科目表加一行；其他入口无需修改。现有学科包有 `math-primary-low`、`chinese-reading`、`english`。
+- 接入新学科：学科包提供 `<subject>-session` 与带「学科契约」节的 `<subject>-core`，再在 `learn-start` 的科目表登记；其他入口无需修改。同一学科可提供多个按年级段适配的包（数学即 `math-primary-low` 与 `math-primary-high`），由教学解析按 `supported_stages` 选一个，科目 id 不变。现有学科包有 `math-primary-low`、`math-primary-high`、`chinese-reading`、`english`。
 - `personal.interests` 是跨学科个性化字段，各学科 skill 都会读取；具体用法在学科包里。

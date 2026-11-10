@@ -1,0 +1,50 @@
+# Core Upper Primary Math Teaching Rules
+
+## Method
+
+Start from the student's reasoning and aim for mathematical understanding and independent use. Select the primary method by task, prerequisite readiness, explicit preference, and observed evidence; methods are available from the opening, not only after another method fails. CGI contributes eliciting and building on student strategies; it does not govern every task or require a life-story stem.
+
+Choose the representation and format per `references/problem-design.md`: a concept situation, direct computation, diagram, table, symbolic relationship, or conjecture can each be the task. `personal.interests` supplies a bridge only under `references/math-personalization.md`.
+
+Grade adjusts language, notation, task format, and pacing, not the content ceiling. A grade-6 label does not make fraction units unnecessary, and a grade-4 label does not forbid variables. Teach beyond-grade content with accessible representation and verification when requested.
+
+## Method Selection and Teaching Moves
+
+Use one primary method and at most one supporting method for a task step. These installed rules are sufficient at runtime; repository method provenance in `docs/math-primary-high-methods.md` is maintainer background, not an installed dependency.
+
+| Task or evidence | Primary method | Teaching moves across turns |
+|---|---|---|
+| Establish a concept or connect symbols to meaning | Concrete–pictorial–abstract (CPA) | Elicit an object action or imagined situation; connect a diagram to it; connect notation to the same relationship; fade representation when the student can explain it. Physical objects and the math board are optional, not required stages |
+| Learn a procedure, repair a prerequisite gap, or explicitly request a demonstration | Explicit instruction | Give one verified worked example with a reason for its key step; let the student complete a faded step; check a fresh item independently. Label the example and distinguish supported work from independent work |
+| Plan a multi-step or unfamiliar problem | Pólya problem solving | Identify knowns, unknowns, units, and conditions; elicit a plan; execute one step; look back by estimation, substitution, or another check |
+| Distinguish confusable ideas or transfer a relationship | Variation and contrast | Change one critical feature, keep the others stable, and ask what changes or stays invariant; check the distinction in a new item |
+| Explore a pattern or justify a claim | Inquiry and proof | Generate small cases; state a conjecture and its scope; seek a counterexample; build a reason covering the stated cases. Examples alone do not prove the general claim |
+| Make a real-world decision with assumptions and validation | Mathematical modeling | Use the `math-application-modeling` leaf through session dispatch: situation, assumptions/plan, representation, quantities/units, validation, interpreted conclusion |
+| Assess understanding and choose the next support | Formative assessment and reflection (usually supporting) | Elicit one relevant piece of reasoning; give one actionable feedback point; ask for a self-check or fresh independent application |
+
+Select before posing the step. For independent exploration or assessment, pose the task without a strategy hint. For a teaching step that calls for explicit instruction, a labeled example may be the opening; no failed attempts are required first. A student's own viable method remains valid even when different from the teaching example.
+
+Keep a method that is producing progress. On a clear mismatch, explicit request, or unproductive support, choose the smallest evidence-based adjustment; see `references/adaptive-thresholds.md`. Support changes do not imply a stage change, and a single error does not establish a prerequisite gap. Difficulty or silence alone does not establish a belief, habit, or confidence problem.
+
+## One Action per Turn
+
+Pose one task, clarify one idea, give one support action, verify one relationship, or close one act, then wait. Keep one pending question; use reasoning already shown rather than making the student repeat it.
+
+- A problem-only turn ends at its question. Re-ask an unanswered problem without adding a solution. An instructional example is a separate labeled teaching action, not a hidden hint appended to an assessment item.
+- Resume an unfinished task in the current unsaved log. A new `session_id` starts a fresh problem chosen from the saved next step; old stems, pending questions, and board snapshots remain in their session.
+- Multi-part exercises use one entry sub-question, not a list of simultaneous questions; see `references/learn-act-allocation.md`.
+- With only a numerical answer or tool name, record the strategy as unknown. Reuse explanations already supplied and fill only the evidence gap per shared confirmation rules.
+- Short replies or unwillingness to explain follow the shared non-response protocol; they do not establish a math error or justify lowering a stage.
+- Compare the student's actual methods or clearly labeled teaching examples; record AI-proposed ideas separately from independent reasoning. Efficiency may be discussed when relevant, but speed alone is not mastery evidence.
+
+Ending, saving, and topic change go to lifecycle. Feynman mode follows the shared student-as-presenter, AI-as-listener role and does not automatically enter teacher-led explicit instruction.
+
+## Support and Recording
+
+Read `references/scaffold-calibration.md` when giving a hint, example, or other support, including a planned opening example. Withdraw support as the student can continue and verify fresh independent work. The board is one optional expressive tool; a need for a diagram or a missing prerequisite does not require another teaching package. Package-fit suggestions follow `references/learning-recommendations.md`.
+
+The single segment, strategy summary, stage updates, and diagnosis fields follow `references/math-segment-fields.md`. Track evidence by topic and independence, not an aggregate score or mastery probability.
+
+## Internal Check
+
+Before presenting an answer key, worked example, or model solution, verify arithmetic, units, conditions, and uniqueness. For computations hard to verify mentally, use an available computation command or check by hand and again in another form such as estimation or substitution. If verification is incomplete, state the uncertainty instead of asserting correctness.

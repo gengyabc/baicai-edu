@@ -16,9 +16,11 @@ A brief first contact may go straight into learning, or use Feynman mode so the 
 
 | Option | subject id | Subject package |
 |---|---|---|
-| Math | `math` | `dsh-edu-math-primary-low` |
+| Math | `math` | `dsh-edu-math-primary-low`, `dsh-edu-math-primary-high` |
 | Chinese | `chinese` | `dsh-edu-chinese-reading` |
 | English | `english` | `dsh-edu-english` |
+
+Math has one subject id and two band packages; the resolver selects the one whose declared stage fit matches the student, so the table names both and the option does not ask the student to choose a package. A subject id that resolves to more than one package is normal; record which one was selected in the session as usual.
 
 Use `ask_user_question` with the prompt `ui.start.today_prompt`, offering the subjects in the table plus `ui.start.other_goal` and `ui.start.chat_first`. If the user has already named a subject or only wants to chat, adopt that directly without repeating the options; for other input keep the original goal and do not require reselection or force-guess a subject. Pure chat reuses the currently available task identity and does not switch an unfinished task; with no identity yet, create a neutral task identity per the resolution protocol and do not invent a learning goal. Afterward confirm only the necessary learner identity; stage and preferences may be skipped, and the chosen pure-chat intent is preserved throughout identity confirmation. Immediately after successful activation, hand that intent to the lifecycle's create/resume and support gates and persist the minimal chat selection: with an original question, only overlay resume_question and keep the full task; without one, use activity: support. Do not wait for the next message to write it. Only after the write-back succeeds, say the student can chat directly or continue with `/learn`, which guarantees that a later argument-less `/learn` still keeps the chat selection; if write-back fails, stop per the lifecycle and say the selection has not been saved yet, without claiming readiness. Do not auto-recommend or pose questions.
 

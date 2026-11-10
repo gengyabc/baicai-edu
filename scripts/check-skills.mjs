@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Static checks for the four education skill bundles.
+ * Static checks for the education skill bundles.
  *
  * Usage: node scripts/check-skills.mjs
  * Exit code 1 when an error is found.
@@ -9,7 +9,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, basename, extname } from 'node:path'
 
 const ROOT = new URL('..', import.meta.url).pathname
-const BUNDLES = ['learn', 'math-primary-low', 'chinese-reading', 'english']
+const BUNDLES = ['learn', 'math-primary-low', 'math-primary-high', 'chinese-reading', 'english']
 const ENTRIES = new Set(['learn-start', 'learn', 'learn-feynman', 'learn-profile', 'learn-save', 'learn-clean'])
 const USER_ONLY = new Set(['learn-start', 'learn', 'learn-clean'])
 const MODES = new Set(['learn', 'feynman'])
@@ -39,6 +39,9 @@ const BANNED = [
   [/"mode":\s*"feynman_handoff"/, 'dead `feynman_handoff` mode'],
   [/via `@`/, 'dead Pi `@` reference convention'],
 ]
+// Runtime working-material URLs only (news sources, remote images). Citation URLs stay out of skills.
+const RUNTIME_URL_SKILLS = new Set(['child-news-reader'])
+const EXTERNAL_URL = /https?:\/\//i
 
 const errors = []
 const warnings = []
@@ -102,7 +105,6 @@ for (const bundle of BUNDLES) {
     if ('disableModelInvocation' in fm || 'userInvocable' in fm) {
       errors.push(`${file}: legacy camelCase invocation key`)
     }
-    if (skills.has(fm.name)) errors.push(`duplicate skill name "${fm.name}"`)
     skills.set(fm.name, { bundle, file, fm, text })
 
     if (USER_ONLY.has(fm.name) && fm['disable-model-invocation'] !== 'true') {
@@ -121,6 +123,17 @@ for (const bundle of BUNDLES) {
     for (const [re, why] of BANNED) {
       if (re.test(text)) errors.push(`${file}: ${why}`)
     }
+    if (!RUNTIME_URL_SKILLS.has(entry)) {
+      for (const path of walk(dir)) {
+        if (!/\.(md|yml|yaml|json|txt)$/i.test(path)) continue
+        if (EXTERNAL_URL.test(readFileSync(path, 'utf8'))) {
+          errors.push(
+            `${path}: external URL in skill tree; extract readable rules into the skill ` +
+              `(runtime-material URLs only allowed in: ${[...RUNTIME_URL_SKILLS].join(', ')})`,
+          )
+        }
+      }
+    }
     for (const m of text.matchAll(/"source":\s*"([a-z_]+)"/g)) {
       if (!SOURCES.has(m[1])) warnings.push(`${file}: unknown source "${m[1]}"`)
     }
@@ -132,12 +145,24 @@ for (const bundle of BUNDLES) {
     }
     for (const m of text.matchAll(/references\/([A-Za-z0-9_.-]+\.md)/g)) {
       const name = m[1]
-      const local = join(dir, 'references', name)
-      if (!statSync(local, { throwIfNoEntry: false }) && !allRefFiles.has(name)) {
+      if (!referenceTargetExists(dir, text, m)) {
         errors.push(`${file}: dangling reference references/${name}`)
       }
     }
   }
+}
+
+// A reference may be written as a bare `references/<file>` of the skill itself, or
+// with a path (`../<other>/references/<file>` or similar relative references)
+// that resolves from the skill directory or from the package root.
+function referenceTargetExists(dir, text, match) {
+  const pathStart = /[A-Za-z0-9_./-]*$/.exec(text.slice(Math.max(0, match.index - 120), match.index))[0]
+  const full = `${pathStart}references/${match[1]}`
+  const candidates = [
+    join(dir, 'references', match[1]),
+    ...(full.includes('/') ? [join(dir, '..', '..', full), join(dir, full), join(dir, '..', full)] : []),
+  ]
+  return candidates.some((candidate) => statSync(candidate, { throwIfNoEntry: false }))
 }
 
 function skillShas(fm) {
@@ -151,6 +176,14 @@ if (refErrors.length > 0) {
     const name = e.split('references/')[1]
     if (allRefFiles.has(name)) errors.splice(errors.indexOf(e), 1)
   }
+}
+
+// The subject is a real identity, not a skill name: lower- and upper-primary math
+// packages intentionally ship the same interface skill names, and each is loaded
+// from its own provider. Only the shared non-math names must stay unique.
+for (const [name, owners] of Object.entries(Object.groupBy([...skills.values()], ({ fm }) => fm.name))) {
+  const isMathInterface = /^math-(core|session|diagnose|practice|student-problem)$/.test(name)
+  if (owners.length > 1 && !isMathInterface) errors.push(`duplicate skill name "${name}"`)
 }
 
 for (const warning of warnings) console.warn(`warn  ${warning}`)

@@ -22,6 +22,18 @@ for (const subject of ['chinese-reading', 'english']) {
   });
 }
 
+// The resolver picks one math band per session; neither depends on the other.
+test('upper-primary math requires only shared learning, with an optional board', () => {
+  assert.deepEqual(plan('math-primary-high').packages, ['learn', 'math-primary-high']);
+  assert.deepEqual(plan('math-primary-high', 'math-board', 'math-board').packages,
+    ['learn', 'math-primary-high', 'math-board']);
+  assert.deepEqual(plan('math-board', 'math-primary-high').packages,
+    ['math-board', 'learn', 'math-primary-high']);
+  // Low still brings its required board, without duplicating either shared bundle.
+  assert.deepEqual(plan('math-primary-high', 'math-primary-low').packages,
+    ['learn', 'math-primary-high', 'math-board', 'math-primary-low']);
+});
+
 for (const independent of ['learn', 'math-board']) {
   test(`${independent} remains independently installable`, () => {
     assert.deepEqual(plan(independent).packages, [independent]);
@@ -30,9 +42,9 @@ for (const independent of ['learn', 'math-board']) {
 
 test('all subjects and repeated requests share one copy of each bundle', () => {
   assert.deepEqual(plan('all', 'math-primary-low', 'learn', 'all').packages,
-    ['learn', 'math-board', 'math-primary-low', 'chinese-reading', 'english']);
-  assert.deepEqual(plan('english', 'chinese-reading', 'math-primary-low').packages,
-    ['learn', 'english', 'chinese-reading', 'math-board', 'math-primary-low']);
+    ['learn', 'math-board', 'math-primary-low', 'math-primary-high', 'chinese-reading', 'english']);
+  assert.deepEqual(plan('english', 'chinese-reading', 'math-primary-high').packages,
+    ['learn', 'english', 'chinese-reading', 'math-primary-high']);
 });
 
 test('profile and preview are explicit; no machine-specific path is stored', () => {
@@ -123,7 +135,7 @@ test('dependency declarations are the only graph and patch registrations stay un
     }
   }
   assert.deepEqual([...seenIds].sort(), [
-    'edu-learn-skills', 'edu-math-board', 'edu-math-primary-low-skills',
+    'edu-learn-skills', 'edu-math-board', 'edu-math-primary-low-skills', 'edu-math-primary-high-skills',
     'edu-chinese-reading-skills', 'edu-english-skills',
   ].sort());
 });

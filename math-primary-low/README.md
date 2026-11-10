@@ -1,6 +1,6 @@
 # dsh-edu-math-primary-low
 
-以小学低年级（1–3 年级）为主的 CGI 数学指令包，年级只调整语气、语言和呈现，不限制学生探究高年级内容；依赖 `dsh-edu-learn` 与 `dsh-edu-math-board`，自身不提供工具或运行时，画板由独立依赖包提供。4–6 年级对应目录为 [`math-primary-high/`](../math-primary-high/)（尚未打包为本仓库的 DSH bundle）。
+以小学低年级（1–3 年级）为主的 CGI 数学指令包，年级只调整语气、语言和呈现，不限制学生探究高年级内容；依赖 `dsh-edu-learn` 与 `dsh-edu-math-board`，自身不提供工具或运行时，画板由独立依赖包提供。4–6 年级对应包为 [`math-primary-high/`](../math-primary-high/README.md)：两者科目 id 同为 `math`，由教学解析按学生阶段选一个，同一场进行中的任务不受另一包安装影响。
 
 ## 技能
 

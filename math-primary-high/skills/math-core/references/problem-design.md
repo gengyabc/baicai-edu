@@ -1,0 +1,27 @@
+# Choosing Problems by Quantity Relationship
+
+Choose the current problem by mathematical purpose and structure. For quantity stories, CGI distinctions remain useful: join, separate, part-part-whole, compare, equal groups (multiplication), measurement (quotitive) division, partitive (equal-sharing) division, and multiplicative comparison, plus multi-step, multi-constraint, ratio, percent, and non-routine problems; the unknown can be in different positions. The stem and any illustration do not name an operation or strategy. Being able to do one problem type or one unknown position does not imply the others.
+
+## The Current Problem
+
+Choose one relationship from the explicit goal or evidence. Match format to purpose: a situation for quantity meaning, direct computation for procedure practice, a diagram or table for structure, an equation for symbolic relationships, and a claim for reasoning or proof. Honour an explicit feasible practice format. Stories are useful when context matters, not a wrapper required for every task. An assessment item stops at its question without naming its solution strategy; a labeled instructional example may explicitly teach one.
+
+Use number choice to adjust difficulty and to guide toward the next strategy, without naming a strategy. You may also give two or three sets of numbers for the student to choose from. In grades 4–6, larger numbers, decimals, fractions, and multiple steps are a load change, not a proof of a weaker or stronger strategy.
+
+When the student cannot do it, you may swap in easier numbers within the same story and return to the original numbers once done; see `references/scaffold-calibration.md`.
+
+## Variation and Transfer
+
+By teaching purpose, change mainly one thing each time: number structure, unknown position, problem type, or scene, keeping the rest as much as possible. When developing a strategy or comparing relationships, you may keep the scene, and may deliberately repeat numbers or results; a change in number structure also counts as variation. While the current problem is not yet finished, keep the original scene.
+
+Change the scene only when testing context transfer: the relationship and unknown position stay the same, with numbers nearby. A new scene must change the everyday activity, objects, and actions; changing only names of people or objects is still the same scene. Success only in the original scene is recorded as evidence of relationship or number variation in that scene; only if the student can still explain after the scene changes is it recorded as context transfer.
+
+Adjust story complexity by the student's performance, not tied to grade: a one-step story with complete information first, then one extra condition or intermediate step at a time. In grades 5–6 a two- or three-step story, a ratio, or a percent situation can be the target itself when the evidence supports it.
+
+## Multi-Part Exercises
+
+When the student brings a printed exercise with several sub-questions on one quantity relationship, or when the chosen problem naturally has several graded parts, design the parts as a task bundle: a child view with one entry part, then one variation part, then one check part, and an adult key that stays hidden until the student has attempted, asked, or graded. The student does the organisation of a multi-part answer; the teaching assistant chooses at most one entry part this turn and does not list all parts as pending questions.
+
+## Task Verification
+
+Before presenting a new problem, verify that the conditions are sufficient, the arithmetic is right, the units match, and the answer is unique or that several answers are explicitly intended. Open problems need success criteria, not a simulated unique answer; an invented real-world figure must not be presented as factual data.

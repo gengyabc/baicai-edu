@@ -8,19 +8,23 @@
 |---|---|---|
 | [`learn/`](./learn/README.md) | `dsh-edu-learn` | 共享入口（`/learn-start` `/learn` `/learn-feynman` `/learn-profile` `/learn-save` `/learn-clean`）、教学底座、学生数据协议、错题处理 |
 | [`math-primary-low/`](./math-primary-low/README.md) | `dsh-edu-math-primary-low` | 小学低年级为主的 CGI 数学（1–3 年级为主，不限制探究高年级内容）：一回合教学、策略诊断、分层练习、学生出题考 AI |
+| [`math-primary-high/`](./math-primary-high/README.md) | `dsh-edu-math-primary-high` | 小学高年级多方法数学（4–6 年级为主）：一回合教学、策略诊断、分层练习、学生出题考 AI、真实情境建模；方法步骤随技能安装，背景材料见 [methods](<docs/math-primary-high-methods.md>) |
 | [`chinese-reading/`](./chinese-reading/README.md) | `dsh-edu-chinese-reading` | 完整语文：阅读、写作、读写迁移、出题、评改、经验桥接 |
 | [`english/`](./english/README.md) | `dsh-edu-english` | 英语：可理解输入、对话协商、输出、支架、任务、用法积累、间隔提取、儿童新闻 |
-| [数学画板](<./math-board/README.md>) | `dsh-edu-math-board` | 数学包必需依赖，也可独立使用的 Web 教具：切换图案、分组、同形合并，以 JSON 表达回答 |
+| [数学画板](<./math-board/README.md>) | `dsh-edu-math-board` | 低年级数学必需、高年级可选，也可独立使用的 Web 教具：切换图案、分组、同形合并，以 JSON 表达回答 |
 
-`math-primary-low`、`chinese-reading` 与 `english` 在包配置中声明依赖 `learn`；`math-primary-low` 还依赖 `math-board`。共享包和画板仍可独立安装，不反向依赖学科。
+`math-primary-low`、`math-primary-high`、`chinese-reading` 与 `english` 在包配置中声明依赖 `learn`；低年级数学还必需依赖 `math-board`，高年级数学可显式选装画板。共享包和画板仍可独立安装，不反向依赖学科。
 
-`math-primary-low` 以 1–3 年级为主，用 CGI 的语气和方法教学；年级只调整语言与呈现，不是内容门槛，学生仍可探究高年级内容。高年级对应目录为 [`math-primary-high/`](./math-primary-high/)（4–6 年级，尚未打包为 DSH bundle），暂不在安装入口中。
+数学按年级段分两个包：低年级以 1–3 年级为主，高年级以 4–6 年级为主，低年级保留 CGI 主线，高年级按任务选择 CPA、显式教学、Pólya、变式、探究论证与建模等方法；年级只调整语言、记号、题型与节奏，不是内容门槛，学生仍可探究更高内容。两个包的科目 id 同为 `math`，由教学解析按 `supported_stages` 选一个；已安装但当时不适配的包不会影响进行中的任务。
 
 ## 安装
 
 ```bash
 # 在仓库中运行；自动补齐并安装依赖
 node scripts/install.mjs math-primary-low --profile web   # learn + math-board + math-primary-low
+node scripts/install.mjs math-primary-high --profile web  # learn + math-primary-high
+# 高年级可选装画板
+node scripts/install.mjs math-primary-high math-board --profile web
 node scripts/install.mjs chinese-reading --profile web
 node scripts/install.mjs english --profile web
 # 或一次装齐
@@ -33,7 +37,7 @@ node scripts/install.mjs all --dry-run
 
 ## 使用
 
-1. `/learn-start`：选数学、语文、英语或描述其他目标，识别已有学生或逐轮建档；阶段、年级和偏好可选。缺少适用学科包时进入通用任务教学；会记录 `personal.interests`。语文用它选择阅读角度和写作题目。数学仍读取该字段；题目按 CGI，题面以生活故事为主，同一关系换场景检验迁移；只在学生做不出当前题时用一个兴趣细节搭桥。英语用它选择故事、任务和例句内容，不让兴趣覆盖当前语言目标。
+1. `/learn-start`：选数学、语文、英语或描述其他目标，识别已有学生或逐轮建档；阶段、年级和偏好可选。缺少适用学科包时进入通用任务教学；会记录 `personal.interests`。语文用它选择阅读角度和写作题目。数学仍读取该字段；低年级以 CGI 生活故事为主，高年级按目的选择情境、算式、图表或论证；同一关系换场景可检验情境迁移；只在学生做不出当前题时用一个兴趣细节搭桥。英语用它选择故事、任务和例句内容，不让兴趣覆盖当前语言目标。
 2. `/learn 分数减法`：进入自适应学习；也可以直接 `/learn` 从档案选目标。英语可以写 `/learn 颜色` 或直接 `/learn`。
 3. `/learn-feynman`：费曼模式，学生讲、AI 当学生提问。
 4. `/learn-profile`：查看或修改档案。
@@ -77,12 +81,12 @@ outputs/students/
 ## 验证
 
 ```bash
-# 安装规划及回归测试；all 应列出五个包，各一次
+# 安装规划及回归测试；all 应列出六个包，各一次
 node scripts/install.mjs all --dry-run
 node --test scripts/install.test.mjs
 
 # 实际安装后，在 DSH 插件管理中检查所选 bundle 的启用状态
-# 四个教学包的 skills 目录各为独立 provider，画板只注册一次
+# 四个学科的 skills 目录各为独立 provider（数学两个年级段包各一个），画板只注册一次
 
 # 静态检查：frontmatter、名称、内部入口、失效引用、旧字段/Pi 残留
 node scripts/check-skills.mjs

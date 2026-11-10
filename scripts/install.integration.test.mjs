@@ -35,8 +35,21 @@ test('real DSH installs, composes, deduplicates and preserves explicit disableme
   const install = (...packages) => run(process.execPath,
     ['scripts/install.mjs', ...packages, '--profile', profile]);
   const selected = manifest => manifest.dsh.profile.bundles.filter(name => name.startsWith('dsh-edu-'));
-  const math = ['dsh-edu-learn', 'dsh-edu-math-board', 'dsh-edu-math-primary-low'];
+  const high = ['dsh-edu-learn', 'dsh-edu-math-primary-high'];
+  const math = [...high, 'dsh-edu-math-board', 'dsh-edu-math-primary-low'];
   try {
+    install('math-primary-high');
+    assert.deepEqual(selected(readManifest()), high);
+    assert.deepEqual(Object.keys(readManifest().dependencies).sort(), [...high].sort());
+    const highOnly = run('dsh', ['--profile', profile, '--dump-default-config']);
+    assert.match(highOnly, /^- id: edu-math-primary-high-skills$/m);
+    assert.doesNotMatch(highOnly, /^- id: edu-math-board$/m);
+
+    // An explicit opt-in adds the board; subsequent low installation reuses it.
+    install('math-primary-high', 'math-board');
+    assert.deepEqual(selected(readManifest()), [...high, 'dsh-edu-math-board']);
+    assert.deepEqual(Object.keys(readManifest().dependencies).sort(),
+      [...high, 'dsh-edu-math-board'].sort());
     install('math-primary-low');
     assert.deepEqual(selected(readManifest()), math);
     assert.deepEqual(Object.keys(readManifest().dependencies).sort(), [...math].sort());
@@ -49,9 +62,12 @@ test('real DSH installs, composes, deduplicates and preserves explicit disableme
     assert.deepEqual(Object.keys(manifest.dependencies).sort(), [...all].sort());
     const composed = run('dsh', ['--profile', profile, '--dump-default-config']);
     for (const id of ['edu-learn-skills', 'edu-math-board', 'edu-math-primary-low-skills',
-      'edu-chinese-reading-skills', 'edu-english-skills']) {
+      'edu-math-primary-high-skills', 'edu-chinese-reading-skills', 'edu-english-skills']) {
       assert.equal([...composed.matchAll(new RegExp(`^- id: ${id}$`, 'gm'))].length, 1, id);
     }
+
+    // The upper-primary math bundle keeps its own provider beside the optional board.
+    assert.equal(selected(readManifest()).filter(name => name === 'dsh-edu-math-primary-high').length, 1);
 
     // Mutate only this test-owned manifest to represent a user's explicit disable.
     manifest.dsh.profile.bundles = manifest.dsh.profile.bundles.filter(name => name !== 'dsh-edu-math-board');

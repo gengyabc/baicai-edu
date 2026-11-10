@@ -1,0 +1,12 @@
+# Task-driven, multi-method math teaching skills for grades 4-6; board optional.
+#
+# Roots are resolved from the installed package location (baseUrl = the profile
+# dir), so link:, file: and git installs all behave the same. Registry publish
+# additionally requires removing "private": true from package.json.
+- insert:
+    - id: edu-math-primary-high-skills
+      name: '@deepseek-ai/dsh-skill-filesystem'
+      config:
+        providerName: edu-math-primary-high
+        includeDefaultRoots: false
+        bundledSkillDir: !!js process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('dsh-edu-math-primary-high/package.json')), 'skills')

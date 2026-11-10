@@ -38,8 +38,7 @@ The segment writes only the skill name; when finalize writes a `confirmed_skills
 
 | Domain | Example skills |
 |---|---|
-| `addition_subtraction` | make-ten strategy, subtraction regrouping, inverse of addition and subtraction |
+| `addition_subtraction_word_problems` | make-ten strategy, subtraction regrouping, inverse of addition and subtraction, understanding the problem, finding key information, writing the equation |
 | `multiplication_division` | multiplication facts, meaning of division, concept of remainder |
 | `fractions` | fraction meaning, common denominators, simplifying |
-| `place_value` | place-value understanding, carrying and borrowing |
-| `word_problems` | understanding the problem, finding key information, writing the equation |
+| `place_value_and_multidigit` | place-value understanding, carrying and borrowing |

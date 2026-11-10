@@ -25,10 +25,15 @@ Use `ask_user_question` to decide the action first, then fill in the required st
 | Clear all subject learning records for the student | Apply the previous action to every subject that actually exists for that student. |
 | Completely delete a specified student (high risk) | Permanently delete the student's identity, all records, originals, and original backups. |
 | Clear all student data (high risk) | Permanently delete every student's identity, records, originals, backups, and the current selection. |
+| Clear one student's records but not identity, originals, or backups (safe high) | Delete that student's subject output directories and generated files only; keep the shared `outputs/students/<id>/profile.json`, all `data/students/<id>/`, and every subject `backups/raw/` so the student can start over with `/learn-start`. This is the safe tier: something is lost, but nothing is unrecoverable without an explicit new request. |
 
-**High-risk branch**: when either of the last two is selected, read `references/high-risk-deletion.md` and follow its scope and two independent confirmations; the safety rules in sections 2 and 3 still apply. Confirmation of ordinary cleanup does not authorize high-risk deletion.
+**High-risk branch**: when either of the two high-risk rows is selected, read `references/high-risk-deletion.md` and follow its scope and two independent confirmations; the safety rules in sections 2 and 3 still apply. Confirmation of ordinary cleanup does not authorize high-risk deletion.
+
+**Safe-high branch**: the "records but not identity" row is destructive but preserves identity, originals, and backups. It uses the ordinary scope confirmation in section 2 and states plainly in the preview that the student's records are discarded and cannot be restored, while identity, originals, and backups are kept; it is not offered as a substitute for the high-risk rows and the user's explicit choice decides which row applies.
 
 **Ordinary cleanup (the first three)** always keeps the shared `outputs/students/<id>/profile.json`, all originals under `data/`, and each subject's `backups/raw/`.
+
+The safe-high row removes each existing subject directory under `outputs/students/<confirmed id>/` in full (that subject's `profile.json`, `memory.json`, `current_state.json`, `milestones.json`, `session_log.json`, `extracted/`, and `backups/`), while keeping the shared profile at the student root; it never deletes the student root or anything under `data/`. Execute it per section 3: list the subject directories explicitly, never recruit a recursive delete of the student root, and report the kept shared profile and originals as retained.
 
 When there is nothing to clean, report `ui.clean.nothing_to_clean` and create no files. A corrupted target file may be a deletion candidate, but do not guess its identity or subject.
 

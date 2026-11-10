@@ -6,10 +6,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
-const allSubjects = ['math-primary-low', 'chinese-reading', 'english'];
+const allSubjects = ['math-primary-low', 'math-primary-high', 'chinese-reading', 'english'];
 const usage = `Usage: node scripts/install.mjs <package...|all> [--profile <name>] [--dry-run]
 
-Packages: learn, math-board, math-primary-low, chinese-reading, english
+Packages: learn, math-board, math-primary-low, math-primary-high, chinese-reading, english
 Default profile: web
 Dependencies are included automatically. --dry-run only prints the command.
 Example: node scripts/install.mjs math-primary-low --profile web`;

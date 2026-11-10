@@ -9,6 +9,8 @@ Run only after the user has explicitly chosen a high-risk action in this `/learn
 | Completely delete a specified student (high risk) | All files under `outputs/students/<confirmed id>/` and `data/students/<confirmed id>/`; the current-selection file is listed only when it points to that student. |
 | Clear all student data (high risk) | All student data under `outputs/students/` and `data/students/`, plus `outputs/students/session.json`. |
 
+The "records but not identity" safe-high row in the main skill is **not** one of these two actions: it keeps the shared profile, originals, and backups and uses the ordinary scope confirmation only. Do not widen it into a high-risk deletion, and do not present a high-risk action as the only way to start over.
+
 Students are the union of the actual subdirectories of the two trees, including orphan directories that have only originals, only outputs, or a corrupted profile; when identity is missing, show the directory id and do not guess a name. If a directory name does not match the student id format, or an unknown top-level file, special file, or symlink appears, stop and explain; do not treat unknown content as student data.
 
 For originals, list only the path, count, and size, and do not open the original contents. The list includes all files and the empty directories to be removed.

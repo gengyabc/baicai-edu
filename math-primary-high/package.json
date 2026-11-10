@@ -1,0 +1,21 @@
+{
+  "name": "dsh-edu-math-primary-high",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Task-driven upper-primary (grades 4-6) math teaching with multiple methods, evidence-based support, strategy diagnosis, practice, student-authored problems, and real-world modeling; the math board is optional.",
+  "dependencies": {
+    "dsh-edu-learn": "file:../learn"
+  },
+  "files": [
+    "cordis.patch.yml",
+    "skills",
+    "README.md"
+  ],
+  "dsh": {
+    "manifestVersion": 1,
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

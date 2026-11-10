@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
@@ -7,7 +7,7 @@ import test from 'node:test'
 
 // Static protocol guards: these do not simulate student/model behavior.
 const root = fileURLToPath(new URL('..', import.meta.url))
-const bundles = ['learn', 'math-primary-low', 'chinese-reading', 'english']
+const bundles = ['learn', 'math-primary-low', 'math-primary-high', 'chinese-reading', 'english']
 const text = (path) => readFileSync(join(root, path), 'utf8')
 const skillPath = (bundle, name) => `${bundle}/skills/${name}/SKILL.md`
 const skills = bundles.flatMap((bundle) =>
@@ -64,7 +64,10 @@ test('entries locate subjects through the contract; only /learn-start lists them
   const start = text(skillPath('learn', 'learn-start'))
   assert.match(start, /references\/subject-contract\.md/)
   assert.match(start, /\| English \| `english` \| `dsh-edu-english` \|/)
-  assert.match(start, /\| Math \| `math` \| `dsh-edu-math-primary-low` \|/)
+  // Math keeps one subject id; both band packages are listed so the resolver can
+  // select by staged fit without asking the student to pick a package.
+  assert.match(start, /\| Math \| `math` \| `dsh-edu-math-primary-low`, `dsh-edu-math-primary-high` \|/)
+  assert.match(start, /one subject id and two band packages/)
   assert.match(start, /\| Chinese \| `chinese` \| `dsh-edu-chinese-reading` \|/)
   assert.doesNotMatch(start, /math-core|chinese-core|english-core|likes_|math-primary-low\/|chinese-reading\/|english\//)
   for (const name of ['learn', 'learn-feynman', 'learn-profile']) {
@@ -73,7 +76,7 @@ test('entries locate subjects through the contract; only /learn-start lists them
   const contract = dataRef('subject-contract')
   for (const role of contractRoles) {
     assert.ok(contract.includes(role), role)
-    for (const [bundle, core] of [['math-primary-low', 'math-core'], ['chinese-reading', 'chinese-core'], ['english', 'english-core']]) {
+    for (const [bundle, core] of [['math-primary-low', 'math-core'], ['math-primary-high', 'math-core'], ['chinese-reading', 'chinese-core'], ['english', 'english-core']]) {
       assert.ok(subjectContractSection(text(skillPath(bundle, core))).includes(role), `${core}: ${role}`)
     }
   }
@@ -124,6 +127,24 @@ test('existing metadata and reference checks pass', () => {
   assert.equal(result.status, 0, result.stdout + result.stderr)
 })
 
+test('skill tree forbids external URLs except runtime-material allowlist', () => {
+  const allowlist = new Set(['child-news-reader'])
+  const externalUrl = /https?:\/\//i
+  let allowlistedHits = 0
+  for (const bundle of bundles) {
+    for (const name of readdirSync(join(root, bundle, 'skills'))) {
+      for (const path of markdownFiles(`${bundle}/skills/${name}`)) {
+        const body = text(path)
+        if (!externalUrl.test(body)) continue
+        assert.ok(allowlist.has(name), `${path}: external URL outside allowlist`)
+        allowlistedHits += 1
+      }
+    }
+  }
+  assert.ok(allowlistedHits > 0, 'child-news-reader should keep runtime material URLs')
+  assert.match(text('docs/agents/skill-self-contained.md'), /no external citation links/i)
+})
+
 test('UI locale catalogs exist with matching zh-CN and en keys', () => {
   assert.match(dataRef('ui-locale'), /Read `language` from the shared base profile/)
   assert.match(dataRef('ui-locale'), /fallback locale `zh-CN`/)
@@ -146,10 +167,14 @@ test('UI locale catalogs exist with matching zh-CN and en keys', () => {
 })
 
 test('stable public and subject interfaces remain installed without a bridge skill shell', () => {
-  assert.deepEqual(skills.map(({ name }) => name).sort(), [
+  // Lower- and upper-primary math ship the same interface skill names; the
+  // providers are separate and the resolver picks one per session, so the
+  // installed interface set counts those names once.
+  assert.deepEqual([...new Set(skills.map(({ name }) => name))].sort(), [
     'learn-start', 'learn', 'learn-feynman', 'learn-profile', 'learn-save', 'learn-clean', 'learn-core', 'learn-data', 'learn-errors', 'learn-recommend',
     'learn-general-core', 'learn-general-session', 'learn-support',
     'math-core', 'math-session', 'math-diagnose', 'math-practice', 'math-student-problem',
+    'math-application-modeling',
     'chinese-core', 'chinese-session', 'chinese-reading-session', 'chinese-writing-session',
     'chinese-read-write-transfer', 'chinese-generate-tasks',
     'english-core', 'english-session', 'child-english-coach', 'child-news-reader',
@@ -767,13 +792,19 @@ test('all skill and reference JSON examples remain parseable', () => {
 
 test('structured drawing guidance is conditionally discoverable in math-core only', () => {
   const reference = 'references/structured-drawing.md'
+  // One math implementation is selected per session, and each math package's
+  // math-core owns the drawing pointer for its own branches.
   const pointers = skills.filter(({ content }) => content.includes(reference))
-  assert.deepEqual(pointers.map(({ name }) => name), ['math-core'])
-  const drawingRow = pointers[0].content.split('\n').find((line) => line.includes(reference))
-  assert.match(drawingRow, /board attachment/)
-  assert.match(drawingRow, /or the student asks how to use the board/)
-  assert.doesNotMatch(drawingRow, /need(?:s)? to guide (?:the )?board|需引导画板/)
+  assert.deepEqual([...new Set(pointers.map(({ name }) => name))], ['math-core'])
+  assert.ok(pointers.length >= 2)
+  for (const pointer of pointers) {
+    const drawingRow = pointer.content.split('\n').find((line) => line.includes(reference))
+    assert.match(drawingRow, /board attachment/)
+    assert.match(drawingRow, /or the student asks how to use the board/)
+    assert.doesNotMatch(drawingRow, /need(?:s)? to guide (?:the )?board|需引导画板/)
+  }
   assert.match(text('math-primary-low/README.md'), /skills\/math-core\/references\/structured-drawing\.md/)
+  assert.match(text('math-primary-high/README.md'), /skills\/math-core\/references\/structured-drawing\.md/)
 })
 
 test('math task-boundary clearing has one authority reached before entry and leaf tasks', () => {
@@ -1072,4 +1103,228 @@ test('difficulty requests persist across sessions without becoming a level', () 
   for (const [bundle, name] of [['english', 'english-core'], ['math-primary-low', 'math-core'], ['chinese-reading', 'chinese-core']]) {
     assert.match(text(skillPath(bundle, name)), /difficulty-adjustment/, `${bundle}/${name}`)
   }
+})
+
+// ---------------------------------------------------------------------------
+// Upper-primary math band: the second math package on the same subject id.
+// These guards cover document wiring and persisted field names, not teaching
+// behavior. Whether a real model adapts the thresholds correctly still needs
+// conversation replay.
+// ---------------------------------------------------------------------------
+
+const highCore = text(skillPath('math-primary-high', 'math-core'))
+const highRef = (name) => text(`math-primary-high/skills/math-core/references/${name}.md`)
+
+test('upper-primary math satisfies the same subject contract as the other packages', () => {
+  for (const role of contractRoles) {
+    assert.ok(subjectContractSection(highCore).includes(role), `math-primary-high math-core: ${role}`)
+  }
+  assert.match(highCore, /supported_stages: upper_primary/)
+  assert.match(highCore, /subject: math.*math-session.*dsh-edu-math-primary-high/)
+  assert.doesNotMatch(highCore, /supported_stages:.*lower_primary/)
+  const learning = highRef('learning-recommendations')
+  assert.match(learning, /Relationship × Strategy × Structure/)
+  assert.match(learning, /reason[\s\S]{0,200}active UI locale/i)
+  assert.match(learning, /first choice/i)
+  const session = text(skillPath('math-primary-high', 'math-session'))
+  const gate = session.split(/^## Learning-Recommendation Gate\s*$/im)[1]?.split(/\n## /)[0] ?? ''
+  for (const rule of [/learn-recommend/, /snapshot/i,
+    /(?:produces? no|do not produce|does not produce)[^.。\n]*`session_segment`/,
+    /(?:does not modify|do not modify) `context\.focus`/, /board/i]) {
+    assert.match(gate, rule, String(rule))
+  }
+})
+
+test('upper-primary session is the sole dispatcher of four leaves and owns waiting state', () => {
+  const session = text(skillPath('math-primary-high', 'math-session'))
+  assert.match(session, /sole dispatcher/)
+  for (const name of ['math-diagnose', 'math-practice', 'math-student-problem', 'math-application-modeling']) {
+    assert.ok(session.includes(`\`${name}\``), name)
+    const leaf = text(skillPath('math-primary-high', name))
+    assert.match(leaf, /Dispatched only by `math-session`/, name)
+    assert.match(leaf, /without producing a separate segment or writing the profile/, name)
+    assert.match(leaf, /await_student/, name)
+    assert.match(leaf, /request_end/, name)
+    assert.doesNotMatch(leaf, /(?:load|invoke|call|route to|hand off to)\s+`math-(?:session|diagnose|practice|student-problem|application-modeling)`/i, name)
+  }
+  for (const signal of ['await_student', 'continue_diagnose', 'continue_practice',
+    'continue_student_problem', 'continue_modeling', 'return_teaching', 'request_end']) {
+    assert.ok(session.includes(`\`${signal}\``), signal)
+  }
+  assert.match(session, /At most two leaf dispatches per turn/)
+  assert.match(session, /context\.turn_state/)
+  for (const field of ['active_leaf', 'leaf_step', 'active_act']) assert.ok(session.includes(field), field)
+  assert.match(session, /`mode: feynman`[^\n]*Takes precedence/)
+  assert.match(session, /Hand back to lifecycle's end judgment and finalize/)
+})
+
+test('adaptive thresholds keep promotion, backtracking and method switching evidence-gated', () => {
+  const thresholds = highRef('adaptive-thresholds')
+  hasAll(thresholds, ['A **single wrong answer** triggers neither a knowledge-point backtrack nor a level change',
+    'Correct but unable to explain** does not promote the level automatically',
+    'Supported correctness is not independent success',
+    'Adjust in this order', 'Grade and speed are never evidence of ability',
+    'At most one knowledge-map edge back per adjustment',
+    'Initial method selection has no failure prerequisite',
+    'never force frustration', 'allow_child_choice',
+    'needs_support` / `developing` / `independent` are working labels',
+    'do not claim memory'])
+  for (const field of ['promotion_independent_successes', 'difficulty_review_after_struggles',
+    'prerequisite_backtrack_depth', 'hints_before_clear_example',
+    'method_switch_after_failed_adjustments', 'starting_level']) {
+    assert.ok(thresholds.includes(field), field)
+  }
+  assert.match(highCore, /references\/adaptive-thresholds\.md/)
+  assert.match(text(skillPath('math-primary-high', 'math-session')), /references\/adaptive-thresholds\.md/)
+})
+
+test('four act sets route to one owner each and the learner-explain act stays Feynman', () => {
+  const acts = highRef('learn-act-allocation')
+  for (const act of ['Opening act', 'Practice act', 'Student problem act', 'Application act',
+    'Learner-explain act']) {
+    assert.ok(acts.includes(act), act)
+  }
+  assert.match(acts, /\| Opening act \| `math-session`/)
+  assert.match(acts, /\| Practice act \| `math-practice`/)
+  assert.match(acts, /\| Student problem act \| `math-student-problem`/)
+  assert.match(acts, /\| Application act \| `math-application-modeling`/)
+  assert.match(acts, /`mode: feynman` opens the learner-explain act/)
+  assert.match(acts, /context\.turn_state\.active_act/)
+  assert.match(acts, /A single change at a time|Adjust inside an act in this order, one change at a time/)
+  assert.match(highCore, /references\/learn-act-allocation\.md/)
+})
+
+test('batch sub-questions separate exploration distribution from one board for the whole', () => {
+  const batch = highRef('batch-board-boundary')
+  hasAll(batch, ['Exploration distribution', 'Batch whole check',
+    'Did the student submit one board for the whole batch?',
+    'Preserve the representation and remaining sub-item evidence',
+    'ask one short question about whether the sub-questions belong together',
+    'batch_whole judgement is one evidence event per sub-item actually checked',
+    'no automatic clearing in this package'])
+  assert.match(batch, /references\/board-task-boundary\.md/)
+  const boundary = highRef('board-task-boundary')
+  assert.match(boundary, /references\/batch-board-boundary\.md/)
+  assert.match(text(skillPath('math-primary-high', 'math-session')), /references\/batch-board-boundary\.md/)
+  const practice = text(skillPath('math-primary-high', 'math-practice'))
+  assert.match(practice, /batch-board-boundary/)
+  assert.match(practice, /recorded sub-item|attributed sub-item/)
+  const scenarios = text('math-primary-high/tests/teaching-scenarios.md')
+  for (const branch of ['整批检查口径', '探索分布口径', '同一子题改了答案', '批量题归属判断不清']) {
+    assert.ok(scenarios.includes(branch), branch)
+  }
+})
+
+test('high-grade methodology is kept as material and never registered as skills', () => {
+  const manifest = JSON.parse(text('math-primary-high/package.json'))
+  assert.deepEqual(manifest.files, ['cordis.patch.yml', 'skills', 'README.md'])
+  assert.ok(!manifest.files.includes('sources'))
+  assert.deepEqual(manifest.dependencies, {
+    'dsh-edu-learn': 'file:../learn',
+  })
+  const installed = readdirSync(join(root, 'math-primary-high', 'skills')).sort()
+  assert.deepEqual(installed, ['math-application-modeling', 'math-core', 'math-diagnose',
+    'math-practice', 'math-session', 'math-student-problem'])
+  assert.ok(!existsSync(join(root, 'math-primary-high', 'sources')))
+  const methodsDoc = text('docs/math-primary-high-methods.md')
+  assert.match(methodsDoc, /teaching material, not installed skills/)
+  assert.match(methodsDoc, /Method → installed home/)
+  assert.match(methodsDoc, /concrete-pictorial-abstract/)
+  assert.match(methodsDoc, /math-application-modeling/)
+})
+
+test('two same-subject math packages are selected by declared stage fit, never install order', () => {
+  const resolver = dataRef('teaching-resolver')
+  assert.match(resolver, /When two packages of the same subject both fit/)
+  assert.match(resolver, /supported_stages/)
+  assert.match(resolver, /lower_primary.*grades 1–3.*upper_primary.*grades 4–6/)
+  assert.match(resolver, /do not resolve by package name or install order/)
+  assert.match(resolver, /Record the chosen `session_skill` in the log context/)
+  assert.match(dataRef('grade-band-defaults'), /a subject may ship one package per band/)
+  const start = text(skillPath('learn', 'learn-start'))
+  assert.match(start, /record which one was selected in the session/)
+})
+
+test('safe-high cleanup discards records but keeps identity, originals and backups', () => {
+  const cleanup = text(skillPath('learn', 'learn-clean'))
+  assert.match(cleanup, /Clear one student's records but not identity, originals, or backups \(safe high\)/)
+  assert.match(cleanup, /\*\*Safe-high branch\*\*/)
+  hasAll(cleanup, ['keep the shared `outputs/students/<id>/profile.json`',
+    'identity, originals, and backups are kept',
+    'is not offered as a substitute for the high-risk rows'])
+  // The safe-high row must not be describable as the high-risk complete deletion.
+  const row = cleanup.split('\n').find((line) => line.includes('records but not identity'))
+  assert.doesNotMatch(row, /Permanently delete/)
+})
+
+test('upper-primary methods are task-selected from the opening and retain evidence boundaries', () => {
+  const teaching = highRef('math-teaching-core')
+  hasAll(teaching, ['methods are available from the opening',
+    'Concrete–pictorial–abstract (CPA)', 'Explicit instruction', 'Pólya problem solving',
+    'Variation and contrast', 'Inquiry and proof', 'Mathematical modeling',
+    'Formative assessment and reflection', 'no failed attempts are required first',
+    'student-as-presenter, AI-as-listener', 'fresh independent work'])
+  assert.doesNotMatch(teaching, /all judged per CGI|Only after representation adjustments have failed/)
+  hasAll(highRef('problem-design'), ['direct computation for procedure practice',
+    'Stories are useful when context matters', 'claim for reasoning or proof'])
+  assert.match(highRef('scaffold-calibration'), /failed hints are not a prerequisite/)
+  assert.match(highRef('progression-map'), /preserve record compatibility/)
+})
+
+test('upper-primary optional board has no automatic clear authorization', () => {
+  const boundary = highRef('board-task-boundary')
+  hasAll(boundary, ['works without the math-board plugin',
+    'does not authorize `math_board_clear`', 'only when the student explicitly requests clearing',
+    'answer material, not authorization', 'not that the client cleared the board',
+    '`ui.board.clear_failed_hint`'])
+  const session = text(skillPath('math-primary-high', 'math-session'))
+  assert.match(session, /New problems, activities, topics, and leaf dispatches do not trigger board tools/)
+  assert.doesNotMatch(session + highCore, /even with no board attachment|applies even without a board attachment/)
+  assert.doesNotMatch(highRef('batch-board-boundary'), /call `math_board_clear`|clear once before/)
+  assert.match(highRef('structured-drawing'), /fractional values are not native primitives/)
+})
+
+test('subject judges package fit while learn owns confirmation and new-task resolution', () => {
+  const learning = highRef('learning-recommendations')
+  hasAll(learning, ['does not by itself justify `math-primary-low`',
+    'learn owns process choices, confirmation, saving, and re-resolution for a new task',
+    'No direct leaf/package hot-swap or automatic installation',
+    'a tool suggestion alone is not that trigger'])
+  hasAll(dataRef('teaching-resolver'), ['current subject contract supplies pedagogical evidence',
+    'not stage evidence or permission to change providers', 'ask_user_question',
+    'confirmed stage correction goes through the shared profile flow'])
+})
+
+test('installed upper-primary teaching steps and prerequisites do not require source-only material', () => {
+  const map = highRef('topic-map')
+  hasAll(map, ['equivalent-fractions', 'ratio-rate', 'area-perimeter', 'two contrasting probes'])
+  for (const name of ['math-diagnose', 'math-application-modeling']) {
+    assert.doesNotMatch(text(skillPath('math-primary-high', name)), /`sources\//)
+  }
+  for (const name of ['strategy-diagnosis-rules', 'math-grade-defaults', 'math-segment-fields']) {
+    assert.match(highRef(name), /references\/topic-map\.md/)
+    assert.doesNotMatch(highRef(name), /`sources\//)
+  }
+  assert.match(highCore, /not installed skills or required runtime reads/)
+})
+
+test('upper-primary locale catalogs stay in sync and cover its own labels', () => {
+  const dir = 'math-primary-high/skills/math-core/references/locales'
+  const zh = JSON.parse(text(`${dir}/zh-CN.json`))
+  const en = JSON.parse(text(`${dir}/en.json`))
+  assert.deepEqual(Object.keys(zh).sort(), Object.keys(en).sort())
+  for (const key of ['ui.stage.modeling', 'ui.stage.transfer', 'ui.stage.practice',
+    'ui.start.math_pref.step_by_step', 'ui.start.math_pref.worked_example',
+    'ui.start.math_pref.real_world', 'ui.board.clear_failed_hint', 'ui.board.clear_requested',
+    'ui.student_problem.continue']) {
+    assert.ok(zh[key], key)
+  }
+  const fields = highRef('math-profile-fields')
+  for (const key of ['ui.start.math_pref.step_by_step', 'ui.start.math_pref.worked_example',
+    'ui.start.math_pref.real_world']) {
+    assert.ok(fields.includes(key), key)
+  }
+  // The lower-primary preference keys belong to the other package.
+  assert.doesNotMatch(fields, /ui\.start\.math_pref\.likes_visual/)
+  assert.match(text('math-primary-high/README.md'), /node scripts\/install\.mjs math-primary-high --profile web/)
 })
