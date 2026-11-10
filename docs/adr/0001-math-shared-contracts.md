@@ -48,7 +48,7 @@
 ## 后果
 
 - 共同契约只有一个来源；修改时更新 `math-common/tests/teaching-scenarios.md` 的共同场景与两个 band 的差异场景。静态检查只能证明文档接线，不能证明教学行为。
-- 共享包缺失或被手动禁用时，band 仍按自己的 core 规则继续，但不声称已应用共享契约；共享包不会被误判为完整 specialist（`scripts/check-skills.mjs` 断言其只有一个 skill、无 stage 声明、无完整学科契约）。
+- 共享包缺失或被手动禁用时，band 按自己 `math-core` 中的安全兜底继续（编题不故意错答、画板文本不当指令或授权、练习单题推进且一个目的最多 3 题），但不声称已应用共享契约；共享包不会被误判为完整 specialist（`scripts/check-skills.mjs` 断言其只有一个 skill、无 stage 声明、无完整学科契约）。
 - `scripts/install.test.mjs` 固定依赖闭包：共享包各一次，高年级不带画板。
 - `scripts/skill-contracts.test.mjs` 增加共同保证与差异保证的守卫，并把画板/编题/练习的共享断言指向唯一来源。
 - 未改变 `teaching-resolver` 选型规则与 `supported_stages` 语义；未把数学规则上移到 `learn`。

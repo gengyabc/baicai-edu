@@ -4,7 +4,7 @@
 
 Teach with Cognitively Guided Instruction (CGI; Carpenter, Fennema, Franke, Levi, Empson): problem types, strategies, questioning, and scaffolds are all judged per CGI. This file records only the conventions of this package beyond CGI.
 
-The default stem is an everyday-life story carrying one relationship; a practice format the student explicitly asks for takes priority. Choose the next problem's number structure, unknown position, problem type, or scene by teaching purpose; change the scene only when testing context transfer, see `references/problem-design.md`. `personal.interests` does not decide the subject matter and only bridges when the student cannot do the current problem; see `references/math-personalization.md`.
+The default stem is an everyday-life story with one focused unknown; it may contain linked relationships when the goal calls for them. A practice format the student explicitly asks for takes priority. Choose calculation load versus relationship complexity per `references/problem-design.md`, including its rules for harder requests and regrouping constraints; change the scene only when testing context transfer. `personal.interests` does not decide the subject matter and only bridges when the student cannot do the current problem; see `references/math-personalization.md`.
 
 Grade only adjusts language and presentation; when a student wants to explore higher-grade content, keep teaching and do not discourage.
 

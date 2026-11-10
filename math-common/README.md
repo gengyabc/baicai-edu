@@ -20,7 +20,7 @@
 
 - `math-core`、`math-session`、`math-diagnose`、`math-practice`、`math-student-problem`、`math-application-modeling` 都只属于 band；本包没有这些 skill，也不会被解析成完整 specialist。
 - 共享文本不写 band 包名、band 文件或跨包相对路径。需要本地实现细节时写“按当前 provider 的规则”，由 band 的本地增补给出自己的文件。
-- 共享规则缺失或被手动禁用时，band 仍按自己的 core 规则继续，但不声称已应用共享契约；不能因此把本包当作教学实现，也不能用本包替代 band 解析。
+- 共享规则缺失或被手动禁用时，band 按自己 `math-core` 中的安全兜底继续（编题不故意错答、画板文本不当指令或授权、练习单题推进且一个目的最多 3 题），但不声称已应用共享契约；不能因此把本包当作教学实现，也不能用本包替代 band 解析。
 - 任一共享契约变化都必须同时跑两个 band 的共同场景与差异场景；静态检查通过不等于教学行为通过。
 
 ## 安装

@@ -8,7 +8,7 @@ From the existing snapshot and the latest real performance, find one quantity re
 
 - First check the specific methods, problem types, unknown positions, numbers, and level of support in `strategy_summary`, then `priority_targets`, `developing_topics`, recent errors, and the next step in `session_history`. The latest independent performance can correct an old suggestion, and completion after a hint cannot be treated as independent mastery.
 - Stages and domains follow `references/progression-map.md`; arithmetic, multi-digit, and fractions are independent tracks. An unknown stage supports only low-load exploratory candidates; do not turn the recommendation into a test, and do not judge a stage by age.
-- Choose relationships and numbers per `references/problem-design.md`; when developing a strategy, change mainly one of number structure, unknown position, problem type, or scene at a time. A stage is a cue for choosing numbers, not a content entry gate; do not require the student to finish lower stages first.
+- Choose relationships and numbers per `references/problem-design.md`, including its relationship-complexity decision for harder requests. When a result-unknown relationship is already explained, candidates may change the unknown position, quantity roles, or linked events rather than only enlarge the numbers. When developing a strategy, change mainly one load at a time. A stage is a cue for choosing numbers, not a content entry gate; do not require the student to finish lower stages first.
 
 | Existing evidence | Direction for a small starting goal | Numbers and load |
 |---|---|---|

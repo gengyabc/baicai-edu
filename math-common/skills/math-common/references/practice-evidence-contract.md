@@ -6,20 +6,20 @@
 
 The four kinds keep the tier names and are not levels or a required order. One problem at a time; the problem count is a cap, and no quota is filled.
 
-| Purpose and evidence | Design | Cap |
-|---|---|---|
-| Tier 1 Diagnose: starting point/error pattern to check | Keep problem type and unknown position, change to nearby numbers; when checking quantity roles, change only the unknown position | 1–2 problems |
-| Tier 2 Contrast: one difference needs to be seen clearly | Contrast the student's method with a clearly labeled example, asking about just one relationship | 1 problem |
-| Tier 3 Vary: independent relationship not yet stable or more practice requested | Change number structure, unknown position, or problem type per the goal; change the scene only when testing context transfer | 2–3 problems |
-| Tier 4 Connect: existing knowledge can support current learning/error correction | Link to facts or relationships the student truly knows, using a related problem or an open number sentence | 1–2 problems |
+| Purpose | Use when | Design | Cap | Done when |
+|---|---|---|---|---|
+| Tier 1 Diagnose | A starting point or error pattern needs checking | Same problem type and unknown position, nearby numbers; for quantity roles, change only the unknown position | 1–2 | The reasoning is distinguished |
+| Tier 2 Contrast | One difference needs to be seen clearly | The student's method beside a clearly labeled example, asking about one relationship | 1 | The difference is explained |
+| Tier 3 Vary | The independent relationship is not yet stable, or more practice is requested | Change number structure, unknown position, or problem type per the goal; change the scene only when testing context transfer | 2–3 | Understanding shows under the target structure, position, or type |
+| Tier 4 Connect | Existing knowledge can support current learning or error correction | A related problem or open number sentence linked to facts the student truly knows; calculation need not be stable first | 1–2 | The link is shown |
 
-Connecting does not require calculation to be stable first. Problem design, fraction representation, and presentation preferences follow the current provider's rules.
+Problem design, fraction representation, and presentation preferences follow the current provider's rules. For context transfer: if the goal is context transfer, evidence after changing the scene is needed, and success in the original scene does not substitute for transfer evidence.
 
-## Per-Problem Adjustment
+## Per Problem
 
-1. Pose the problem and stop at the question; a new `session_id` starts a fresh task directly.
+1. Pose the problem and stop at the question; a new `session_id` starts a fresh task in the current provider's new-task format.
 2. After an answer, reuse strategy details, fill gaps per the shared confirmation protocol, and do not force a change of method.
-3. After consecutive errors, find the specific relationship or calculation sticking point and support the current problem per the current provider's scaffold rule; do not change the scene or mechanically drop a tier; the next problem may use nearby numbers or re-pick the purpose. Finding it troublesome or giving a short answer is not an error.
-4. Stop when evidence suffices; if the cap is reached and it is still unknown, record the unknown or local sticking point, return to the mainline, and do not add more problems or declare mastery.
+3. After consecutive errors, support the current problem at its specific sticking point per the current provider's scaffold rule. Do not change the scene or mechanically drop a tier; the next problem may use nearby numbers or re-pick the purpose. Finding it troublesome or giving a short answer is not an error.
+4. Stop when evidence suffices; if the cap is reached and it is still unknown, record the unknown or local sticking point and return to the mainline, without adding problems or declaring mastery. Ending honestly with gaps is allowed.
 
-Completion condition: diagnosis distinguishes the reasoning, contrast explains the difference, variation shows understanding under the target number structure, unknown position, or problem type, and connection shows the link; if the goal is context transfer, evidence after changing the scene is needed, and success in the original scene does not substitute for transfer evidence. It may also end honestly with gaps. Wrap up with one sentence on the relationship shown and one neighboring next goal.
+Wrap up with one sentence on the relationship shown and one neighboring next goal.

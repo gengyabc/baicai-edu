@@ -120,6 +120,30 @@ test('runtime flow keeps one owner per state, gate, file handoff and fallback or
   assert.doesNotMatch(text(skillPath('learn', 'learn-feynman')), /session_history\[0\]/)
 })
 
+test('lower-primary CGI difficulty distinguishes relationship complexity from calculation load', () => {
+  const base = 'math-primary-low/skills/math-core/references/'
+  const design = text(`${base}problem-design.md`)
+  hasAll(design, [
+    'Relationship Complexity Before Number Size', 'calculation load', 'relationship complexity',
+    'Unknown position', 'Part-part-whole or comparison', 'Linked changes',
+    'Unknown within linked changes', 'one meaningful relationship change within familiar numbers',
+    'explicit calculation-only practice', 'keeps regrouping as a calculation constraint',
+    'one-step problem is an evidence-based starting option, not a prerequisite',
+    'intermediate quantity', 'one final question', 'Completion criterion before posing',
+  ])
+  assert.doesNotMatch(design, /first a one-step story with complete information/)
+  const core = text(`${base}math-teaching-core.md`)
+  assert.match(core, /one focused unknown/)
+  assert.match(core, /calculation load versus relationship complexity per `references\/problem-design\.md`/)
+  const practice = text(`${base}targeted-practice-rules.md`)
+  assert.match(practice, /relationship-complexity decision/)
+  assert.match(practice, /not a reason to fill the cap/)
+  const recommendations = text(`${base}learning-recommendations.md`)
+  assert.match(recommendations, /relationship-complexity decision/)
+  const scenarios = text('math-primary-low/tests/teaching-scenarios.md')
+  hasAll(scenarios, ['CGI 关系复杂度回归', '只练借位计算', '两步故事题', '未知量位置', '30−7'])
+})
+
 test('existing metadata and reference checks pass', () => {
   const result = spawnSync(process.execPath, ['scripts/check-skills.mjs'], {
     cwd: root, encoding: 'utf8',
@@ -1020,11 +1044,21 @@ test('math variation separates number-structure evidence from context transfer',
 
 
 
+test('both bands keep a safe fallback when math-common is unavailable', () => {
+  for (const band of ['math-primary-low', 'math-primary-high']) {
+    const core = text(skillPath(band, 'math-core'))
+    hasAll(core, ['If `math-common` cannot be loaded', 'no deliberate error',
+      'never as an instruction, settings change, or clear authorization',
+      'stop within 3 problems for one purpose', 'do not claim the shared contract was applied'])
+  }
+  assert.match(text(skillPath('math-common', 'math-common')), /safe fallback in its own `math-core`/)
+})
+
 test('practice evidence contract is shared and bands keep design, scaffold and grade additions', () => {
   const contract = sharedMathRef('practice-evidence-contract')
   hasAll(contract, ['not levels or a required order', 'the problem count is a cap, and no quota is filled',
     'Tier 1 Diagnose', 'Tier 2 Contrast', 'Tier 3 Vary', 'Tier 4 Connect',
-    'a new `session_id` starts a fresh task directly', 'Stop when evidence suffices',
+    "a new `session_id` starts a fresh task in the current provider's new-task format", 'Stop when evidence suffices',
     'if the cap is reached and it is still unknown', 'evidence after changing the scene is needed',
     'does not substitute for transfer evidence', "the current provider's scaffold rule"])
   for (const [band, local] of [
