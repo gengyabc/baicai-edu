@@ -7,13 +7,14 @@
 | 目录 | 包名 | 作用 |
 |---|---|---|
 | [`learn/`](./learn/README.md) | `dsh-edu-learn` | 共享入口（`/learn-start` `/learn` `/learn-feynman` `/learn-profile` `/learn-save` `/learn-clean`）、教学底座、学生数据协议、错题处理 |
+| [`math-common/`](./math-common/README.md) | `dsh-edu-math` | 两个数学 band 共享的数学契约（学生编题、练习证据、画板协议）；只给规则，不参与教学选型 |
 | [`math-primary-low/`](./math-primary-low/README.md) | `dsh-edu-math-primary-low` | 小学低年级为主的 CGI 数学（1–3 年级为主，不限制探究高年级内容）：一回合教学、策略诊断、分层练习、学生出题考 AI |
 | [`math-primary-high/`](./math-primary-high/README.md) | `dsh-edu-math-primary-high` | 小学高年级多方法数学（4–6 年级为主）：一回合教学、策略诊断、分层练习、学生出题考 AI、真实情境建模；方法步骤随技能安装，背景材料见 [methods](<docs/math-primary-high-methods.md>) |
 | [`chinese-reading/`](./chinese-reading/README.md) | `dsh-edu-chinese-reading` | 完整语文：阅读、写作、读写迁移、出题、评改、经验桥接 |
 | [`english/`](./english/README.md) | `dsh-edu-english` | 英语：可理解输入、对话协商、输出、支架、任务、用法积累、间隔提取、儿童新闻 |
 | [数学画板](<./math-board/README.md>) | `dsh-edu-math-board` | 低年级数学必需、高年级可选，也可独立使用的 Web 教具：切换图案、分组、同形合并，以 JSON 表达回答 |
 
-`math-primary-low`、`math-primary-high`、`chinese-reading` 与 `english` 在包配置中声明依赖 `learn`；低年级数学还必需依赖 `math-board`，高年级数学可显式选装画板。共享包和画板仍可独立安装，不反向依赖学科。
+`math-primary-low`、`math-primary-high`、`chinese-reading` 与 `english` 在包配置中声明依赖 `learn`；两个数学 band 还依赖共享数学契约包 `dsh-edu-math`（目录 `math-common/`），低年级数学必需依赖 `math-board`，高年级数学可显式选装画板。共享包和画板仍可独立安装，不反向依赖学科。
 
 数学按年级段分两个包：低年级以 1–3 年级为主，高年级以 4–6 年级为主，低年级保留 CGI 主线，高年级按任务选择 CPA、显式教学、Pólya、变式、探究论证与建模等方法；年级只调整语言、记号、题型与节奏，不是内容门槛，学生仍可探究更高内容。两个包的科目 id 同为 `math`，由教学解析按 `supported_stages` 选一个；已安装但当时不适配的包不会影响进行中的任务。
 
@@ -21,8 +22,8 @@
 
 ```bash
 # 在仓库中运行；自动补齐并安装依赖
-node scripts/install.mjs math-primary-low --profile web   # learn + math-board + math-primary-low
-node scripts/install.mjs math-primary-high --profile web  # learn + math-primary-high
+node scripts/install.mjs math-primary-low --profile web   # learn + math-common + math-board + math-primary-low
+node scripts/install.mjs math-primary-high --profile web  # learn + math-common + math-primary-high
 # 高年级可选装画板
 node scripts/install.mjs math-primary-high math-board --profile web
 node scripts/install.mjs chinese-reading --profile web
@@ -74,6 +75,7 @@ outputs/students/
 ## 设计文档
 
 - [技能调用关系与使用场景](<docs/skill-map/call-graph.md>)（包依赖、调用面、Mermaid 调用图与场景时序）
+- [ADR-0001：共享数学契约与独立 band 实现](<docs/adr/0001-math-shared-contracts.md>)（共同契约唯一来源、载入链路与保留差异）
 - [学习支持总体设计](<docs/learn-support-design.md>)、[合成场景验收](<learn/tests/learning-support-scenarios.md>)与[支持性交流回放](<learn/tests/supportive-conversation-scenarios.md>)：全年龄、通用任务教学、五类支持、拒绝/退出与证据隔离。
 - [DSH 教学插件产品方案](./docs/DSH教学插件_最终技术与产品方案.md)
 - [跨 Harness 技能与多用户 Agent 平台方案](./docs/跨Harness技能与多用户Agent平台总体实施方案_v1.1_Python优先.md)
@@ -81,12 +83,12 @@ outputs/students/
 ## 验证
 
 ```bash
-# 安装规划及回归测试；all 应列出六个包，各一次
+# 安装规划及回归测试；all 应列出七个包，各一次
 node scripts/install.mjs all --dry-run
 node --test scripts/install.test.mjs
 
 # 实际安装后，在 DSH 插件管理中检查所选 bundle 的启用状态
-# 四个学科的 skills 目录各为独立 provider（数学两个年级段包各一个），画板只注册一次
+# 四个学科的 skills 目录各为独立 provider（数学两个年级段包各一个），共享数学契约与画板各注册一次
 
 # 静态检查：frontmatter、名称、内部入口、失效引用、旧字段/Pi 残留
 node scripts/check-skills.mjs

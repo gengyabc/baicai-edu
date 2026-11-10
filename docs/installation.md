@@ -5,9 +5,9 @@
 在此仓库中运行（需要 Node.js、可用的 `dsh` 及其 pnpm）：
 
 ```bash
-# 低年级数学：安装 learn、math-board、math-primary-low
+# 低年级数学：安装 learn、math-common、math-board、math-primary-low
 node scripts/install.mjs math-primary-low --profile web
-# 高年级数学：只需 learn、math-primary-high，不自动安装画板
+# 高年级数学：安装 learn、math-common、math-primary-high，不自动安装画板
 node scripts/install.mjs math-primary-high --profile web
 # 高年级也可显式选装画板
 node scripts/install.mjs math-primary-high math-board --profile web
@@ -23,6 +23,8 @@ node scripts/install.mjs all --profile web
 node scripts/install.mjs chinese-reading english --profile web
 node scripts/install.mjs math-board --profile web
 node scripts/install.mjs learn --profile web
+# 只装共享数学契约（调试加载链路用；没有教学入口）
+node scripts/install.mjs math-common --profile web
 
 # 只预览，不修改 profile，也不执行 dsh
 node scripts/install.mjs math-primary-low --profile web --dry-run
@@ -35,23 +37,24 @@ node scripts/install.mjs math-primary-low --profile web --dry-run
 | 包 | 必需的本仓库依赖 |
 |---|---|
 | `learn` | 无 |
+| `math-common` | `learn`（共享数学契约包；只给两个数学 band 按条件加载，不是教学实现） |
 | `math-board` | 无，可以独立使用 |
-| `math-primary-low` | `learn`、`math-board` |
-| `math-primary-high` | `learn`（`math-board` 可选，不自动安装） |
+| `math-primary-low` | `learn`、`math-common`、`math-board` |
+| `math-primary-high` | `learn`、`math-common`（`math-board` 可选，不自动安装） |
 | `chinese-reading` | `learn` |
 | `english` | `learn` |
 
 `learn` 自带 `learn-general-core`、`learn-general-session` 与 `learn-support`，单独安装即可使用通用任务教学和五类支持；不按年龄另装包，不反向安装所有学科。专门包仍提供各自教学方法，缺包不妨碍通用路径。此源码变更本身不表示正在使用的 profile 已更新或启用。
 
-依赖只声明在各包的 `package.json` → `dependencies`。所有包目前都是私有的相邻目录包，使用 `file:../learn`、`file:../math-board`；这不是可直接发布到 registry 的版本依赖。未来发布前必须替换为已发布版本并重新验证安装，不要把带相邻目录依赖的单独 tarball 当成自包含发行物。
+依赖只声明在各包的 `package.json` → `dependencies`。所有包目前都是私有的相邻目录包，使用 `file:../learn`、`file:../math-common`、`file:../math-board`；这不是可直接发布到 registry 的版本依赖。未来发布前必须替换为已发布版本并重新验证安装，不要把带相邻目录依赖的单独 tarball 当成自包含发行物。
 
 安装器从这些声明递归生成依赖优先、按包去重的闭包，然后执行**一次**：
 
 ```bash
-dsh plugin --profile web add link:<checkout>/learn link:<checkout>/math-board link:<checkout>/math-primary-low [link:<checkout>/math-primary-high]
+dsh plugin --profile web add link:<checkout>/learn link:<checkout>/math-common link:<checkout>/math-board link:<checkout>/math-primary-low [link:<checkout>/math-primary-high]
 ```
 
-每个 bundle 成为 profile 的顶层依赖，由 DSH 原生处理安装与启用。各包仍只注册自己的技能或插件；学科 patch 不复制共享规则，不重复插入画板。`all` 只是三个已交付学科（数学两个年级段包）的快捷选择，不扫描实验目录为新学科。两个数学包互不依赖：科目 id 都是 `math`，由教学解析按学生阶段选择其中一个（见 `learn-data/references/teaching-resolver.md`），已安装但未被选中的包不影响正在进行的任务。
+每个 bundle 成为 profile 的顶层依赖，由 DSH 原生处理安装与启用。各包仍只注册自己的技能或插件；学科 patch 不复制共享规则，不重复插入画板。`all` 只是三个已交付学科（数学两个年级段包）的快捷选择，不扫描实验目录为新学科。两个数学包互不依赖：科目 id 都是 `math`，由教学解析按学生阶段选择其中一个（见 `learn-data/references/teaching-resolver.md`），已安装但未被选中的包不影响正在进行的任务。共享数学契约由 `dsh-edu-math` 提供，闭包中只出现一次；它不含 `math-core` / `math-session`，不会被解析成第三个数学实现。
 
 ## 为什么不能只写 dependencies
 
@@ -84,4 +87,4 @@ node --test scripts/skill-contracts.test.mjs
 node --test math-board/*.test.js
 ```
 
-隔离实测时可指定临时 `DSH_HOME`，避免修改正在使用的 profile。新建 profile 只安装高年级数学后，dependencies 与 `dsh.profile.bundles` 中应同时看到 `dsh-edu-learn`、`dsh-edu-math-primary-high`，没有 `dsh-edu-math-board`；显式选装画板后才增加它。低年级数学仍同时安装 `dsh-edu-learn`、`dsh-edu-math-board`、`dsh-edu-math-primary-low`。重装及加入其他学科后，每个教育 bundle 仍只出现一次。通过配置展开确认各技能 provider 及已选装的画板各注册一次；实际工具栏显示与交互仍需在真实 Web 页面验收。
+隔离实测时可指定临时 `DSH_HOME`，避免修改正在使用的 profile。新建 profile 只安装高年级数学后，dependencies 与 `dsh.profile.bundles` 中应同时看到 `dsh-edu-learn`、`dsh-edu-math`、`dsh-edu-math-primary-high`，没有 `dsh-edu-math-board`；显式选装画板后才增加它。低年级数学仍同时安装 `dsh-edu-learn`、`dsh-edu-math`、`dsh-edu-math-board`、`dsh-edu-math-primary-low`。重复安装或组合安装时 `dsh-edu-math` 仍只出现一次。重装及加入其他学科后，每个教育 bundle 仍只出现一次。通过配置展开确认各技能 provider 及已选装的画板各注册一次；实际工具栏显示与交互仍需在真实 Web 页面验收。

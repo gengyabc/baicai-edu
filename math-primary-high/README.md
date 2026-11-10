@@ -1,11 +1,12 @@
 # dsh-edu-math-primary-high
 
-以小学高年级（4–6 年级）为主的多方法数学教学包，以学生思路为起点，按任务、先修知识与实际表现选择方法。年级只调整语言、记号、题型和节奏，不限制学生探究更高内容；仅依赖 `dsh-edu-learn`，无需画板也能完整教学。低年级（1–3 年级）对应包为 [`math-primary-low/`](../math-primary-low/README.md)。
+以小学高年级（4–6 年级）为主的多方法数学教学包，以学生思路为起点，按任务、先修知识与实际表现选择方法。年级只调整语言、记号、题型和节奏，不限制学生探究更高内容；仅依赖 `dsh-edu-learn` 与共享数学契约包 `dsh-edu-math`，无需画板也能完整教学。低年级（1–3 年级）对应包为 [`math-primary-low/`](../math-primary-low/README.md)。
 
 ## 与低年级包的关系
 
 - 两个包提供同一套接口技能（`math-core`、`math-session`、`math-diagnose`、`math-practice`、`math-student-problem`），由统一教学解析按学生阶段选择其一。同一场进行中的任务不会因为另一个包安装而热替换；`supported_stages` 只声明本包适配的默认表达与流程。
 - 本包的 `math-core`、`math-diagnose`、`math-practice` 等写法以高年级的认知与表达为默认，不等于低年级包的复制；两者的差异只在各自 `references/` 中维护。
+- 学生编题、练习证据策略与画板协议的共同规则由 [`math-common`](../math-common/README.md) 维护唯一一份，本包在对应分支出现时按名加载。本包保留并在本地 reference 中显式维护高年级差异：任务选方法、直接计算与显式教学开场、批次与局部归因、不自动清板、建模 leaf。共享包不参与教学选型，也不替代本包的 `math-core` / `math-session`。
 - 高年级使用画板、需要图示或补基础，都不意味着应切换低年级包。学科判断先修缺口、支架及适配理由；learn 统一承接流程选择、确认、保存与新任务解析。低年级包按已确认的学生阶段适配，不按一次答错或工具需求推荐。
 - CGI 保留关注学生真实策略的作用，不再统领所有教学。概念用 CPA，程序可直接用显式教学，陌生题用 Pólya，辨析迁移用变式，规律用探究论证，真实决策用建模；形成性评价贯穿过程。选择与步骤见[教学核心](skills/math-core/references/math-teaching-core.md)。
 
@@ -27,7 +28,7 @@
 ## 安装
 
 ```bash
-# 在仓库根目录运行，安装 learn、math-primary-high
+# 在仓库根目录运行，安装 learn、math-common、math-primary-high
 node scripts/install.mjs math-primary-high --profile web
 # 如需可选画板，显式加装
 node scripts/install.mjs math-primary-high math-board --profile web
@@ -39,7 +40,7 @@ node scripts/install.mjs math-primary-high math-board --profile web
 
 独立画板插件在输入框工具栏、模型选择按钮旁提供「数学画板」。学生摆图、圈组、合并/拆开、划去或写说明，自定图案数值与颜色；「放入回答」附上 JSON，不插入图形清单，学生自己写的话会放进输入框，仍需手动发送；画板和修改记录都留着，方便改错。点「清空」会同时清掉画布和这次的修改记录。画板不运算、不自动提交。
 
-模型读取已发送附件教学，不读未提交画布；学生明确设置意图时可用 `math_board_settings` 同步会话设置，不代交答案。完整数据与边界见[结构化数学画板](skills/math-core/references/structured-drawing.md)。
+模型读取已发送附件教学，不读未提交画布；学生明确设置意图时可用 `math_board_settings` 同步会话设置，不代交答案。画板协议的字段、附件读取顺序、修改记录解读、信任边界与设置读写以共享的 [`board-contract`](../math-common/skills/math-common/references/board-contract.md) 为准；本包的入口与本地差异见[结构化数学画板](skills/math-core/references/structured-drawing.md)。
 
 本包不因新题、新活动、新主题或下一子题自动清空画板。仅学生在消息正文中明确要求清空时，按[画板边界规则](skills/math-core/references/board-task-boundary.md)调用工具；请求记录成功不代表客户端已执行。[批量题规则](skills/math-core/references/batch-board-boundary.md)只处理子题证据归属与保留，不授权清空。画板未安装或不可用时，使用文字、算式、表格或纸笔图片继续教学。
 
@@ -47,7 +48,7 @@ node scripts/install.mjs math-primary-high math-board --profile web
 
 系统状态在 `outputs/students/`，用户原件在 `data/students/<student_id>/math/raw/`；均不随包发布。原件只读，改名先备份至 `outputs/students/<student_id>/math/backups/raw/`，处理交共享技能。
 
-数学技能复用有效快照，并读取共享 `personal.interests` 与科目偏好。题型按教学目的选择，故事、计算、图表、等式和论证各有用途；同一关系换场景可检验情境迁移，兴趣只在学生做不出当前题时搭桥。用法见 `skills/math-core/references/math-personalization.md`。每轮唯一 segment 由调用方追加到 `session_log.json`；档案与 finalize 由共享协议执行，完整结构见 `learn-data`。
+学生编题、练习证据与画板协议只维护在 `dsh-edu-math`，本包 reference 只保留高年级增补；共享契约变更时两个 band 的共同场景与差异场景都要回放。数学技能复用有效快照，并读取共享 `personal.interests` 与科目偏好。题型按教学目的选择，故事、计算、图表、等式和论证各有用途；同一关系换场景可检验情境迁移，兴趣只在学生做不出当前题时搭桥。用法见 `skills/math-core/references/math-personalization.md`。每轮唯一 segment 由调用方追加到 `session_log.json`；档案与 finalize 由共享协议执行，完整结构见 `learn-data`。
 
 ```bash
 node scripts/check-skills.mjs
