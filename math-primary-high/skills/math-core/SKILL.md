@@ -23,7 +23,7 @@ Shared by every branch; sub-skills do not repeat it:
 
 ## Read by Branch
 
-Read `math-core`'s `references/math-teaching-core.md` first; read the rest before entering the matching branch. Each file is the single source for its rule.
+Read `math-core`'s `references/math-teaching-core.md` first; read the rest before entering the matching branch. Each file is the single local source for its rule; the three shared contracts (student problem, practice evidence, board protocol) are loaded from `math-common` when that branch is entered.
 
 | Condition | Read |
 |---|---|

@@ -23,7 +23,7 @@ Shared by every math branch; sub-skills do not repeat it:
 
 ## Read by Branch
 
-Read the common rules first; read the rest before entering the matching branch. Each is the single source for its rule.
+Read the common rules first; read the rest before entering the matching branch. Each is the single local source for its rule; the three shared contracts (student problem, practice evidence, board protocol) are loaded from `math-common` when that branch is entered.
 
 | Condition | Read |
 |---|---|

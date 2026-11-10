@@ -8,7 +8,7 @@ user-invocable: false
 
 ## Start and Input
 
-Load `math-core` and follow its "Start and Input". Also read `math-core`'s `references/math-teaching-core.md` and `references/targeted-practice-rules.md` (purpose, problem count, per-problem adjustment, and completion conditions), and `math-core`'s `references/batch-board-boundary.md` when the student brought an exercise with several sub-questions.
+Load `math-core` and follow its "Start and Input". Also read `math-core`'s `references/math-teaching-core.md` and `references/targeted-practice-rules.md` (local design and grade additions; the shared evidence contract it names owns purpose, problem count, per-problem adjustment, and completion conditions), and `math-core`'s `references/batch-board-boundary.md` when the student brought an exercise with several sub-questions.
 
 Focus on `profile.current_levels`, `profile.preferences`, `self_report`, `error_history`, the extracted analysis in the snapshot, `learning_state.active_domain` / `priority_targets`, `learning_memory.recent_error_patterns`, and any existing `math-diagnose` conclusions. Interests do not drive problem choice; bridge only per the personalization reference.
 

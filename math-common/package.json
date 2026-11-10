@@ -1,0 +1,21 @@
+{
+  "name": "dsh-edu-math",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared math contracts for the primary math bands: student-authored problems, practice evidence, and the math-board protocol. Rules only; never a teaching implementation or resolver candidate.",
+  "dependencies": {
+    "dsh-edu-learn": "file:../learn"
+  },
+  "files": [
+    "cordis.patch.yml",
+    "skills",
+    "README.md"
+  ],
+  "dsh": {
+    "manifestVersion": 1,
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

@@ -35,7 +35,7 @@ test('real DSH installs, composes, deduplicates and preserves explicit disableme
   const install = (...packages) => run(process.execPath,
     ['scripts/install.mjs', ...packages, '--profile', profile]);
   const selected = manifest => manifest.dsh.profile.bundles.filter(name => name.startsWith('dsh-edu-'));
-  const high = ['dsh-edu-learn', 'dsh-edu-math-primary-high'];
+  const high = ['dsh-edu-learn', 'dsh-edu-math', 'dsh-edu-math-primary-high'];
   const math = [...high, 'dsh-edu-math-board', 'dsh-edu-math-primary-low'];
   try {
     install('math-primary-high');
@@ -61,12 +61,14 @@ test('real DSH installs, composes, deduplicates and preserves explicit disableme
     assert.deepEqual(selected(manifest), all);
     assert.deepEqual(Object.keys(manifest.dependencies).sort(), [...all].sort());
     const composed = run('dsh', ['--profile', profile, '--dump-default-config']);
-    for (const id of ['edu-learn-skills', 'edu-math-board', 'edu-math-primary-low-skills',
+    for (const id of ['edu-learn-skills', 'edu-math-common-skills', 'edu-math-board', 'edu-math-primary-low-skills',
       'edu-math-primary-high-skills', 'edu-chinese-reading-skills', 'edu-english-skills']) {
       assert.equal([...composed.matchAll(new RegExp(`^- id: ${id}$`, 'gm'))].length, 1, id);
     }
 
-    // The upper-primary math bundle keeps its own provider beside the optional board.
+    // The shared math contract is registered once, and the upper-primary bundle keeps
+    // its own provider beside the optional board.
+    assert.equal(selected(readManifest()).filter(name => name === 'dsh-edu-math').length, 1);
     assert.equal(selected(readManifest()).filter(name => name === 'dsh-edu-math-primary-high').length, 1);
 
     // Mutate only this test-owned manifest to represent a user's explicit disable.
@@ -75,6 +77,20 @@ test('real DSH installs, composes, deduplicates and preserves explicit disableme
     install('math-primary-low');
     assert.ok(!selected(readManifest()).includes('dsh-edu-math-board'));
     assert.ok('dsh-edu-math-board' in readManifest().dependencies);
+
+    // Disabling the shared math contract keeps both bands' own providers; it is a
+    // rule source, not a teaching implementation, and reinstall does not re-enable it.
+    const withoutShared = readManifest();
+    withoutShared.dsh.profile.bundles = withoutShared.dsh.profile.bundles
+      .filter(name => name !== 'dsh-edu-math');
+    writeFileSync(manifestPath, `${JSON.stringify(withoutShared, null, 2)}\n`);
+    install('math-primary-low');
+    assert.ok(!selected(readManifest()).includes('dsh-edu-math'));
+    assert.ok('dsh-edu-math' in readManifest().dependencies);
+    const bandOnly = run('dsh', ['--profile', profile, '--dump-default-config']);
+    assert.match(bandOnly, /^- id: edu-math-primary-low-skills$/m);
+    assert.match(bandOnly, /^- id: edu-math-primary-high-skills$/m);
+    assert.doesNotMatch(bandOnly, /^- id: edu-math-common-skills$/m);
   } finally {
     // home is the exact directory returned by mkdtempSync above, never a user path.
     rmSync(home, { recursive: true });

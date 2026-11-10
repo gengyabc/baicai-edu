@@ -9,7 +9,11 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, basename, extname } from 'node:path'
 
 const ROOT = new URL('..', import.meta.url).pathname
-const BUNDLES = ['learn', 'math-primary-low', 'math-primary-high', 'chinese-reading', 'english']
+const BUNDLES = ['learn', 'math-common', 'math-primary-low', 'math-primary-high', 'chinese-reading', 'english']
+// A band's shared math rules are loaded by name; the resolver still sees only
+// math-core / math-session candidates.
+const MATH_COMMON = 'math-common'
+const MATH_BANDS = ['math-primary-low', 'math-primary-high']
 const ENTRIES = new Set(['learn-start', 'learn', 'learn-feynman', 'learn-profile', 'learn-save', 'learn-clean'])
 const USER_ONLY = new Set(['learn-start', 'learn', 'learn-clean'])
 const MODES = new Set(['learn', 'feynman'])
@@ -148,6 +152,35 @@ for (const bundle of BUNDLES) {
       if (!referenceTargetExists(dir, text, m)) {
         errors.push(`${file}: dangling reference references/${name}`)
       }
+    }
+  }
+}
+
+// The shared math contract package is a rule source, not a band and not a
+// teachable specialist: one internal skill, no stage fit, no full subject
+// contract, and both bands must depend on it.
+const sharedSkillsDir = join(ROOT, MATH_COMMON, 'skills')
+if (statSync(sharedSkillsDir, { throwIfNoEntry: false })) {
+  const registered = readdirSync(sharedSkillsDir)
+    .filter((name) => statSync(join(sharedSkillsDir, name)).isDirectory())
+  if (registered.length !== 1 || registered[0] !== MATH_COMMON) {
+    errors.push(`${MATH_COMMON}: shared math package must register only the ${MATH_COMMON} skill`)
+  }
+  const shared = skills.get(MATH_COMMON)
+  if (!shared) {
+    errors.push(`${MATH_COMMON}: missing the shared ${MATH_COMMON} skill`)
+  } else {
+    if (/^supported_stages:/m.test(shared.text)) {
+      errors.push(`${shared.file}: shared math contract must not declare a stage fit`)
+    }
+    if (/^## Subject contract$/m.test(shared.text)) {
+      errors.push(`${shared.file}: shared math contract must not declare the full subject contract`)
+    }
+  }
+  for (const band of MATH_BANDS) {
+    const manifest = JSON.parse(readFileSync(join(ROOT, band, 'package.json'), 'utf8'))
+    if (manifest.dependencies?.['dsh-edu-math'] !== 'file:../math-common') {
+      errors.push(`${band}/package.json: must depend on dsh-edu-math (file:../math-common)`)
     }
   }
 }

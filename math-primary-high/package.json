@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Task-driven upper-primary (grades 4-6) math teaching with multiple methods, evidence-based support, strategy diagnosis, practice, student-authored problems, and real-world modeling; the math board is optional.",
   "dependencies": {
-    "dsh-edu-learn": "file:../learn"
+    "dsh-edu-learn": "file:../learn",
+    "dsh-edu-math": "file:../math-common"
   },
   "files": [
     "cordis.patch.yml",

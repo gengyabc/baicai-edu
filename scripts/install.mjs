@@ -9,7 +9,7 @@ const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
 const allSubjects = ['math-primary-low', 'math-primary-high', 'chinese-reading', 'english'];
 const usage = `Usage: node scripts/install.mjs <package...|all> [--profile <name>] [--dry-run]
 
-Packages: learn, math-board, math-primary-low, math-primary-high, chinese-reading, english
+Packages: learn, math-common, math-board, math-primary-low, math-primary-high, chinese-reading, english
 Default profile: web
 Dependencies are included automatically. --dry-run only prints the command.
 Example: node scripts/install.mjs math-primary-low --profile web`;
