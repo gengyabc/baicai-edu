@@ -42,14 +42,14 @@
 
 ### 支持闸门
 
-安全、明确结束和待完成保存优先。其后在推荐闸门、模式/动作切换及 Resolve Target/Route And Record 之前核对本条意愿：学生明确请求五类支持、有可信线索待澄清、context.activity 为 support，或 learning_support.resume_question 保留了交流选择时，按 `learn-core` 的按需规则加载 `learn-support`。交流方法读其 `references/supportive-conversation.md`；状态字段按 `references/session-schema.md`。已有推荐的明确选择仍交推荐闸门；普通聊天不消费候选，也不自动启动以前已选的目标。无目标不等于请求推荐。
+安全、明确结束和待完成保存优先。其后在推荐闸门、模式/动作切换及 Resolve Target/Route And Record 之前核对本条意愿：学生明确请求支持（包括现实条件帮助或纠正处境理解）、有可信线索待澄清、context.activity 为 support，或 learning_support.resume_question 保留了交流选择时，按 `learn-core` 的按需规则加载 `learn-support`。交流方法读其 `references/supportive-conversation.md`；状态字段按 `references/session-schema.md`。已有推荐的明确选择仍交推荐闸门；普通聊天不消费候选，也不自动启动以前已选的目标。无目标不等于请求推荐。
 
 | 情况 | 当前主导者的动作与出口 |
 |---|---|
 | 无真实任务，只想交流 | 沿用身份与 teaching，设 `activity: support`，focus/target_context 可为 null；只保存最小 resume_question，不造当前题。自然交流或尊重结束；不从档案候选补目标，不自动推荐、做题或定时邀请。segment 为 null，必要 context 写回后 STOP，不落入第 7 节 |
 | 无真实任务，请求方法帮助而非闲聊 | 设 `activity: support`，focus/target_context 可为 null；按已知条件提供支持建议，确有必要才问一个澄清问题，不从历史补教学目标、不强制推荐或出题。只写必要 learning_support 与最小 resume_question，segment 为 null，STOP；学生随后明确授权真实任务才交首次目标解析 |
 | 已有任务，想先聊或暂停学习 | 保留 focus、scope_id、teaching、材料、mode/activity、整个 turn_state（原题、已答内容、待答问题和迁移阶段）。只在 learning_support.resume_question 记最小交流选择；原教学所有者承接交流，不另建路由器。segment 为 null，写回后 STOP，不把聊天当原题作答 |
-| 拒绝学习邀请或当前支持讨论 | 设 status: declined；要聊天则保留交流选择，要做题才接原任务，要结束则按结束流程。拒绝讨论本身不表示拒绝学习；拒绝学习也不表示结束。继续闲聊不重置 declined，不按轮数或时间检查学习意愿；短答、沉默或空消息不改判意愿、不造 outcome |
+| 拒绝学习邀请或当前支持讨论 | 设 status: declined；要聊天则保留交流选择，要做题才接原任务，要结束则按结束流程。拒绝讨论本身不表示拒绝学习；拒绝学习也不表示结束。明确拒绝本批学习候选时清除未选 recommendation，不改已保存证据；仅选择先聊则保留候选等待主动重开。继续闲聊不重置 declined，不按轮数或时间检查学习意愿；短答、沉默或空消息不改判意愿、不造 outcome |
 | 主动请求学习或明确接受邀请 | 明确接回原任务：清除已完成的 resume_question，保留身份与完整恢复位置；本条有显式模式/动作请求时先交下表切换，无切换请求才直接交第 6 节并沿用模式。尚无目标或接受的邀请未明确目标时，只澄清必要目标；同一身份的首次目标交第 5 节。真正换目标交下表保存/新建，新 scope_id；跨科按 `references/teaching-transition.md`，不能以交流或接受模糊邀请代替切换授权。支持状态的重开条件按 schema，不抹去其他拒绝 |
 | 有任务且愿意接受方法帮助 | 支持仅叠加建议，当前教学主导者继续教学；保留原 mode/activity 与待答题，只更新必要 learning_support。实际表现才交第 6 节记段 |
 | 明确要求保存具体中性计划 | 生命周期把确认内容写 support_events（形状按 schema），再调用同一 Finalize；仅保存不自动开课。一般交流不创建事件、不改长期档案；恢复状态写入与长期计划保存分别报告 |
@@ -58,7 +58,7 @@
 - declined 的恢复与最小续接信息按 schema；不逐轮重新触发动机追问。无支持状态的新普通聊天也不必补造需求标签。
 - 支持开始、持续、拒绝、恢复或转入教学均不自动清画板；只有另一个已获授权的新任务边界才按原规则处理。不得读取未发送画板，不迁移或删除旧证据。
 
-**推荐闸门**：危机、明确结束及待完成保存仍优先。其后，用户不知道学什么、询问学什么、想换但尚无具体目标、阶段选择「换个内容」，或日志有待选 `recommendation` 时，加载 `learn-recommend`，先处理推荐而不是把消息归为旧题回答或立即换主题。该分支在 Resolve Target、Route And Record 与任何新任务边界之前执行：
+**推荐闸门**：危机、明确结束及待完成保存仍优先。其后，用户明确想学习但不知道学什么、询问学什么、想换学习内容但尚无具体目标、阶段选择「换个内容」，或日志有待选 `recommendation` 且本条未拒绝学习/选择交流时，加载 `learn-recommend`，先处理推荐而不是把消息归为旧题回答或立即换主题。该分支在 Resolve Target、Route And Record 与任何新任务边界之前执行：
 
 - 尚未选择：仅将技能返回的 `recommendation` 写入日志顶层并更新 `updated_at`，保留原 context、focus、segments 与身份，STOP；无原目标时允许只有 recommendation 而无 context。
 - 选择候选或明确委托首选：先把 `selected_id` 与当前 mode 写入日志 recommendation，成功后才将选中项的 focus 与 target_context 作为显式目标；写失败按 Invariants 停止，不 finalize。确实更换目标时才执行下表换主题流程，旧主题保存成功后新建并应用目标。仍是原目标则保留身份接续。模式沿用原 mode（无 context 时用 recommendation.mode），实际新主题使用 `activity: teaching`，不携带旧题材料与迁移进度。已选 recommendation 跨 finalize、失败重试与新建保留，写入新 context 成功后清除。本轮已解析为选定目标后不再命中推荐闸门；交学科的最新请求使用选定目标，不用原推荐请求再次触发推荐。

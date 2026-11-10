@@ -25,7 +25,7 @@
 }
 ```
 
-教育阶段与学习配置为可选兼容扩展：`education_stage` 取 lower_primary / upper_primary / junior_secondary / senior_secondary / higher_education / adult，缺失按 `references/grade-band-defaults.md` 推导或未知。`grade` / `grade_band` 可缺省，非小学不强填；已有值保留，阶段冲突按学生更正处理，不猜能力。可选 `learning_context` 只记学生明确提供的学习情境，不含私人困境。
+教育阶段与学习配置为可选兼容扩展：`education_stage` 取 lower_primary / upper_primary / junior_secondary / senior_secondary / higher_education / adult，缺失按 `references/grade-band-defaults.md` 推导或未知。`grade` / `grade_band` 可缺省，非小学不强填；已有值保留，阶段冲突按学生更正处理，不猜能力。可选 `learning_context` 复用为学生明确提供的简短中性学习情境，如职业起步、提升、转型、资深发展、退休或兴趣学习，可组合描述；与 education_stage 分开，不由年龄、阶段或职业推断，不新增职业枚举字段，不含单位身份、家庭冲突等私人困境。可跳过，只由建档/start/profile 设置或更正；当轮时间、资源等临时限制仅用于当前支持，不自动写入此字段。
 
 `learning_preferences` 形状为 `{ "goals": [], "support_preferences": [] }`，缺失按空。只保存学生明确设置的跨科长期目标与支持偏好；不由一次答题、低信心或拖延推断。只由建档/start/profile 指定写入者写，finalize 不写共享档案。
 

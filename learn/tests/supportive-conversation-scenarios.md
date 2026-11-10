@@ -2,6 +2,8 @@
 
 标签：`synthetic-agent-replay`（2026-11-09）。这不是已执行的真实学生实验，也不是独立 DSH Web 模型会话录屏。
 
+**历史基线，不是当前版本验收**：2026-11-10 的改造针对这里未充分检验的附和、连续周边追问和实际帮助缺口；保留以下输出与当时 PASS/FAIL 以便追溯，不将旧结论沿用到新规则。当前评审输入见 [T01–T14 样例](support-understanding-cases.json)，当前执行范围及待验收项目见 [实施报告](../../docs/learn-support-implementation-report.md)。
+
 ## 执行方式与边界
 
 - 合成学生的消息固定；agent 在一次合成任务内，按本仓库 `learn-support`、`learn-core`、`learn-data` 的当前技能文本对学生消息逐条生成回复，不是实时多轮工具调用。未使用真实学生资料，未读取未提交画板，未修改学生档案，未安装或发布。

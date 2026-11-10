@@ -51,7 +51,9 @@
 }
 ```
 
-primary_need 为 value / confidence / autonomy / strategies / persistence；status 为 hypothesis / clarified / active / observing / declined。evidence.source 为 student_statement / observed_action，推断不能冒充事实，不能记录危机细节或无关私生活。outcome 三项分别是学生自述、参与及任务表现的中性观察，未知用 null；不是动机分或掌握度。普通聊天不生成 segment、掌握或里程碑，不把家庭、情绪和闲聊汇总为学习表现。
+primary_need 为 value / confidence / autonomy / strategies / persistence / conditions / unknown；conditions 表示时间、资源、责任或环境等现实限制，先处理条件，不归为动机不足；unknown 表示证据不足，不要求补齐分类。它们不强制选用五类方法，method 可为 null；普通交流无需创建 learning_support。status 为 hypothesis / clarified / active / observing / declined。evidence.source 为 student_statement / observed_action，推断不能冒充事实，不能记录危机细节或无关私生活。outcome 三项分别是学生自述、参与及任务表现的中性观察，未知用 null；不是动机分或掌握度。普通聊天不生成 segment、掌握或里程碑，不把家庭、情绪和闲聊汇总为学习表现。
+
+学生否定或更正理解时，先撤回原假设，再按更正后的必要事实替换 primary_need/evidence；尚不清楚则用 unknown，不把否定本身改记为 declined。清除仅依赖旧假设的 method、observation_goal 与 outcome（未知项用 null），保留真实任务位置、已有表现和仍有效的交流选择/拒绝边界。无必要状态时可移除 learning_support；不为保留假设另存历史或敏感原话。假设被确认也不自动成为长期观察；已保存计划或观察的更正仍经 support_events 与 finalize。
 
 ### 临时交流选择与恢复
 

@@ -18,7 +18,7 @@ disable-model-invocation: true
 | 语文 | `chinese` | `dsh-edu-chinese-reading` |
 | 英语 | `english` | `dsh-edu-english` |
 
-用 `ask_user_question` 问“今天想学什么？”，提供表中科目及「其他目标」。用户已明确科目时直接采用稳定 id；其他输入保留原目标，不要求重选或强猜科目。
+用 `ask_user_question` 问“今天想学什么，还是先聊聊？”，提供表中科目、「其他目标」及「先聊聊，暂不定目标」。用户已明确科目或只想交流时直接采用，不重复选项；其他输入保留原目标，不要求重选或强猜科目。纯交流沿用当前可用任务身份，不切换未完成任务；尚无身份时按解析协议创建中性 task 身份，不编造学习目标。后续只确认必要学习者身份，可跳过阶段与偏好；在本次身份确认期间保留已选择的纯交流意图。激活成功后立即把该意图交生命周期的新建/恢复与支持闸门，持久化最小交流选择：有原题仅叠加 resume_question 并保留完整任务，无原题用 activity: support，不等下一条消息才写入。写回成功才提示可直接交流或用 `/learn` 接续，确保随后无参数 `/learn` 仍保留交流选择；写回失败按生命周期停止并说明尚未保存选择，不宣称准备完成。不自动推荐或出题。
 
 先读取 `learn-data` 的 `references/teaching-resolver.md`：它统一决定真实 `subject`、中性任务身份与稳定 `scope_id`，以及 `teaching = { provider, core_skill, session_skill, evidence_namespace }`。未知目标按该协议使用 `task_<随机hex>`，明确新目标也按其范围规则隔离历史；不能全部写到同一个通用科目。未识别阶段前不提前加载专门包。缺少适配包可用通用任务教学，不要求安装后才能继续。
 
@@ -50,7 +50,7 @@ disable-model-invocation: true
 
 用一句话复述称呼、已提供的阶段/年级和偏好，用 `ask_user_question` 请学生确认，选项为「都对」「要改一下」。确认后读取并执行 `references/create-student.md`。阶段或学习情境影响表达/支持时，加载 `learn-support` 的 `references/learner-stage.md`，不把阶段当能力上限。
 
-建档并激活后告诉学生：“档案建好了。接下来输入 `/learn`，我们就可以开始。”
+建档并激活后，学习入口提示输入 `/learn` 开始；纯交流入口按第 1 步接续，不要求先定学习目标。
 
 ## 5. 激活已有学生
 
@@ -58,6 +58,6 @@ disable-model-invocation: true
 2. 检查当前科目的 `profile.json`、`memory.json`、`current_state.json`、`milestones.json`、`session_log.json`，缺失文件按 `learn-data` Read Snapshot 初始化；默认值取解析出的教学契约，保留已有证据。
 3. 确保目录存在（已存在则保留）：`data/students/<id>/<subject>/raw`、`outputs/students/<id>/<subject>/extracted`、`outputs/students/<id>/<subject>/backups/raw`。
 4. 按 `learn-data` 的 session.json 结构写入当前学生、真实科目及所需身份/教学实现字段，更新时间。
-5. 必需文件、目录和 session 均写入成功后回复称呼与当前学习目标，提示输入 `/learn` 或直接告诉我今天想学什么。失败时报告未完成操作，保留档案供重试。
+5. 必需文件、目录和 session 均写入成功后回复称呼与已明确的学习目标，提示输入 `/learn` 或直接说明意愿；纯交流不虚构目标，按第 1 步接续。失败时报告未完成操作，保留档案供重试。
 
 `outputs/students/` 不存在时由首次写入创建。

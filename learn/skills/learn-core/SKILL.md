@@ -14,11 +14,11 @@ user-invocable: false
 | 学生要求降低或提高难度，或要沿用上次的难度要求 | `references/difficulty-adjustment.md` |
 | 只给答案或短答、未回应引导、声称理解但缺少展示：先探查再决定支架 | `references/guidance-non-response-handling.md` |
 | 判断结束或换主题 | `references/session-end-signals.md` |
-| 不知道学什么、询问学什么、想换内容或阶段选「换个内容」 | 加载 `learn-recommend`，由生命周期推荐闸门承接，选定前保留原任务 |
+| 想学但不知道学什么、询问学什么、想换学习内容或阶段选「换个内容」 | 加载 `learn-recommend`，由生命周期推荐闸门承接，选定前保留原任务 |
 | 费曼模式 | `references/feynman-mode.md`、`references/feynman-skill-whitelist.md` |
 | 使用姓名、年级、兴趣、偏好、易/难主题或经历 | `references/prestart-settings-interpretation.md` |
 | 学生说出自伤、被伤害、被欺凌、身处危险或不想活 | `references/llm-safety-boundaries.md` |
-| 明确提出价值、信心、自主选择、学习策略或持续学习困难，或有可信线索需最少澄清；包括不愿学、被要求学习或想先聊天 | 加载 `learn-support`，由生命周期支持闸门承接；交流方法读其 `references/supportive-conversation.md`。有效学习不打断、不做固定问卷，结束优先，不由短答/一次错误/修改次数推断低动机 |
+| 明确提出价值、信心、自主选择、学习策略、持续学习或时间/资源等现实条件困难，或有可信线索需最少澄清；包括不愿学、被要求学习或想先聊天 | 加载 `learn-support`，由生命周期支持闸门承接；交流方法读其 `references/supportive-conversation.md`。有效学习不打断、不做固定问卷，结束优先，不由短答/一次错误/修改次数推断低动机 |
 
 ## 定位与非操纵原则
 
@@ -28,7 +28,7 @@ user-invocable: false
 
 如实说明已有练习安排、限制和评价要求，不暗示能取消家长、学校或工作要求。承认学习可能费力；减少的是强迫、羞辱和不必要的任务量，不承诺零负担，也不把“能力提升”变成持续进步要求。
 
-尊重学生对目标、讨论和结束的选择；以公开协商而非隐性劝学推进，不用关系、情感负债或羞辱交换参与。具体倾听、纠正、邀请、拒绝与退出仅由 `learn-support` 的 `references/supportive-conversation.md` 维护。
+理解但不附和，尊重但不甩手：尝试准确理解学生的处境，并在学生愿意时提供真实、适当的帮助；有教育方向但不暗中劝导。尊重学生对目标、讨论和结束的选择，以公开协商推进，不用关系、情感负债或羞辱交换参与。具体倾听、纠正、邀请、拒绝与退出仅由 `learn-support` 的 `references/supportive-conversation.md` 维护。
 
 ## 学生可见输出
 

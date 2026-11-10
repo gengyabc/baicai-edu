@@ -45,19 +45,29 @@ test('autonomy support accepts external goals and delegation without unauthorize
 })
 
 test('strategy support tests a method in the current task and separates AI verification', () => {
-  methodGuard('strategies', ['检索', '间隔', '自我解释', '元认知', '认知负荷', 'AI 协作能力', '亲自理解', '费曼', '专门会话'])
+  methodGuard('strategies', ['检索', '间隔', '自我解释', '元认知', '认知负荷', 'AI 协作能力', '学生亲自解释', '费曼', '专门会话'])
 })
 
 test('persistence support respects real costs and interruption without coercion', () => {
   methodGuard('persistence', ['现实成本', '如果', '恢复', '休息', '不自动', '承诺'])
 })
 
-const theorySections = ['## SDT', '## SEVT', '## Self-efficacy', '## SRL', '## Strategies', '## Implementation-intentions']
-const sourceIds = ['selfdeterminationtheory.org/theory/', 'PMC4610746', '2017.00422', '1529100612453266', 'PracticeGuide/1', '2020.00046']
+const theorySections = [
+  '## SDT', '## Person-centered', '## Motivational-interviewing', '## Autonomy-supportive-teaching',
+  '## SEVT', '## Self-efficacy', '## SRL', '## Strategies', '## Implementation-intentions', '## Training-transfer',
+]
+const sourceIds = [
+  'selfdeterminationtheory.org/theory/', 'PMC4610746', '2017.00422', '1529100612453266',
+  'PracticeGuide/1', '2020.00046', 'motivationalinterviewing.org/understanding-motivational-interviewing',
+  '00461520.2020.1862657', '0149206309352880',
+]
 
-test('theory reference is self-contained methodology and does not promise treatment effects', () => {
+test('theory reference is self-contained methodology without outbound links', () => {
   const evidence = text('references/evidence.md')
-  for (const term of [...theorySections, '不证明本系统干预有效', '自己说出', '不等于自尊', '证据强度', '没有带来学习收益', '不承诺']) {
+  // Runtime methodology only: no URLs and no docs/ paths. Provenance lives in the maintainer archive.
+  for (const term of [...theorySections, '不证明本系统干预有效', '不放外链',
+    '自己说出', '不等于自尊', '证据强度', '没有带来学习收益', '不承诺',
+    '不实施完整临床访谈', '不声称具有真实人类情感', '不能变成预设', '岗位胜任']) {
     assert.ok(evidence.includes(term), term)
   }
   assert.doesNotMatch(evidence, /https?:\/\/|docs\//)

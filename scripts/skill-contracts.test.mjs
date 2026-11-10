@@ -256,6 +256,65 @@ test('supportive conversation delegates state, positioning and cards to their ow
   assert.match(reference, /不是必经步骤或固定“先聊聊”脚本/)
 })
 
+test('support understanding advances beyond topic details and remains revisable', () => {
+  const reference = supportRef('supportive-conversation')
+  for (const rule of ['六个可选动作', '可修正的理解性回应', '反复', '理解缺口',
+    '不是每轮', '撤回', '学生愿意', '可协商', '承认感受', '行动授权']) {
+    assert.ok(reference.includes(rule), rule)
+  }
+  assert.match(reference, /不是篮球|不只是篮球/)
+  assert.match(reference, /不想说[\s\S]*停止/)
+  assert.match(text(skillPath('learn', 'learn-core')), /理解但不附和，尊重但不甩手/)
+  const support = text(skillPath('learn', 'learn-support'))
+  assert.match(support, /`conditions`/)
+  assert.match(support, /`unknown`/)
+  assert.match(supportRef('autonomy'), /可协商[\s\S]*暂时无法改变/)
+})
+
+test('corrected support hypotheses clear obsolete advice without erasing real evidence', () => {
+  const schema = dataRef('session-schema')
+  assert.match(schema, /primary_need 为[^\n]*conditions \/ unknown/)
+  assert.match(schema, /method 可为 null/)
+  for (const rule of ['先撤回原假设', '不把否定本身改记为 declined',
+    'method、observation_goal 与 outcome', '保留真实任务位置、已有表现', '不为保留假设另存历史']) {
+    assert.ok(schema.includes(rule), rule)
+  }
+  const gate = dataRef('session-lifecycle').split('### 支持闸门')[1]?.split('**推荐闸门**')[0] ?? ''
+  assert.match(gate, /明确拒绝本批学习候选时清除未选 recommendation/)
+  assert.match(gate, /仅选择先聊则保留候选等待主动重开/)
+  const recommend = text(skillPath('learn', 'learn-recommend'))
+  assert.match(recommend, /不补问学习方向或把活动闲聊转成候选/)
+  const start = text(skillPath('learn', 'learn-start'))
+  assert.match(start, /先聊聊，暂不定目标/)
+  assert.match(start, /激活成功后立即[\s\S]*持久化最小交流选择[\s\S]*不等下一条消息才写入/)
+  assert.match(start, /写回成功才提示[\s\S]*无参数 `\/learn` 仍保留交流选择/)
+})
+
+test('support methods distinguish AI responsibility and optional work context', () => {
+  const strategies = supportRef('strategies')
+  for (const rule of ['必须独立掌握', '需要理解并验证', '可以委托但必须检查',
+    '自底向上', '自上而下', 'AI 代做', '提示下完成', 'AI 协作验证', '独立完成']) {
+    assert.ok(strategies.includes(rule), rule)
+  }
+  const stage = supportRef('learner-stage')
+  for (const rule of ['职场新人', '职业发展者', '转岗/转型者', '资深工作者', '退休/兴趣学习者']) {
+    assert.ok(stage.includes(rule), rule)
+  }
+  assert.match(stage, /教育阶段与职业情境分开/)
+})
+
+test('support review fixtures cover T01–T14 with three variants and trajectory criteria', () => {
+  // Fixture completeness only; no model is run and no dialogue score is inferred.
+  const cases = JSON.parse(text('learn/tests/support-understanding-cases.json'))
+  assert.deepEqual(cases.map(({ id }) => id), Array.from({ length: 14 }, (_, i) => `T${String(i + 1).padStart(2, '0')}`))
+  for (const fixture of cases) {
+    assert.equal(new Set(fixture.variants).size, 3, fixture.id)
+    assert.ok(fixture.setup.length > 0, fixture.id)
+    assert.ok(fixture.expected.length >= 2, fixture.id)
+    assert.ok(fixture.forbidden.length >= 2, fixture.id)
+  }
+})
+
 test('natural conversation stays text and cards are reserved for flow decisions', () => {
   const core = text(skillPath('learn', 'learn-core'))
   for (const rule of ['自然对话不是每轮流程分叉', '自然倾听、普通话题追问', '保持文字提问',
