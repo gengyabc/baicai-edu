@@ -2,6 +2,7 @@ import { writeFile, readFile } from 'node:fs/promises';
 import { createBoardModel } from './model.js';
 import { createBoardTrace } from './trace.js';
 import { applyHostConfig } from './config-bridge.js';
+import { boardQuestionReferences } from './question-reference.js';
 import { composerNote, createBoardView, createShapeArt, colorIndexForValue } from './view.js';
 
 const stylesheet = await readFile(new URL('board.css', import.meta.url), 'utf8');
@@ -24,6 +25,7 @@ window.__ModuleLoader__.load({
     const composerNote = ${composerNote.toString()};
     const colorIndexForValue = ${colorIndexForValue.toString()};
     const applyHostConfig = ${applyHostConfig.toString()};
+    const boardQuestionReferences = ${boardQuestionReferences.toString()};
     const createView = ${createBoardView.toString()};
     const art = createArt(React);
     const dictionaries = ${JSON.stringify(dicts)};

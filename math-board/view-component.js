@@ -1,5 +1,6 @@
 // Workspace-first expression board UI. Embedded into client.js by build.mjs.
 import { composerNote } from './view.js';
+import { boardQuestionReferences } from './question-reference.js';
 
 export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) {
   const h = React.createElement;
@@ -121,7 +122,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
     const [overlay, setOverlay] = React.useState(null);
     // No explicit colour choice: honour the host's per-pattern defaults.
     const [toolValue, setToolValue] = React.useState(null);
-    const [colorMenu, setColorMenu] = React.useState(false);
+    const [questionExpanded, setQuestionExpanded] = React.useState(false);
     const [moreOpen, setMoreOpen] = React.useState(false);
     const [append, setAppend] = React.useState(false);
     const [fileName, setFileName] = React.useState('');
@@ -160,6 +161,13 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
     const mergeInfo = activeSelected.length >= 2 ? M.mergeCandidate(board, activeSelected.map((o) => o.id)) : null;
     const levels = board.settings.levels;
     const visibleShapes = board.settings.shapes;
+    // The keyed chat reader is live: select a primitive derived from its values,
+    // not its identity, so settled responses and visibility changes update us.
+    const referenceJson = props.useChat?.((chat) => JSON.stringify(boardQuestionReferences(chat))) || '[]';
+    const references = JSON.parse(referenceJson);
+    const [questionKey, setQuestionKey] = React.useState(null);
+    const reference = references.find((item) => item.key === questionKey) || references.at(-1);
+    React.useEffect(() => { setQuestionExpanded(false); }, [reference?.key]);
 
     React.useEffect(() => {
       revision.current++;
@@ -323,7 +331,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
     React.useEffect(() => {
       if (!opened) return;
       const closeMenus = (event) => {
-        if (!event.target.closest?.('.eb-menu, .eb-menu-trigger')) { setColorMenu(false); setMoreOpen(false); }
+        if (!event.target.closest?.('.eb-menu, .eb-menu-trigger')) { setMoreOpen(false); }
       };
       document.addEventListener('pointerdown', closeMenus);
       return () => document.removeEventListener('pointerdown', closeMenus);
@@ -338,12 +346,12 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
       const onKey = (event) => {
         if (event.key !== 'Escape') return;
         if (overlay) { event.preventDefault(); setOverlay(null); }
-        if (colorMenu || moreOpen) { setColorMenu(false); setMoreOpen(false); }
+        if (moreOpen) { setMoreOpen(false); }
         if (append) setAppend(false);
       };
       document.addEventListener('keydown', onKey);
       return () => document.removeEventListener('keydown', onKey);
-    }, [opened, overlay, colorMenu, moreOpen]);
+    }, [opened, overlay, moreOpen]);
 
     function flushEditor() {
       const active = dialog.current?.ownerDocument.activeElement;
@@ -557,7 +565,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
     }
     function close() {
       flushEditor(); gesture.current = null; setPreview(null); setOverlay(null);
-      setColorMenu(false); setMoreOpen(false); setAppend(false); setOpened(false);
+      setMoreOpen(false); setAppend(false); setOpened(false);
       // Persistent task notices are acknowledged once the student has seen them.
       if ([t('autoClearError'), t('autoClearSkipped'), t('autoClearDone')].includes(status)) setStatus('');
     }
@@ -794,7 +802,20 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
     const canSplit = Boolean(single && single.value > 1 && !single.removed);
     const noteTarget = noteTargetFor(selected, completeGroup);
     const noteHasText = Boolean(noteText(noteTarget));
-    const brand = h('div', { className: 'eb-brand', title: t('title'), 'aria-label': t('title') }, brandMark(levels, 34));
+    const topbar = h('header', { className: 'eb-topbar' }, brandMark(levels, 27), h('span', null, t('title')));
+    const question = h('aside', { className: 'eb-question', 'aria-label': t('questionTeacher') },
+      reference ? h('div', { id: `eb-question-${props.sessionId}`, className: `eb-question-text${questionExpanded ? '' : ' eb-collapsed'}` },
+        props.renderFactorySlot?.('conversation.chat.reasoning.content', { text: reference.text, running: false }) ?? reference.text)
+        : h('p', { className: 'eb-question-empty' }, t('questionEmpty')),
+      reference && h('div', { className: 'eb-question-controls' },
+        h('select', {
+          'aria-label': t('questionSource'), title: t('questionSource'), value: reference.key,
+          onChange: (event) => { setQuestionKey(event.target.value); setQuestionExpanded(false); },
+        }, [...references].reverse().map((item) => h('option', { key: item.key, value: item.key },
+          item.text.replace(/\s+/g, ' ').slice(0, 48)))),
+        button(questionExpanded ? t('questionCollapse') : t('questionExpand'), () => setQuestionExpanded(!questionExpanded), {
+          className: 'eb-question-toggle', 'aria-expanded': questionExpanded, 'aria-controls': `eb-question-${props.sessionId}`,
+        })));
     const palette = h('aside', { className: 'eb-palette', 'aria-label': t('toolbox') },
       visibleShapes.map((shape) => button(swatch(shape, creationLevel(shape).color, 32), () => add(shape), {
         className: 'eb-shape-tool', key: shape, draggable: true, disabled: board.objects.length >= 200,
@@ -839,6 +860,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
         () => setAppend(!append), { 'aria-pressed': append, className: append ? 'eb-selected-mode' : '', title: append ? t('appendDone') : t('appendHint') }),
       toolButton('trash', removeSelected, { className: 'eb-icon-button eb-danger', title: t('trash') }));
     const stage = h('section', { className: 'eb-stage-wrap', 'aria-label': t('canvas') },
+      question,
       h('div', {
         className: 'eb-stage-frame',
         onDragOver: (event) => { if (dragShape) event.preventDefault(); },
@@ -849,18 +871,12 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
           setDragShape(null);
         },
       }, canvas, selectionBar));
-    const colorButton = h('button', {
-      type: 'button', className: 'eb-color-button eb-menu-trigger', 'aria-expanded': colorMenu, 'aria-haspopup': 'menu',
-      title: `${t('creationColor')} · ${toolLevel.value}`, 'aria-label': `${t('creationColor')} · ${toolLevel.value}`,
-      onClick: () => { setColorMenu(!colorMenu); setMoreOpen(false); },
-    }, h('span', { className: 'eb-color-dot', style: { background: paletteColor(toolLevel.color) } }), h('span', { className: 'eb-color-value' }, String(toolLevel.value)), h('span', { className: 'eb-chevron' }, '⌄'));
-    const colorMenuNode = colorMenu && h('div', { className: 'eb-menu eb-color-menu', role: 'menu', 'aria-label': t('creationColor') },
-      h('div', { className: 'eb-menu-head' }, t('creationColor')),
+    const colorChoices = h('div', { className: 'eb-color-choices', role: 'group', 'aria-label': t('creationColor') },
       levels.map((level) => button(h(React.Fragment, null,
         h('span', { className: 'eb-color-dot', style: { background: paletteColor(level.color) } }),
-        h('span', { className: 'eb-menu-value' }, String(level.value)),
-        level.value === toolLevel.value ? icon('check', 16) : null), () => { setToolValue(level.value); setColorMenu(false); }, {
-        key: level.value, role: 'menuitemradio', 'aria-checked': level.value === toolLevel.value, className: 'eb-color-option',
+        h('span', { className: 'eb-color-value' }, String(level.value))), () => { setToolValue(level.value); }, {
+        key: level.value, 'aria-pressed': level.value === toolLevel.value, className: 'eb-color-button',
+        title: `${t('creationColor')} · ${level.value}`, 'aria-label': `${t('creationColor')} · ${level.value}`,
       })));
     const moreMenuNode = moreOpen && h('div', { className: 'eb-menu eb-more-menu', role: 'menu', 'aria-label': t('files') },
       h('div', { className: 'eb-menu-head' }, t('files')),
@@ -875,7 +891,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
       toolButton('undo', undo, { disabled: !history.past.length }),
       toolButton('redo', redo, { disabled: !history.future.length, className: 'eb-icon-button eb-redo', title: t('redo') }),
       h('span', { className: 'eb-divider' }),
-      colorButton,
+      colorChoices,
       h('span', { className: 'eb-divider' }),
       button('−', () => { setFit(false); setZoom(Math.max(0.75, zoom - 0.25)); }, { className: 'eb-zoom-button eb-zoom-out', 'aria-label': t('zoomOut'), title: t('zoomOut') }),
       button(fit ? t('fitView') : `${Math.round(zoom * 100)}%`, () => setFit(!fit), { className: 'eb-zoom-label', 'aria-label': t('fitView'), 'aria-pressed': fit, title: t('fitView') }),
@@ -886,7 +902,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
         'aria-label': noteTarget ? `${t('note')} · ${noteTarget.label}` : `${t('note')} · ${t('noteGeneral')}`,
       }),
       button(icon('clear', 19), () => setOverlay({ kind: 'clear' }), { className: 'eb-icon-button eb-danger', title: t('clear'), 'aria-label': t('clear') }),
-      button(icon('more', 19), () => { setMoreOpen(!moreOpen); setColorMenu(false); }, { className: 'eb-icon-button eb-menu-trigger', title: t('moreActions'), 'aria-label': t('moreActions'), 'aria-expanded': moreOpen }),
+      button(icon('more', 19), () => { setMoreOpen(!moreOpen); }, { className: 'eb-icon-button eb-menu-trigger', title: t('moreActions'), 'aria-label': t('moreActions'), 'aria-expanded': moreOpen }),
       button(h(React.Fragment, null, icon('insert', 17), h('span', null, t('insert'))), insert, {
         className: 'eb-primary', title: t('insert'), disabled: (!board.objects.length && !board.note && !(attachTrace && trace.totalChanges)) || phase !== 'plain' }));
     const overlayNode = overlay && h('div', { className: 'eb-overlay', onPointerDown: (event) => { if (event.target === event.currentTarget) setOverlay(null); } },
@@ -940,18 +956,17 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
         onCancel: (event) => {
           event.preventDefault();
           if (overlay) setOverlay(null);
-          else if (colorMenu || moreOpen) { setColorMenu(false); setMoreOpen(false); }
+          else if (moreOpen) { setMoreOpen(false); }
           else close();
         },
         onClose: () => setOpened(false),
       },
       h('div', { className: 'eb-workbench' },
+        topbar,
         h('div', { className: 'eb-workspace' },
-          brand,
           palette,
           stage,
           dock,
-          colorMenuNode,
           moreMenuNode,
           statusNode,
           overlayNode)),

@@ -18,6 +18,7 @@
     "trace.js",
     "view.js",
     "view-component.js",
+    "question-reference.js",
     "board.css",
     "build.mjs",
     "preview.mjs",

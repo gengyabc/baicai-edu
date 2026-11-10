@@ -84,7 +84,8 @@ function mount(options = {}) {
   const ctx = { locale: { subscribe: () => () => {}, getSnapshot: () => 'zh' },
     get: (name) => { assert.equal(name, 'conversation'); return conversation; } };
   const Board = createBoardView(React, M, ctx, t, '', createShapeArt(React), applyHostConfig, T);
-  const props = { sessionId: 'integration', useProjection: (name) => name === 'eduBoardClear' ? clear : config, useInput: () => 'plain', inputActions };
+  const props = { sessionId: 'integration', useProjection: (name) => name === 'eduBoardClear' ? clear : config, useInput: () => 'plain', inputActions,
+    useChat: (select) => select(options.chat), renderFactorySlot: options.renderFactorySlot };
   function render() {
     cursor = 0; dirty = false; tree = Board(props);
     for (const node of walk(tree)) if (node.props.ref && typeof node.props.ref === 'object') {
@@ -736,6 +737,56 @@ test('the explanation bubble follows the selection and keeps ordinary and per-ob
   });
 });
 
+test('problem reference expands, pins an earlier message and never changes board or sends', () => {
+  const makeTeacher = (key, value) => ({ key, kind: 'assistant-step', visibility: 'visible',
+    data: { status: 'settled', finalNode: {}, blocks: [{ kind: 'text', text: value }] } });
+  const chat = { order: ['problem', 'feedback'], nodes: new Map([
+    ['problem', makeTeacher('problem', '停车场有 8 辆车，又来 5 辆。现在有多少辆？')],
+    ['feedback', makeTeacher('feedback', '你想怎样摆一摆？')],
+  ]) };
+  withMount({ chat }, (h) => {
+    h.add('cat');
+    const before = structuredClone(h.board());
+    const reference = () => h.find((node) => String(node.props.className || '').startsWith('eb-question-text'));
+    assert.equal(text(reference()), '你想怎样摆一摆？');
+    const question = h.find((node) => node.props.className === 'eb-question');
+    assert.equal(walk(question).some((node) => node.type === 'strong'), false, 'no visible reference title');
+    const controls = h.find((node) => node.props.className === 'eb-question-controls');
+    assert.ok(walk(controls).some((node) => node.type === 'select'), 'picker is in the side controls');
+    const source = h.find((node) => node.type === 'select' && node.props['aria-label'] === t('questionSource'));
+    source.props.onChange({ target: { value: 'problem' } }); h.refresh();
+    assert.equal(text(reference()), '停车场有 8 辆车，又来 5 辆。现在有多少辆？');
+    h.click(t('questionExpand'));
+    assert.equal(h.button(t('questionCollapse')).props['aria-expanded'], true);
+    assert.equal(reference().props.className, 'eb-question-text');
+    chat.order.push('later'); chat.nodes.set('later', makeTeacher('later', '后来的反馈'));
+    h.refresh();
+    assert.equal(text(reference()), '停车场有 8 辆车，又来 5 辆。现在有多少辆？');
+    assert.deepEqual(h.board(), before);
+    assert.equal(h.files.length, 0);
+    assert.equal(h.sent, 0);
+    assert.ok(h.find((node) => node.type === 'header' && node.props.className === 'eb-topbar'));
+    assert.equal(h.button(`${t('creationColor')} · 10`).props['aria-pressed'], false);
+    h.click(`${t('creationColor')} · 10`);
+    assert.equal(h.button(`${t('creationColor')} · 10`).props['aria-pressed'], true);
+    assert.deepEqual(h.board(), before, 'colour choice does not rewrite existing objects');
+    h.add('circle');
+    assert.equal(h.board().objects.at(-1).value, 10);
+  });
+});
+
+test('reference text uses the host Markdown factory without exposing other message blocks', () => {
+  const calls = [];
+  const chat = { order: ['math'], nodes: new Map([['math', { key: 'math', kind: 'assistant-step', visibility: 'visible',
+    data: { status: 'settled', finalNode: {}, blocks: [{ kind: 'reasoning', text: 'do not show' }, { kind: 'text', text: '$8+5$' }] } }]]) };
+  withMount({ chat, renderFactorySlot: (name, props) => { calls.push({ name, props }); return 'rendered math'; } }, (h) => {
+    assert.ok(calls.length);
+    assert.ok(calls.every((call) => call.name === 'conversation.chat.reasoning.content'
+      && call.props.text === '$8+5$' && call.props.running === false));
+    assert.equal(text(h.find((node) => String(node.props.className || '').startsWith('eb-question-text'))), 'rendered math');
+  });
+});
+
 test('host defaults govern creation until the student explicitly chooses a creation colour', () => {
   withMount({}, (h) => {
     h.add('cat');
@@ -746,8 +797,7 @@ test('host defaults govern creation until the student explicitly chooses a creat
     assert.ok(h.button(`${t('cat')} · ${t('value')} 2`));
     h.add('cat'); h.add('circle');
     assert.deepEqual(h.board().objects.map((o) => o.value), [1, 2, 1]);
-    h.click(`${t('creationColor')} · 1`);
-    h.find((node) => node.props.role === 'menuitemradio' && text(node) === '10').props.onClick(); h.refresh();
+    h.click(`${t('creationColor')} · 10`);
     h.add('cat');
     assert.equal(h.board().objects.at(-1).value, 10);
     h.setConfig({ revision: 2, floorRevision: 0, settings, changes: [{ revision: 2, settings, scope: 'future' }] });

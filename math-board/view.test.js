@@ -42,9 +42,9 @@ test('creation colour defaults to 1 and synchronizes previews and new objects', 
     let nodes = render();
     let tool = nodes.find((n) => n.props.className === 'eb-shape-tool');
     assert.ok(tool.props.title.endsWith('1'));
-    nodes.find((n) => n.props.className?.includes('eb-color-button')).props.onClick();
-    nodes = render();
-    nodes.find((n) => n.props.role === 'menuitemradio' && text(n) === '10').props.onClick();
+    assert.equal(nodes.filter((n) => n.props.className === 'eb-color-button').length, 5);
+    assert.equal(nodes.some((n) => n.props.role === 'menuitemradio'), false);
+    nodes.find((n) => n.props.className === 'eb-color-button' && text(n) === '10').props.onClick();
     nodes = render();
     tool = nodes.find((n) => n.props.className === 'eb-shape-tool');
     assert.ok(tool.props.title.endsWith('10'));
