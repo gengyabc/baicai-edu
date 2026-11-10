@@ -1,32 +1,32 @@
-# 阶段与情境
+# Stage and Context
 
-只在表达、支架、陪伴或现实条件需要适配时读取。教育阶段和情境是可选默认，当前任务证据优先；不由年龄、职业或阶段推导能力标签。不愿学、被要求学习、想先聊天或纠正处境理解时，具体交流方法读 [支持性交流](supportive-conversation.md)；本表不规定先谈心再教学的步骤。
+Read only when expression, scaffolding, companionship, or real-world conditions need adapting. Education stage and context are optional defaults, and current task evidence takes priority; no ability label is derived from age, occupation, or stage. When the student is unwilling to learn, is being required to learn, wants to chat first, or wants to correct the understanding of their situation, read [supportive conversation](supportive-conversation.md) for the specific conversational method; this table does not prescribe a step of heart-to-heart before teaching.
 
-| 阶段 | 可先尝试的支持 | 当轮校正 |
+| Stage | Support to try first | Correction for the current turn |
 |---|---|---|
-| 小学低段 | 具体体验、一小步尝试、必要陪伴 | 学生亲自说和做；不默认只能游戏化 |
-| 小学高段 | 兴趣、小目标、自我检查、逐步自主 | 能亲自检查就退让支架；遇到困难可增加 |
-| 初中、高中 | 目标认同、考试/同伴情境、策略与成本 | 外部要求可以是合法理由；基础缺口和压力不是态度问题 |
-| 大学及高职 | 材料/专业项目、可验证成果、自主规划、AI 协作 | 缺少专门教学实现可用通用路径；专业结论仍需依据 |
-| 成人 | 已有经验、真实用途、可支配时间与迁移到工作 | 不假定天然自主；保留解释基础或从实践入手的选择 |
-| 阶段未知 | 中性表达，问当前目标与最少必要条件 | 不强填小学年级，不强迫背景问卷 |
+| Lower primary | Concrete experience, one small step to try, necessary companionship | The student speaks and does it personally; not assumed to be gamified-only |
+| Upper primary | Interests, small goals, self-checking, gradually increasing autonomy | Step back the scaffolding once they can check personally; add it when difficulty arises |
+| Junior and senior high | Goal endorsement, exam/peer context, strategies and costs | An external requirement can be a legitimate reason; foundation gaps and pressure are not attitude problems |
+| University and vocational college | Materials/professional projects, verifiable outcomes, self-directed planning, AI collaboration | Without a specialist teaching implementation the general path can be used; professional conclusions still need a basis |
+| Adult | Existing experience, real purpose, available time, and transfer to work | Do not assume natural autonomy; keep the choice of explaining the foundation or starting from practice |
+| Stage unknown | Neutral expression, ask the current goal and the minimum necessary conditions | Do not force a primary grade, and do not force a background questionnaire |
 
-保留旧 `grade`，缺失的新阶段/情境按未知处理，不批量迁移旧档案。新配置的字段与写入者由 `learn-data` 规定，方法本身不写。
+Keep the old `grade`; a missing new stage/context is treated as unknown, and old profiles are not migrated in bulk. The fields and writers of the new configuration are specified by `learn-data`; the method itself does not write them.
 
-教育阶段与职业情境分开；下表是可组合的默认，不按年龄分派，也不先要求学生交代履历：
+Education stage and occupational context are separate; the table below holds composable defaults, is not assigned by age, and does not first require the student to give their résumé:
 
-| 情境 | 可先尝试的支持 | 核验与现实边界 |
+| Context | Support to try first | Verification and real-world boundary |
 |---|---|---|
-| 职场新人 | 从一项真实岗位任务看示范，再亲自尝试，按需寻求同事反馈 | 确认有练习机会和必要权限；能复述知识不等于岗位胜任 |
-| 职业发展者 | 围绕工作瓶颈选方法，在工作中应用后复盘 | 核对时间成本、反馈和环境支持，不只看课程完成 |
-| 转岗/转型者 | 对照已有经验与能力差距，先试低风险原型 | 旧经验可迁移也可误导；一次失败不否定转型能力，不承诺就业结果 |
-| 资深工作者 | 案例反思、知识更新、交叉验证与跨领域尝试 | 经验与头衔不替代新任务证据，基础解释仍可按需提供 |
-| 退休/兴趣学习者 | 围绕兴趣、生活意义或数字技能，自选节奏和适配支持 | 不把兴趣功利化，不凭年龄推断数字能力或支持需求 |
+| New to the workplace | Watch a demonstration from one real job task, then try it personally, and seek colleague feedback as needed | Confirm there are practice opportunities and necessary permissions; being able to recite knowledge is not job competence |
+| Career developer | Choose methods around a work bottleneck, apply them at work, then review | Check time cost, feedback, and environmental support, not only course completion |
+| Role changer/career switcher | Compare existing experience with capability gaps, and try a low-risk prototype first | Old experience may transfer or may mislead; one failure does not negate the ability to switch, and no job outcome is promised |
+| Senior worker | Case reflection, knowledge updates, cross-validation, and cross-domain attempts | Experience and titles do not replace evidence on new tasks, and foundational explanation can still be offered as needed |
+| Retiree/hobby learner | Around interests, life meaning, or digital skills, with self-chosen pace and fitting support | Do not make interests utilitarian, and do not infer digital ability or support needs from age |
 
-成人应用效果需在真实情境验证，不能把既有读写活动的 `transfer` 标志借作工作迁移证据；培训迁移的依据与限制见 [来源](evidence.md#training-transfer)。
+The effect of adult application must be verified in real contexts; the `transfer` flag of an existing reading/writing activity must not be borrowed as evidence of workplace transfer; for the basis and limits of training transfer, see [sources](evidence.md#training-transfer).
 
-时间、设备、照护责任、疲劳等只澄清当前步骤必要部分；可以缩小任务、调整条件、延后或休息。敏感家庭/职业/情绪细节不自动写入长期档案。
+For time, equipment, caregiving responsibilities, fatigue, and the like, clarify only the part necessary for the current step; the task may be shrunk, conditions adjusted, deferred, or a rest taken. Sensitive family/occupational/emotional details are not automatically written to the long-term profile.
 
-家长/教师可支持环境和陪伴，不替学生作答，也不自动获知私人讨论；隐私权限依既有安全规则。安全风险优先于教学：未成年人可联系可信任成年人，成人可联系可信任的人与当地专业资源；危机细节不进学习记录。
+Parents/teachers can support the environment and companionship, but do not answer for the student and do not automatically learn of private discussions; privacy permissions follow existing safety rules. Safety risks take priority over teaching: a minor can contact a trusted adult, and an adult can contact a trusted person and local professional resources; crisis details do not enter learning records.
 
-这些是保守的教学默认，不是阶段效果定律；理论与发展阶段限制见 [来源](evidence.md)。
+These are conservative teaching defaults, not laws of stage effects; for theory and the limits of developmental stages see [sources](evidence.md).

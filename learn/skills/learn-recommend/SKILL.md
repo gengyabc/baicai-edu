@@ -1,45 +1,45 @@
 ---
 name: learn-recommend
-description: 学习推荐。学生想学习但不知道学什么、询问接下来学什么、想换学习内容，或阶段选择中选了换个内容时加载；根据当前学科记录提供候选、首选和中文理由。
+description: Learning recommendations. Load when the student wants to learn but does not know what, asks what to learn next, wants different content, or chooses “switch content” in a stage choice; provide candidates, a preferred pick, and recommendation reasons in the active UI locale from current subject records.
 user-invocable: false
 ---
 
-# 学习推荐
+# Learning Recommendation
 
-## 1. 进入与输入
+## 1. Entry and Input
 
-只在学生请求推荐、想学习但不知道学什么、想换内容，或阶段选择「换个内容」时进入；普通进入学习不自动推荐。仅聊天、拒绝学习或说明现实限制而未请求学习建议时交支持闸门，不将其补成推荐请求。明确的学习目标（包括推荐过程中提出的）直接交生命周期，不先列推荐；只是结束今天学习时按结束流程，不用推荐挽留。
+Enter only when the student requests a recommendation, wants to learn but does not know what, wants different content, or chooses `ui.stage.switch_content` in a stage choice; ordinary entry into learning does not auto-recommend. When the student only chats, declines learning, or states real-world constraints without asking for learning suggestions, hand off to the support gate and do not turn it into a recommendation request. An explicit learning goal (including one raised during recommendation) goes straight to the lifecycle without listing recommendations first; if the student only wants to end today's learning, follow the end flow and do not use recommendations to retain them.
 
-加载尚未加载的 `learn-core`、`learn-data`，复用生命周期提供的当前学生、subject、快照、最新已发生表现与原 context；缺快照时按 `learn-data` 的 Read Snapshot 读取。没有当前学生或学科时按生命周期门槛处理，不猜身份。存在 `finalize_plan` 时先交生命周期恢复保存，成功后再承接推荐请求。学科内推荐范围始终是当前学科；通用路径仅在学生请求探索其他领域时提供跨领域目标探索，不混排不同科目的能力证据。探索和实际切换分开。
+Load `learn-core` and `learn-data` if not already loaded, and reuse the current student, subject, snapshot, latest real performance, and original context provided by the lifecycle; if the snapshot is missing, read it per Read Snapshot in `learn-data`. With no current student or subject, handle it per the lifecycle gates and do not guess identity. If a `finalize_plan` exists, hand off to the lifecycle to recover the save first, and take over the recommendation request only after it succeeds. Within a subject, the recommendation scope is always the current subject; the general path offers cross-domain goal exploration only when the student asks to explore other areas, and never mixes capability evidence across subjects. Exploring and actually switching are separate.
 
-按 `learn-data` 的 `references/teaching-resolver.md` 复用 teaching，读取该 core 的「学科契约」中「学习推荐」文件（专门实现为 `<subject>-core`）。它负责候选内容、难度、先后顺序与教学理由，本技能负责呈现与选择；缺包或不适配时采用通用契约，不停止帮助。已有旧任务缺推荐角色时使用通用规则给探索性目标，但保留当前任务的 teaching，不热替换其教学。
+Reuse teaching per `references/teaching-resolver.md` in `learn-data`, and read the "Learning recommendation" file in that core's subject contract (`<subject>-core` for specialist implementations). It owns candidate content, difficulty, ordering, and the pedagogical rationale; this skill owns presentation and selection. When the package is missing or does not fit, use the general contract and keep helping. An existing old task lacking a recommendation role uses the general rules to give exploratory goals but keeps the current task's teaching and does not hot-swap it.
 
-## 2. 形成候选
+## 2. Form Candidates
 
-只从已读取的记录和已发送材料取材：快照中的近期会话下一步、priority_targets、developing_topics、memory 推荐与困难、milestones，以及最新真实表现。不扫描 raw、不读取未发送草稿或画板，不声称掌握完整历史。
+Draw only from records already read and materials already sent: recent-session next steps, priority_targets, developing_topics, memory recommendations and difficulties, and milestones in the snapshot, plus the latest real performance. Do not scan raw, do not read unsent drafts or the board, and do not claim to know the full history.
 
-- 按学科推荐规则形成 2–3 个不同、可立即开始的小目标，标出一个首选；可按当前表现与换内容意愿重排旧候选。普通恢复的固定顺序保持不变。
-- 每项给内容与简短理由，首选另说明为什么现在优先。理由引用可核实的具体表现，区分记录、学生自述与探索性判断；兴趣、年级、难度偏好不是掌握证据。传递已澄清的价值联系、当前支持需求和时间/精力成本给推荐角色，由其决定排序，不把信心或兴趣当掌握度；通用记录只作为带来源的参考，不能映射专门等级。
-- 同一候选保留 scope_id、teaching；跨领域候选另含目标 subject/任务描述。选定前不改变 session.json.subject；跨科选择由生命周期按 `learn-data` 的 `references/teaching-transition.md` 先持久化授权与交接定位，再保存旧科目、激活带 pending_transition 的身份、写目标 context 并清双侧状态。跨科旧日志不得搬进新科目，不用旧材料强行配新任务。
-- 记录不足时明确是探索性建议，结合已知年级、兴趣与学科默认给低门槛起点，不强制先测。只有一个合适目标就只给一个，不为凑数推荐重复或不适合的内容。
-- 「想换内容」时给实质不同的目标，不只把当前题换数字或换名字；有价值的旧建议可保留但不强推。
+- Following the subject's recommendation rules, form 2–3 distinct small goals that can start immediately and mark one as preferred; old candidates may be reordered by current performance and willingness to switch content. The fixed order of ordinary resume stays unchanged.
+- Give each item its content and a short reason, with the preferred one also explaining why it takes priority now. Reasons cite specific, verifiable performance and distinguish records, student self-report, and exploratory judgment; interests, grade, and difficulty preference are not mastery evidence. Pass already-clarified value connections, current support needs, and time/energy cost to the recommendation role, which decides the ordering; do not treat confidence or interest as mastery, and general records are only sourced references that cannot be mapped to specialist levels.
+- The same candidate keeps its scope_id and teaching; a cross-domain candidate additionally includes the target subject/task description. Do not change session.json.subject before selection; for a cross-subject choice, the lifecycle first persists the authorization and handoff position per `references/teaching-transition.md` in `learn-data`, then saves the old subject, activates the identity with pending_transition, writes the target context, and clears state on both sides. Old cross-subject logs must not be moved into the new subject, and old materials must not be forced onto the new task.
+- When records are insufficient, state clearly that this is an exploratory suggestion and give a low-barrier starting point using the known grade, interests, and subject defaults, without forcing a test first. If only one goal is suitable, give just one; do not recommend duplicate or unsuitable content to fill a quota.
+- For `ui.recommend.want_switch`, give substantially different goals, not merely the current question with different numbers or names; valuable old suggestions may be kept but not pushed.
 
-向生命周期回传临时 `recommendation`：`subject`、`mode`（已有 context 的模式，否则本次入口请求模式）、`candidates`（每项 `id`、`focus`、学科目标分类可接收的 `target_context`、中文 `reason`、内部 `basis`）及唯一 `preferred_id`。`basis` 指明现有记录位置及支持的事实，或注明探索性；只保存必要摘要。
+Return a temporary `recommendation` to the lifecycle: `subject`, `mode` (the mode of the existing context, otherwise the mode requested by this entry), `candidates` (each with `id`, `focus`, a `target_context` the subject's target classification can accept, a `reason` in the active UI locale, and an internal `basis`), and a single `preferred_id`. `basis` points to where the existing record is and the fact it supports, or notes that it is exploratory; store only the necessary summary.
 
-## 3. 呈现并等待
+## 3. Present and Wait
 
-用 `ask_user_question` 给出候选短标签及理由，首选第一并加「（推荐）」；必要时先用一句话说明首选的优先理由。**所有学科的推荐理由统一中文**，选择流程标签也用中文；内容名可保留该学科原文，选定后的教学语言仍由学科决定。界面不展示内部字段、路径或诊断术语。
+Use `ask_user_question` to present short candidate labels with their reasons, with the preferred one first and tagged with `ui.recommend.badge`; when needed, first state in one sentence why the preferred one takes priority. **Every candidate `reason` uses the active UI locale for all subjects**, and recommendation chrome (`ui.recommend.*` labels, badges, and prompts) may also use it, resolved per `references/ui-locale.md` in `learn-data`; content names may keep the subject's original language, and the teaching language after selection is still decided by the subject. Do not show internal fields, paths, or diagnostic jargon in the interface.
 
-候选之外提供「先不换」和「结束学习」，总选项数保持 2–6；尚无当前任务时「先不换」改为「自己定内容」。展示后等待：不开始教学、不生成诊断题、不 finalize、不清空画板，focus、材料、模式与待答题保持原样。
+Besides the candidates, offer `ui.recommend.keep_current` and `ui.recommend.end_learning`, keeping the total number of options between 2 and 6; when there is no current task yet, `ui.recommend.keep_current` becomes `ui.recommend.choose_own`. After presenting, wait: do not start teaching, generate a diagnostic question, finalize, or clear the board; focus, materials, mode, and the pending question stay unchanged.
 
-## 4. 承接选择
+## 4. Take Over the Choice
 
-- 点选或输入候选同义内容：回传选中的具体目标；「你选吧」「随便」「都行」等明确委托采用首选，不再确认。
-- 「先不换」：清除临时 recommendation，回到原待答题或阶段选择；无原任务则问一个想学的方向。
-- 「都不想学」：不重复推同一批，清除当前候选，交生命周期支持闸门承接本条意愿，不补问学习方向或把活动闲聊转成候选；拒绝学习不等于结束。只有学生仍明确请求其他学习内容时才澄清一个方向，在本学科内更新候选；跨科仍需原切换授权。
-- 「结束学习」：交生命周期的结束流程。
-- 跳过、空消息和无法对应的回答不是选择授权：保留候选，简短说明可选内容、自己指定或结束，不自动采用首选。这与普通阶段菜单的默认推进规则不同。
+- A click, or typed input that means the same as a candidate: return the specific selected goal; an explicit delegation such as `ui.recommend.delegate_you_pick`, `ui.recommend.delegate_whatever`, or `ui.recommend.delegate_either` adopts the preferred candidate without further confirmation.
+- `ui.recommend.keep_current`: clear the temporary recommendation and return to the original pending question or stage choice; with no original task, ask for one direction the student wants to learn.
+- `ui.recommend.none_wanted`: do not repeat the same batch, clear the current candidates, and hand this wish to the lifecycle support gate without asking about a learning direction or turning activity chat into candidates; declining to learn does not mean ending. Only when the student still explicitly asks for other learning content, clarify one direction and update the candidates within this subject; crossing subjects still requires the original switch authorization.
+- `ui.recommend.end_learning`: hand off to the lifecycle end flow.
+- Skip (`ui.common.skip`), an empty message, and answers that cannot be mapped to an option are not selection authorization: keep the candidates and briefly state that the student can pick one, specify their own, or end, and do not auto-adopt the preferred one. This differs from the default advancement rule of the ordinary stage menu.
 
-会话恢复时使用日志中同一份 recommendation：仍未选择就继续等，不把回复误当旧题答案；已有合法 selected_id 时交生命周期承接已授权目标，不再展示候选。保存失败后的重试保留选中目标，只有新 context 写入成功才消费；仅保存不自动开始教学，明确结束或取消优先。学生身份或 subject 不匹配时丢弃旧推荐，按当前快照重新处理。
+On session resume, use the same recommendation in the log: if still unselected, keep waiting and do not mistake a reply for an answer to the old question; if a valid selected_id exists, hand the authorized goal to the lifecycle and do not show the candidates again. A retry after a save failure keeps the selected goal and consumes it only once the new context is written successfully; saving alone does not auto-start teaching, and an explicit end or cancel takes priority. If the student identity or subject does not match, discard the old recommendation and reprocess from the current snapshot.
 
-**出口**：只返回待选候选、选定目标、保留原任务或结束意图。推荐的展示、选择、拒绝与偏好回答都不是学习表现，不产 segment，不改写已有 `recommended_targets` 或长期档案。学生选定或明确委托后，由生命周期按原保存门槛执行实际任务切换；仍是原目标则接续，不伪造换主题。画板边界只由实际教学任务的既有规则决定。
+**Exit**: return only the pending candidates, the selected goal, retention of the original task, or an end intent. The presentation, selection, rejection, and preference answers of a recommendation are not learning performance: they produce no segment and do not rewrite existing `recommended_targets` or the long-term profile. After the student selects or explicitly delegates, the lifecycle performs the actual task switch under the original save gates; if it is still the original goal, resume it and do not fabricate a topic change. Board boundaries are determined only by the existing rules of the actual teaching task.

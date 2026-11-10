@@ -1,6 +1,6 @@
 ---
 name: concrete-pictorial-abstract
-description: 实物-图示-符号（CPA）。四至六年级学生学分数、小数、比、几何或早期代数时只会套符号、缺少直观理解时使用；用教具和图示连接到算式。
+description: Concrete-Pictorial-Abstract (CPA). Use when students in grades 4–6 learning fractions, decimals, ratio, geometry, or early algebra only manipulate symbols without intuition; connect manipulatives and diagrams to expressions.
 ---
 # Concrete–Pictorial–Abstract (CPA)
 

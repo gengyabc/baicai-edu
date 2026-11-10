@@ -1,23 +1,23 @@
 ---
 name: learn
-description: 按主题、材料、错题或档案目标开始自适应学习；优先适用学科包，缺包时使用通用任务教学，支持不同教育阶段。
+description: Start adaptive learning from a topic, materials, error items, or profile goals; prefer applicable subject packages, fall back to general-task teaching when none apply, and support different education stages.
 disable-model-invocation: true
 ---
 
-# 学习
+# Learn
 
-加载尚未加载的 `learn-core`、`learn-data`，读取并执行 `learn-data` 的 `references/session-lifecycle.md`。新会话使用 `entry_point: learn`、初始 `mode: learn`；已有会话按生命周期恢复。
+Load `learn-core` and `learn-data` if not already loaded, then read and execute `references/session-lifecycle.md` from `learn-data`. A new session uses `entry_point: learn` and initial `mode: learn`; an existing session resumes according to the lifecycle.
 
-## 选择目标
+## Choose a Target
 
-按生命周期的 Resolve Target 解析（`learn-data` 的 `references/target-parsing.md` 加 `<subject>-core` 学科契约中的目标分类）。本入口另有一条：空参数 `/learn` 后，学生的第一条回复若给出主题、材料或路径，就采用它作为目标；只有“好”“开始吧”这类回应才从档案选。
+Resolve the target using the lifecycle's Resolve Target (`references/target-parsing.md` in `learn-data`, plus the target classification in the `<subject>-core` subject contract). This entry adds one rule: after an empty-argument `/learn`, if the student's first reply gives a topic, material, or path, adopt it as the target; only replies such as "OK" or "let's start" fall back to choosing from the profile.
 
-学生不知道学什么、询问接下来学什么或想换但没有具体目标时，按生命周期推荐闸门加载 `learn-recommend`；复用当前学科记录给候选，选定后再教学，不直接套用档案首项。
+When the student does not know what to learn, asks what to learn next, or wants to switch but has no specific target, load `learn-recommend` through the lifecycle recommendation gate. Reuse the current subject records to produce candidates, teach only after one is chosen, and do not directly apply the first profile item.
 
-## 学科路由
+## Subject Routing
 
-按 `learn-data` 的 `references/teaching-resolver.md` 复用 teaching；Route And Record 加载 teaching.session_skill（专门路径为 `<subject>-session`，缺包或不适配时为通用任务教学）。目标分类也读该实现的 core 契约，不另猜包名。普通教学、附加动作与迁移恢复都先进入当前教学主导者；通用支持不另建循环。
+Reuse teaching per `references/teaching-resolver.md` in `learn-data`; Route And Record loads `teaching.session_skill` (`<subject>-session` on the specialist path, general-task teaching when the package is missing or does not fit). Target classification also reads that implementation's core contract; do not guess package names. Ordinary teaching, additional actions, and transfer recovery all enter the current teaching owner first; general support does not create a separate loop.
 
-## 继续
+## Continue
 
-普通学习的基础菜单保留「继续」「费曼」「结束」，并加入「换个内容」：继续交当前学科推进，费曼加载 `learn-feynman`，结束交生命周期 finalize；换个内容加载 `learn-recommend`，此时只推荐，不切任务。学科回传的 `stage_options` 按 `learn-data` 的 `references/next-step.md` 合并展示，附加动作交回声明它的学科执行。
+The base menu for ordinary learning keeps `ui.stage.continue`, `ui.stage.feynman`, and `ui.stage.end`, and adds `ui.stage.switch_content`. Continue hands off to the current subject to advance; Feynman loads `learn-feynman`; End hands off to lifecycle finalize; Switch content loads `learn-recommend`, which only recommends and does not switch the task. Resolve all labels through the active UI locale (`learn-data` `references/ui-locale.md`). Merge and display the `stage_options` returned by the subject per `references/next-step.md` in `learn-data`; additional actions go back to the subject that declared them.

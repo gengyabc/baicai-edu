@@ -1,33 +1,33 @@
 # Subject Contract
 
-入口与教学实现之间的唯一约定。先读 `references/teaching-resolver.md`，以真实 subject 与当前阶段解析 teaching；所有调用者复用该结果。专门包仍按下面的命名找到；通用路径使用解析结果的 core_skill/session_skill，不能将 subject 改成通用服务名。学科名称、选项、领域、标签和初始水平都留在学科包里。可选科目列表只在 `/learn-start` 的科目表中维护。
+The only agreement between the entry and a teaching implementation. First read `references/teaching-resolver.md` and resolve teaching with the real subject and current stage; all callers reuse that result. A specialist package is still found by the naming below; the general path uses the resolved core_skill/session_skill and must not change the subject to a general service name. Subject names, options, domains, labels, and initial levels all stay in the subject package. The selectable subject list is maintained only in the subject table of `/learn-start`.
 
-## 命名
+## Naming
 
-- `<subject>-session`：该学科每轮教学的唯一入口。生命周期的 Route And Record 加载它；它再决定子技能、附加动作与迁移参数。
-- `<subject>-core`：学科规则，不产出学生回复或 segment。其 SKILL.md 有一节「学科契约」，为下表每个角色给出一份 reference。
+- `<subject>-session`: the single entry for each teaching turn of that subject. The lifecycle's Route And Record loads it; it then decides sub-skills, additional actions, and transfer parameters.
+- `<subject>-core`: subject rules, which produce no student reply or segment. Its SKILL.md has a `## Subject contract` section giving one reference for each role in the table below.
 
-`<subject>` 就是 `session.json` 的 `subject` 值。
+`<subject>` is the `subject` value in `session.json`.
 
-## 契约角色
+## Contract roles
 
-| 角色 | 谁读取 | 用途 |
+| Role | Read by | Purpose |
 |---|---|---|
-| 目标分类 | `/learn`、`/learn-feynman`、生命周期恢复 | 在 `references/target-parsing.md` 之后归类剩余文本与文件交接后的目标 |
-| 年级默认 | `/learn-start`、`/learn-profile`、Read Snapshot 初始化 | `learning_state.active_domain` 与 `profile.current_levels` 初值 |
-| 档案字段 | `/learn-start` 建档、`/learn-profile` 修改 | `profile.preferences` 键、`/learn-start` 偏好选项与键的对应、`current_levels` 键 |
-| 诊断规则 | `learn-errors`、文件目标交接 | `error_type`、`label` 与 `domain` 的取值 |
-| 学习推荐 | `learn-recommend` | 依据既有快照与最新表现，按本学科教学方法决定候选内容、难度、排序和推荐理由；不执行教学 |
+| Target classification | `/learn`, `/learn-feynman`, lifecycle restore | After `references/target-parsing.md`, classify the remaining text and the target after file handoff |
+| Grade defaults | `/learn-start`, `/learn-profile`, Read Snapshot initialization | Initial values of `learning_state.active_domain` and `profile.current_levels` |
+| Profile fields | `/learn-start` profile creation, `/learn-profile` edits | `profile.preferences` keys, the mapping between `/learn-start` preference options and keys, and `current_levels` keys |
+| Diagnosis rules | `learn-errors`, file target handoff | Values of `error_type`, `label`, and `domain` |
+| Learning recommendations | `learn-recommend` | Based on the existing snapshot and latest performance, decide candidate content, difficulty, ordering, and recommendation reasons using this subject's teaching methods; does not perform teaching |
 
-按名加载 `<subject>-core` 后，以其返回的 base directory 定位上表文件，不拼仓库路径。
+After loading `<subject>-core` by name, locate the files in the table above via the base directory it returns, without stitching repository paths.
 
-学习推荐角色返回候选供 `learn-recommend` 组织选择，每项包含具体 focus、目标分类可接收的 target_context、中文 reason 与支持判断的 basis（记录事实或探索性说明）。候选数、呈现、选择与写回边界以 `learn-recommend` 为准。普通恢复仍沿用生命周期固定候选顺序；只有显式推荐模式允许重排。推荐流程不调用 `<subject>-session` 开始教学，用户选定后才进入它。
+The Learning recommendations role returns candidates for `learn-recommend` to organize the choice, and each item contains a specific focus, a target_context acceptable to target classification, a reason in the active UI locale (per `references/ui-locale.md`), and a basis that supports the judgment (a recorded fact or an exploratory note). Candidate count, presentation, selection, and write-back boundaries follow `learn-recommend`. Ordinary restore still follows the lifecycle's fixed candidate order; only explicit recommendation mode allows reordering. The recommendation flow does not call `<subject>-session` to start teaching, and only after the user selects does it enter it.
 
-## 未安装
+## Not installed
 
-按名加载 `<subject>-core` 或 `<subject>-session` 失败：按 `references/teaching-resolver.md` 使用基础包中的通用任务教学，保留真实 subject、目标与材料；已有任务不热替换，先完成恢复/保存交接。不因缺包拒教、不自动安装包。
+If loading `<subject>-core` or `<subject>-session` by name fails: per `references/teaching-resolver.md` use the general task teaching in the base package, keeping the real subject, target, and material; an existing task is not hot-swapped, and the restore/save handoff is completed first. Do not refuse to teach for a missing package, and do not auto-install packages.
 
-## 可选扩展
+## Optional extensions
 
-- 阶段附加选项：segment 之外回传 `stage_options`，按 `references/next-step.md` 合并展示。
-- 迁移：由 `<subject>-session` 处理 `context.activity: transfer` 的接续与恢复，状态按 `references/session-lifecycle.md` 记录。
+- Stage extra options: return `stage_options` outside the segment, merged and shown per `references/next-step.md`.
+- Transfer: `<subject>-session` handles continuing and restoring `context.activity: transfer`, with state recorded per `references/session-lifecycle.md`.

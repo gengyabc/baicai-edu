@@ -1,57 +1,59 @@
 ---
 name: math-core
-description: 数学共享规则，按 CGI（Cognitively Guided Instruction）教学。数学教学、策略诊断、分层练习或学生出题考 AI 前加载；生成数学学习记录时读取字段约定。
+description: Math shared rules taught with CGI (Cognitively Guided Instruction). Load before math teaching, strategy diagnosis, leveled practice, or student-makes-AI-problems; read field conventions when generating math learning records.
 user-invocable: false
 ---
 
-# 数学规则
+# Math Rules
 
-本包按 Cognitively Guided Instruction（CGI）教学：题型、策略判断、提问与支架都以 CGI 为准，细则见 `references/math-teaching-core.md`。
+This package teaches with Cognitively Guided Instruction (CGI): problem types, strategy judgments, questioning, and scaffolds all follow CGI. Details are in `references/math-teaching-core.md`.
 
-共享数学规则，由 `math-session`、`math-diagnose`、`math-practice`、`math-student-problem` 按名加载；本 skill 不产出学生回复或 segment。
+Shared math rules, loaded by name by `math-session`, `math-diagnose`, `math-practice`, and `math-student-problem`. This skill produces no student reply or segment.
 
-## 开始与输入
+## Start and Input
 
-所有数学分支共用，子 skill 不再重复：
+Shared by every math branch; sub-skills do not repeat it:
 
-- 只经 `/learn` 或 `/learn-feynman` 的共享生命周期进入；会话、学生、快照与交接字段已由入口检查并传入（见 `learn-data` 的 `references/session-lifecycle.md` 的 Route And Record）。没有入口交接（无快照）时请学生输入 `/learn`。
-- `learn-core`、`learn-data` 已由入口加载。语气、确认、无响应、费曼角色与白名单、个性化边界、结束与安全都按 `learn-core` 的条件表；`mode: feynman` 时先读其 `references/feynman-mode.md`，保持学生听众角色。
-- 题目按 CGI，题面形式按 `references/problem-design.md`；兴趣只在 `references/math-personalization.md` 的搭桥条件成立时进入题目。
-- 生成题目或提示前，若 `memory.profile_memory.material_difficulty` 不是 `standard`，按 `learn-core` 的 `references/difficulty-adjustment.md` 调一个负荷因素（数字、表示或提示量），不改策略阶段。
-- 文件只由入口调用一次 `learn-errors`。收到 `files_processed: true` 时读 `material_refs` 指向的 extracted 分析；教学中途出现未处理的图片、Markdown 或 raw 扫描请求时交回入口。本包不直接调用 `learn-errors`。
-- 诊断、练习、学生出题只回传证据，不产出 segment；调度与合并归 `math-session`，日志、档案与 finalize 交共享流程。
+- Enter only through the shared lifecycle of `/learn` or `/learn-feynman`; session, student, snapshot, and handoff fields are already checked by the entry and passed in (see Route And Record in `learn-data`'s `references/session-lifecycle.md`). With no entry handoff (no snapshot), ask the student to enter `/learn`.
+- `learn-core` and `learn-data` are already loaded by the entry. Tone, confirmation, no-response, Feynman role and allowlist, personalization boundary, ending, and safety all follow `learn-core`'s condition table; when `mode: feynman`, read its `references/feynman-mode.md` first and stay in the student-as-audience role.
+- Problems follow CGI; problem surface form follows `references/problem-design.md`. Interests enter a problem only when the bridging condition in `references/math-personalization.md` holds.
+- Before generating a problem or hint, if `memory.profile_memory.material_difficulty` is not `standard`, adjust one load factor (numbers, representation, or amount of prompting) per `learn-core`'s `references/difficulty-adjustment.md`; do not change the strategy stage.
+- Only the entry calls `learn-errors`, once for files. On `files_processed: true`, read the extracted analysis that `material_refs` points to; if an unprocessed image, Markdown, or raw-scan request appears mid-lesson, hand it back to the entry. This package never calls `learn-errors` directly.
+- Diagnosis, practice, and student-makes-problems only return evidence and produce no segment; scheduling and merging belong to `math-session`, and logging, profile, and finalize go to the shared flow.
 
-## 按分支读取
+## Read by Branch
 
-共同规则先读，其余在进入对应分支前读取，各自为该规则的唯一来源。
+Read the common rules first; read the rest before entering the matching branch. Each is the single source for its rule.
 
-| 条件 | 读取 |
+| Condition | Read |
 |---|---|
-| 所有数学教学，包括诊断、练习、学生出题 | `references/math-teaching-core.md` |
-| 进入新题、新活动、新主题前（含跳题、教学助手下一题、旧主题 finalize 成功后）；同题流程切换需辨别边界时 | `references/board-task-boundary.md` |
-| 快照含兴趣、偏好、易/难主题或经历，或学生做不出当前题 | `references/math-personalization.md` |
-| 选择下一目标、判断策略阶段 | `references/progression-map.md` |
-| 选题、改题、变式；加减乘除、位值、多位数 | `references/problem-design.md` |
-| 分数意义、等分、等值、比较、运算或小数 | `references/fraction-relations.md` |
-| 准备提示、学生嫌麻烦、求新办法或提示无效 | `references/scaffold-calibration.md` |
-| 消息带画板附件或修改记录附件（`我的画板.json` / `我的修改记录.json`），或学生问画板怎么用 | `references/structured-drawing.md` |
-| 判断算术/多位数/分数策略阶段或分析错因 | `references/strategy-diagnosis-rules.md` |
-| 学生出题考 AI，设计 AI 回答 | `references/math-student-problem-design.md` |
-| 生成诊断/对比/变式/连接练习 | `references/targeted-practice-rules.md` |
-| 产出数学 segment 或合并子流程证据 | `references/math-segment-fields.md` |
+| All math teaching, including diagnosis, practice, student-makes-problems | `references/math-teaching-core.md` |
+| Before a new problem, activity, or topic (including skipping a problem, the teaching assistant's next problem, and after the old topic finalizes successfully); when a same-problem flow switch needs boundary judgment | `references/board-task-boundary.md` |
+| Snapshot contains interests, preferences, easy/hard topics, or experiences, or the student cannot do the current problem | `references/math-personalization.md` |
+| Choosing the next goal, judging strategy stage | `references/progression-map.md` |
+| Choosing, modifying, or varying problems; addition, subtraction, multiplication, division, place value, multi-digit numbers | `references/problem-design.md` |
+| Fraction meaning, equal partition, equivalence, comparison, operations, or decimals | `references/fraction-relations.md` |
+| Preparing a hint, the student finds it troublesome, asks for a new method, or a hint does not work | `references/scaffold-calibration.md` |
+| Message carries a board attachment or edit-history attachment (`我的画板.json` / `我的修改记录.json`), or the student asks how to use the board | `references/structured-drawing.md` |
+| Judging arithmetic / multi-digit / fraction strategy stage or analyzing error causes | `references/strategy-diagnosis-rules.md` |
+| Student makes problems to test the AI; designing the AI's answers | `references/math-student-problem-design.md` |
+| Generating diagnostic / contrast / variation / connection practice | `references/targeted-practice-rules.md` |
+| Producing the math segment or merging sub-flow evidence | `references/math-segment-fields.md` |
 
-## 学科契约
+## Subject contract
 
-`supported_stages: lower_primary, upper_primary`。这是默认表达与流程的适配声明，不是内容门槛；其他阶段由统一解析选择通用教学。
+`supported_stages: lower_primary, upper_primary`. This is an adaptation declaration for default expression and flow, not a content gate; other stages are routed to general teaching by the unified resolver.
 
-`subject: math`，教学入口 `math-session`，包 `dsh-edu-math-primary-low`。角色含义见 `learn-data` 的 `references/subject-contract.md`；入口与本包分支同样从这里读取。
+`subject: math`, teaching entry `math-session`, package `dsh-edu-math-primary-low`. For the meaning of roles see `learn-data`'s `references/subject-contract.md`; the entry and this package's branches are read from here as well.
 
-本包以低年级为主，用 CGI 的语气和方法教学；年级只调整语言与呈现，不是内容门槛；学生想探究高年级内容时继续教，不劝退、不要求回到年级内的题目。
+Teaching delivery language: the student's `language` from the shared profile (missing or unknown → `zh-CN`), so student-visible teaching stays in that language; process labels follow the UI locale per `learn-data`'s `references/ui-locale.md`.
 
-| 角色 | 读取 |
+This package focuses on lower primary and teaches with CGI's tone and methods; grade only adjusts language and presentation and is not a content gate. When a student wants to explore higher-grade content, keep teaching; do not discourage them or require a return to grade-level problems.
+
+| Role | Read |
 |---|---|
-| 目标分类：分类学习目标或文件交接后的数学目标 | `references/math-target.md` |
-| 学习推荐：生成、比较或重排数学小目标 | `references/learning-recommendations.md` |
-| 年级默认：初始化、重选年级或选择默认领域 | `references/math-grade-defaults.md` |
-| 档案字段：偏好键与 `/learn-start` 选项、水平键、写科目档案 | `references/math-profile-fields.md` |
-| 诊断规则：错因、`error_type` 与 `label` | `references/strategy-diagnosis-rules.md`（与上方条件表同一份） |
+| Target classification: classify a learning goal or a math goal after a file handoff | `references/math-target.md` |
+| Learning recommendation: generate, compare, or reorder small math goals | `references/learning-recommendations.md` |
+| Grade defaults: initialization, re-choosing grade, or choosing the default domain | `references/math-grade-defaults.md` |
+| Profile fields: preference keys and `/learn-start` options, level keys, writing the subject profile | `references/math-profile-fields.md` |
+| Diagnosis rules: error causes, `error_type`, and `label` | `references/strategy-diagnosis-rules.md` (same file as in the condition table above) |

@@ -1,25 +1,25 @@
-# 自主性支持 · autonomy
+# Autonomy Support · autonomy
 
-## 触发
+## Trigger
 
-学生不愿学、说“只是别人要求”，需要理解选择、目标澄清或参与下一步计划。自主求助与明确委托同样可以体现自主性，不要求全部独立完成。不愿学、被要求学习、想先聊天或纠正处境理解时先读 [支持性交流](supportive-conversation.md)，由它决定自然回应、邀请与拒绝后的动作；以下仅在学生愿意讨论安排时使用。
+The student is unwilling to learn, says "it's only because someone else requires it", needs to understand choices, clarify goals, or take part in planning the next step. Asking for help on one's own and explicitly delegating can both express autonomy; not everything has to be done independently. When the student is unwilling to learn, is being required to learn, wants to chat first, or wants to correct the understanding of their situation, first read [supportive conversation](supportive-conversation.md), which decides the natural response, the invitation, and the action after a refusal; the rest below applies only when the student is willing to discuss arrangements.
 
-## 建议动作
+## Suggested Actions
 
-1. 讨论安排时先理解学生在意的部分，仅缺必要信息才澄清现实条件；区分可协商的时间、顺序、方法，与暂时无法改变的要求。已知外部要求如实解释、理由未知就不替家长/学校/雇主编造；不把内在兴趣当唯一合法动机。
-2. 学生想商量安排时，协助用“具体情况—自己的需要—想商量的办法”准备诚实表达，例如请求保留一段打球时间，再与有权者共同协商。可提供相关建议，不替双方承诺减少课程，不制造秘密联盟。尊重选择不等于放任或替学生作生活决定。
-3. 已有学习授权时，在当前目标内提供有边界选择：例如先看一个例子再试、先试再看反馈。说明差别并保留暂停/另提办法的空间。
-4. 学生明确请求推荐或换内容而目标不明时，把已澄清目标与成本返回既有推荐入口，不自行决定目标与排序。流程选择交当前主导者用 `ask_user_question`；让学生思考内容的追问保持普通文字。
-5. 只在学生确需安排时，帮助其把选择表述为一个可执行下一步；短任务不强制完整计划。目标/模式改变须经原生命周期确认与交接。
+1. When discussing arrangements, first understand what the student cares about, and clarify real-world conditions only if essential information is missing; distinguish negotiable time, order, and method from requirements that cannot be changed for now. Explain known external requirements truthfully, and do not invent reasons on behalf of a parent/school/employer when the reason is unknown; do not treat intrinsic interest as the only legitimate motivation.
+2. When the student wants to negotiate an arrangement, help them prepare an honest statement of "the specific situation — my own need — what I want to negotiate", for example asking to keep a period for playing ball, then negotiate with the person who has authority. Relevant advice may be offered, but do not promise on either side's behalf to reduce lessons, and do not create secret alliances. Respecting a choice does not mean letting things drift or making life decisions for the student.
+3. Where learning is already authorized, offer bounded choices within the current goal: for example look at one example first and then try, or try first and then see feedback. Explain the difference and leave room to pause or propose another way.
+4. When the student explicitly asks for a recommendation or to change content but the goal is unclear, return the clarified goals and costs to the existing recommendation entry, and do not decide the goal and ordering yourself. Process choices are handed to the current owner to run with `ask_user_question`; follow-up questions that make the student think stay as plain text.
+5. Only when the student truly needs an arrangement, help them phrase their choice as one executable next step; a short task does not require a full plan. A change of goal/mode must go through the original lifecycle's confirmation and handoff.
 
-## 观察
+## Observation
 
-学生选择、明确委托、修正建议或暂停都是选择事实；与愿意参与和任务表现分开记录。点选选项不是学科作答，主动求助不等于独立能力不足。
+The student's choices, explicit delegation, corrections to suggestions, or pausing are all choice facts; record them separately from willingness to participate and task performance. Clicking an option is not a subject answer, and asking for help on one's own does not mean lacking independent ability.
 
-## 退出
+## Exit
 
-学生选择或明确委托下一步后交回主导者落实；暂停、拒绝或结束的处理按 [支持性交流](supportive-conversation.md#退出与交回)，不自动返回教学。
+After the student chooses or explicitly delegates the next step, hand back to the owner to carry it out; the handling of pausing, refusing, or ending follows [supportive conversation](supportive-conversation.md#exit-and-handoff) and does not automatically return to teaching.
 
-## 依据
+## Basis
 
-[SDT](evidence.md#sdt)支持自主、胜任和关系感，区分不同形式的外在动机；不是知识掌握诊断工具。有边界选择是保守教学应用，不宣称一次选择产生长期自律。
+[SDT](evidence.md#sdt) supports autonomy, competence, and relatedness, and distinguishes different forms of extrinsic motivation; it is not a tool for diagnosing knowledge mastery. Bounded choice is a conservative teaching application and does not claim that one choice produces lasting self-discipline.

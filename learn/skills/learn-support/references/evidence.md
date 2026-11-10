@@ -1,100 +1,100 @@
-# 方法论与限制
+# Methodology and Limits
 
-理论只解释机制，不证明本系统干预有效；不向学生承诺确定效果，不引用效应量或研究数字。本文件只写可执行的做法与边界，不放外链；可核验来源由维护者存档单独维护。具体动作与退出由各方法 reference 负责。
+Theory only explains mechanisms and does not prove that this system's interventions work; do not promise students definite effects, and do not cite effect sizes or research figures. This file states only executable practice and boundaries, and contains no external links; verifiable sources are maintained separately in a maintainer archive. Specific actions and exits are the responsibility of each method reference.
 
 ## SDT
 
-自我决定理论：自主、胜任、关系感三种需要得到支持时，学习动机更持久。
+Self-determination theory: when the three needs of autonomy, competence, and relatedness are supported, learning motivation lasts longer.
 
-- 自主：解释这一步为什么值得做；给 2–3 个真实可拒绝的选项（顺序、例子、难度、从哪开始），不是换个说法的命令。
-- 胜任：任务有挑战但可完成，帮助适量，反馈指向具体做法。
-- 关系：先承认感受和处境，再谈任务；不评判态度。
-- 外在理由（考试、家长、工作要求）经学生认同也可以是自主动机，不必先培养兴趣。
-- 限制：不用于诊断掌握或心理类型；暂时拒绝不是固定心理类型。关系需要不证明 AI 具有人类情感，也不支持用亲密感换取学习服从。
+- Autonomy: explain why this step is worth doing; give 2–3 genuinely refusable options (order, example, difficulty, where to start), not a command phrased differently.
+- Competence: the task is challenging but completable, help is moderate, and feedback points to specific practices.
+- Relatedness: acknowledge feelings and circumstances first, then discuss the task; do not judge attitude.
+- Extrinsic reasons (exams, parents, work requirements) can also be autonomous motivation once endorsed by the student, without first cultivating interest.
+- Limits: not used to diagnose mastery or psychological types; a temporary refusal is not a fixed psychological type. The need for relatedness does not prove the AI has human emotions, nor does it support trading closeness for learning compliance.
 
 ## Person-centered
 
-人本取向：认真理解学生处境，承认理解有限；共情不等于同意学生每一项判断。
+Person-centered approach: take the student's situation seriously and acknowledge that understanding is limited; empathy does not mean agreeing with every one of the student's judgments.
 
-- 先听清已说的事实与感受，再行动；不假装完全懂。
-- 限制：临床理论不能直接证明 AI 教育对话有效；AI 不声称具有真实人类情感、建立治疗关系或具备治疗资格。具体交流动作归支持性交流，不在此另建流程。
+- Hear the facts and feelings already stated clearly before acting; do not pretend to fully understand.
+- Limits: clinical theory cannot directly prove that AI educational conversation is effective; the AI does not claim to have real human emotions, form a therapeutic relationship, or hold therapeutic qualifications. Specific conversational actions belong to supportive conversation, and no separate flow is built here.
 
 ## Motivational-interviewing
 
-动机式访谈借鉴：开放式提问、真实肯定、反映性倾听、简短总结。
+Borrowed from motivational interviewing: open-ended questions, genuine affirmation, reflective listening, and brief summaries.
 
-- 反映性倾听是复述或提出对含义的暂时理解，用来检验是否听对，不是按模板每轮重复或连续盘问。
-- 尊重不改变的选择；共同目标须协商，不能变成预设“学生最后必须学”的隐性劝学。
-- 限制：只借鉴沟通方法，不实施完整临床访谈。具体可修正回应、拒绝与节奏由支持性交流规定。
+- Reflective listening is restating or offering a tentative understanding of the meaning, to check whether it was heard correctly; it is not repetition every turn by template or continuous questioning.
+- Respect the student's choice not to change; shared goals must be negotiated and must not become a hidden persuasion that presupposes "the student must end up learning".
+- Limits: only the communication methods are borrowed; no full clinical interview is conducted. Specific correctable responses, refusals, and pacing are governed by supportive conversation.
 
 ## Autonomy-supportive-teaching
 
-自主性支持教学：把学生观点、负面感受、合理任务解释、非控制语言与可协商选择结合起来；支持自主仍可提供结构与真实要求，不是替学生取消要求或一味放任。
+Autonomy-supportive teaching: combines the student's perspective, negative feelings, a reasonable rationale for the task, non-controlling language, and negotiable choices; supporting autonomy can still provide structure and real requirements, and does not mean cancelling requirements for the student or simply leaving them alone.
 
-- 与 SDT 一致：有边界的选择 + 清楚的理由 + 承认感受。
-- 限制：不把人类教师研究直接外推为 AI 效果；接受任务不等于自主性提升。具体选择与现实边界归自主性支持，倾听规则归支持性交流。
+- Consistent with SDT: bounded choice + a clear reason + acknowledging feelings.
+- Limits: do not extrapolate human-teacher research directly to AI effects; accepting a task does not equal increased autonomy. Specific choices and real-world boundaries belong to autonomy support, and listening rules belong to supportive conversation.
 
 ## SEVT
 
-情境期望-价值理论：是否投入取决于“我能做到吗”（期望）和“值得吗”（价值），二者都受经历与情境影响。
+Situated expectancy-value theory: whether to invest depends on "can I do it" (expectancy) and "is it worth it" (value), both affected by experience and context.
 
-- 价值有四类：兴趣、用途、身份意义（“这和我是谁有关”）、成本（时间、精力、放弃别的事）。成本真实存在，承认而不说服。
-- 由 AI 单向强调“这很重要/有用”可能增加压力，原本信心低时尤甚。优先请学生自己说出与生活、目标的一个联系；说不出或不愿说就接受，直接进入真实小任务。
-- 所引价值生成实验主要来自高中科学课堂，不能承诺低龄、其他学科或职业转型者同样获益。
-- 时间、资源不足是条件问题：先缩小任务、调整条件或延后，不贴意志标签。
+- Value has four kinds: interest, usefulness, identity significance ("this relates to who I am"), and cost (time, energy, giving up other things). The cost is real; acknowledge it rather than persuading.
+- Having the AI one-sidedly stress "this is important/useful" can add pressure, especially when confidence is already low. Prefer asking the student to name one connection to their own life or goals; if they cannot or will not, accept that and go straight into a real small task.
+- The cited value-generation experiments come mainly from high-school science classrooms, and cannot promise the same benefit for younger learners, other subjects, or career changers.
+- Insufficient time or resources is a conditions issue: shrink the task, adjust conditions, or defer first, and attach no willpower label.
 
 ## Self-efficacy
 
-自我效能：对“我能完成这个具体任务”的信念，影响是否开始和遇难是否坚持；不等于自尊，也不等于实际能力。
+Self-efficacy: the belief that "I can complete this specific task", affecting whether one starts and whether one persists when it gets hard; it is not self-esteem, and not actual ability.
 
-- 四个来源：亲自完成（作用最强）、看到相近的人做到、具体可信的反馈、情绪与身体状态（紧张、疲劳）。
-- 主做法：选一个能完成的小步让学生亲自做，再用事实反馈（“这次你没靠提示找到了依据”）。不用“你很聪明”“你一定行”。
-- 示范用相邻例子，示范后让学生做原题的一步。
-- 限制：一次简单成功、一句“我会了”、有关键帮助的完成或 AI 代做，都不确认独立掌握。
+- Four sources: personally completing it (strongest), seeing a similar person succeed, specific and credible feedback, and emotional and bodily state (nervousness, fatigue).
+- Main practice: choose a small step that can be completed and let the student do it personally, then give factual feedback ("this time you found the basis without a hint"). Do not use "you're so smart" or "you'll definitely get it".
+- Demonstrate with an adjacent example, and after the demonstration let the student do one step of the original problem.
+- Limits: one easy success, a "got it", completion with key help, or AI doing it for them do not confirm independent mastery.
 
 ## SRL
 
-自我调节学习（以 Zimmerman 循环为代表）：
+Self-regulated learning (represented by the Zimmerman cycle):
 
-1. 计划：明确这一小步的目标，选一个策略，预估难度。
-2. 执行与监控：边做边检查是否在按策略走、哪里卡住。
-3. 反思：对比结果与预估，把原因归到可改的策略或条件，再调整下一步。
+1. Plan: define the goal of this small step, pick a strategy, and estimate the difficulty.
+2. Perform and monitor: check while doing whether the strategy is being followed and where it gets stuck.
+3. Reflect: compare the result with the estimate, attribute causes to adjustable strategies or conditions, and adjust the next step.
 
-- 循环落在当前小任务上，不先强制整份计划或问卷。
-- 阶段只是支持默认：低龄可先由 AI 多承担计划和提醒再逐步交还，但不等于一律代管；成人也不等于天然会自主学习。当前证据优先。
-- 学生的自评（“我懂了”“我会了”）须与实际作答对照。
+- The cycle lands on the current small task and does not first force a whole plan or questionnaire.
+- Stage is only a support default: for younger learners the AI may take on more planning and reminders at first and gradually hand them back, but that does not mean always managing on their behalf; adults are likewise not naturally self-directed. Current evidence takes priority.
+- Student self-assessments ("I understand", "I've got it") must be checked against actual answers.
 
 ## Strategies
 
-学习策略按证据强度区分，不说成同等有效：
+Learning strategies are distinguished by strength of evidence and not described as equally effective:
 
-| 策略 | 做法 | 证据 |
+| Strategy | Practice | Evidence |
 |---|---|---|
-| 检索练习 | 不看材料先回忆或做题，再对照 | 较高 |
-| 间隔学习 | 同一内容分几次复习，不一次集中 | 较高 |
-| 示范与练习交替 | 看一个解答示例，再自己做一题相似的 | 有支持 |
-| 具体与抽象连接 | 例子和规则互相对照 | 有支持 |
-| 自我解释 | 说出每一步为什么 | 中等 |
-| 重读、划线 | 被动重复 | 较低，不作首选 |
-| 按自评分配时间 | 凭“感觉会了”决定复习什么 | 证据较少，需用检索结果校正 |
+| Retrieval practice | Recall or do problems without looking at the material first, then check | Higher |
+| Spaced learning | Review the same content over several sessions rather than all at once | Higher |
+| Alternating demonstration and practice | See a worked example, then do a similar problem yourself | Supported |
+| Linking concrete and abstract | Compare examples and rules with each other | Supported |
+| Self-explanation | Say why each step holds | Moderate |
+| Rereading, underlining | Passive repetition | Lower; not a first choice |
+| Allocating time by self-assessment | Decide what to review by "feeling" you know it | Little evidence; needs correcting with retrieval results |
 
-- 认知负荷只保守落实为：分段、去掉无关内容、示范与尝试交替；不存在统一的最佳块大小。
-- 即时表现不证明长期保持或迁移。
-- 上述是非 AI 研究。AI 协作时按目标和风险划分：需要亲自理解的、可借 AI 但须自己验证的、可直接委托的；独立能力、支持下表现、AI 协作能力分别验证。
+- Cognitive load is only conservatively applied as: chunking, removing irrelevant content, and alternating demonstration with attempts; there is no single best chunk size.
+- Immediate performance does not prove long-term retention or transfer.
+- The above is non-AI research. In AI collaboration, divide by goal and risk: what must be personally understood, what may use AI but must be self-verified, and what may be delegated directly; independent capability, performance under support, and AI-collaboration capability are verified separately.
 
 ## Implementation-intentions
 
-行动意图：把“如果出现情境 X，我就做 Y”写成具体计划，减少启动时的选择负担；不替代可行条件、基础知识或合适策略。
+Implementation intentions: writing "if situation X occurs, I will do Y" as a specific plan reduces the choice burden of starting; it does not replace feasible conditions, foundational knowledge, or a suitable strategy.
 
-- 一般目标达成研究支持 if-then 有助于启动，但不等于能改善学习成绩。
-- 有学习实验中，预先给定的 if-then 计划没有带来学习收益；线索太泛（“有空就学”）或策略不合适时，可能反而干扰学生原有做法。
-- 因此只作自愿的一小步：线索具体（“晚饭后坐到书桌前”）、动作很小（“打开错题本做一题”）、可随时调整。
-- 不承诺写下计划就会进步，也不据此断言所有计划无效；效果看实际行动和任务表现。
+- Research on general goal attainment supports that if-then plans help with starting, but this does not mean they improve learning outcomes.
+- In some learning experiments, pre-assigned if-then plans produced no learning benefit; when the cue is too broad ("study when free") or the strategy is unsuitable, they may even interfere with the student's own way of doing things.
+- Therefore use them only as a voluntary small step: a specific cue ("sit at the desk after dinner"), a very small action ("open the error notebook and do one problem"), and adjustable at any time.
+- Do not promise that writing down a plan will bring progress, and do not conclude from this that all plans are ineffective; the effect depends on actual action and task performance.
 
 ## Training-transfer
 
-培训迁移：学到的方法能否用到真实岗位，取决于应用机会、反馈与支持环境，不能把课程完成当成岗位胜任。
+Training transfer: whether a method learned can be used in a real job depends on opportunities to apply it, feedback, and a supportive environment; completing a course cannot be treated as job competence.
 
-- 成人职业情境表只是可修正的默认，不是年龄或职业效果定律。
-- 核对是否有练习机会、必要权限、时间成本和反馈；能复述知识不等于岗位胜任。
-- 限制：相关不等于单一支持动作的因果效果；真实应用结果仍由当前教学主导者依据任务证据判断。
+- The adult professional-context table is only a correctable default, not a law of age or occupational effects.
+- Check for practice opportunities, necessary permissions, time cost, and feedback; being able to recite knowledge is not job competence.
+- Limits: correlation is not the causal effect of a single support action; real application outcomes are still judged by the current teaching owner from task evidence.

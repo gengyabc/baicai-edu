@@ -1,17 +1,19 @@
-# 英语档案字段
+# English Profile Fields
 
-共享科目档案的外壳见 `learn-data` 的 `references/profile-schema.md`。本文只定义英语增量。示例不是另一套初始值；初始领域与水平以 `references/english-grade-defaults.md` 为准。
+The shell of the shared subject profile is in `learn-data` `references/profile-schema.md`. This file defines only the English increments. The example is not a second set of initial values; initial domain and levels follow `references/english-grade-defaults.md`.
 
 ## preferences
 
-| 键 | `/learn-start` 选项 |
-|---|---|
-| `likes_stories` | 听故事 |
-| `likes_games` | 玩英语游戏 |
-| `likes_speaking` | 说一说 |
-| `likes_reading` | 读一读 |
+`/learn-start` option labels are not hard-coded here; each option is a catalog key resolved through `profile.language` using the `learn` ui-locale protocol, with this subject's catalog in `english-core`'s `references/locales/<locale>.json`.
 
-未选中的键保持 `false`。呈现方式见 `references/english-personalization.md`。
+| Key | `/learn-start` option (catalog key) |
+|---|---|
+| `likes_stories` | `ui.start.english.pref.likes_stories` |
+| `likes_games` | `ui.start.english.pref.likes_games` |
+| `likes_speaking` | `ui.start.english.pref.likes_speaking` |
+| `likes_reading` | `ui.start.english.pref.likes_reading` |
+
+Unselected keys stay `false`. For how they are presented, see `references/english-personalization.md`.
 
 ## current_levels
 
@@ -20,11 +22,11 @@
 - `reading`
 - `writing`
 
-取值与升级规则见 `references/english-grade-defaults.md`。没有新证据时不要改写。
+For values and upgrade rules see `references/english-grade-defaults.md`. Do not rewrite without new evidence.
 
-## 科目档案示例
+## Subject Profile Example
 
-`upper_primary` 的形状。`active_domain` 与水平按年级默认填写，不要照抄下面的占位。
+The shape for `upper_primary`. `active_domain` and levels are filled by grade defaults; do not copy the placeholders below.
 
 ```json
 {
@@ -37,8 +39,8 @@
       "likes_reading": false
     },
     "self_report": {
-      "easy_topics": ["动物单词"],
-      "hard_topics": ["完整句子"]
+      "easy_topics": ["animal words"],
+      "hard_topics": ["full sentences"]
     },
     "current_levels": {
       "listening": "pre_a1",
@@ -58,10 +60,10 @@
 }
 ```
 
-`self_report` 使用 `easy_topics` / `hard_topics`，不要改成 `easy_areas` / `hard_areas`。
+`self_report` uses `easy_topics` / `hard_topics`; do not change them to `easy_areas` / `hard_areas`.
 
-## 诊断与文件字段
+## Diagnosis and File Fields
 
-`diagnosis.domain` 只能是 `listening_speaking`、`reading`、`writing`、`language_use` 或 `news_reading`；`diagnosis.label` 使用 `references/english-error-labels.md` 的 `english:` 前缀。文件分析的 `domain` 从同一组取值中选择最接近的一项，不为一条材料硬造新领域。
+`diagnosis.domain` can only be `listening_speaking`, `reading`, `writing`, `language_use`, or `news_reading`; `diagnosis.label` uses the `english:` prefix from `references/english-error-labels.md`. For file analysis, pick the closest `domain` from the same set of values; do not invent a new domain for one piece of material.
 
-没有可读文本的语音或图片材料，不写入听音或发音诊断；只记录 `learn-errors` 实际提取到的文字内容。
+For voice or image material without readable text, do not write listening or pronunciation diagnoses; record only the text content that `learn-errors` actually extracted.

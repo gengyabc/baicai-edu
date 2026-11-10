@@ -1,55 +1,55 @@
-# 英语 Segment 字段约定
+# English Segment Field Conventions
 
-产出英语学习记录或合并方法 skill 结果前，先读 `learn-data` 的 Session Segments 与其 `references/session-schema.md` 的 Session Segment。完整结构、必填字段、枚举和写回映射归共享 schema；本文只定义英语增量语义。
+Before producing an English learning record or merging method-skill results, first read the Session Segments of `learn-data` and the Session Segment section of its `references/session-schema.md`. The full structure, required fields, enums, and write-back mapping belong to the shared schema; this file defines only the English incremental semantics.
 
-## 一轮一条记录
+## One Record per Turn
 
-`english-session` 每轮回传一个 `session_segment`；方法 skill 的证据并入该段，不另记一轮，也不单独写日志。日志由入口追加，档案与 finalize 由共享流程写入。
+`english-session` returns one `session_segment` per turn; method-skill evidence is merged into that segment, not recorded as another turn and not logged separately. The log is appended by the entry; the profile and finalize are written by the shared flow.
 
-`focus` 记录本轮实际焦点；等待学生下一次回答时只记已观察到的证据，后续演示、判断和水平变化留待后续回合。提出问题本身不构成学生表现证据。
+`focus` records the actual focus of this turn; while waiting for the student's next answer, record only evidence already observed, and leave later demonstration, judgment, and level changes to later turns. Asking a question is not itself evidence of student performance.
 
-## 证据分类（唯一约定）
+## Evidence Classification (single convention)
 
-方法回传已发生的任务、学生原意/表达、支持条件与实际结果；以下分类写在 `strategy_summary` 等现有字段中，不新增评分、计数或全局等级字段。
+Methods return the task that took place, the student's original meaning/expression, the support conditions, and the actual result; the classifications below are written in existing fields such as `strategy_summary`, and no scoring, counting, or global level fields are added.
 
-| 证据类型 | 判断与记录 |
+| Evidence type | Judgment and recording |
 |---|---|
-| 独立理解 / 产出 | 未提供所求答案或对应表达时，学生理解意思或自行组织表达；说明具体任务范围 |
-| 提示后理解 / 产出 | 给语境线索、选择、句子开头或局部模型后完成；记录实际支持，不写为独立 |
-| 认出 / 选择 | 从已提供的信息中辨认；选择正确不等于能自由产出或独立回忆 |
-| 模仿 / 复述已给表达 | 已展示目标表达后跟读、照写或复述；不算首次独立提取，后续换语境另取证 |
-| 未观察 / 仍未知 | 未答、空消息、只同意或只有教学助手示范；不填成学生错误、失败或能力下降 |
+| Independent comprehension / production | Without the sought answer or matching expression being provided, the student understands the meaning or organizes the expression on their own; state the specific task scope |
+| Comprehension / production after a hint | Completed after a context cue, choice, sentence start, or partial model; record the actual support and do not write it as independent |
+| Recognition / selection | Identified from provided information; a correct choice is not the same as free production or independent recall |
+| Imitation / repeating a given expression | Reading along, copying, or repeating after the target expression was shown; not a first independent retrieval, and evidence is taken again later in a changed context |
+| Not observed / still unknown | Unanswered, empty message, mere agreement, or only a teaching-assistant model; do not fill in as a student error, failure, or ability decline |
 
-同一表现可有多个侧面：例如“提示后正确选择”同时写明支持条件与认出，不能挑最强分类掩盖支持。任务完成、语言准确与独立交流分别描述；用中文说明大意可以是理解证据，但不能据此推定英语独立产出。学生自己纠正与教学助手重述后跟说也分开。
+One performance may have several facets: for example "correct choice after a hint" records both the support condition and recognition, and the strongest classification may not be picked to hide the support. Task completion, language accuracy, and independent communication are described separately; explaining the gist in the first language can be comprehension evidence but cannot be used to infer independent English production. A student's own correction and echoing after a teaching-assistant restatement are also kept separate.
 
-只根据当前真实可用的媒介观察。文字作答可支持阅读、书面表达或文字对话中的语言运用；没有音频时不更新听力、发音或口语流利度。材料标注的 provisional CEFR 难度不是学生水平，不能直接写入 `current_levels`。
+Observe only from the media genuinely available now. Text answers can support reading, written expression, or language use in text dialogue; without audio, do not update listening, pronunciation, or speaking fluency. The provisional CEFR difficulty label on material is not the student's level and cannot be written directly into `current_levels`.
 
-多方法证据合并去重，保留不同语境与支持条件；冲突时留未知或局部结论，不拼接成更强掌握判断。教学助手计划的复习、下一次独立尝试与尚未回答的问题只作为下一步。
+Merge and deduplicate evidence from multiple methods, keeping distinct contexts and support conditions; on conflict, leave it unknown or a local conclusion, and do not stitch it into a stronger mastery judgment. Reviews, next independent attempts, and unanswered questions planned by the teaching assistant are only next steps.
 
-## 字段语义
+## Field Semantics
 
-| 字段 | 英语约定 |
+| Field | English convention |
 |---|---|
-| `subject` / `mode` / `submode` / `source` | `subject: english`，`mode` 沿用调用方；`submode` 用 `learn` / `practice` / `review` / `feynman`，分支按 `english-session` 选；`source` 对齐 `target_context.source` |
-| `strategy_summary` | 当前焦点、学生实际理解或表达的内容，以及独立完成、提示后完成或只认出的区别；不只写答案或“用了故事” |
-| `strengths` / `difficulties` | 理解、表达、词汇、句型、拼写与支架响应的实际证据；答得短、慢、用中文补充或未作答不单独记为英语困难 |
-| `next_step_candidate` / `recommended_targets` | 一个保守、具体的小步骤与近邻目标 |
-| `feynman_handoff_recommended` | 是否适合转费曼讲解，依据实际表现填写 |
-| `confirmed_skills` / `skill_errors_observed` | 记录前读 `learn-core` 的 `references/feynman-skill-whitelist.md`，所有模式均按其门槛填写技能名；无证据为空数组。AI 故意犯错不算学生错误 |
-| `overall_performance_code` / `overall_performance_text`（可选） | `needs_support` 需支架，`basic_independent` 基本独立但个别步骤需提示，`stable` 同一语境稳定运用，`flexible` 换语境后仍能理解或表达；单题答对最多记到 `stable` |
-| `current_levels`（可选） | 有足够证据时给 `listening` / `speaking` / `reading` / `writing` 的部分更新；档位含义归 `references/english-grade-defaults.md` |
-| `diagnosis`（可选） | 英语领域 `domain`、一个具体错误 `label` 与关键表现 `evidence`；标签归 `references/english-error-labels.md` |
+| `subject` / `mode` / `submode` / `source` | `subject: english`, `mode` inherited from the caller; `submode` uses `learn` / `practice` / `review` / `feynman`, with the branch chosen per `english-session`; `source` aligned to `target_context.source` |
+| `strategy_summary` | The current focus, what the student actually understood or expressed, and the difference between completed independently, completed after a hint, or only recognized; not just the answer or "used a story" |
+| `strengths` / `difficulties` | Actual evidence of comprehension, expression, vocabulary, patterns, spelling, and response to scaffolding; short, slow, first-language-supplemented, or unanswered responses alone are not recorded as English difficulty |
+| `next_step_candidate` / `recommended_targets` | One conservative, concrete small step and neighboring target |
+| `feynman_handoff_recommended` | Whether it suits moving to Feynman explanation, filled from actual performance |
+| `confirmed_skills` / `skill_errors_observed` | Before recording, read `learn-core` `references/feynman-skill-whitelist.md`; in all modes fill skill names per its threshold; empty arrays when no evidence. An AI's deliberate error is not a student error |
+| `overall_performance_code` / `overall_performance_text` (optional) | `needs_support` needs scaffolding, `basic_independent` mostly independent with a few steps needing hints, `stable` — stable use in the same context, `flexible` still understands or expresses after a context change; a single correct answer is recorded at most as `stable` |
+| `current_levels` (optional) | With sufficient evidence, give a partial update of `listening` / `speaking` / `reading` / `writing`; band meanings belong to `references/english-grade-defaults.md` |
+| `diagnosis` (optional) | The English domain `domain`, one specific error `label`, and key performance `evidence`; labels belong to `references/english-error-labels.md` |
 
-没有观察到的可选字段省略，保留已有档案值。一次正确回答、一次流畅朗读或一次跟读都不单独升级水平；不新增全局等级或评分字段。
+Omit optional fields with no observation and keep existing profile values. One correct answer, one fluent reading aloud, or one repeat-after-me does not by itself raise the level; do not add global level or scoring fields.
 
-## 技能 Domain 对照
+## Skill Domain Mapping
 
-segment 只写技能名；finalize 写入 `confirmed_skills` 对象时用下表填 `domain`。找不到接近域时留与证据一致的最窄域，不发明表外大类。
+The segment writes only skill names; when finalize writes `confirmed_skills` objects it fills `domain` from the table below. If no close domain is found, keep the narrowest domain consistent with the evidence and do not invent a broad category outside the table.
 
-| Domain | 示例技能 |
+| Domain | Example skills |
 |---|---|
-| `listening_speaking` | 听懂简短指令, 用短句表达需要, 对话中澄清意思 |
-| `reading` | 读故事抓人物, 找关键信息, 读标题预测 |
-| `writing` | 仿写短句, 拼写常用词, 句子开头大写 |
-| `language_use` | 颜色词, 动物词, `I want ...`, `Can you ...?` |
-| `news_reading` | 读新闻找事实, 区分事实与观点 |
+| `listening_speaking` | understand a short instruction, express a need in a short sentence, clarify meaning in a dialogue |
+| `reading` | read a story and catch characters, find key information, predict from the title |
+| `writing` | imitate a short sentence, spell common words, capitalize the start of a sentence |
+| `language_use` | color words, animal words, `I want ...`, `Can you ...?` |
+| `news_reading` | read news for facts, distinguish fact from opinion |

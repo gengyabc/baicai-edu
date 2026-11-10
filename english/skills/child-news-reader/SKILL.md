@@ -1,6 +1,6 @@
 ---
 name: child-news-reader
-description: 儿童新闻阅读。学生选择英语新闻或提供新闻链接时加载；核验来源、适龄筛选并改写到学生水平。
+description: Children's news reading. Load when the student chooses English news or provides a news link; verify sources, age-filter, and rewrite to the student's level.
 user-invocable: false
 ---
 

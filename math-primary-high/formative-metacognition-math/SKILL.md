@@ -1,6 +1,6 @@
 ---
 name: formative-metacognition-math
-description: 形成性评价与反思。四至六年级数学学习中，需要根据观察到的表现给可操作反馈、调整难度和提示，或引导学生反思自己的思路时使用；不做无依据的能力测量结论。
+description: Formative assessment and reflection. Use in grades 4–6 math when observed performance needs actionable feedback, difficulty/hint adjustment, or guiding the student to reflect on their own thinking; do not make unsupported ability-measurement claims.
 ---
 # Formative Assessment and Metacognition
 

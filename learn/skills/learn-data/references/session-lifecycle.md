@@ -1,120 +1,120 @@
 # Session Lifecycle
 
-表格自上而下取首个命中行。`STOP` 只结束本轮，不结束会话。Finalize 是被调用的子流程，不按顺序执行。
+Take the first matching row in a table from top to bottom. `STOP` only ends this turn, not the session. Finalize is a called sub-flow and is not run in sequence.
 
 ## Invariants
 
-- 日志是 segments 的事实来源，内存副本只是缓存；教学模式与动作从 `context` 恢复，旧教学日志缺 context 时才用最后一段重建。尚无教学 context 的推荐状态只从 `recommendation.mode` 恢复模式，不补造教学动作。
-- 恢复保留 `session_id`、`entry_point` 与旧证据，旧证据不归到新主题。显式模式请求优先于恢复模式；无参数 `/learn` 不是显式退出费曼，沿用日志模式与动作。
-- `mode`（learn / feynman）与 `context.activity`（teaching / transfer）相互独立。目标、模式或动作变化立即写回 context 并更新 `updated_at`，不单独生成 segment。
-- 教学中只写日志；其他写入按数据协议中的显式例外处理。保存只走 Finalize，`/learn-save` 同用。
-- 只记录学生已发生的表现：未答问题、恢复选项的回答、跳过、技术排查与消息占位符都不算证据；结束消息不补造 segment。
-- 写回成功才推进：日志写入失败时说明未保存、保留待写内容并 STOP，不覆盖日志。待提交 plan 完成前不开展新教学；旧主题保存成功前不开新主题。
-- “新建”“恢复”“等待”是从日志与执行位置派生的标签，不新增持久化字段。
+- The log is the source of truth for segments, and the in-memory copy is only a cache; teaching mode and action are restored from `context`, and the last segment is used to rebuild only when an old teaching log lacks context. A recommendation state with no teaching context yet restores mode only from `recommendation.mode` and does not fabricate a teaching action.
+- Restore keeps `session_id`, `entry_point`, and old evidence, and old evidence is not attributed to the new topic. An explicit mode request takes priority over the restored mode; a bare `/learn` is not an explicit exit from Feynman and keeps the log's mode and action.
+- `mode` (learn / feynman) and `context.activity` (teaching / transfer) are independent. A change of target, mode, or action is written back to context immediately and `updated_at` is updated, without generating a separate segment.
+- During teaching only the log is written; other writes follow the explicit exceptions in the data protocol. Saving goes only through Finalize, and `/learn-save` uses it too.
+- Record only performance the student has actually shown: unanswered questions, answers to restore options, skips, technical troubleshooting, and message placeholders are not evidence; an end message does not fabricate a segment.
+- Advance only after a successful write-back: when a log write fails, state it was not saved, keep the pending content, and STOP without overwriting the log. Do not start new teaching before a pending plan is committed; do not open a new topic before the old topic is saved successfully.
+- "New," "restore," and "waiting" are labels derived from the log and the execution position, and no persistent field is added for them.
 
 ## 1. Snapshot
 
-按 `learn-data` 的 Read Snapshot 取得或复用学生、科目与快照，不逐轮重读。按 `references/teaching-resolver.md` 取得 teaching 和 scope_id，既有未完成任务保留已记录实现；新目标才解析新实现。缺当前学生时引导 `/learn-start`，STOP；这是所有包里唯一的会话门槛。
+Get or reuse the student, subject, and snapshot per Read Snapshot in `learn-data`, without re-reading each turn. Get teaching and scope_id per `references/teaching-resolver.md`; an existing unfinished task keeps its recorded implementation, and only a new target resolves a new one. When there is no current student, guide to `/learn-start` and STOP; this is the only session gate in all packages.
 
 ## 2. Classify
 
-按 `learn-core` 的 `references/session-end-signals.md` 归类危机、结束、换主题、歧义、跳过或当前题回应，结果交第 4 节。危机走其安全流程，不 finalize、不记录细节，已有 plan 留待后续恢复，STOP。纯支持或已明确先聊时，普通话题不是偏题/未作答，不套用教学的连续偏题确认与阶段菜单；“今天不聊也不学”仍是明确结束。
+Per `learn-core`'s `references/session-end-signals.md`, classify crisis, end, topic change, ambiguity, skip, or a response to the current question, and hand the result to section 4. A crisis follows its safety flow, with no finalize and no recording of details; an existing plan is left for later recovery; STOP. For pure support or when it is already clear the student wants to chat first, an ordinary topic is not off-topic/unanswered, so teaching's consecutive off-topic confirmation and stage menu do not apply; "neither chat nor learn today" is still an explicit end.
 
-## 3. Open Or Resume
+## 3. Open or Resume
 
-| 情况 | 动作 |
+| Situation | Action |
 |---|---|
-| 日志有 `finalize_plan`，或 marker 已匹配但仍有待清理教学内容（segments/context/support_events/plan；已选 recommendation 不属于它） | Finalize 恢复保存或仅清理；成功后旧身份结束，不接续旧循环。明确结束则清除已选推荐并 STOP；仅保存则保留已选目标、报告结果并 STOP。本条含 `/learn`、`/learn-feynman`、新教学请求或推荐请求则新建，优先承接持久化的已选目标（本条另有明确目标则覆盖）；否则报告结果，保留已选目标待继续，STOP |
-| 有可恢复日志身份，且无待完成保存、非明确结束；本条明确只想交流，或恢复后仍保留交流选择且未主动学习 | 恢复原身份与 context.learning_support，交支持闸门；不把恢复本身当作学习授权，不自动承接已选 recommendation |
-| 旧主题已提交且无待清理教学内容，日志保留已选 recommendation | 本条明确结束则清除推荐并结束；明确取消选定任务则清除推荐、问一个想学的方向并 STOP；危机按第 2 节；仅保存则报告结果并保留已选目标。本条另有明确目标则覆盖已选目标；否则以推荐中的已选目标与 mode 新建，保留推荐至新 context 成功，进入第 4 节，不恢复旧教学 |
-| 正在回答恢复选择 | 恢复身份，选择交第 4 节执行 |
-| 已有活跃循环 | 保留身份、segments、context 与快照；无新目标时保留 focus 和材料 |
-| 有未完成 segments/context/support_events，本条明确结束或换主题 | 恢复，不为旧主题补问 |
-| 有未完成 segments/context/support_events，直接 `/learn-feynman` | 恢复身份，`ask_user_question` 给「接着上次」「开新的」，STOP |
-| 有未完成 segments/context/support_events，其他请求（含 `/learn`），或有待选 recommendation | 恢复；只有推荐时保留身份与候选，不补造 context |
-| 无待恢复记录 | 新建；首次纯支持也先新建日志身份，不补学习目标，再交支持闸门 |
+| The log has a `finalize_plan`, or the marker already matches but teaching content still awaits cleanup (segments/context/support_events/plan; a selected recommendation does not count) | Finalize restores the save or only cleans up; on success the old identity ends and the old loop is not continued. An explicit end clears the selected recommendation and STOPs; save-only keeps the selected target, reports the result, and STOPs. If this message contains `/learn`, `/learn-feynman`, a new teaching request, or a recommendation request, create anew, preferring to take over the persisted selected target (an explicit target in this message overrides it); otherwise report the result, keep the selected target pending continuation, and STOP |
+| A restorable log identity exists, with no pending save and not an explicit end; this message explicitly only wants to talk, or after restore the chat choice is still kept and the student has not actively started learning | Restore the original identity and context.learning_support and hand to the support gate; restoring itself is not learning authorization, and a selected recommendation is not automatically taken over |
+| The old topic is committed with no teaching content awaiting cleanup, and the log keeps a selected recommendation | If this message explicitly ends, clear the recommendation and end; if it explicitly cancels the selected task, clear the recommendation, ask one question about a direction they want to learn, and STOP; a crisis follows section 2; save-only reports the result and keeps the selected target. If this message has another explicit target, it overrides the selected target; otherwise create anew with the selected target and mode from the recommendation, keep the recommendation until the new context succeeds, and go to section 4, without restoring old teaching |
+| Answering a restore choice | Restore identity, and hand the choice to section 4 to execute |
+| An active loop exists | Keep identity, segments, context, and snapshot; with no new target, keep focus and material |
+| There are unfinished segments/context/support_events, and this message explicitly ends or changes topic | Restore, and do not ask follow-ups about the old topic |
+| There are unfinished segments/context/support_events, and the message is directly `/learn-feynman` | Restore identity, and use `ask_user_question` to give `ui.feynman.resume_previous` and `ui.feynman.start_new`, STOP |
+| There are unfinished segments/context/support_events and another request (including `/learn`), or a pending recommendation | Restore; with only a recommendation, keep identity and candidates and do not fabricate context |
+| No pending records to restore | Create anew; even a first pure support turn first creates a log identity without filling in a learning target, then hands to the support gate |
 
-- **恢复**：取日志身份与 context（activity、材料、待答问题、迁移阶段），结构见 `references/session-schema.md`。旧日志无 context 时采用最后一段的 focus/mode，交第 5 节重建；只有 recommendation 而无教学段时直接进第 4 节推荐闸门，不补造旧焦点。
-- **新建**：`session_id` 用 `sess_<YYYYMMDD>_<HHmmss>_<随机hex>`，且不等于 `last_finalized_session_id`；mode 取入口初始值，换主题时沿用当前 mode。写入 `session_id`、`entry_point`、`started_at`、`updated_at`、`segments: []`。
-- 恢复选择的回答承接上一次入口请求：`/learn-feynman` 后选「接着上次」，仍在第 4 节应用费曼模式。保存恢复后的新会话也保留本条的目标与模式请求。
+- **Restore**: take the log identity and context (activity, material, pending question, transfer stage), with the structure in `references/session-schema.md`. An old log with no context uses the last segment's focus/mode and hands to section 5 to rebuild; with only a recommendation and no teaching segment, go straight to the section 4 recommendation gate and do not fabricate an old focus.
+- **Create**: `session_id` uses `sess_<YYYYMMDD>_<HHmmss>_<random hex>` and must not equal `last_finalized_session_id`; mode takes the entry's initial value, and on a topic change keeps the current mode. Write `session_id`, `entry_point`, `started_at`, `updated_at`, `segments: []`.
+- An answer to a restore choice continues the previous entry request: after `/learn-feynman`, choosing `ui.feynman.resume_previous` still applies Feynman mode in section 4. A new session after a restore-save also keeps this message's target and mode request.
 
 ## 4. Dispatch
 
-### 支持闸门
+### Support gate
 
-安全、明确结束和待完成保存优先。其后在推荐闸门、模式/动作切换及 Resolve Target/Route And Record 之前核对本条意愿：学生明确请求支持（包括现实条件帮助或纠正处境理解）、有可信线索待澄清、context.activity 为 support，或 learning_support.resume_question 保留了交流选择时，按 `learn-core` 的按需规则加载 `learn-support`。交流方法读其 `references/supportive-conversation.md`；状态字段按 `references/session-schema.md`。已有推荐的明确选择仍交推荐闸门；普通聊天不消费候选，也不自动启动以前已选的目标。无目标不等于请求推荐。
+Safety, explicit end, and pending saves take priority. After them, before the recommendation gate, mode/action switches, and Resolve Target/Route And Record, check this message's intent: when the student explicitly requests support (including help with practical conditions or correcting an understanding of their situation), there is a credible cue to clarify, context.activity is support, or learning_support.resume_question keeps a chat choice, load `learn-support` per `learn-core`'s on-demand rule. For communication methods read its `references/supportive-conversation.md`; state fields follow `references/session-schema.md`. An explicit choice on an existing recommendation still goes to the recommendation gate; ordinary chat does not consume candidates and does not auto-start a previously selected target. No target does not equal a request for a recommendation.
 
-| 情况 | 当前主导者的动作与出口 |
+| Situation | Current leader's action and exit |
 |---|---|
-| 无真实任务，只想交流 | 沿用身份与 teaching，设 `activity: support`，focus/target_context 可为 null；只保存最小 resume_question，不造当前题。自然交流或尊重结束；不从档案候选补目标，不自动推荐、做题或定时邀请。segment 为 null，必要 context 写回后 STOP，不落入第 7 节 |
-| 无真实任务，请求方法帮助而非闲聊 | 设 `activity: support`，focus/target_context 可为 null；按已知条件提供支持建议，确有必要才问一个澄清问题，不从历史补教学目标、不强制推荐或出题。只写必要 learning_support 与最小 resume_question，segment 为 null，STOP；学生随后明确授权真实任务才交首次目标解析 |
-| 已有任务，想先聊或暂停学习 | 保留 focus、scope_id、teaching、材料、mode/activity、整个 turn_state（原题、已答内容、待答问题和迁移阶段）。只在 learning_support.resume_question 记最小交流选择；原教学所有者承接交流，不另建路由器。segment 为 null，写回后 STOP，不把聊天当原题作答 |
-| 拒绝学习邀请或当前支持讨论 | 设 status: declined；要聊天则保留交流选择，要做题才接原任务，要结束则按结束流程。拒绝讨论本身不表示拒绝学习；拒绝学习也不表示结束。明确拒绝本批学习候选时清除未选 recommendation，不改已保存证据；仅选择先聊则保留候选等待主动重开。继续闲聊不重置 declined，不按轮数或时间检查学习意愿；短答、沉默或空消息不改判意愿、不造 outcome |
-| 主动请求学习或明确接受邀请 | 明确接回原任务：清除已完成的 resume_question，保留身份与完整恢复位置；本条有显式模式/动作请求时先交下表切换，无切换请求才直接交第 6 节并沿用模式。尚无目标或接受的邀请未明确目标时，只澄清必要目标；同一身份的首次目标交第 5 节。真正换目标交下表保存/新建，新 scope_id；跨科按 `references/teaching-transition.md`，不能以交流或接受模糊邀请代替切换授权。支持状态的重开条件按 schema，不抹去其他拒绝 |
-| 有任务且愿意接受方法帮助 | 支持仅叠加建议，当前教学主导者继续教学；保留原 mode/activity 与待答题，只更新必要 learning_support。实际表现才交第 6 节记段 |
-| 明确要求保存具体中性计划 | 生命周期把确认内容写 support_events（形状按 schema），再调用同一 Finalize；仅保存不自动开课。一般交流不创建事件、不改长期档案；恢复状态写入与长期计划保存分别报告 |
+| No real task, only wants to talk | Keep identity and teaching, set `activity: support`, focus/target_context may be null; save only a minimal resume_question and do not fabricate a current question. Chat naturally or respect the end; do not fill in a target from profile candidates, and do not auto-recommend, assign problems, or invite on a timer. segment is null, write back the necessary context and STOP, without falling into section 7 |
+| No real task, requests method help rather than chit-chat | Set `activity: support`, focus/target_context may be null; give support suggestions based on known conditions, ask one clarifying question only when truly necessary, do not fill in a teaching target from history, and do not force a recommendation or problems. Write only the necessary learning_support and a minimal resume_question, segment is null, STOP; only when the student later explicitly authorizes a real task does it go to first-target resolution |
+| Already has a task, wants to chat first or pause learning | Keep focus, scope_id, teaching, material, mode/activity, and the whole turn_state (original question, content already answered, pending question, and transfer stage). Record only the minimal chat choice in learning_support.resume_question; the original teaching owner takes the chat, and no separate router is built. segment is null, STOP after write-back, and do not treat chat as an answer to the original question |
+| Declines a learning invitation or the current support discussion | Set status: declined; if they want to chat, keep the chat choice; only if they want to do problems, return to the original task; if they want to end, follow the end flow. Declining discussion does not itself mean declining learning; declining learning does not mean ending. When this batch of learning candidates is explicitly declined, clear the unselected recommendation without changing saved evidence; merely choosing to chat first keeps the candidates waiting for an active reopening. Continued chit-chat does not reset declined, willingness to learn is not checked by turn count or time, and a short answer, silence, or an empty message does not change the judgment of willingness or fabricate an outcome |
+| Actively requests learning or explicitly accepts an invitation | Explicitly return to the original task: clear the completed resume_question, keeping identity and the full restore position; when this message has an explicit mode/action request, hand first to the switch table below, and only with no switch request go straight to section 6 keeping the mode. When there is no target yet or the accepted invitation names no clear target, clarify only the necessary target; the first target of the same identity goes to section 5. A truly new target goes to the table below to save/create, with a new scope_id; cross-subject follows `references/teaching-transition.md`, and chat or accepting a vague invitation cannot substitute for switch authorization. The reopening conditions of the support state follow the schema, without erasing other declines |
+| Has a task and is willing to accept method help | Support only layers suggestions, and the current teaching leader continues teaching; keep the original mode/activity and pending question, and update only the necessary learning_support. Only actual performance goes to section 6 to log a segment |
+| Explicitly asks to save a specific neutral plan | The lifecycle writes the confirmed content to support_events (shape per schema), then calls the same Finalize; saving only never starts a lesson automatically. General chat creates no event and does not change long-term profiles; writing the restore state and saving the long-term plan are reported separately |
 
-- 支持技能或方法参考加载失败：保留原目标、材料、mode/activity 与待答题；仍按本闸门保留交流选择。学生已要学习才交当前主导者继续教学，纯支持可简短说明帮助受限后继续普通交流或尊重结束，不强求学习目标。不声称支持已生效、不写虚假 outcome，不反复重试同一失败加载。
-- declined 的恢复与最小续接信息按 schema；不逐轮重新触发动机追问。无支持状态的新普通聊天也不必补造需求标签。
-- 支持开始、持续、拒绝、恢复或转入教学均不自动清画板；只有另一个已获授权的新任务边界才按原规则处理。不得读取未发送画板，不迁移或删除旧证据。
+- Support skill or method reference fails to load: keep the original target, material, mode/activity, and pending question; still keep the chat choice per this gate. Only when the student already wants to learn does the current leader continue teaching; for pure support, briefly say that help is limited and continue ordinary chat or respect the end, without forcing a learning target. Do not claim support took effect, write a false outcome, or repeatedly retry the same failed load.
+- Restore and minimal continuation info for declined follow the schema; do not re-trigger motivation follow-ups every turn. A fresh ordinary chat with no support state also need not fabricate a need label.
+- Starting, continuing, declining, resuming, or moving into teaching of support does not automatically clear the board; only another authorized new task boundary is handled by the original rules. Do not read an unsent board, and do not migrate or delete old evidence.
 
-**推荐闸门**：危机、明确结束及待完成保存仍优先。其后，用户明确想学习但不知道学什么、询问学什么、想换学习内容但尚无具体目标、阶段选择「换个内容」，或日志有待选 `recommendation` 且本条未拒绝学习/选择交流时，加载 `learn-recommend`，先处理推荐而不是把消息归为旧题回答或立即换主题。该分支在 Resolve Target、Route And Record 与任何新任务边界之前执行：
+**Recommendation gate**: crisis, explicit end, and pending saves still take priority. After them, when the user explicitly wants to learn but doesn't know what, asks what to learn, wants to change learning content but has no specific target yet, picks `ui.stage.switch_content` at a stage choice, or the log has a pending `recommendation` and this message has not declined learning/chosen chat, load `learn-recommend`, handling the recommendation first rather than classifying the message as an answer to the old question or switching topic immediately. This branch runs before Resolve Target, Route And Record, and any new task boundary:
 
-- 尚未选择：仅将技能返回的 `recommendation` 写入日志顶层并更新 `updated_at`，保留原 context、focus、segments 与身份，STOP；无原目标时允许只有 recommendation 而无 context。
-- 选择候选或明确委托首选：先把 `selected_id` 与当前 mode 写入日志 recommendation，成功后才将选中项的 focus 与 target_context 作为显式目标；写失败按 Invariants 停止，不 finalize。确实更换目标时才执行下表换主题流程，旧主题保存成功后新建并应用目标。仍是原目标则保留身份接续。模式沿用原 mode（无 context 时用 recommendation.mode），实际新主题使用 `activity: teaching`，不携带旧题材料与迁移进度。已选 recommendation 跨 finalize、失败重试与新建保留，写入新 context 成功后清除。本轮已解析为选定目标后不再命中推荐闸门；交学科的最新请求使用选定目标，不用原推荐请求再次触发推荐。
-- 跨科选择或显式跨科目标：完整执行 `references/teaching-transition.md` 的准备、旧主题保存、pending_transition、新 context 与双侧清理；以下同科换题流程不能代替此交接。session 指针先切换而 context 写失败时从源授权恢复，不从新科目另起目标。
-- 已有 `selected_id` 的恢复：不再问候选，复用已授权目标；危机、明确结束、取消或本条另有明确目标仍优先。旧主题未完成保存则先恢复保存，成功后才开始选定任务。仅保存请求不自动开课。
-- 保留原任务、改为自己定内容或拒绝全部：按技能出口清除或更新 recommendation，不新增 segment、不改长期档案。结束或用户直接指定其他目标时交下表；结束保存同时清除推荐。
-- 中断恢复先核对 recommendation 的 subject 与当前身份，匹配才承接候选；缺失或不匹配则重新推荐，不猜测旧选项。待完成保存优先处理，成功后若本条仍是推荐请求则承接，而不是丢掉请求。
+- Not yet chosen: only write the `recommendation` returned by the skill into the top level of the log and update `updated_at`, keeping the original context, focus, segments, and identity, then STOP; with no original target, a log with only a recommendation and no context is allowed.
+- Choosing a candidate or explicitly delegating the top pick: first write `selected_id` and the current mode into the log's recommendation, and only after success take the selected item's focus and target_context as the explicit target; a failed write stops per Invariants, with no finalize. Only when the target truly changes does the topic-change flow in the table below run, and after the old topic is saved successfully the new target is created and applied. If it is still the original target, keep the identity and continue. The mode keeps the original mode (using recommendation.mode when there is no context), and an actual new topic uses `activity: teaching`, without carrying old-question material and transfer progress. A selected recommendation is kept across finalize, failure retries, and creation, and is cleared after the new context is written successfully. Once this turn has resolved to the selected target, the recommendation gate is no longer hit; the latest request handed to the subject uses the selected target and does not trigger a recommendation again with the original recommendation request.
+- Cross-subject choice or explicit cross-subject target: fully execute the preparation, old-topic save, pending_transition, new context, and two-sided cleanup of `references/teaching-transition.md`; the same-subject topic-change flow below cannot substitute for this handoff. When the session pointer has switched first but the context write fails, restore from the source authorization, and do not start a target from the new subject.
+- Restore with an existing `selected_id`: do not ask about candidates again, and reuse the authorized target; crisis, explicit end, cancel, or another explicit target in this message still take priority. If the old topic has not completed saving, first restore the save, and only after success start the selected task. A save-only request never starts a lesson automatically.
+- Keep the original task, choose own content, or decline all: clear or update the recommendation per the skill's exits, with no new segment and no change to long-term profiles. For an end or when the user directly specifies another target, hand to the table below; an end-save also clears the recommendation.
+- Interrupted restore first checks the recommendation's subject against the current identity, and only on a match takes over the candidates; if missing or mismatched, recommend again and do not guess old options. A pending save is handled first, and after success, if this message is still a recommendation request, take it over rather than dropping the request.
 
-| 事件 | 动作 | 下一步 |
+| Event | Action | Next |
 |---|---|---|
-| 明确结束今天的练习（即使顺口提到以后学什么） | Finalize，`status: completed`；成功即结束活跃循环 | STOP |
-| 明确换主题且今天继续，或恢复选择「开新的」 | 旧主题非空：Finalize 以 `interrupted` 保存，成功后新建；为空则直接新建。保留当前 mode，再应用本条显式模式请求 | 5 |
-| 结束意图歧义，或达到偏题确认条件 | 按 session-end-signals 用 `ask_user_question` 确认 | STOP |
-| 显式当小老师（含 `/learn-feynman`） | 切到费曼 | 5；无新目标且 context 完整时直接 6 |
-| 显式回到普通学习，或显式选择迁移 | 切回普通学习 / 启动迁移 | 5 |
-| 跳过当前题，无新主题或结束意图 | 在当前小目标里换题 | 6 |
-| 当前题回应或其他继续请求 | 保留 focus、材料、模式与动作 | 5 |
+| Explicitly ends today's practice (even if casually mentioning what to learn later) | Finalize, `status: completed`; on success the active loop ends | STOP |
+| Explicitly changes topic and today continues, or restore choice `ui.feynman.start_new` | Old topic non-empty: Finalize saves as `interrupted`, and create anew after success; if empty, create anew directly. Keep the current mode, then apply this message's explicit mode request | 5 |
+| Ambiguous end intent, or the off-topic confirmation condition is reached | Confirm with `ask_user_question` per session-end-signals | STOP |
+| Explicitly act as the little teacher (including `/learn-feynman`) | Switch to Feynman | 5; with no new target and a complete context, directly 6 |
+| Explicitly return to ordinary learning, or explicitly choose transfer | Switch back to ordinary learning / start transfer | 5 |
+| Skip the current question, with no new topic or end intent | Swap the question within the current small goal | 6 |
+| Response to the current question or another continue request | Keep focus, material, mode, and action | 5 |
 
-模式与动作切换：
+Mode and action switches:
 
-- **切到费曼**：加载 `learn-feynman` 的角色规则，设 `mode: feynman`、`context.activity: teaching`；沿用 focus、材料与 entry_point，清除仅用于迁移的 intent 与 turn_state。这是唯一的切换点，`/learn-feynman` 入口直接执行本条；之后不再路由学生出题 / 读写迁移。
-- **切回普通学习**：设 `mode: learn`、`context.activity: teaching`，清理迁移进度。
-- **启动迁移**：设 `mode: learn`、`context.activity: transfer`，在 turn_state 记下来源领域与阶段；迁移完成后 activity 回到 teaching。
+- **Switch to Feynman**: load `learn-feynman`'s role rules, set `mode: feynman`, `context.activity: teaching`; keep focus, material, and entry_point, and clear the intent and turn_state used only for transfer. This is the only switch point, and the `/learn-feynman` entry executes this directly; afterward, student-posed questions / read-write transfer are no longer routed.
+- **Switch back to ordinary learning**: set `mode: learn`, `context.activity: teaching`, and clear transfer progress.
+- **Start transfer**: set `mode: learn`, `context.activity: transfer`, and record the source domain and stage in turn_state; after transfer completes, activity returns to teaching.
 
 ## 5. Resolve Target
 
-仅新会话、首次补目标、明确换主题或旧日志缺 context 时执行；其余消息是对当前问题的回应，跳到第 6 节，不逐轮重新分类。
+Run only for a new session, a first fill-in of the target, an explicit topic change, or when an old log lacks context; other messages are responses to the current question, so skip to section 6 and do not re-classify each turn.
 
-读 `references/target-parsing.md`，再读 teaching.core_skill 契约中的目标分类；初始化、推荐及教学都使用同一解析，不以真实 subject 冒名拼接通用包。来源按优先级取：
+Read `references/target-parsing.md`, then read the target classification in the teaching.core_skill contract; initialization, recommendation, and teaching all use the same resolution, and the real subject must not be used to impersonate and stitch together a general package. Take the source by priority:
 
-1. 用户本条的显式目标或模式/动作请求。
-2. 未完成会话的 focus 与日志 context。
-3. **通用接续**：没有显式新目标、没有未完成 context，且 current_state.teaching.evidence_namespace 为 general_v1 时，按 `current_state.scope_id` 从 memory.general_progress 找同 subject/范围的最新记录；沿用该 scope_id 与 teaching，用 next_step（空则 focus）和已保存 target_context/材料引用接续到新 session_id。必要原文缺失则只问所需材料，不猜。找不到匹配记录时问一个想继续的任务，不回退到不相关专门历史。接续原通用目标不因新装包自动升级证据；学生明确另开专门任务时才重新解析。
-4. 专门路径的档案候选顺序（入口与学科共用，学科不另写一份）：取第一个非空项——`session_history[0].next_step`、`learning_state.priority_targets`、`learning_state.developing_topics`、`learning_memory.recommended_next_moves`、`profile_memory.stable_difficulties`、最近 milestones、学科契约的年级默认。学科只补充领域选择等约束，不重排。这是普通恢复规则；显式学习推荐由 `learn-recommend` 与学科「学习推荐」角色重排候选，选定后回到第 1 项。
+1. This message's explicit target or mode/action request.
+2. The focus and log context of an unfinished session.
+3. **General continuation**: with no explicit new target and no unfinished context, and current_state.teaching.evidence_namespace being general_v1, find the latest record of the same subject/scope in memory.general_progress by `current_state.scope_id`; reuse that scope_id and teaching, and continue with next_step (or focus if empty) and the saved target_context/material references into the new session_id. If required original text is missing, ask only for the needed material and do not guess. When no matching record is found, ask about one task they want to continue, and do not fall back to unrelated specialist history. Continuing an original general target is not automatically upgraded in evidence by a newly installed package; resolve again only when the student explicitly opens a separate specialist task.
+4. Profile candidate order for the specialist path (shared by the entry and the subject; the subject does not write another copy): take the first non-empty item: `session_history[0].next_step`, `learning_state.priority_targets`, `learning_state.developing_topics`, `learning_memory.recommended_next_moves`, `profile_memory.stable_difficulties`, the most recent milestones, the subject contract's grade defaults. The subject only adds constraints such as domain choice and does not reorder. This is the ordinary restore rule; for explicit learning recommendations, `learn-recommend` and the subject's "Learning recommendations" role reorder the candidates, and after selection it returns to item 1.
 
-**文件**：入口调用一次 `learn-errors`（自我诊断问答、文件安全、写回），再按学科目标分类归类，设 `files_processed: true`，保留 extracted 引用与原意图。学科不再处理 raw 路径；已有 extracted 引用直接复用。
+**Files**: the entry calls `learn-errors` once (self-diagnosis Q&A, file safety, write-back), then classifies per the subject's target classification, sets `files_processed: true`, and keeps extracted references and the original intent. The subject no longer handles raw paths; existing extracted references are reused directly.
 
-**写回** context 的 `scope_id`、`teaching`、`focus`、`mode`、`activity`、`target_context`、`materials`、`turn_state`。同一未完成目标沿用 scope_id；真正选定新目标另建，不能按同名 focus 混合证据。粘贴材料无文件来源时存进 `context.materials`；已有 extracted 时只留引用。缺材料或意图时只问一个问题，STOP。
+**Write back** the context's `scope_id`, `teaching`, `focus`, `mode`, `activity`, `target_context`, `materials`, `turn_state`. The same unfinished target keeps its scope_id; a truly newly selected target gets a new one, and evidence must not be mixed by the same focus name. Pasted material without a file source is stored in `context.materials`; when extracted exists, keep only a reference. When material or intent is missing, ask just one question and STOP.
 
-## 6. Route And Record
+## 6. Route and Record
 
-按 `references/teaching-resolver.md` 复用解析结果，加载 `teaching.session_skill`：专门实现为 `<subject>-session`，通用实现为 `learn-general-session`。由它决定子技能、附加动作与迁移参数；加载完成后才生成教学回复。缺包按解析规则交接，不停教、不热替换。迁移的来源、已提取内容与阶段从 context 恢复，不足时先补问，不重启迁移。
+Reuse the resolution result per `references/teaching-resolver.md` and load `teaching.session_skill`: `<subject>-session` for a specialist implementation, `learn-general-session` for a general one. It decides sub-skills, additional actions, and transfer parameters; generate the teaching reply only after loading finishes. For a missing package, hand off per the resolution rules, without stopping teaching or hot-swapping. The source, extracted content, and stage of transfer are restored from context, and when insufficient, ask first; do not restart the transfer.
 
-**交接**（学科 skill 一律以此为输入，不再各自列出）：`student_id`、`subject`、最新学生消息、`target_context`、`focus`、`mode`、恢复时的 `context.activity` / `turn_state`、快照，以及个性化输入（共享 `personal`；科目 `profile.preferences` / `profile.self_report`；memory 的支架、动机、近期错误、稳定优势与困难、推荐下一步）。使用边界遵循 `learn-core`。
+**Handoff** (subject skills always take this as input and do not each list it again): `student_id`, `subject`, the latest student message, `target_context`, `focus`, `mode`, the `context.activity` / `turn_state` at restore, the snapshot, and personalization inputs (shared `personal`; subject `profile.preferences` / `profile.self_report`; memory's scaffolds, motivation, recent errors, stable strengths and difficulties, recommended next steps). Usage boundaries follow `learn-core`.
 
-**返回**：学生可见回复、存在真实学生表现时的一个 segment（否则为 null）、更新后的 turn_state、可选 support_update 与 `stage_options`；内部诊断、桥接等结果并入该 segment，不另记一轮。support_update 只并入 context.learning_support，不能伪装成诊断。追加表现时附当前 teaching/scope_id 与可观察的 ability_evidence。
+**Return**: the student-visible reply, one segment when there is real student performance (otherwise null), the updated turn_state, optional support_update and `stage_options`; internal diagnosis, bridging, and other results merge into that segment and do not log a separate turn. support_update merges only into context.learning_support and must not masquerade as a diagnosis. When appending performance, attach the current teaching/scope_id and observable ability_evidence.
 
-**写回**：按 Session Segments 契约追加 segment，教学助手猜测与学生确认分开记录；同步 context 与 `context.turn_state` 的当前题、作答要求、已收到的回答和最新待答问题（字段见 schema），学生本轮提出难度要求时写 `context.difficulty_request`。发现此前漏读或误判时，先更正受影响的日志与状态并留更正说明，再继续。
+**Write back**: append the segment per the Session Segments contract, recording the teaching assistant's guesses separately from student confirmations; sync context and `context.turn_state`'s current question, answer requirements, answers already received, and latest pending question (fields per schema), and when the student raises a difficulty request this turn, write `context.difficulty_request`. When a prior missed read or misjudgment is found, first correct the affected log and state and leave a correction note, then continue.
 
 ## 7. Continue
 
-选一个小的 next step，待答问题写入 context，等待回应，STOP。普通学习的菜单按 `references/next-step.md`；费曼模式用 `ask_user_question` 只给「继续讲」「换一个点」「结束」，「换一个点」说明为换个学习内容，未指定目标时也交推荐闸门，选定后沿用费曼模式。
+Choose one small next step, write the pending question into context, wait for a response, and STOP. The menu for ordinary learning follows `references/next-step.md`; Feynman mode uses `ask_user_question` to give only `ui.feynman.keep_talking`, `ui.feynman.switch_point`, and `ui.stage.end`; `ui.feynman.switch_point` is explained as switching learning content, and when no target is specified it also goes to the recommendation gate, keeping Feynman mode after selection.
 
-## Finalize Or Switch Topic
+## Finalize or Switch Topic
 
-执行 `references/finalize-session.md`（幂等门、空 segments 的 no-op、plan 重放与日志清理），本文件不另定义提交步骤。空 segments 返回 no-op（也无有效 support_events）且正在结束或切换时，由生命周期移除旧 recommendation 与临时 context/support_events；这仅清理临时选择与支持状态，不写长期档案。跨科已选交接例外：保留 selected_id/transition，按 teaching-transition 的 source_closed 确认关闭；不能在新 context 成功前清源授权。只有支持计划或更正事件时仍交 Finalize 按同一幂等协议提交；换题判定“非空”包括 support_events，不因无表现跳过已请求的计划保存。正常结束用 `status: completed`；中断旧主题用 `status: interrupted`、`interrupted_at`、`last_topic`。成功后结束、仅报告还是新建，由调用处的表格行决定。
+Execute `references/finalize-session.md` (idempotency gate, no-op for empty segments, plan replay, and log cleanup); this file defines no additional commit steps. When empty segments return a no-op (and there are no valid support_events either) and the session is ending or switching, the lifecycle removes the old recommendation and temporary context/support_events; this only clears temporary selection and support state and writes no long-term profile. Exception for a selected cross-subject handoff: keep selected_id/transition and confirm closing via source_closed per teaching-transition; the source authorization must not be cleared before the new context succeeds. When there are only a support plan or correction events, still hand to Finalize to commit under the same idempotency protocol; the topic-change judgment of "non-empty" includes support_events, and a requested plan save is not skipped for lack of performance. A normal end uses `status: completed`; interrupting the old topic uses `status: interrupted`, `interrupted_at`, `last_topic`. Whether to end, merely report, or create anew after success is decided by the calling table row.
 
-- **提交失败**：保留日志、会话身份与 plan，说明“这次没有保存成功”，可用 `/learn-save` 重试；STOP。
-- **仅日志清理失败**：说明“学习记录已保存，日志清理未完成”；下次只重试清理，不重复提交科目数据。
+- **Commit failure**: keep the log, session identity, and plan, say "this save did not succeed," allow retry with `/learn-save`; STOP.
+- **Log cleanup failure only**: say "learning records are saved, log cleanup is not finished"; next time only retry cleanup and do not commit subject data again.

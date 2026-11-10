@@ -1,30 +1,30 @@
-# 英语多轮推进
+# English Multi-Turn Progression
 
-一段材料、一个情境或一个任务是一个**回合串**，不是一道题。每轮仍只问一个主要问题；学生答完后留在同一材料换一个角度，角度走完或学生明确要走时才收束。
+A piece of material, a situation, or a task is a **turn arc**, not a single question. Each turn still asks only one main question; after the student answers, stay on the same material and change angle, wrapping up only when the angles are exhausted or the student explicitly wants to leave.
 
-## 规则
+## Rules
 
-1. **一次一问，串行推进**：每轮只保留一个主要待答问题，学生回应后再给下一个角度。不把几个问题一次抛出，也不在一个角度答对后换材料。
-2. **同材多角度**：按下面的角度库选 2–4 个角度，覆盖整体意思、一个事实、原因或结果、联系自己、复述或再用。每轮换一个角度，不重复问同一事实。
-3. **适当发散**：从学生的回答、图片或生活经验长出一个相关追问；一到两轮内回到材料主线。发散不另起材料，也不在同一轮既发散又收束。
-4. **收束条件**：角度覆盖完、学生说累/想换/结束、或连续两轮无回应。收束时才总结并给下一步；单个正确答案只推进下一个角度。
-5. **不重复呈现**：材料只在第一轮完整给出；后续回合用指回原句、图片或关键词的方式继续，不整篇重发。
+1. **One question at a time, in sequence**: keep only one main pending question per turn, and give the next angle after the student responds. Do not throw out several questions at once, and do not switch material after one angle is answered correctly.
+2. **Same material, multiple angles**: pick 2–4 angles from the angle library below, covering overall meaning, one fact, cause or result, connecting to oneself, retelling or reuse. Change one angle per turn, and do not ask about the same fact twice.
+3. **Appropriate divergence**: grow one related follow-up from the student's answer, a picture, or life experience; return to the material's main line within one or two turns. Divergence does not start new material, and does not both diverge and wrap up in the same turn.
+4. **Wrap-up conditions**: the angles are covered, the student says they are tired/want to change/end, or two consecutive turns get no response. Summarize and give next steps only at wrap-up; a single correct answer only advances to the next angle.
+5. **No re-presenting**: the material is given in full only in the first turn; later turns continue by pointing back to the original sentence, picture, or keyword, without resending the whole piece.
 
-## 角度库
+## Angle Library
 
-| 方法 | 默认角度顺序 |
+| Method | Default angle order |
 |---|---|
-| 阅读 / 新闻 | 整体意思 → 一个事实或数字 → 原因或结果 → 图片或标题 → 联系自己/看法 → 一句话复述 |
-| 故事（可理解输入） | 场景或人物 → 发生了什么 → 为什么/接下来 → 联系自己 → 再用一个表达 |
-| 对话（互动） | 真实信息差 → 追问一个细节 → 澄清一处意思 → 换一个场景继续 |
-| 表达（输出） | 说出意思 → 补一个细节 → 听者追问 → 换对象或场景再说一次 |
-| 任务 | 说清结果 → 做准备或选择 → 执行中的请求 → 展示结果 → 复盘一句 |
-| 句型（用法积累） | 听懂或认出 → 换一个空 → 换一个对象 → 新场景自己说 |
-| 复习（间隔提取） | 无提示回想 → 给一处提示 → 换语境再用 → 隔一段时间再问 |
-| 自由活动（coach） | 定结果 → 第一步 → 按回应选下一步 → 换情境或收束 |
+| Reading / news | overall meaning → one fact or number → cause or result → picture or headline → connect to self/opinion → one-sentence retelling |
+| Story (comprehensible input) | scene or character → what happened → why/what next → connect to self → reuse one expression |
+| Dialogue (interaction) | real information gap → follow up on one detail → clarify one meaning → continue in a different scene |
+| Expression (output) | say the meaning → add one detail → listener follow-up → say it again to a different listener or scene |
+| Task | state the outcome → prepare or choose → requests during execution → show the result → one-sentence reflection |
+| Pattern (usage accumulation) | understand or recognize → change one blank → change one object → say it yourself in a new scene |
+| Review (spaced retrieval) | recall without hints → give one hint → reuse in a new context → ask again after an interval |
+| Free activity (coach) | set the outcome → first step → choose the next step by the response → change the situation or wrap up |
 
-一次只取一个角度，不按表从头念到尾；学生已经给出某个角度的证据就跳过它。
+Take only one angle at a time rather than reading the table from start to finish; if the student has already given evidence for an angle, skip it.
 
-## 与证据的关系
+## Relationship to Evidence
 
-角度是教学计划，不是学生表现。答完一个角度只记这个角度的证据；未问到的角度留到后续回合，不预填、不计入掌握。
+Angles are a teaching plan, not student performance. After answering one angle, record only the evidence for that angle; angles not asked about are left for later turns, not prefilled and not counted toward mastery.

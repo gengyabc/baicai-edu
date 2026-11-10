@@ -1,6 +1,6 @@
 ---
 name: polya-problem-solving
-description: 波利亚解题。四至六年级学生遇到多步应用题、陌生题，或不知道选什么策略时使用；按理解、计划、执行、回顾四步引导。
+description: Pólya problem solving. Use when students in grades 4–6 face multi-step word problems, unfamiliar items, or do not know which strategy to choose; guide understand, plan, execute, and look back.
 ---
 # Pólya's Four Steps
 

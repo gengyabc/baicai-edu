@@ -1,71 +1,71 @@
 ---
 name: english-session
-description: 英语教学主线。学习入口路由到英语、恢复未完成的英语焦点，或故事、对话、任务、词汇复习与新闻阅读回合使用；支持 learn 与 feynman 模式。
+description: English teaching mainline. Use when the learning entry routes to English, resumes an unfinished English focus, or runs story, conversation, task, vocabulary review, and news-reading turns; supports learn and feynman modes.
 user-invocable: false
 ---
 
-# 英语教学
+# English Teaching
 
-## 开始与输入
+## Start and Input
 
-加载 `english-core`，按其“开始与输入”执行，并按其条件表读 reference。入口已检查会话、学生与快照；本 skill 不重复检查或重读。
+Load `english-core`, follow its "Start and Input", and read references per its condition table. The entry has already checked the session, student, and snapshot; this skill does not recheck or reread them.
 
-- `mode: feynman` 时先按 `learn-core` 的费曼规则由 AI 扮演同龄听众，本轮让学生主讲，不新开新闻检索或新的写作任务。
-- `target_context` 已由入口按 `english-target` 归类；本 skill 不重新解析材料类别，只选本轮动作。
+- When `mode: feynman`, first follow the `learn-core` Feynman rules: the AI plays a same-age listener and the student does the explaining this turn; do not start a new news search or a new writing task.
+- `target_context` has already been classified by the entry per `english-target`; this skill does not reparse the material category, it only picks this turn's action.
 
-## 学习推荐闸门
+## Learning Recommendations Gate
 
-学生不知道学什么、问“学什么”、想换内容但未给具体目标，或阶段选择「换个内容」时，在教学、费曼或方法恢复前加载 `learn-recommend`。交入口已有快照、当前焦点与最新真实表现，由它读取 `english-core` 契约的「学习推荐」角色；停在推荐选择，不调用 coach 或其他方法开展教学/诊断、不产 `session_segment`、不修改 `context.focus` 或长期档案、不清画板。已明确新目标则交共享生命周期处理，不再要求推荐选择。
+When the student does not know what to learn, asks "what should I learn", wants different content without a specific goal, or picks the stage action `ui.stage.switch_content` (resolved via the `learn` locale catalog), load `learn-recommend` before teaching, Feynman, or method resumption. The entry already supplies the snapshot, current focus, and latest real performance; `learn-recommend` reads the "Learning recommendations" role of the `english-core` Subject contract. Stop at the recommendation choice: do not call the coach or any other method to teach or diagnose, do not produce a `session_segment`, do not modify `context.focus` or the long-term profile, do not clear the board. If a new goal is already explicit, hand it to the shared lifecycle without requiring a recommendation choice.
 
-推荐理由统一中文，推荐卡片与流程标签可中文；选定后恢复英语教学。候选内容与排序由角色文件决定，可重排普通恢复候选；选定后的方法调度仍只按本 session 与 `english-teaching-core.md` 唯一方法表执行。
+Recommendation reasons use the student's UI locale, and recommendation chrome may also use it (resolved from `profile.language` per `learn-data` `references/ui-locale.md`); English teaching resumes once a choice is made. Candidate content and ordering are decided by the role file, which may reorder ordinary resume candidates; after a choice, method dispatch still follows only this session and the single method table in `english-teaching-core.md`.
 
-## 附加选项
+## Stage Options
 
-普通学习目标闭环时，回传 `stage_options`，由入口按 `learn-data` 的 `references/next-step.md` 展示：
+When an ordinary learning goal closes, return `stage_options` for the entry to present per `learn-data` `references/next-step.md`. Do not hard-code labels; each option names catalog keys, resolved at presentation time via `profile.language` using the `learn` ui-locale protocol (`learn-data` `references/ui-locale.md`; this subject's catalog is `references/locales/<locale>.json` in `english-core`):
 
-- `label: 读一个故事`、`action: reading_material`、`description: 用一段短故事再理解一次`
-- `label: 说一说`、`action: speaking_practice`、`description: 用刚学的表达回答一个真问题`
-- `label: 玩一个任务`、`action: task_activity`、`description: 为一个具体结果使用英语`
-- `label: 复习旧表达`、`action: review`、`description: 在新的小情境里回想旧词或旧句型`
+- `label: ui.stage.reading_material`, `action: reading_material`, `description: ui.stage.reading_material.description`
+- `label: ui.stage.speaking_practice`, `action: speaking_practice`, `description: ui.stage.speaking_practice.description`
+- `label: ui.stage.task_activity`, `action: task_activity`, `description: ui.stage.task_activity.description`
+- `label: ui.stage.review`, `action: review`, `description: ui.stage.review.description`
 
-学生选择或直接说出同义请求时执行对应动作，不再问是否继续。阶段选项不改变难度门槛，也不把四种方法同时展开。
+When the student picks one or states an equivalent request directly, execute the matching action without asking whether to continue. Stage options do not change the difficulty gate and do not expand all four methods at once.
 
-## 1. 定焦点与分支
+## 1. Set Focus and Branch
 
-1. 优先 `target_context.topic`，否则用生命周期恢复的 `focus` 与动作；仍无目标时按生命周期 Resolve Target 的档案候选顺序，默认领域取 `english-core` 的 `references/english-grade-defaults.md`。
-2. 文件目标：从 `material_refs` 指向的 extracted 内容选本轮焦点；已有学生答案时先核对答案，再决定理解、表达或修改。
-3. 宽泛目标先选一个具体焦点：一个故事、一个场景、一个句型、一组词或一个任务，不一次覆盖整单元。
-4. 定 `submode`：新主题 `learn`，近邻练习 `practice`，旧表达回想 `review`，费曼 `feynman`。
-5. `mode: feynman` 优先；本轮只让学生讲，追问点按其实际表达选一个。
-6. 按 `english-core` 的 `references/english-teaching-core.md` 唯一方法表，根据 `target_context.type` 与当前观察选择并加载主方法（新闻即 `child-news-reader`）。本 skill 是唯一调度者；coach 的跨轮计划与辅助建议也由本 skill 取舍，不自动展开整套方法。选定后按 `english-core` 的 `references/english-turn-arc.md` 排 2–4 个角度，本轮只执行第一个。
-7. 待答步骤优先；每轮只保留一个主要待答问题，不因活动切换再追加一组问题。
+1. Prefer `target_context.topic`; otherwise use the `focus` and action restored by the lifecycle. With still no target, follow the lifecycle Resolve Target profile-candidate order, taking the default domain from `english-core` `references/english-grade-defaults.md`.
+2. File target: pick this turn's focus from the extracted content that `material_refs` points to. If the student's answers are already present, check the answers first, then decide on comprehension, expression, or revision.
+3. For a broad target, first pick one concrete focus: one story, one scene, one pattern, one set of words, or one task; do not cover a whole unit at once.
+4. Set `submode`: new topic `learn`, neighboring practice `practice`, recalling old expressions `review`, Feynman `feynman`.
+5. `mode: feynman` takes priority; this turn only lets the student explain, and the follow-up point is chosen from what they actually said.
+6. Using the single method table in `english-core` `references/english-teaching-core.md`, select and load the main method from `target_context.type` and current observations (news means `child-news-reader`). This skill is the only dispatcher; the coach's cross-turn plan and auxiliary suggestions are also weighed by this skill, and the whole method set is not expanded automatically. After selection, arrange 2–4 angles per `english-core` `references/english-turn-arc.md` and execute only the first this turn.
+7. A pending step takes priority; keep only one main pending question per turn, and do not add another set of questions just because the activity changed.
 
-完成条件：一个焦点、明确模式、一个主方法和一个下一动作；待答问题仍在时接着它。
+Completion condition: one focus, a clear mode, one main method, and one next action; if a pending question remains, continue from it.
 
-## 2. 推进一个动作
+## 2. Advance One Action
 
-按 `english-core` 的 `references/english-teaching-core.md` 执行：
+Follow `english-core` `references/english-teaching-core.md`:
 
-- 先按共享确认协议核对完整消息，再判断有无回答。学生用中文、单词、半句或手势回应都按参与处理。
-- 给一段可理解的材料，问回合串的第一个问题，停在问题并等待；问题后不附“你可以说……”“先跟我读……”或完整答案。学生回答后留在同一材料，按 `english-core` 的 `references/english-turn-arc.md` 换下一个角度。
-- 有回答时按教学核心的反馈规则承接意思；记录证据按 segment 字段约定，不在本 skill 另设标准。
-- 无响应按共享协议保留待答问题或降低表达负担；不把空消息当失败，不在同轮追加提示。
-- 生成或调整材料前读 `english-core` 的 `references/english-input-adaptation.md`；学生明确求助或卡住时读其 `references/english-scaffolding.md`，不必额外加载方法才能给提示。
-- 阅读题、作业或写的句子：只核对当前一处，指出一个最值得改的点；不给分数或等级。
-- 新闻：按 `child-news-reader` 执行；没有可靠来源时明确说无法核实，不编造。
-- 写作：以短句和仿写为主，保留学生自己的意思；只改一处最影响可读性的地方，不替学生重写整段。
-- 新的 `session_id` 不沿用上一场的故事、单词表或未答问题；档案里的下一步只用来选新的英语目标。
+- First check the complete message under the shared confirmation protocol, then decide whether there is an answer. A reply in the student's first language, a single word, a half sentence, or a gesture all count as participation.
+- Give one comprehensible piece of material, ask the first question of the turn arc, stop at the question, and wait. Do not follow the question with "You can say ...", "Repeat after me ...", or a full answer. After the student answers, stay on the same material and switch to the next angle per `english-core` `references/english-turn-arc.md`.
+- When there is an answer, receive its meaning under the teaching-core feedback rules; record evidence per the segment field conventions, and do not set another standard in this skill.
+- For non-response, keep the pending question or lower the expression load per the shared protocol; do not treat an empty message as failure, and do not add hints in the same turn.
+- Before generating or adjusting material, read `english-core` `references/english-input-adaptation.md`; when the student explicitly asks for help or is stuck, read its `references/english-scaffolding.md`; no extra method needs loading just to give a hint.
+- Reading questions, homework, or written sentences: check only the current spot, point out the one most worthwhile fix; give no score or grade.
+- News: follow `child-news-reader`; with no reliable source, say plainly it cannot be verified and do not fabricate.
+- Writing: mainly short sentences and imitation, keeping the student's own meaning; change only the one spot that most hurts readability, and do not rewrite whole paragraphs for the student.
+- A new `session_id` does not carry over the previous session's story, word list, or unanswered questions; the profile's next step is used only to pick a new English goal.
 
-等待时交入口同步 `context.turn_state`：共享的当前题、已收到回答、待答问题，加上 `active_method`（当前主方法）、`method_step`、回合串已覆盖的角度、已用提示和必要活动计划；新闻另存已呈现文章、来源引用和阅读步骤。辅助方法提供局部支持，不覆盖原活动计划和主步骤；提示次数按同一卡点累计，不因换方法重置。完整文章已呈现后只接当前问题，不重复检索或重新分级；多问题计划逐轮推进，未答内容不算表现。无持久 extracted 引用的文本存 `context.materials`，已有引用则复用，不复制原始学生数据。
+While waiting, have the entry sync `context.turn_state`: the shared current question, received answers, and pending question, plus `active_method` (the current main method), `method_step`, angles already covered in the turn arc, hints used, and any necessary activity plan; for news, also store the presented article, source citations, and reading step. Auxiliary methods provide local support and do not override the original activity plan or main step; the hint count accumulates per stuck point and does not reset when the method changes. Once a full article has been presented, continue only with the current question and do not re-search or regrade; multi-question plans advance one turn at a time, and unanswered items do not count as performance. Text without a persistent extracted reference is stored in `context.materials`; if a reference exists, reuse it and do not copy raw student data.
 
-同一日志恢复时先处理 lifecycle 的显式结束、模式或主题请求，再接 active_method 与步骤；旧日志缺标记时按已有材料和待答问题恢复，缺关键信息只问一处。方法收束后清除活动标记，新 session 不继承旧待答状态。
+When resuming the same log, first handle the lifecycle's explicit end, mode, or topic requests, then continue with `active_method` and step; if an old log lacks markers, resume from existing material and pending questions, asking about only one spot if key information is missing. After a method wraps up, clear the active markers; a new session does not inherit old pending state.
 
-完成条件：提出一个可回答的英语问题，或处理当前回答后给一个动作；依赖新回应的步骤等待，只凭证据确认理解或水平。
+Completion condition: either one answerable English question is asked, or the current answer is handled and one action is given; steps that depend on a new response wait, and understanding or level is confirmed only from evidence.
 
-## 3. 收束与回传
+## 3. Wrap Up and Return
 
-已有理解或表达证据时，用一句学生能复述的话总结，给一个小的下一步；待答时保留当前问题。单个角度答对时继续下一个角度，只有回合串的角度走完，或学生明确要走时才收束并给下一步选项。结束、保存或换主题交共享生命周期。
+When there is evidence of understanding or expression, summarize in one sentence the student could repeat and give one small next step; while an answer is pending, keep the current question. When a single angle is answered correctly, continue to the next angle; wrap up and offer next-step options only when the turn arc's angles are exhausted or the student explicitly wants to leave. Ending, saving, or changing topics goes to the shared lifecycle.
 
-读 `english-core` 的 `references/english-segment-fields.md`，回传唯一 `session_segment`：`subject: english`，`mode` 沿用调用方，`submode` 如上，`source` 对齐 `target_context.source`。方法 skill 的证据并入同一记录，不另记一轮。`diagnosis` 只用一个主标签；`current_levels` 只在有足够证据时给部分更新。
+Read `english-core` `references/english-segment-fields.md` and return the single `session_segment`: `subject: english`, `mode` inherited from the caller, `submode` as above, and `source` aligned to `target_context.source`. Method-skill evidence is merged into the same record, not logged as another turn. `diagnosis` uses only one main label; `current_levels` gives a partial update only when evidence is sufficient.
 
-完成条件：必填字段齐全，理解、表达、校正或困难有证据；没有证据的可选字段省略。
+Completion condition: required fields are complete, and understanding, expression, correction, or difficulty has evidence; optional fields without evidence are omitted.

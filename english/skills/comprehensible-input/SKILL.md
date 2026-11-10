@@ -1,6 +1,6 @@
 ---
 name: comprehensible-input
-description: 可理解输入。读英语故事或材料，或学生理解新材料困难时加载；用熟悉语境承载少量新语言。
+description: Comprehensible input. Load when reading English stories or materials, or when the student struggles to understand new material; carry a little new language in familiar context.
 user-invocable: false
 ---
 # Comprehensible Input — Krashen
@@ -9,7 +9,7 @@ Offer meaningful language largely understandable through context, with modest ne
 ## Variables
 age, comprehension_level, known_words, interests, context_support, modalities, home_language, attention_span, target_expressions.
 
-Follow the “方法 skill” contract in `english-core`.
+Follow the “Method skills” contract in `english-core`.
 
 ## Procedure
 1. Use the current comprehension evidence; if absent, offer a low-load scene rather than restarting assessment on every turn.

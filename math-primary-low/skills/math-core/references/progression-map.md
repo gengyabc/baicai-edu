@@ -16,4 +16,4 @@ Older stored arithmetic values: read `flexible_relational` and `structure_extens
 
 `number_and_operations`, `addition_subtraction_word_problems`, `multiplication_division`, `fractions`, `place_value_and_multidigit`, `measurement_and_geometry`, `patterns_and_data`.
 
-Grade band: `learn-data` 的 `references/grade-band-defaults.md`. Math domains by grade: `references/math-grade-defaults.md`.
+Grade band: `references/grade-band-defaults.md` in `learn-data`. Math domains by grade: `references/math-grade-defaults.md`.

@@ -1,6 +1,6 @@
 ---
 name: scaffolding-zpd
-description: 提示与退让。英语任务出现明确卡点，需要逐级提示再逐步撤除时辅助加载。
+description: Scaffolding and fade. Load as support when an English task hits a clear stuck point that needs graded hints then gradual withdrawal.
 user-invocable: false
 ---
 # Scaffolding and ZPD — Vygotsky
@@ -9,7 +9,7 @@ Offer just enough assistance for a reachable task and withdraw support as indepe
 ## Variables
 age, target_task, observed_independence, hints_used, confidence, support_level, frustration_signals, modalities.
 
-Follow the “方法 skill” contract in `english-core`.
+Follow the “Method skills” contract in `english-core`.
 
 ## Procedure
 1. Identify the gap between the child's current attempt and the next reachable action, using actual task evidence rather than a claimed numeric ZPD.

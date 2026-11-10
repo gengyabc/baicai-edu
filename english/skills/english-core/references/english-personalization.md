@@ -1,26 +1,26 @@
-# 英语个性化
+# English Personalization
 
-共享边界（不得覆盖目标、隐私、每轮一个细节、自评优先级）按 `learn-core` 的 `references/prestart-settings-interpretation.md`。本文规定这些信息在英语里怎么用。
+Shared boundaries (which may not override goals, privacy, one detail per turn, or self-report priority) follow `learn-core` `references/prestart-settings-interpretation.md`. This file specifies how that information is used in English.
 
-## 兴趣与经历
+## Interests and Experiences
 
-读取 `personal.interests`，留在档案里。故事场景、任务角色、例句内容和活动选择可以取一个具体兴趣细节；不把每个例句都塞满兴趣，也不因学生喜欢某样东西就只谈那样东西。
+Read `personal.interests` and leave it in the profile. Story scenes, task roles, example sentence content, and activity choices may take one concrete interest detail; do not stuff every example sentence with interests, and do not talk only about something just because the student likes it.
 
-学生自己能开始、正在顺着自己的说法往下走、或只是答得慢时，兴趣留在档案里，不打断。
+When the student can start on their own, is following their own line of thought, or is just answering slowly, leave interests in the profile and do not interrupt.
 
-学生已经尝试当前任务、明确说不会，眼前又没有可继续的办法时，可以用一个兴趣细节重述同一段材料或同一个任务；保持原来的语言目标和问题，只换故事里的对象或场景。重述后仍做不下去，按 `references/english-scaffolding.md` 给一处最小提示或停在这里，不因兴趣桥接另换题；是否调整语言负荷由 `references/english-input-adaptation.md` 依据当前表现决定。事实材料只能换辅助解释，不能把新闻中的事实对象替换为兴趣对象。
+When the student has tried the current task, clearly said they cannot do it, and there is no way to continue in sight, one interest detail may be used to restate the same material or the same task; keep the original language goal and question, and change only the object or scene in the story. If they still cannot proceed after the restatement, give the smallest hint per `references/english-scaffolding.md` or stop there; do not switch to another task because of interest bridging; whether to adjust the language load is decided by `references/english-input-adaptation.md` from current performance. For factual material, only the supporting explanation may change; do not replace the factual subject of the news with an interest subject.
 
-`personal.most_exciting_event` 只在确实能当一个具体场景或鼓励时使用，由学生决定是否采用；难过经历与隐私边界按 prestart，不主动拿来造句或搭桥。
+`personal.most_exciting_event` is used only when it can genuinely serve as a concrete scene or encouragement, and the student decides whether to adopt it; sad experiences and privacy boundaries follow prestart, and are never proactively used to build sentences or bridges.
 
-## 偏好
+## Preferences
 
-科目 `profile.preferences` 键名如下；呈现边界按 prestart：
+Subject `profile.preferences` keys are as follows; presentation boundaries follow prestart:
 
-- `likes_stories`：优先用故事或情境承载语言；故事仍只围绕当前一个目标。
-- `likes_games`：把练习包成一个有选择的小任务或游戏，不把游戏当额外奖励。
-- `likes_speaking`：先邀请学生说，接受单词、半句或中文补充；不先要求写。
-- `likes_reading`：给短文本和读的机会，不把每段都变成理解题。
+- `likes_stories`: prefer carrying language in stories or situations; the story still revolves around the one current goal.
+- `likes_games`: wrap practice in a small task or game with choices; do not treat the game as an extra reward.
+- `likes_speaking`: invite the student to speak first, accepting single words, half sentences, or first-language supplements; do not require writing first.
+- `likes_reading`: give short texts and chances to read; do not turn every passage into comprehension questions.
 
-## 费曼追问
+## Feynman Follow-ups
 
-费曼追问意思、场景和用法。学生用中文解释时，先确认意思，再请一个英语例子，不要求术语或完整语法说明。换角度确认时核对学生已经说过的一处意思或用法。停止条件按 `learn-core` 的 `references/confirm-before-accept.md`。
+Feynman follow-ups ask about meaning, scene, and usage. When the student explains in their first language, confirm the meaning first, then ask for one English example; do not require terminology or a full grammar explanation. When confirming from another angle, check one meaning or usage the student has already stated. Stopping conditions follow `learn-core` `references/confirm-before-accept.md`.

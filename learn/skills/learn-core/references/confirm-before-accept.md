@@ -1,22 +1,22 @@
-# 按需确认
+# Confirm on Demand
 
-目标是判断当前回应是否成立，并推进学习；确认不是每题必走的问答仪式。
+The goal is to judge whether the current response holds up and to advance learning; confirmation is not a question-and-answer ritual required for every question.
 
-## 先判证据，再选动作
+## Judge the evidence first, then choose the action
 
-先读取本条消息的全部正文与附件，再对照当前待答问题核对结论，复用已有过程。按题目要求识别答案粒度；附件与短答同时存在时，两者共同处理，附件说明为空不抹去正文答案。只有正文和可用材料都没有作答时，才进入无响应分支。
+First read the full body and attachments of this message, then check the conclusion against the current pending question, reusing the process already shown. Identify answer granularity per the question's requirements; when an attachment and a short answer both exist, handle them together, and an empty attachment description does not erase the answer in the body. Only when neither the body nor the usable material contains an answer does it enter the no-response branch.
 
-- **结论和关键关系清楚**：简短确认，进入一个近邻任务或收束。只有在解释不清楚时，才要求复述、换算法或额外验算。
-- **结论正确，方法未知**：可以认可本题答案；确需了解策略时，只问一个缺口。刚展示过同类方法的近邻题，正确短答即可接着走。
-- **含义不明**：只澄清影响当前判断的含义，学生澄清后接续原任务。
-- **存在具体矛盾**：先检查教学助手自己的理解和反馈，再指向已核实的一处矛盾；求助或实际卡住时给局部支持。
+- **Conclusion and key relationships are clear**: confirm briefly and move to a neighboring task or wrap up. Only when the explanation is unclear, ask for a restatement, a different method, or an extra check.
+- **Conclusion correct, method unknown**: you may accept the answer to this question; when you really need to know the strategy, ask about just one gap. On a neighboring question right after a similar method was just shown, a correct short answer lets you move on.
+- **Meaning unclear**: clarify only the meaning that affects the current judgment, and resume the original task once the student clarifies.
+- **A specific contradiction exists**: first check the teaching assistant's own understanding and feedback, then point to one verified contradiction; when the student asks for help or is truly stuck, give local support.
 
-完成条件：本题结论已核对，或留下一个有明确用途的待答问题。认可当前答案不等于认定长期掌握；长期技能确认仍按 `references/feynman-skill-whitelist.md` 的证据门槛记录。
+Completion condition: the conclusion of this question has been checked, or one pending question with a clear purpose remains. Accepting the current answer does not equal concluding long-term mastery; long-term skill confirmation is still recorded per the evidence threshold in `references/feynman-skill-whitelist.md`.
 
-## 追问预算
+## Follow-up Budget
 
-同一缺口最多追问一次。下一次回应仍未补足时，按 `references/guidance-non-response-handling.md` 降低表达负担、给局部支持，或带着“策略待确认”转到近邻题；重复索要同一解释不会增加证据。
+Follow up at most once on the same gap. If the next response still doesn't fill it, per `references/guidance-non-response-handling.md` lower the expression burden, give local support, or move to a neighboring question with "strategy to be confirmed"; asking repeatedly for the same explanation adds no evidence.
 
-换角度验证只用于解决尚存的疑点，或本轮目标本来就是验证。选一个检查即可：回到学生原来的办法，或已给出的一处证据。检查什么由当前学科包规定。检查已经支持结论就停止验收。
+Verifying from another angle is only for resolving a remaining doubt, or when this turn's goal is verification to begin with. One check is enough: return to the student's original method, or to one piece of evidence already given. What to check is set by the current subject package. Stop checking once it already supports the conclusion.
 
-空消息保留待答状态；短答、重申结论和纠正教学助手本身都不是错误证据。
+An empty message keeps the pending state; short answers, restating a conclusion, and correcting the teaching assistant itself are not error evidence.

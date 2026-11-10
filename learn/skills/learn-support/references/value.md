@@ -1,25 +1,25 @@
-# 价值支持 · value
+# Value Support · value
 
-## 触发
+## Trigger
 
-学生主动问所学用途，或明确说与自己的目标无关。先确认是在问事实用途、任务是否适合，还是需要联系个人目标；只问事实用途就据实回答，不先假定价值不足。若其实是没有时间、费用或应用机会，先处理现实条件；单次答错不触发价值干预。
+The student actively asks what the material is used for, or explicitly says it is unrelated to their own goals. First confirm whether they are asking about practical use as a fact, whether the task is suitable, or whether a link to personal goals is needed; if they only ask about practical use, answer truthfully and do not presume a lack of value first. If the real issue is no time, cost, or opportunity to apply it, handle the real-world conditions first; a single wrong answer does not trigger a value intervention.
 
-## 建议动作
+## Suggested Actions
 
-1. 承认问题，不强求兴趣；考试、工作要求、好奇、审美与生活需要都可作为理由。
-2. 邀请学生自己生成一条联系：“这一步可能帮你做成什么？”具体经验不足时提供一个低压力例子，让学生修改、拒绝或提出自己的联系，不灌输职业前景。
-3. 学生愿意尝试时，选一个仍服务当前目标的真实小任务检验联系。例如用当前材料解决学生提出的小问题。内容、难度和成果标准由当前教学主导者确定；目标改变先走确认流程。
+1. Acknowledge the question without forcing interest; exams, work requirements, curiosity, aesthetics, and life needs can all be reasons.
+2. Invite the student to generate a link themselves: "What might this step help you accomplish?" When concrete experience is lacking, offer one low-pressure example that the student can revise, reject, or replace with their own link; do not push career prospects.
+3. When the student is willing to try, choose a real small task that still serves the current goal to test the link, for example using the current material to solve a small problem the student raised. Content, difficulty, and outcome standards are decided by the current teaching owner; a change of goal first goes through the confirmation flow.
 
-`action` 返回联系生成或小任务之一为主，必要时辅助一次小步支架；`support_update` 仅记录中性需求与观察目标。
+`action` returns either link generation or a small task as the main item, with at most one small-step scaffold as an aid; `support_update` records only the neutral need and the observation target.
 
-## 观察
+## Observation
 
-分开看学生是否自述找到联系、是否愿意/实际尝试，以及在何种支持下亲自完成了什么。说“有用”不等于任务参与或掌握；真实任务也可能说明该用途不适合。
+Look separately at whether the student reports finding a link, whether they are willing to/actually try, and what they completed personally under what support. Saying "useful" is not the same as task participation or mastery; a real task may also show that the use is unsuitable.
 
-## 退出
+## Exit
 
-有可尝试理由/任务后即回教学；学生拒绝或不愿讨论立即退出。仍无联系时允许保留外部要求、重新评估目标或暂停，不继续劝说。无时间或资源先处理条件，不贴动机标签。
+Return to teaching once there is a reason/task to try; if the student refuses or is unwilling to discuss, exit immediately. If there is still no link, allow keeping the external requirement, reassessing the goal, or pausing, without further persuasion. With no time or resources, handle the conditions first and do not attach a motivation label.
 
-## 依据
+## Basis
 
-[SEVT 与价值生成实验](evidence.md#sevt)：价值、成功期望和成本共同考虑；所引价值生成实验来自高中科学课堂，不能承诺低龄、其他任务或职业转型者同样获益。
+[SEVT and value-generation experiments](evidence.md#sevt): consider value, success expectation, and cost together; the cited value-generation experiments come from high-school science classrooms and cannot promise the same benefit for younger learners, other tasks, or career changers.

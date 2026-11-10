@@ -1,21 +1,21 @@
 ---
 name: learn-save
-description: 保存当前学习会话。学生明确要求保存进度、记录本次学习或保存具体学习计划时使用。
+description: Save the current learning session. Use when the student explicitly asks to save progress, record this learning turn, or save a concrete learning plan.
 ---
 
 # Save
 
-学生明确要求保存时使用；不逐轮自动调用，不启动教学或诊断，不加载学科 skill，不碰 raw 文件。日志准备与写回由共享生命周期的保存分支执行，本技能不创建第二写入者。
+Use only when the student explicitly asks to save. Do not call it automatically every turn, start teaching or diagnosis, load a subject skill, or touch raw files. Log preparation and write-back are performed by the shared lifecycle's save branch; this skill does not create a second writer.
 
-## 准备请求
+## Prepare the Request
 
-1. 加载尚未加载的 `learn-core`、`learn-data`。按 Read Snapshot 确认当前学生并获取日志；没有学生时引导 `/learn-start`，停止。若有 pending_transition 先按数据协议恢复交接；仅保存不自动开课。
-2. **先恢复未完成提交，再先处理本条的新保存意图**：日志已有 finalize_plan 时重放/清理旧计划，成功后才承接本条额外明确提出的新计划或更正；没有新内容只是重试则报告旧结果，不能重复追加。提交完成的旧 marker 不代表本条新计划已经保存。
-3. 有明确中性计划/更正，或本条 `/learn-save` 明确指向当前已形成的具体计划时：已有纯支持 context 且未提交，沿用原 session_id，将确认内容写成 support_events；已有教学日志也可加入事件，不伪造表现。日志已提交则先完成清理，再以新 session_id 创建支持日志；无日志同样新建。事件 id 先持久化，重试沿用。只有“保存一下”但指代不明且没有已形成计划时，问一句保存什么，不推断敏感内容或补造计划。形状/更正规则按 `learn-data` 的 `references/session-schema.md` 与 `references/finalize-session.md`。
-4. 没有新支持内容：有未提交日志则保留身份和原 entry_point；已提交且无新内容只报告原结果。没有日志但确有对话中已发生的教学表现时，组装一个最小 segment（按 Session Segments）：source 为 save，mode/submode 按实际填写，未知观察留空，不补诊断。先由生命周期写新日志，entry_point 为 learn-save，session_id 按其 Open Or Resume 生成。没有任何可保存内容就说明并停止。
+1. Load `learn-core` and `learn-data` if not already loaded. Confirm the current student and obtain the log per Read Snapshot; with no student, direct to `/learn-start` and stop. If a pending_transition exists, first recover the handoff per the data protocol; saving alone never starts a lesson automatically.
+2. **Recover any unfinished commit first, then handle this turn's new save intent.** If the log already has a finalize_plan, replay/clean up the old plan; only after that succeeds, accept any extra explicit new plan or correction given in this turn. If there is no new content and this is merely a retry, report the old result and never append twice. A completed old marker does not mean this turn's new plan has been saved.
+3. When there is an explicit neutral plan/correction, or this turn's `/learn-save` clearly refers to a concrete plan already formed: if a pure-support context exists and is uncommitted, keep the original session_id and write the confirmed content as support_events; an existing teaching log can also receive the events, without fabricating performance. If the log is already committed, finish cleanup first and then create a support log with a new session_id; with no log, also create a new one. Persist the event id first and reuse it on retry. If the student only says "save it" with an ambiguous referent and no formed plan, ask one question about what to save; do not infer sensitive content or invent a plan. Shape/correction rules follow `references/session-schema.md` and `references/finalize-session.md` in `learn-data`.
+4. With no new support content: an uncommitted log keeps its identity and original entry_point; if already committed with no new content, report only the original result. With no log but real teaching performance that happened in the conversation, assemble one minimal segment (per Session Segments): source is save, fill mode/submode as actually used, leave unknown observations empty, and add no diagnosis. The lifecycle writes the new log first, with entry_point `learn-save` and a session_id generated per its Open Or Resume. If there is nothing to save, say so and stop.
 
-## 最终保存
+## Final Save
 
-读取并执行 `learn-data` 的 `references/finalize-session.md`，保存成功后结束原活跃循环，之后继续学习开新日志。先成功写日志事件或表现，再进入幂等门；准备失败不报告已保存。
+Read and execute `references/finalize-session.md` from `learn-data`. After a successful save, end the original active loop; continuing to learn afterward opens a new log. Write the log events or performance successfully first, then enter the idempotency gate; if preparation fails, do not report it as saved.
 
-成功按实际内容回复一句：学科学习记录、通用任务进度或学习计划已保存。空内容 no-op 说明没有长期记录可汇总，不将临时情绪写成长久计划；提交失败保留日志可重试，仅清理失败按 finalize 区分报告。
+On success, reply with one sentence matching the actual content: subject learning record, general-task progress, or learning plan saved. For an empty no-op, say there is no long-term record to summarize, and do not write temporary emotions as a lasting plan; on commit failure keep the log so it can be retried, and if only cleanup fails, report it separately per finalize.

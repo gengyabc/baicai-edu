@@ -1,35 +1,35 @@
 # Next Step
 
-普通学习按回应自然接续；一次作答不是一次结束决策。输入：最新 segment、subject、focus、学生本轮表现，以及 memory 的 `recommended_next_moves`、`motivation_signals`、`feynman_readiness`（字段位置见 profile-schema）。
+Ordinary learning continues naturally from the response; one answer is not one end decision. Inputs: the latest segment, subject, focus, the student's performance this turn, and memory's `recommended_next_moves`, `motivation_signals`, `feynman_readiness` (field locations in profile-schema).
 
 ## Choose
 
-1. 从本轮成功点和未解决点中选一个目标：稳定、变式、连接或轻微抽象。
-2. 生成一个 `next_step` 和 1-3 个 `recommended_targets`，优先参考 memory；学生的显式目标优先。
-3. 当前目标尚待练习或确认：直接给一个教学下一步并等待；待答问题仍在时接着它。
-4. 目标闭环，或学生主动问接下来做什么：用 `ask_user_question` 合并呈现基础菜单与当前学科的 `stage_options`。
-   - 附加选项含 `label`（显示文字）、`action`（学科动作）和可选 `description`；它是回传元数据，不另记教学段。
-   - 基础菜单保留「继续」「费曼」「结束」，另加「换个内容」；选中「换个内容」才加载 `learn-recommend`，不在每次闭环时直接展开内容清单。
-   - 合并后超过 6 项时，第一层保留四个基础选项，将学科附加项收进「更多活动」；选中后用第二张卡显示所有附加项及「返回」，不丢弃动作。
-   - 年级只调整措辞和任务难度，不裁剪阶段选项。
-   - 结束意图有歧义时，改用结束信号规定的确认菜单。
-5. `feynman_readiness` 只决定费曼选项是否标推荐、以及进入后的支架难度；`not_ready` 时照常显示但不标推荐，学生选择后降低讲解难度。
-6. 普通阶段选择中学生说“随便”“都行”或跳过选项时，选最合适的一步直接执行；不由此自动换目标。学习推荐卡的明确委托、跳过和空消息按 `learn-recommend` 处理。学生主动问学什么、不知道学什么或想换内容时直接进入推荐，不必先走阶段卡。
+1. From this turn's successes and unresolved points, choose one goal: stabilize, vary, connect, or lightly abstract.
+2. Generate one `next_step` and 1-3 `recommended_targets`, preferring memory; the student's explicit goal takes priority.
+3. When the current goal still awaits practice or confirmation: directly give one teaching next step and wait; if a pending question is still there, continue with it.
+4. When the goal is closed, or the student actively asks what to do next: use `ask_user_question` to present the base menu and the current subject's `stage_options` merged together.
+   - An extra option contains `label`, `action` (subject action), and optional `description`; `label` and `description` are locale keys resolved to display text at presentation time (see `references/ui-locale.md`), and the option is return metadata that does not log a separate teaching segment.
+   - The base menu keeps `ui.stage.continue`, `ui.stage.feynman`, `ui.stage.end`, plus `ui.stage.switch_content`; only when `ui.stage.switch_content` is selected is `learn-recommend` loaded, and a content list is not expanded directly at every closure.
+   - When the merged total exceeds 6 items, the first card keeps the four base options and folds the subject extras under `ui.stage.more_activities`; after it is selected, a second card shows all the extras plus `ui.stage.back`, without dropping any action.
+   - Grade only adjusts wording and task difficulty and does not trim stage options.
+   - When the end intent is ambiguous, switch to the confirmation menu specified by the end signals.
+5. `feynman_readiness` only decides whether the Feynman option is marked recommended (`ui.recommend.badge`) and the scaffolding difficulty after entering; with `not_ready` it is shown as usual but not marked recommended, and the explanation difficulty is lowered after the student chooses it.
+6. In an ordinary stage choice, if the student says "whatever" or "anything works" or skips the options, pick the most suitable step and execute it directly; this does not automatically change the target. Explicit delegation, skips, and empty messages on a learning recommendation card are handled per `learn-recommend`. When the student actively asks what to learn, doesn't know what to learn, or wants to change content, go straight to recommendation without first going through the stage card.
 
 ## Apply Choice
 
-学生已经选定动作就执行，不再询问是否继续。基础动作按 `references/session-lifecycle.md` 的 Dispatch 与 Finalize Or Switch Topic；附加选项按 `action` 交回当前学科主技能，子技能与参数由学科确定，迁移状态由入口统一持久化。学生直接输入同义请求时，也由该学科识别，不要求重新点选。
+If the student has already chosen an action, execute it without asking again whether to continue. Base actions follow Dispatch and Finalize Or Switch Topic in `references/session-lifecycle.md`; extra options are handed back by `action` to the current subject's main skill, with sub-skills and parameters determined by the subject, and transfer state persisted uniformly by the entry. When the student directly types a synonymous request, the subject recognizes it too, and no re-click is required.
 
-## 回合出口
+## Turn Exit
 
-每次普通学习回复完成前，入口落实一个学生可执行的出口：
+Before each ordinary learning reply is complete, the entry settles one exit the student can act on:
 
-- 目标未闭环时提出一个具体教学问题并等待；
-- 目标闭环时在同一轮用 `ask_user_question` 呈现上述阶段选择；
-- 学生已选择或明确指定下一任务时直接路由执行。
+- When the goal is not closed, pose one concrete teaching question and wait;
+- When the goal is closed, present the stage choice above with `ask_user_question` in the same turn;
+- When the student has chosen or explicitly specified the next task, route and execute directly.
 
-`next_step_candidate`、方法总结和“下次可以……”只是内部候选，须落实为当前问题、选择卡或已接上的任务，才算完成交接。
+`next_step_candidate`, method summaries, and "next time you could..." are only internal candidates, and must be settled as a current question, a choice card, or a connected task to count as a completed handoff.
 
-若上一条回复只有总结、没有待答问题或阶段选择，下一条空消息到来时按已有证据补上出口；有待答问题则简短重呈该问题。空消息不新增学习表现，也不视为结束。
+If the previous reply had only a summary and no pending question or stage choice, when the next empty message arrives, add the exit based on existing evidence; if there is a pending question, briefly re-present it. An empty message adds no learning performance and is not treated as an end.
 
-普通教学只推进一个主要下一步；显式学习推荐可以呈现多个候选并标明唯一首选，但选定后仍一次只学一个小目标。结束判断依据具体目标与学生意愿，不用“已经学了很多”替代证据。
+Ordinary teaching advances only one main next step; explicit learning recommendation may present multiple candidates and mark a single preferred one, but after selection it still learns one small goal at a time. The end judgment relies on the specific goal and the student's wishes, and "already learned a lot" does not substitute for evidence.

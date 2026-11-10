@@ -1,32 +1,32 @@
 ---
 name: math-practice
-description: 数学分层练习。需用同类题确认错误模式、用对比解释错因、稳定独立计算、按学生要求多练，或连接已掌握知识时使用。
+description: Leveled math practice. Use to confirm error patterns with similar items, explain causes by contrast, stabilize independent calculation, add practice on request, or connect already-mastered knowledge.
 user-invocable: false
 ---
 
-# 数学练习
+# Math Practice
 
-## 开始与输入
+## Start and Input
 
-加载 `math-core`，按其“开始与输入”执行。另读 `math-core` 的 `references/math-teaching-core.md` 与 `references/targeted-practice-rules.md`（统一目的、题量、逐题调整与完成条件）。
+Load `math-core` and follow its "Start and Input". Also read `math-core`'s `references/math-teaching-core.md` and `references/targeted-practice-rules.md` (unified purpose, problem count, per-problem adjustment, and completion conditions).
 
-重点看快照中的 `profile.current_levels`、`profile.preferences`、`self_report`、`error_history` 与 extracted 分析、`learning_state.active_domain` / `priority_targets`、`learning_memory.recent_error_patterns`，以及已有的 `math-diagnose` 结论。兴趣不进入选题，只按个性化参考搭桥。
+Focus on `profile.current_levels`, `profile.preferences`, `self_report`, `error_history`, and the extracted analysis in the snapshot, `learning_state.active_domain` / `priority_targets`, `learning_memory.recent_error_patterns`, and any existing `math-diagnose` conclusions. Interests do not drive problem choice; bridge only per the personalization reference.
 
-## 执行
+## Execute
 
-1. **定起点**：复用诊断；只需查重复错误可用第1层，需估阶段或澄清不明错因则回传 `continue_diagnose` 与已有证据，由 session 决定下一动作。完成条件：一个待检验/巩固模式，不重查已确定结论。
-2. **选目的**：按练习参考选定当前目的并设计一题。完成条件：目的与题目符合参考。
-3. **逐题推进**：按参考出题、等待、确认、调整。完成条件：当前题待答，或已有证据决定继续、重选目的或返回；后续确认等待回应。
-4. **收束**：达到参考的停止或完成条件，或需重定位卡点时，按参考收束并回传 `return_teaching`；需诊断时回传 `continue_diagnose`，由 session 决定下一动作。完成条件：区分证据与未知。
+1. **Set the starting point**: reuse diagnosis; if you only need to check for repeated errors, tier 1 suffices; if you need to estimate a stage or clarify an unclear error cause, return `continue_diagnose` with the evidence you have and let session decide the next action. Completion condition: one pattern to test/consolidate, without re-checking settled conclusions.
+2. **Choose the purpose**: per the practice reference, pick the current purpose and design one problem. Completion condition: purpose and problem match the reference.
+3. **Advance problem by problem**: pose, wait, confirm, and adjust per the reference. Completion condition: the current problem awaits an answer, or existing evidence decides whether to continue, re-pick the purpose, or return; later confirmation waits for a reply.
+4. **Wrap up**: when the reference's stop or completion condition is met, or the sticking point needs relocating, wrap up per the reference and return `return_teaching`; when diagnosis is needed, return `continue_diagnose` and let session decide the next action. Completion condition: evidence is separated from unknowns.
 
-## 回传
+## Return
 
-仅由 `math-session` 调度，按其“集中调度契约”只回传证据与一个信号，不另产 segment 或写档案。当前题待答时回传 `await_student`，附当前题、步骤和待答问题；需补诊断为 `continue_diagnose`，练习收束为 `return_teaching`，明确结束为 `request_end`。本 leaf 不执行跨 skill 路由。
+Dispatched only by `math-session`; per its "Central Dispatch Contract", return only evidence and one signal, without producing a separate segment or writing the profile. When the current problem awaits an answer, return `await_student` with the current problem, step, and pending question; return `continue_diagnose` when diagnosis is needed, `return_teaching` when practice wraps up, and `request_end` on an explicit end. This leaf does no cross-skill routing.
 
-读 `math-core` 的 `references/math-segment-fields.md`，供 session 合并：
+Read `math-core`'s `references/math-segment-fields.md` for session to merge:
 
-- 分支元信息为 `subject: math`、`submode: practice`，`mode` 沿用调用方，`source` 由 session 按目标来源统一确定。
-- `strategy_summary` 区分对比判断与独立计算，记录已观察证据。
-- `next_step_candidate` 具体建议继续/重选目的或局部支持；`recommended_targets` 为近邻目标，`feynman_handoff_recommended` 按实际需要填。
+- Branch metadata is `subject: math`, `submode: practice`; `mode` is inherited from the caller, and `source` is set uniformly by session from the target source.
+- `strategy_summary` separates contrast judgments from independent calculation and records the observed evidence.
+- `next_step_candidate` gives a concrete suggestion to continue/re-pick the purpose or add local support; `recommended_targets` are neighboring targets, and `feynman_handoff_recommended` is filled as actually needed.
 
-学生只见说明、当前题、确认追问与已展示关系。
+The student sees only the explanation, the current problem, confirming follow-ups, and the relationships already shown.

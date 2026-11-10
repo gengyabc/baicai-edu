@@ -1,11 +1,11 @@
 # Session Schema
 
-每轮教学只需本文件：日志与 segment 的结构。档案、记忆、状态、错题与里程碑模板在 `references/profile-schema.md`，只在建档、初始化缺失文件和 finalize 时读取。
+Each teaching turn needs only this file: the structure of the log and segments. Templates for profile, memory, state, error items, and milestones are in `references/profile-schema.md`, read only when creating a profile, initializing missing files, and finalizing.
 
 ## Session Log
 
 - Path: `outputs/students/<student_id>/<subject>/session_log.json`
-- 未结束会话的事实来源。内存里的 segments 只是缓存。`segments` 的每一项是一则 Session Segment。
+- The source of truth for an unfinished session. Segments in memory are only a cache. Each item of `segments` is one Session Segment.
 
 ```json
 {
@@ -14,10 +14,10 @@
   "started_at": "2026-10-04T12:00:00Z",
   "updated_at": "2026-10-04T12:18:00Z",
   "context": {
-    "focus": "当前焦点",
+    "focus": "current focus",
     "mode": "learn",
     "activity": "teaching",
-    "target_context": { "type": "topic", "topic": "当前焦点", "source": "manual_topic", "files": [], "intent": null },
+    "target_context": { "type": "topic", "topic": "current focus", "source": "manual_topic", "files": [], "intent": null },
     "materials": {},
     "turn_state": {}
   },
@@ -25,46 +25,46 @@
 }
 ```
 
-- `context` 对旧日志可选。新会话和恢复后的会话在目标确定、模式或 activity 变化、以及每一轮之后都写入。这里的 `mode` 是交互模式（`learn` / `feynman`），与 segment 的 `mode` 同义；学科内部分支不写进 `mode`。
-- `context.difficulty_request`（可选）保存学生最近一次明确的难度要求：`{ "direction": "easier" | "harder" | "standard", "note": "...", "requested_at": "..." }`。finalize 写入 `profile_memory.material_difficulty`；没有请求时省略。
-- `activity`：`teaching` / `transfer`。普通教学的 `turn_state` 保存 `current_task`（当前题原文）、`response_format`（作答要求）、`student_response`（已收到的回答，未答为 null）、`pending_question`（最新待答问题，已无则 null）。新题替换当前题及回答；解释追问仍保留原题与答案。恢复时先核对本条消息，再接最新待答问题。迁移把来源领域、已提取手法、当前阶段、轮次和待答问题也放在 `turn_state`，恢复时不重启阶段。
-- `target_context` 的形状、文件处理标记和引用见 `references/target-parsing.md`。`materials` 只在没有持久文件时存放必要的粘贴文本、草稿或作答；已有文件用工作区引用。不把危机或私人经历写在这里。
-- 没有 `context` 的旧日志：恢复最后一段，缺材料或意图就问，不推断。已有 `error_history` 里的 extracted 引用可以读，不重新处理 raw。
-- `finalize_plan` 只由 `references/finalize-session.md` 定义。计划未完成时，先做完保存，再教学、改档案或写错题。
-- `/learn` 与 `/learn-feynman` 都经 `references/session-lifecycle.md` 追加唯一的学科 segment 并更新 context。只有实际学生表现才追加；其他轮次 segment 为 null，只写 context。Finalize 提交四个科目文件后，再清 segments、context 和 plan。
+- `context` is optional for old logs. New sessions and restored sessions write it when the target is determined, when mode or activity changes, and after every turn. The `mode` here is the interaction mode (`learn` / `feynman`), synonymous with the segment's `mode`; subject-internal branches are not written into `mode`.
+- `context.difficulty_request` (optional) stores the student's most recent explicit difficulty request: `{ "direction": "easier" | "harder" | "standard", "note": "...", "requested_at": "..." }`. Finalize writes it to `profile_memory.material_difficulty`; omit it when there is no request.
+- `activity`: `teaching` / `transfer`. For ordinary teaching, `turn_state` stores `current_task` (the original text of the current question), `response_format` (answer requirements), `student_response` (the answer already received, null if unanswered), and `pending_question` (the latest pending question, null if none). A new question replaces the current question and answer; an explanatory follow-up keeps the original question and answer. On restore, first check this message, then pick up the latest pending question. Transfer also puts the source domain, extracted techniques, current stage, round count, and pending question in `turn_state`, and restore does not restart the stage.
+- For the shape, file-processing flag, and references of `target_context`, see `references/target-parsing.md`. `materials` stores necessary pasted text, drafts, or answers only when there is no persistent file; existing files use workspace references. Do not write crises or private experiences here.
+- An old log without `context`: restore the last segment, and ask if material or intent is missing, without inferring. Extracted references already in `error_history` may be read, and raw is not reprocessed.
+- `finalize_plan` is defined only by `references/finalize-session.md`. While a plan is incomplete, finish the save first, then teach, edit profiles, or write error items.
+- `/learn` and `/learn-feynman` both go through `references/session-lifecycle.md` to append the single subject segment and update context. Append only for actual student performance; in other turns the segment is null and only context is written. After Finalize commits the four subject files, segments, context, and plan are then cleared.
 
-## 教学实现与支持状态
+## Teaching implementation and support state
 
-新 context 增加 `scope_id`（选定目标的稳定身份）与 `teaching`，结果及旧日志缺省规则只按 `references/teaching-resolver.md`。新 segment 也带同一 scope_id/teaching；旧段无此字段视为 specialist，不迁移改写。`activity` 另允许 `support`：纯支持时 focus、target_context 可为 null，turn_state 不造当前题；有真实任务时支持叠加其上，保留原 activity、材料、模式与待答题。
+A new context adds `scope_id` (the stable identity of the selected target) and `teaching`; the result and the defaults for old logs follow only `references/teaching-resolver.md`. A new segment also carries the same scope_id/teaching; an old segment without these fields is treated as specialist and is not migrated or rewritten. `activity` additionally allows `support`: with pure support, focus and target_context may be null and turn_state does not fabricate a current question; with a real task, support layers on top and keeps the original activity, material, mode, and pending question.
 
-可选 `context.learning_support`：
+Optional `context.learning_support`:
 
 ```json
 {
   "primary_need": "confidence",
   "status": "hypothesis",
-  "evidence": [{ "source": "student_statement", "observation": "担心当前任务学不会", "date": "2026-11-09T08:00:00Z" }],
+  "evidence": [{ "source": "student_statement", "observation": "Worried they won't be able to learn the current task", "date": "2026-11-09T08:00:00Z" }],
   "method": null,
-  "observation_goal": "观察学生在最小提示后是否愿意尝试当前步骤",
+  "observation_goal": "Observe whether the student is willing to try the current step after a minimal hint",
   "outcome": { "statement": null, "participation": null, "task_performance": null },
   "resume_question": null
 }
 ```
 
-primary_need 为 value / confidence / autonomy / strategies / persistence / conditions / unknown；conditions 表示时间、资源、责任或环境等现实限制，先处理条件，不归为动机不足；unknown 表示证据不足，不要求补齐分类。它们不强制选用五类方法，method 可为 null；普通交流无需创建 learning_support。status 为 hypothesis / clarified / active / observing / declined。evidence.source 为 student_statement / observed_action，推断不能冒充事实，不能记录危机细节或无关私生活。outcome 三项分别是学生自述、参与及任务表现的中性观察，未知用 null；不是动机分或掌握度。普通聊天不生成 segment、掌握或里程碑，不把家庭、情绪和闲聊汇总为学习表现。
+primary_need is value / confidence / autonomy / strategies / persistence / conditions / unknown; conditions means practical limits such as time, resources, responsibilities, or environment, which are handled first as conditions and not classed as insufficient motivation; unknown means insufficient evidence and does not require completing a classification. They do not force use of the five kinds of methods, and method may be null; ordinary conversation need not create learning_support. status is hypothesis / clarified / active / observing / declined. evidence.source is student_statement / observed_action; an inference cannot pose as a fact, and crisis details or irrelevant private life must not be recorded. The three outcome items are neutral observations of the student's own statement, participation, and task performance, using null for unknown; they are not a motivation score or mastery. Ordinary chat generates no segment, mastery, or milestone, and does not summarize family, emotions, and small talk as learning performance.
 
-学生否定或更正理解时，先撤回原假设，再按更正后的必要事实替换 primary_need/evidence；尚不清楚则用 unknown，不把否定本身改记为 declined。清除仅依赖旧假设的 method、observation_goal 与 outcome（未知项用 null），保留真实任务位置、已有表现和仍有效的交流选择/拒绝边界。无必要状态时可移除 learning_support；不为保留假设另存历史或敏感原话。假设被确认也不自动成为长期观察；已保存计划或观察的更正仍经 support_events 与 finalize。
+When the student denies or corrects the understanding, first withdraw the original hypothesis, then replace primary_need/evidence with the necessary corrected facts; if still unclear use unknown, and do not re-record the denial itself as declined. Clear method, observation_goal, and outcome that depended only on the old hypothesis (using null for unknown items), keeping the real task position, existing performance, and the still-valid chat choice/decline boundary. When no state is needed, learning_support may be removed; do not store a separate history or sensitive verbatim to keep a hypothesis. Even a confirmed hypothesis does not automatically become a long-term observation; corrections to saved plans or observations still go through support_events and finalize.
 
-### 临时交流选择与恢复
+### Temporary chat choice and restore
 
-复用 status 与 resume_question，不新增字段、朋友画像或关系分数：
+Reuse status and resume_question, adding no fields, friend profiles, or relationship scores:
 
-- `resume_question` 为可选的最小中性续接文本或 null，不要求是实际问句。纯支持或有任务但先聊时可记“继续普通交流，等待学生主动重开学习”；只说明流程选择，不抄聊天原文、不记私人话题或拒绝原因。已有任务的待答题与恢复位置仍完整留在 turn_state，不能被此字段替换。
-- `status: declined` 表示已拒绝当前邀请/讨论，不是低动机或能力标签。resume_question 可保留“先不讨论安排，继续交流”；仅拒绝某种支持但要继续做题时，清该续接文本，保留 declined 对同一讨论的限制。直到学生主动重开，或新目标出现明确新需求，才重开相应支持；闲聊、兴趣线索与时间流逝不重置拒绝。
-- 恢复时沿用 identity、teaching、scope_id、focus、材料、mode/activity、turn_state 与最小交流选择；不自动回题、补推荐或再次邀请。activity 为 support 时仍允许无目标交流；叠加支持则由 resume_question 的流程含义识别先聊选择，不因原 activity 为 teaching/transfer 就忽略它。不因恢复、短答或空消息推断意愿变化。
-- 缺失 learning_support 的旧日志不补造拒绝或交流选择；缺失 status 按未知处理，缺失 resume_question 视为 null。旧 activity: support 仍先核对本条意图，不强制生成学习目标；已有 declined 即使无续接文本也保留同一讨论的拒绝。只有与当前目标有关的必要事实才写临时状态，一般话题无需写日志。
+- `resume_question` is an optional minimal neutral continuation text or null, and need not be an actual question. For pure support, or a task where the student wants to chat first, it may record "continue ordinary chat, wait for the student to actively reopen learning"; it only states the process choice, does not copy the chat original, and does not record private topics or reasons for declining. The pending question and restore position of an existing task remain fully in turn_state and must not be replaced by this field.
+- `status: declined` means the current invitation/discussion has been declined, and is not a low-motivation or ability label. resume_question may keep "not discussing arrangements for now, keep chatting"; when only some kind of support is declined but problem-solving continues, clear that continuation text and keep declined's restriction on the same discussion. Only when the student actively reopens, or a new target presents a clearly new need, is the corresponding support reopened; chat, interest cues, and the passage of time do not reset a decline.
+- On restore, keep identity, teaching, scope_id, focus, material, mode/activity, turn_state, and the minimal chat choice; do not automatically go back to the question, add a recommendation, or invite again. When activity is support, no-target chat is still allowed; for layered support, the chat-first choice is recognized by the process meaning of resume_question, and is not ignored because the original activity is teaching/transfer. Do not infer a change in willingness from restore, short answers, or empty messages.
+- An old log lacking learning_support does not fabricate a decline or chat choice; a missing status is treated as unknown, and a missing resume_question is treated as null. An old activity: support still first checks this message's intent and does not force a learning target; an existing declined is kept for the same discussion even with no continuation text. Only necessary facts related to the current target are written to temporary state, and general topics need not be written to the log.
 
-日志顶层可选 `support_events`，只在学生明确要求长期保存具体中性计划时加入：
+The log's top level optionally has `support_events`, added only when the student explicitly asks for a specific neutral plan to be saved long-term:
 
 ```json
 {
@@ -72,19 +72,19 @@ primary_need 为 value / confidence / autonomy / strategies / persistence / cond
   "date": "2026-11-09T08:00:00Z",
   "scope_id": "scope_a3f2",
   "kind": "plan",
-  "summary": "下次先独立回忆一个例子，再核对材料",
+  "summary": "Next time, first recall one example independently, then check against the material",
   "student_requested_save": true,
   "source": "student_statement"
 }
 ```
 
-该例是一项事件，support_events 为其数组；id 在写日志前生成，重试沿用。没有明确保存意愿不创建事件。事件不进入 segment、diagnosis 或 confirmed_skills；finalize 只将白名单字段写入 memory.learning_support_memory.plans。纯支持仍持久化最小 context 以便恢复，长期计划保存与恢复状态写入分别报告。
+This example is one event, and support_events is an array of such events; the id is generated before the log is written and reused on retry. Without an explicit wish to save, create no event. Events do not enter segment, diagnosis, or confirmed_skills; finalize writes only whitelisted fields into memory.learning_support_memory.plans. Pure support still persists a minimal context for restore, and long-term plan saving and writing the restore state are reported separately.
 
-`ability_evidence` 是新 segment 可选数组，每项 `{kind, observation, conditions}`；kind 为 independent / supported / ai_collaboration / exposure。独立能力、支持下表现、AI 协作能力按任务目标评价，不排成单一等级；观看 AI 结果仅 exposure。不能用参与意愿或作品整齐代替掌握证据。general_v1 的表现只进入隔离通用历史，不更新专门等级；旧段缺字段不推断补填。
+`ability_evidence` is an optional array on a new segment, each item `{kind, observation, conditions}`; kind is independent / supported / ai_collaboration / exposure. Independent ability, performance under support, and AI-collaboration ability are evaluated against the task goal and are not ranked into a single level; viewing AI results counts only as exposure. Willingness to participate or neat work cannot substitute for mastery evidence. general_v1 performance enters only the isolated general history and does not update specialist levels; old segments with missing fields are not inferred or backfilled.
 
-## 临时学习推荐
+## Temporary learning recommendation
 
-日志顶层可选 `recommendation`，独立于教学 context，尚无目标时也可存在：
+The log's top level optionally has `recommendation`, independent of the teaching context, and may exist even when there is no target yet:
 
 ```json
 {
@@ -94,65 +94,65 @@ primary_need 为 value / confidence / autonomy / strategies / persistence / cond
   "candidates": [
     {
       "id": "r1",
-      "focus": "一个具体小目标",
-      "target_context": { "type": "topic", "topic": "一个具体小目标", "source": "manual_topic", "files": [], "intent": null },
-      "reason": "适合现在学习的中文理由",
-      "basis": "已有记录支持的事实或探索性说明"
+      "focus": "a specific small goal",
+      "target_context": { "type": "topic", "topic": "a specific small goal", "source": "manual_topic", "files": [], "intent": null },
+      "reason": "A reason why this suits learning right now, in the active UI locale (see references/ui-locale.md)",
+      "basis": "A fact supported by existing records, or an exploratory note"
     }
   ]
 }
 ```
 
-新 recommendation 可选带 teaching；候选可带 subject、scope_id、teaching，跨领域候选必须有目标 subject 或中性任务身份与明确目标描述。subject 顶层始终是发起推荐的原身份，防止跨科误消费。已有合法选择先保存在原日志，新目标 context 成功写入后才消费；实际切换按生命周期处理。跨科推荐的 transition 和 session.pending_transition 形状及恢复/清理顺序只按 `references/teaching-transition.md`。旧对象缺扩展字段时仍按当前科目处理。
+A new recommendation may optionally carry teaching; a candidate may carry subject, scope_id, and teaching, and a cross-domain candidate must have a target subject or neutral task identity and a clear target description. The top-level subject is always the original identity that initiated the recommendation, to prevent cross-subject mis-consumption. An existing valid selection is saved first in the original log and consumed only after the new target context is written successfully; the actual switch is handled by the lifecycle. The shapes and the restore/cleanup order of a cross-subject recommendation's transition and session.pending_transition follow only `references/teaching-transition.md`. An old object missing extension fields is still handled under the current subject.
 
-`mode` 保留发起推荐时的模式，供无教学 context 时恢复；已有 context 时以 context.mode 为准。选定后可选 `selected_id` 必须对应一个候选，由生命周期在 finalize 前先持久化；它表示学生已经授权的目标，不能由首选标记或跳过推导。候选 id 在同一份推荐中唯一，preferred_id 必须对应其中一个；target_context 遵循目标分类契约，不复用不相关旧材料。该对象仅供中断恢复选择，不是已选 focus，也不是 segment 的 recommended_targets。由 `learn-recommend` 形成，生命周期写回；推荐期间保留旧 context 与 segments，选择/拒绝不生成表现。选定目标写入 context 成功后、取消或结束时清除。最终保存不把推荐对象汇总进档案；清理日志时移除未选推荐，保留已有 selected_id 的推荐直至新目标 context 写入成功，用于保存失败后的恢复。仅保存不自动开始新教学。没有此对象的旧日志照常恢复，不迁移旧档案。
+`mode` keeps the mode at the time the recommendation was initiated, for restore when there is no teaching context; when a context exists, context.mode prevails. After selection, the optional `selected_id` must correspond to a candidate and is persisted by the lifecycle before finalize; it represents a target the student has authorized and cannot be derived from a preferred marker or a skip. Candidate ids are unique within one recommendation, and preferred_id must correspond to one of them; target_context follows the target classification contract and does not reuse unrelated old material. This object is only for interrupted-restore of the choice, is not a selected focus, and is not a segment's recommended_targets. It is formed by `learn-recommend` and written back by the lifecycle; during recommendation, the old context and segments are kept, and selecting/declining generates no performance. It is cleared after the selected target is written into context successfully, or on cancel or end. Final save does not aggregate the recommendation object into the profile; when cleaning the log, remove an unselected recommendation, and keep one with an existing selected_id until the new target context is written successfully, for recovery after a save failure. Save-only does not automatically start new teaching. An old log without this object is restored as usual, and old profiles are not migrated.
 
 ## Session Segment
 
-教学 skill 产出，由 `/learn` 或 `/learn-feynman` 追加：
+Produced by the teaching skill and appended by `/learn` or `/learn-feynman`:
 
 ```json
 {
-  "focus": "当前焦点",
+  "focus": "current focus",
   "subject": "subject_id",
   "mode": "learn",
   "submode": "practice",
   "source": "profile",
   "overall_performance_code": "basic_independent",
-  "overall_performance_text": "基本独立完成，个别步骤需要提示",
-  "strategy_summary": "学生说明了自己的做法，有一处关系还需要提示",
-  "strengths": ["能说出一个具体理由"],
-  "difficulties": ["有一处关系还不稳定"],
-  "next_step_candidate": "用一个近邻任务再试一次",
-  "recommended_targets": ["同一个关系的近邻任务"],
-  "confirmed_skills": ["示例技能"],
-  "skill_errors_observed": ["示例技能"],
+  "overall_performance_text": "Completed mostly independently, with hints needed at a few steps",
+  "strategy_summary": "The student explained their own approach; one relationship still needed a hint",
+  "strengths": ["Can state one concrete reason"],
+  "difficulties": ["One relationship is still unstable"],
+  "next_step_candidate": "Try again with a neighboring task",
+  "recommended_targets": ["A neighboring task on the same relationship"],
+  "confirmed_skills": ["example skill"],
+  "skill_errors_observed": ["example skill"],
   "feynman_handoff_recommended": true,
   "diagnosis": {
     "domain": "subject_domain",
     "label": "subject:example_label",
-    "evidence": "学生只复述了步骤，没有说明这一步为什么成立。"
+    "evidence": "The student only restated the steps and did not explain why this step holds."
   },
   "current_levels": {}
 }
 ```
 
-必填：`focus`、`subject`、`mode`、`submode`、`source`、`strategy_summary`、`strengths`、`difficulties`、`next_step_candidate`、`recommended_targets`。
+Required: `focus`, `subject`, `mode`, `submode`, `source`, `strategy_summary`, `strengths`, `difficulties`, `next_step_candidate`, `recommended_targets`.
 
-枚举：
+Enums:
 
-- `subject`：入口写入的 id。本文件不列举科目。
-- `mode`：`learn` / `feynman`，沿用调用方的交互模式，学科包不扩展。学科内部分支另用学科字段记录，写在学科文档里。
-- `submode`：`learn` / `practice` / `review` / `feynman`。学科包可以增加取值。已存的旧值保留，不在这里新造。
-- `source`：`profile` / `manual_topic` / `error_analysis` / `diagnosis` / `practice` / `save` / `focus`。学科包可以增加。
-- `error_history.source` 另算：`file_analysis` / `diagnosis`。
+- `subject`: the id written by the entry. This file does not list subjects.
+- `mode`: `learn` / `feynman`, following the caller's interaction mode; subject packages do not extend it. Subject-internal branches are recorded in subject fields instead, written in the subject documents.
+- `submode`: `learn` / `practice` / `review` / `feynman`. Subject packages may add values. Existing old values are kept, and none are newly invented here.
+- `source`: `profile` / `manual_topic` / `error_analysis` / `diagnosis` / `practice` / `save` / `focus`. Subject packages may add values.
+- `error_history.source` is counted separately: `file_analysis` / `diagnosis`.
 
-可选，且例子表达不了的约束：
+Optional, with constraints the example cannot express:
 
-- `overall_performance_code`：`needs_support` / `basic_independent` / `stable` / `flexible`。`overall_performance_text` 是自由文本。
-- `confirmed_skills`：技能名字符串。证据与撤销见白名单；finalize 转成 `references/profile-schema.md` 的 Subject Memory 对象。
-- `skill_errors_observed`：学生真实错误的技能名，不是 AI 故意犯的错。
-- `feynman_handoff_recommended`：交给 `/learn-feynman`。
-- `diagnosis`：一个主标签加证据。标签表属于学科包。
-- `current_levels`：`profile.current_levels` 的部分更新，finalize 嵌回 `profile`。键属于学科包。
-- 学科包可以加别的字段。Finalize 保留不认识的字段，不在这里解释。
+- `overall_performance_code`: `needs_support` / `basic_independent` / `stable` / `flexible`. `overall_performance_text` is free text.
+- `confirmed_skills`: skill-name strings. Evidence and retraction follow the whitelist; finalize converts them into the Subject Memory objects of `references/profile-schema.md`.
+- `skill_errors_observed`: skill names of the student's real errors, not mistakes the AI deliberately made.
+- `feynman_handoff_recommended`: hand off to `/learn-feynman`.
+- `diagnosis`: one primary label plus evidence. The label table belongs to the subject package.
+- `current_levels`: a partial update of `profile.current_levels`, nested back under `profile` by finalize. The keys belong to the subject package.
+- Subject packages may add other fields. Finalize keeps unrecognized fields and does not interpret them here.

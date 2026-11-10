@@ -1,17 +1,17 @@
-# 数学目标分类
+# Math Target Classification
 
-共享 `target_context` 形状、空文本和文件路径的处理见 `learn-data` 的 `references/target-parsing.md`。本文只分类数学剩余文本和文件交接后的目标。
+For the shared `target_context` shape and the handling of empty text and file paths, see `learn-data`'s `references/target-parsing.md`. This file only classifies the remaining math text and the goal after a file handoff.
 
-## 其余文本
+## Remaining Text
 
-不是空文本、也不是路径时：`type: topic`、`source: manual_topic`，`topic` 为指定主题。
+When it is neither empty text nor a path: `type: topic`, `source: manual_topic`, and `topic` is the specified topic.
 
-## 文件处理之后
+## After File Processing
 
-`learn-errors` 返回提取内容后：
+After `learn-errors` returns the extracted content:
 
 - `type: topic`
-- `topic` 为最值得训练的错误关系
+- `topic` is the error relationship most worth training
 - `source: error_analysis`
 
-仍保存 `files_processed` 与 `material_refs`。分类只产出目标，不另做路由。一律进入 `math-session`；`context.activity: transfer` 由 session 再加载 `math-student-problem`，`mode: feynman` 优先。
+Still keep `files_processed` and `material_refs`. Classification only produces the goal and does no separate routing. Always enter `math-session`; for `context.activity: transfer`, session then loads `math-student-problem`, and `mode: feynman` takes precedence.

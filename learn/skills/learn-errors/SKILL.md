@@ -1,74 +1,74 @@
 ---
 name: learn-errors
-description: 解析用户投放的图片或 Markdown（错题、材料、草稿等），提取内容并记录；学生提供文件路径、要求分析图片或扫描 raw 目录时使用。
+description: Parse user-provided images or Markdown (error items, materials, drafts, etc.), extract content, and record it; use when the student provides a file path, asks to analyze an image, or to scan the raw directory.
 user-invocable: false
 ---
 
-# 用户投放文件
+# User-Provided Files
 
-加载 `learn-data`。没有 `outputs/students/session.json` 或 `student_id` 为空时，引导 `/learn-start` 并停止。当前科目日志有 `finalize_plan` 时先恢复保存，成功后再处理新文件。
+Load `learn-data`. If `outputs/students/session.json` does not exist or `student_id` is empty, direct to `/learn-start` and stop. If the current subject log has a `finalize_plan`, recover the save first and process the new files only after it succeeds.
 
-文件列表与 `scan all` 都走本流程；文件的分析、备份、写回与通知只在这里做。会话内的学科诊断由学科技能产出 `diagnosis`。
+File lists and `scan all` both go through this flow; file analysis, backup, write-back, and notification happen only here. In-session subject diagnosis is produced by the subject skill as `diagnosis`.
 
-## 1. 解析路径
+## 1. Resolve Paths
 
-从当前会话取 `student_id` 与 `subject`。普通请求从 Arguments 按空白切出路径。`scan all` 扫描当前学生、当前科目的 `data/.../raw/` 与 `outputs/.../extracted/`；已记在 `error_history.raw_file` 或 `original_raw_file` 的文件跳过，只分析未记录项。没有新文件时告知“没有新的文件”。同题重复上传合并为一条，更新 `date`、`self_diagnosis`，不重复计数。只扫描解析到的范围，不扫描整个工作区。
+Take `student_id` and `subject` from the current session. For an ordinary request, split the paths out of Arguments on whitespace. `scan all` scans the current student's and current subject's `data/.../raw/` and `outputs/.../extracted/`; skip files already recorded in `error_history.raw_file` or `original_raw_file`, and analyze only unrecorded items. When there are no new files, tell the student there are no new files. A repeated upload of the same question is merged into one entry, updating `date` and `self_diagnosis` without double counting. Scan only the resolved scope, not the whole workspace.
 
-根目录：
+Roots:
 
-- raw：`data/students/<student_id>/<subject>/`
-- outputs：`outputs/students/<student_id>/<subject>/`
+- raw: `data/students/<student_id>/<subject>/`
+- outputs: `outputs/students/<student_id>/<subject>/`
 
-解析每个路径：
+Resolve each path:
 
-- 含 `..`：警告并拒绝。
-- 裸文件名或 `raw/...`：落在 raw 根下的 `raw/`。
-- `extracted/...` 或 `backups/...`：落在 outputs 根下。
-- 以 `data/students/` 开头：必须留在当前学生、当前科目的子树内。
-- 以 `outputs/students/` 开头：必须留在当前学生、当前科目的子树内。
-- 其他学生或科目：拒绝。
-- 看不出是 `raw/`、`extracted/` 还是 `backups/` 的相对路径：默认 raw 根（用户投放区）。
+- Contains `..`: warn and reject.
+- Bare file name or `raw/...`: place under `raw/` in the raw root.
+- `extracted/...` or `backups/...`: place under the outputs root.
+- Starts with `data/students/`: must stay within the current student's, current subject's subtree.
+- Starts with `outputs/students/`: must stay within the current student's, current subject's subtree.
+- Another student or subject: reject.
+- A relative path that cannot be identified as `raw/`, `extracted/`, or `backups/`: default to the raw root (the user drop zone).
 
-目录递归展开，只保留支持的文件。支持 `.jpg` `.jpeg` `.png` `.gif` `.bmp` `.webp` `.md`。不支持或文件不存在：警告并跳过。目录读不出：警告并继续。去重后得到 `files`（规范化条目）、`warnings`（缺失、非法或不支持的路径）、`total`（有效文件数）、`images`（图片数）、`analyses`（Markdown 数）。没有有效文件时只留 warnings；有效和无效混在一起时保留有效文件并列出 warnings。
+Expand directories recursively and keep only supported files. Supported: `.jpg` `.jpeg` `.png` `.gif` `.bmp` `.webp` `.md`. Unsupported or nonexistent files: warn and skip. Unreadable directory: warn and continue. After deduplication, produce `files` (normalized entries), `warnings` (missing, illegal, or unsupported paths), `total` (number of valid files), `images` (number of images), and `analyses` (number of Markdown files). If there are no valid files, keep only warnings; when valid and invalid are mixed, keep the valid files and list the warnings.
 
-## 2. 读取与诊断
+## 2. Read and Diagnose
 
-第一道新题先问“你觉得这道题错在哪？”，等到学生自述（包括“不知道”）后再分析。自述只作为它所对应题目的证据。
+For the first new question, ask the student where they think the mistake is in this question (in the student's language), and analyze only after the student's own account arrives (including "I don't know"). The self-account is evidence only for the question it belongs to.
 
-读取使用当前环境的文本或图片工具。图片用 `read_image` 或 `modlens_read_image`，提取可辨认的题目、书写和已有过程；两者都不可用时请学生文字描述，不编造。Markdown 用 `read`，识别题目、答案和过程的边界；结构不清楚时把整段当作题目，并标记需人工确认。
+Read with the text or image tools of the current environment. For images use `read_image` or `modlens_read_image`, extracting the recognizable question, handwriting, and existing working; if neither is available, ask the student to describe it in text and never fabricate. For Markdown use `read`, identifying the boundaries of the question, answer, and working; when the structure is unclear, treat the whole passage as the question and mark it as needing human confirmation.
 
-按 `learn-data` 的 `references/teaching-resolver.md` 复用当前 teaching，`error_type`、`label` 与 `domain` 用该实现的诊断规则。入口指出参考，不另试加载其他 core。本流程不列举科目或标签。通用路径只记录可辨认内容与中性观察，专属字段留空，不自造标签；档案提取记录带 teaching/scope_id，不参与专门诊断计数或能力推荐。不是错题而是教材/项目材料时直接读取，不强问错因，不凭材料推断学生表现。
+Reuse the current teaching per `references/teaching-resolver.md` in `learn-data`, and use that implementation's diagnosis rules for `error_type`, `label`, and `domain`. The entry points to the reference and does not try loading another core on its own. This flow does not enumerate subjects or labels. The general path records only recognizable content and neutral observations, leaves specialist fields empty, and does not invent labels; profile-extracted records carry teaching/scope_id and do not enter specialist diagnosis counts or capability recommendations. When the file is not an error item but textbook/project material, read it directly without forcing a question about the cause of the error, and do not infer student performance from the material.
 
-对照学生自述判断一个核心错误。两者不符时按学科规则复核，以证据为准，用一句话解释差异。错误类型要具体，便于后续针对性学习。给一个可执行的下一步，指向具体学习方向。保持客观，不评价学生能力。
+Identify one core error by comparing against the student's self-account. When the two disagree, re-check per the subject's rules, go by the evidence, and explain the difference in one sentence. Make the error type specific so it supports targeted later learning. Give one actionable next step that points to a specific learning direction. Stay objective and do not judge the student's ability.
 
-## 3. 备份与改名
+## 3. Backup and Rename
 
-`data/.../raw/` 内容只读：禁止覆盖、编辑、删除，也禁止用复制、重定向或创建空文件替换原件。唯一允许的变更是备份成功后，在同一 raw 目录内用 `mv` 改名。
+The contents of `data/.../raw/` are read-only: no overwriting, editing, or deleting, and no replacing an original by copy, redirection, or creating an empty file. The only permitted change is, after a successful backup, renaming with `mv` within the same raw directory.
 
-每次改名按顺序执行：
+For every rename, execute in order:
 
-1. 解析并核对原件、备份和新文件的绝对路径。原件与新文件必须在当前学生、当前科目的 raw 目录，备份必须在对应 `outputs/.../backups/raw/`。确认变量已赋值，并给含空格的路径加引号。
-2. 确保备份目录存在。备份目标或改名目标已存在时停止并说明冲突，保留现有文件。
-3. 把原件复制到 `outputs/.../backups/raw/<原文件名>`，确认复制成功且备份存在。失败则保留原名，告诉学生“原始文件没能备份，我先不改名”，不改名。
-4. 用 `mv` 在原 raw 目录内改名。命令成功后才记录 `renamed: true`。失败则保留备份与原件，报告未完成，按实际结果记录路径与状态。
+1. Resolve and verify the absolute paths of the original, the backup, and the new file. The original and new file must be in the current student's, current subject's raw directory, and the backup must be in the corresponding `outputs/.../backups/raw/`. Confirm the variables are assigned, and quote paths containing spaces.
+2. Ensure the backup directory exists. If the backup target or the rename target already exists, stop and explain the conflict, keeping the existing files.
+3. Copy the original to `outputs/.../backups/raw/<original file name>`, and confirm the copy succeeded and the backup exists. On failure, keep the original name, tell the student the original file could not be backed up so the rename is skipped for now (in the student's language), and do not rename.
+4. Use `mv` to rename within the original raw directory. Record `renamed: true` only after the command succeeds. On failure, keep the backup and the original, report it as incomplete, and record paths and status as they actually are.
 
-命名为 `<topic>-<number>-<YYYYMMDD>.<ext>`：
+Name as `<topic>-<number>-<YYYYMMDD>.<ext>`:
 
-- `<topic>`：按题目取简短英文或拼音 slug。
-- `<number>`：`data/.../raw/<topic>-*` 与 `outputs/.../extracted/<topic>-*` 里的最大编号加 1，三位补零。
-- `<YYYYMMDD>`：当前日期。
+- `<topic>`: a short English or pinyin slug based on the question.
+- `<number>`: the largest number among `data/.../raw/<topic>-*` and `outputs/.../extracted/<topic>-*` plus 1, zero-padded to three digits.
+- `<YYYYMMDD>`: the current date.
 
-改名不改文件内容。告知学生原名和新名。
+Renaming does not change file contents. Tell the student the original name and the new name.
 
-## 4. 提取与科目档案
+## 4. Extraction and Subject Profile
 
-在 `outputs/.../extracted/` 写同名 Markdown：原题、学生过程、错误类型/标签、证据、下一步。
+Write a same-named Markdown file in `outputs/.../extracted/`: the original question, the student's working, error type/label, evidence, and next step.
 
-按 `learn-data` 的 Write Protocol 读取、合并并写回科目 `profile.json`。只改科目档案，不改共享档案。完整原文留在 `data/.../raw/` 与 `outputs/.../extracted/`，档案只存诊断与引用。
+Read, merge, and write back the subject `profile.json` per the Write Protocol in `learn-data`. Change only the subject profile, not the shared profile. The full original text stays in `data/.../raw/` and `outputs/.../extracted/`; the profile stores only the diagnosis and references.
 
-- `error_id` 为 `err_<YYYYMMDD>_<3位序号>`，取已有同日 id 的最大序号加 1，不按历史条数计。
-- `error_history` 前插一条，保留最新 20 条。字段：`error_id`、`source`（`file_analysis`）、`date`（当前 ISO 时间）、`topic`、`domain`、`error_type`、`label`、`raw_file`、`original_raw_file`、`backup_file`、`extracted_file`、`renamed`、`analyzed`、`self_diagnosis`。
-- `priority_targets` 优先用对象，加入最值得练的目标，去重后最多 5 个。
-- 更新 `updated_at`。
+- `error_id` is `err_<YYYYMMDD>_<3-digit sequence>`, taking the largest sequence among existing ids of the same day plus 1, not counted from the number of history entries.
+- Prepend one entry to `error_history`, keeping the latest 20. Fields: `error_id`, `source` (`file_analysis`), `date` (current ISO time), `topic`, `domain`, `error_type`, `label`, `raw_file`, `original_raw_file`, `backup_file`, `extracted_file`, `renamed`, `analyzed`, `self_diagnosis`.
+- `priority_targets` prefers objects; add the target most worth practicing, deduplicate, and keep at most 5.
+- Update `updated_at`.
 
-回复先肯定学生愿意回看材料，再给一个核心发现、证据和下一步，并说明原名与新名。
+In the reply, first affirm the student's willingness to look back at the material, then give one core finding, the evidence, and the next step, and state the original and new names.

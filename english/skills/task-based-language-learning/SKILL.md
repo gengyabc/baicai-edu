@@ -1,6 +1,6 @@
 ---
 name: task-based-language-learning
-description: 任务活动。为一个具体结果用英语交流（角色扮演、游戏、小项目）时加载；不包装机械练习。
+description: Task activity. Load when using English to achieve a concrete outcome (role-play, game, mini-project); do not wrap mechanical drills as tasks.
 user-invocable: false
 ---
 # Task-Based Language Teaching
@@ -9,7 +9,7 @@ Children use English as a tool for a meaningful outcome. Prioritize task success
 ## Variables
 age, level, interests, task_type, duration, modalities, available_materials, success_criterion, parent_involvement, support_level.
 
-Follow the “方法 skill” contract in `english-core`.
+Follow the “Method skills” contract in `english-core`.
 
 ## Procedure
 1. Define a concrete outcome: make a menu, guide an explorer, plan a picnic or find a toy. The child's decisions must affect the result.

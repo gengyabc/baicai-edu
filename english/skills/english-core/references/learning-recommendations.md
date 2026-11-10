@@ -1,38 +1,40 @@
-# 英语学习推荐
+# English Learning Recommendations
 
-供 `learn-recommend` 经学科契约读取。这里只决定英语候选的内容、难度、理由与排序；选择和交接沿用共享流程。方法调度仍由 `english-session` 按 `references/english-teaching-core.md` 唯一方法表执行，此处不另建方法表或调用方法。
+Read by `learn-recommend` through the Subject contract. This file decides only the content, difficulty, reasons, and ordering of English candidates; choice and handoff follow the shared flow. Method dispatch is still carried out by `english-session` per the single method table in `references/english-teaching-core.md`; no separate method table is built here and no method is invoked.
 
-## 候选：有意义的下一次理解或表达
+## Candidates: a Meaningful Next Comprehension or Expression
 
-以已有快照与最新真实表现选一个交际目的，通常给 2–3 个有差异且有依据的小目标，首选 1 个；不足时少给，不用「读/说/游戏/复习」四种形式凑数。候选要说清场景和能做成什么，如「给迷路的小动物说清去图书馆的路线」，不是「提高口语」「学习 A1」。推荐只描述目标，不先讲故事、施测或发英语待答问题。
+From the existing snapshot and latest real performance, pick a communicative purpose; usually give 2–3 differentiated, evidence-backed small goals with 1 as the first pick; give fewer when evidence is thin, and do not pad out four forms of read/speak/game/review. A candidate must make clear the scene and what the student can accomplish, such as "tell a lost animal the way to the library", not "improve speaking" or "learn A1". A recommendation only describes the goal; it does not first tell a story, test, or pose a pending English question.
 
-- 先看当前材料中学生实际理解或表达了什么，以及独立/支持后完成的区别，再核对 `priority_targets`、`developing_topics`、最近错误、`session_history` 和 memory 的下一步。中文补充、短答或慢答本身不是低水平证据。
-- 理解与输出分开看：读懂一段故事不等于能独立复述；能表达意思但形式不稳时，优先在新语境里用同一表达，不安排语法讲座。文本模式不能推断听力或发音。
-- 有具体卡点时选择只处理一处的目标；已有明确理解证据时可优先意义协商、近邻表达或任务迁移，不机械地再读一篇。兴趣和形式偏好是载体，不是要覆盖全部方法的理由。
+- First look at what the student actually understood or expressed in the current material and the difference between independent and supported completion, then check `priority_targets`, `developing_topics`, recent errors, `session_history`, and memory's next step. First-language supplements, short answers, or slow answers are not themselves evidence of low level.
+- Look at comprehension and output separately: understanding a story is not the same as being able to retell it independently; when the meaning can be expressed but the form is unstable, prefer using the same expression in a new context rather than scheduling a grammar lecture. Text mode cannot infer listening or pronunciation.
+- With a specific sticking point, choose a goal that handles just one spot; with clear comprehension evidence, prefer negotiation of meaning, a neighboring expression, or task transfer, and do not mechanically read another passage. Interests and format preferences are carriers, not a reason to cover all methods.
 
-| 现有证据 | 可开始的小目标方向 | 负荷控制 |
+| Existing evidence | Direction of small goals that can start | Load control |
 |---|---|---|
-| 短故事主要事件尚未连接 | 读一篇完整小故事，说清角色最后为什么改变决定 | 熟悉主题、短完整文本，保留起因经过结果 |
-| 能理解事件，表达常靠单词或中文补充 | 在一个真实选择里表达愿望并补一个理由 | 只增加一个有用表达，不要求长段输出 |
-| 想表达的意思明确，某处说不清 | 在新场景里问清一个信息或澄清一处意思 | 单一信息差，不刻意制造误解 |
-| 曾接触某词句，近期未见独立回想 | 在新的小情境中回想并使用有记录的旧表达 | 有接触记录才称复习，不先列词表 |
-| 已能独立使用一个句型 | 为具体结果换情境使用，如为同伴挑一份礼物并说明原因 | 先保持语言近邻，只换一个情境因素 |
-| 写作已有意思，一处影响可读性 | 把自己的一个句子改得让同伴更容易理解 | 保留原意，只处理一处，不代写整段 |
+| Main events of a short story not yet connected | Read a complete small story and say why the character finally changed their decision | Familiar topic, short complete text, keeping cause, development, and result |
+| Understands events; expression often leans on single words or first-language supplements | Express a wish in a real choice and add one reason | Add only one useful expression; do not require long output |
+| Meaning to express is clear, but something is unclear in one place | Ask for one piece of information or clarify one meaning in a new scene | A single information gap; do not deliberately create misunderstanding |
+| Has met a word or sentence before but no recent independent recall | Recall and use a recorded old expression in a new mini-situation | Call it review only with an exposure record; do not list words first |
+| Can already use a pattern independently | Use it in a changed situation for a concrete outcome, such as picking a gift for a friend and explaining why | Keep the language close first and change only one situational factor |
+| Writing already has its meaning, one spot hurts readability | Revise one of your own sentences so a peer understands it more easily | Keep the original meaning, handle only one spot, do not write the whole paragraph |
 
-## 难度与排序
+## Difficulty and Ordering
 
-当前领域的真实理解/表达优先于档案的笼统水平；按 `references/english-input-adaptation.md` 决定句长、衔接与信息量。年龄调题材成熟度和形式，不定 CEFR；推荐不宣告升级。`material_difficulty` 只调一个负荷因素。水平未知时选熟悉场景、低负荷且意义完整的目标，选定后才观察回应，不先做分级问卷。
+Real comprehension/expression in the current domain takes priority over the profile's general level; decide sentence length, cohesion, and information amount per `references/english-input-adaptation.md`. Age adjusts topic maturity and format and does not set CEFR; a recommendation does not announce a level-up. `material_difficulty` adjusts only one load factor. When level is unknown, pick a goal in a familiar scene that is low-load and complete in meaning, and observe the response only after selection; do not start with a leveling questionnaire.
 
-首选能承接已有支点、满足当前交流需要的最小下一步；其次是有记录依据的旧表达提取或近邻迁移。可重排普通恢复的历史下一步，不固定以故事开场。学生明确想换内容时用不同场景/主题承载可行目标，不强行续旧故事；具体指定活动者直接交 session，不额外推荐。新闻候选只说明主题与阅读目的，选定后才核验来源，不在推荐阶段检索或承诺未核实新闻。
+Prefer the smallest next step that builds on an existing foothold and meets the current communication need; next, retrieval of an old expression with a record basis or neighboring transfer. The historical next step of ordinary resume may be reordered; do not always open with a story. When the student explicitly wants different content, carry feasible goals in a different scene/topic and do not force a continuation of the old story; a student who names a specific activity goes directly to the session, with no extra recommendation. News candidates state only the topic and reading purpose; sources are verified only after selection, and during recommendation do not search or promise unverified news.
 
-按 `references/english-personalization.md` 读取 `personal.interests` 和科目偏好；不为迎合兴趣抬高语言负荷。没有相应记录时说明是可尝试的起点，不编造旧词句、接触时间或表现。
+Read `personal.interests` and subject preferences per `references/english-personalization.md`; do not raise the language load to cater to interests. When there is no matching record, say it is a starting point worth trying and do not invent old words or sentences, exposure times, or performance.
 
-## 中文理由与例子
+## Reasons and Examples
 
-引用记录的推荐理由一律用学生能懂的中文；推荐卡片的目标说明、流程标签和选择提问也可中文。英语词句可作为目标中的必要例子，但理由不能整段改成英语。选定后的材料、教学提问和反馈恢复 `english-core` 的英语规则。
+Reasons that cite records are generated at runtime and use the student's UI locale (resolved from `profile.language` per `learn-data` `references/ui-locale.md`); recommendation chrome (goal descriptions, flow labels, choice prompts) uses `ui.recommend.*` keys from the `learn` catalog. English words and sentences may appear as necessary examples within a goal, but a reason is not switched wholesale to English if the UI locale is not English. After a choice, material, teaching questions, and feedback resume the English rules of `english-core`.
 
-- 已读懂找宠物故事，但用单词表达愿望：首选「为小动物选一个住处，说清你想选哪里」；理由：「你上次已经读懂小动物在找什么，这次可以把自己的选择说得更完整。」不能把读懂记成已会完整表达。
-- 记录中曾用过 “Can I have ...?”，最近仍需提示：可首选「在野餐准备中开口要两样需要的东西」；理由：「你之前用过这个请求，这次换到野餐里，试着自己想起来用。」不称已经掌握，不以默写替代交流。
-- 已能独立说明喜欢某物的原因，普通恢复建议仍是读故事：可把「给朋友挑一份礼物并说明理由」排第一；理由：「你上次已经能说清喜欢的原因，可以用这个办法帮朋友做一次选择。」备选才是另一篇低负荷短故事，不为遵守固定顺序压后任务目标。
+The examples below are illustrative samples only: the candidate focus and reason are shown in English, and the real reason text is generated in the UI locale.
 
-完成标准：候选各有具体场景、交际结果和有依据的语言负荷；仅首选一个，推荐不产生英语水平或方法执行证据。
+- Has understood a lost-pet story but expresses wishes in single words. First pick: "Choose a home for a little animal and say where you want to put it." Sample reason: "You already understood what the little animal was looking for last time; this time you can say your own choice more fully." Do not record understanding as the ability to express fully.
+- Records show "Can I have ...?" was used before and still needs hints recently. May first pick: "Ask for two things you need while getting ready for a picnic." Sample reason: "You used this request before; in a picnic this time, try to remember it on your own." Do not claim mastery, and do not replace communication with dictation.
+- Can already independently explain why they like something, and the ordinary resume suggestion is still reading a story: may rank "Pick a gift for a friend and give your reason" first. Sample reason: "Last time you could already explain why you like something; you can use that to help a friend choose." The second pick is another low-load short story; do not push the task goal down to obey a fixed order.
+
+Completion standard: each candidate has a concrete scene, communicative outcome, and evidence-backed language load; only one first pick, and a recommendation produces no evidence of English level or method execution.

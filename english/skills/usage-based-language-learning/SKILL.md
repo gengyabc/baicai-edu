@@ -1,6 +1,6 @@
 ---
 name: usage-based-language-learning
-description: 句型学习。学生要学会用某个英语句型或搭配时加载；用多个有意义的变式例句建立句型。
+description: Pattern learning. Load when the student needs to learn an English sentence pattern or collocation; build the pattern with multiple meaningful variant examples.
 user-invocable: false
 ---
 # Usage-Based Language Learning
@@ -9,7 +9,7 @@ Repeated meaningful encounters with form-meaning patterns support learning of co
 ## Variables
 age, level, target_construction, known_vocabulary, interests, examples_count, context_variation, production_readiness, modalities.
 
-Follow the “方法 skill” contract in `english-core`.
+Follow the “Method skills” contract in `english-core`.
 
 ## Procedure
 1. Choose one form–meaning pattern with a function: “I want __”, “Can you __?” or “It's under __”.

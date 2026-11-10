@@ -1,21 +1,21 @@
 ---
 name: learn-data
-description: 学生数据读写协议。读取或初始化档案、恢复会话、生成学习记录、修改数据或结束保存前加载。
+description: Student data read/write protocol. Load before reading or initializing profiles, restoring sessions, generating learning records, modifying data, or end-of-session save.
 user-invocable: false
 ---
 
 # Learn Data
 
-学生数据的读取、初始化与保存协议。本 skill 的 `references/...` 都相对于本技能目录；跨 skill 文件先按名称加载该 skill，再按其返回的 base directory 定位。这条定位规则适用于所有包的所有 skill。
+Protocol for reading, initializing, and saving student data. All `references/...` paths in this skill are relative to this skill's directory; for cross-skill files, load that skill by name first and locate files from the base directory it returns. This lookup rule applies to every skill in every package.
 
 ## Data Root
 
-所有路径相对于**当前工作区根目录**，分隔符按本机系统处理。文件操作使用当前环境可用的工具；需终端时，按实际操作系统和 shell 选择命令。
+All paths are relative to the **current workspace root**; use the path separator of the local OS. Use whatever file tools the current environment provides; when a terminal is needed, choose commands for the actual OS and shell.
 
 ```
 data/students/
   <student_id>/
-    <subject>/raw/                 # 用户投放原件（错题、材料、草稿等）
+    <subject>/raw/                 # user-dropped originals (error-item sets, materials, drafts, etc.)
 
 outputs/students/
   session.json
@@ -31,36 +31,38 @@ outputs/students/
       backups/raw/
 ```
 
-- `student_id` 形如 `stu_<slug>_<4hex>`；`slug` 只含 `[a-z0-9_]`，`4hex` 是 4 位 `[0-9a-f]`。
-- 按 `outputs/students/*/profile.json` 匹配发现学生，不使用索引文件。
-- `data/.../raw/` 内容只读；唯一允许的变更是按 `learn-errors` 的规则备份成功后改名。
-- `outputs/.../backups/raw/` 只增不改；`extracted/` 存系统写出的分析 Markdown。
+- `student_id` looks like `stu_<slug>_<4hex>`; `slug` contains only `[a-z0-9_]`, and `4hex` is 4 characters of `[0-9a-f]`.
+- Discover students by matching `outputs/students/*/profile.json`; do not use an index file.
+- Contents of `data/.../raw/` are read-only; the only permitted change is renaming after a successful backup, following the `learn-errors` rules.
+- `outputs/.../backups/raw/` is append-only; `extracted/` holds analysis Markdown written by the system.
 
 ## Read Snapshot
 
-先读取 session.json；若含 pending_transition，在初始化目标文件或普通恢复前执行 `references/teaching-transition.md`，定向恢复源授权和目标 context，不能只从新科目默认开课。快照只由入口读取一次：会话开始、上下文恢复后快照缺失、或切换学生/科目时。学科 skill 一律使用入口传入的快照；这条适用于所有学科 skill，各处不再重复说明。
+Read session.json first. If it contains pending_transition, run `references/teaching-transition.md` before initializing target files or doing ordinary restore, so the source authorization and target context are restored in a directed way; do not just start the new subject with defaults. The snapshot is read once by the entry skill: at session start, after context recovery when the snapshot is missing, or when switching student/subject. Subject skills always use the snapshot passed in by the entry; this applies to all subject skills and is not repeated elsewhere.
 
 1. `outputs/students/session.json`
-2. `outputs/students/<student_id>/profile.json`（共享档案）
-3. `outputs/students/<student_id>/<subject>/profile.json`（科目档案）
+2. `outputs/students/<student_id>/profile.json` (shared profile)
+3. `outputs/students/<student_id>/<subject>/profile.json` (subject profile)
 4. `outputs/students/<student_id>/<subject>/memory.json`
 5. `outputs/students/<student_id>/<subject>/current_state.json`
 6. `outputs/students/<student_id>/<subject>/milestones.json`
 7. `outputs/students/<student_id>/<subject>/session_log.json`
 
-缺文件时：
+UI locale: resolve student-visible process labels per `references/ui-locale.md` (read `language` from the shared profile; skills name locale keys, not literal strings).
 
-- `session.json` 缺失或 `student_id` 为空：告诉学生先运行 `/learn-start`。
-- 共享档案缺失：转 `/learn-start` 建档，不凭空生成。
-- 科目 `profile.json` 缺失：确认共享档案存在后，先读 `references/teaching-resolver.md` 解析 teaching，再按 `references/profile-schema.md` 初始化；阶段读 `references/grade-band-defaults.md`，默认领域、初始水平与偏好键读解析实现的学科契约（`references/subject-contract.md`）。通用或未知起点 current_levels/preferences 为空，不拿小学水平初始化成人；已有科目文件一律保留。
-- `memory.json` / `current_state.json` / `milestones.json` 缺失：按 `references/profile-schema.md` 的默认值创建。
-- `session_log.json` 缺失（读取工具返回 `not found`）是正常状态，表示没有未完成会话，需要时按 `references/session-lifecycle.md` 新建。只有权限、I/O 或内容损坏错误才报告读取故障，并停止依赖该文件的操作。
+When a file is missing:
 
-读取后：
+- `session.json` missing or `student_id` empty: tell the student to run `/learn-start` first.
+- Shared profile missing: hand off to `/learn-start` to create it; never fabricate one.
+- Subject `profile.json` missing: after confirming the shared profile exists, first read `references/teaching-resolver.md` to resolve teaching, then initialize per `references/profile-schema.md`; read `references/grade-band-defaults.md` for stage, and read the resolved implementation's subject contract (`references/subject-contract.md`) for default domains, initial levels, and preference keys. For generic or unknown starting points, current_levels/preferences are empty; do not initialize an adult with a primary-school level. Always keep existing subject files.
+- `memory.json` / `current_state.json` / `milestones.json` missing: create them with the defaults in `references/profile-schema.md`.
+- `session_log.json` missing (the read tool returns `not found`) is a normal state meaning there is no unfinished session; create it per `references/session-lifecycle.md` when needed. Report a read fault and stop operations that depend on the file only for permission, I/O, or content-corruption errors.
 
-- 快照先按 `references/teaching-resolver.md` 过滤证据来源；通用进度不作为专门掌握，保留真实身份与 scope_id。共享 learning_preferences 只作学生明确目标/偏好输入，历史支持事实使用前核对情境与更正。快照留在内存。写回成功的对象同步更新缓存；不确定缓存是否有效时只重读受影响的文件。普通轮次和模式切换不重读整份快照。
-- 个性化输入交给教学 skill：共享档案的 `personal.interests`、`personal.most_exciting_event`，科目档案的 `profile.preferences`、`profile.self_report.easy_topics/hard_topics`。
-- `memory.json` 的 `preferred_scaffolds`、`motivation_signals`、`recent_error_patterns`、`recommended_next_moves`、`feynman_readiness` 按 `references/profile-schema.md` 的“How Memory Is Consumed”使用，写入的字段要读出来用。
+After reading:
+
+- First filter the snapshot's evidence sources per `references/teaching-resolver.md`; generic progress does not count as specialist mastery, and the real identity and scope_id are preserved. Shared learning_preferences serve only as the student's explicit goal/preference input; before using historical support facts, check their context and corrections. Keep the snapshot in memory. After a successful write-back, update the cached object in sync; when unsure the cache is valid, re-read only the affected files. Ordinary turns and mode switches do not re-read the whole snapshot.
+- Hand personalization inputs to the teaching skill: the shared profile's `personal.interests` and `personal.most_exciting_event`, and the subject profile's `profile.preferences` and `profile.self_report.easy_topics/hard_topics`.
+- Use `memory.json` fields `preferred_scaffolds`, `motivation_signals`, `recent_error_patterns`, `recommended_next_moves`, and `feynman_readiness` as described in "How Memory Is Consumed" in `references/profile-schema.md`; any field you write must also be read and used.
 
 ## session.json
 
@@ -73,51 +75,52 @@ outputs/students/
 }
 ```
 
-- `subject` 是入口写入的真实科目或中性任务 id，身份规则按 `references/teaching-resolver.md`。session 可选带 `scope_id`、`target_title`（学生可识别的目标描述）、`teaching`；首次选择目标后写入，恢复优先日志 context，未选目标可缺。旧文件缺失不迁移；新目标另建 scope_id，相同未完成目标沿用。跨科切换先成功保存旧科目再整文件激活新身份；旧日志和 plan 仍留原科目，不搬移。
-- 切换学生或科目时整文件覆盖写。已选科目、尚未选学生的过渡状态里 `student_id` 为 `null`，读取时按空处理，引导 `/learn-start`。
+- `subject` is the real subject or neutral task id written by the entry skill; identity rules follow `references/teaching-resolver.md`. The session may optionally carry `scope_id`, `target_title` (a student-recognizable description of the target), and `teaching`; they are written after the first target is chosen, restore prefers the log context, and they may be absent if no target has been chosen. Missing fields in old files are not migrated; a new target gets a new scope_id, and the same unfinished target keeps its existing one. A cross-subject switch first saves the old subject successfully, then activates the new identity by rewriting the whole file; old logs and plans stay under the original subject and are not moved.
+- When switching student or subject, overwrite the whole file. In the transitional state where a subject is chosen but no student yet, `student_id` is `null`; treat it as empty when reading and guide the student to `/learn-start`.
 
 ## Create Student
 
-`/learn-start` 收齐并确认新生信息后，读取并执行 `references/create-student.md`。已有学生只补齐 Read Snapshot 指定的缺失文件，保留已有学习证据。
+After `/learn-start` has collected and confirmed the new student's information, read and execute `references/create-student.md`. For an existing student, only fill in the missing files specified in Read Snapshot and keep existing learning evidence.
 
 ## Write Protocol
 
-每次写入：
+On every write:
 
-1. 读取完整文件（不存在则用模板）。
-2. 在内存中合并：对象递归合并、保留未提及字段；数组按流程要求替换或前插，不隐式去重。
-3. 更新 `updated_at` 为当前 ISO 时间。
-4. 写入完整、合法的 JSON，不含注释。
-5. 回复里只说“已保存”或摘要。
+1. Read the full file (use the template if it does not exist).
+2. Merge in memory: merge objects recursively and keep unmentioned fields; replace or prepend arrays as the workflow requires, with no implicit deduplication.
+3. Set `updated_at` to the current ISO time.
+4. Write complete, valid JSON with no comments.
+5. In the reply, only say "saved" or give a summary.
 
-写入方（不混写）：
+Writers (no mixed writes):
 
-- **共享** `outputs/students/<id>/profile.json`：姓名、年级、`personal`、可选 education_stage / learning_context / learning_preferences。只由 Create Student、`/learn-start` 和 `/learn-profile` 写；不改 `student_id`、`created_at`。
-- **科目** `profile.json`、`memory.json`、`current_state.json`、`milestones.json`：由 finalize、`/learn-profile`、`learn-errors` 写。合并细则（前插、去重、截断、嵌套位置）以 `references/finalize-session.md` 与 `references/session-retention.md` 为准。
-- **日志** `session_log.json`：只由 `references/session-lifecycle.md` 与 finalize 写。
+- **Shared** `outputs/students/<id>/profile.json`: name, grade, `personal`, optional education_stage / learning_context / learning_preferences. Written only by Create Student, `/learn-start`, and `/learn-profile`; never change `student_id` or `created_at`.
+- **Subject** `profile.json`, `memory.json`, `current_state.json`, `milestones.json`: written by finalize, `/learn-profile`, and `learn-errors`. Merge details (prepend, dedupe, truncate, nesting location) follow `references/finalize-session.md` and `references/session-retention.md`.
+- **Log** `session_log.json`: written only by `references/session-lifecycle.md` and finalize.
 
-同一文件串行写入。日志有待完成的 `finalize_plan` 时，先按 `references/finalize-session.md` 恢复保存，再编辑档案或写回错题。
+Writes to the same file are serialized. When the log has a pending `finalize_plan`, first recover and save per `references/finalize-session.md`, then edit the profile or write back error items.
 
-## 按场景读取
+## Reading by Scenario
 
-| 场景 | 读取 |
+| Scenario | Read |
 |---|---|
-| `/learn`、`/learn-feynman` 开始/恢复、模式切换、换主题 | `references/session-lifecycle.md` |
-| 解析目标、文件交接 | `references/target-parsing.md` |
-| 按 subject 定位学科 skill 与学科字段 | `references/subject-contract.md` |
-| 产出或消费 segment、写日志 | `references/session-schema.md`（每轮不必读完整 `references/profile-schema.md`） |
-| 普通学习给下一步 | `references/next-step.md` |
-| 学习内容推荐或恢复待选候选 | 加载 `learn-recommend`；临时状态见 `references/session-schema.md`，只由生命周期写日志，不产教学 segment |
-| 结束或手动保存 | `references/finalize-session.md`、`references/session-retention.md` |
+| `/learn`, `/learn-feynman` start/resume, mode switch, topic change | `references/session-lifecycle.md` |
+| Parse a target, file handoff | `references/target-parsing.md` |
+| Locate the subject skill and subject fields by subject | `references/subject-contract.md` |
+| Produce or consume a segment, write the log | `references/session-schema.md` (no need to read the full `references/profile-schema.md` every turn) |
+| Give the next step in ordinary learning | `references/next-step.md` |
+| Learning-content recommendation or restoring pending candidates | Load `learn-recommend`; temporary state is in `references/session-schema.md`, written to the log only by the lifecycle, and produces no teaching segment |
+| End or manual save | `references/finalize-session.md`, `references/session-retention.md` |
+| Student-visible process labels (stage menus, confirmations, recommendation chrome) | `references/ui-locale.md` |
 
 ## Session Segments
 
-学科每个教学回合产出一个 segment，由共享生命周期追加到日志；内部子流程回传结果供外层合并，不另记一轮。结构、必填字段与枚举按 `references/session-schema.md`，学科只补充专属字段或取值。未知观察留空；确认与错误证据按 `learn-core` 的 `references/feynman-skill-whitelist.md` 判断。
+Each teaching turn of a subject produces one segment, appended to the log by the shared lifecycle; internal sub-flows return results for the outer layer to merge and do not log a separate turn. Structure, required fields, and enums follow `references/session-schema.md`; subjects only add subject-specific fields or values. Leave unknown observations empty; judge confirmation and error evidence per `references/feynman-skill-whitelist.md` of `learn-core`.
 
 ## Privacy
 
-- 学习档案写入仅在工作区内，平台消息留存是另一层能力：不将家庭、情绪和普通聊天自动写入长期档案；临时续接只保留 `references/session-schema.md` 所需最小流程状态，不复制私人原话。明确要求保存中性计划才走 support_events/finalize，共享目标与偏好变更仍只由 `/learn-start` 或 `/learn-profile` 处理。
-- 学生问保密、告知家长或消息记录时，按已核实的平台权限说明；未核实访问、留存或删除能力就明确未知，不承诺保密或不记录。学习档案未写入、临时 context 清理或 `/learn-clean` 删除工作区文件，都不等于平台消息未留存/已删除；家长身份本身不授予私人讨论全量访问权。
-- 兴趣与经历的使用边界见 `learn-core` 的 `references/prestart-settings-interpretation.md`。
-- 批量删除生成文件或清空学习记录，只在用户主动输入 `/learn-clean` 后按该技能预览并再次确认；其他技能不自动加载它或执行这类清理。常规 finalize 与保留策略仍按各自协议执行。
-- `/learn-clean` 是显式删除的专属例外，不套用 Write Protocol 的合并保存与补档规则。普通清理保留共享身份、用户原件及原件备份；只有该技能的高风险分支在范围确认及独立手动短语确认后，才可删除这些数据。高风险范围、不可恢复警告与执行规则以该技能的 `references/high-risk-deletion.md` 为准。
+- Learning profiles are written only inside the workspace; platform message retention is a separate capability. Do not automatically write family matters, emotions, or ordinary chat into long-term profiles; temporary continuation keeps only the minimal process state required by `references/session-schema.md` and does not copy private verbatim quotes. Only an explicit request to save a neutral plan goes through support_events/finalize; changes to shared goals and preferences are still handled only by `/learn-start` or `/learn-profile`.
+- When a student asks about confidentiality, informing parents, or message records, answer per verified platform permissions; if access, retention, or deletion capabilities have not been verified, say they are unknown and do not promise confidentiality or non-recording. Not writing the learning profile, clearing temporary context, or `/learn-clean` deleting workspace files does not mean platform messages were not retained or have been deleted; being a parent does not by itself grant full access to private discussion.
+- For the boundaries on using interests and experiences, see `references/prestart-settings-interpretation.md` of `learn-core`.
+- Bulk deletion of generated files or clearing learning records happens only after the user actively enters `/learn-clean`, with preview and a second confirmation per that skill; other skills do not auto-load it or perform such cleanup. Regular finalize and retention policy still run per their own protocols.
+- `/learn-clean` is the dedicated exception for explicit deletion and does not follow the Write Protocol's merge-save and profile-completion rules. Ordinary cleanup preserves the shared identity, user originals, and original backups; only that skill's high-risk branch may delete them, after scope confirmation and a separate manual phrase confirmation. High-risk scope, the non-recoverable warning, and execution rules follow that skill's `references/high-risk-deletion.md`.

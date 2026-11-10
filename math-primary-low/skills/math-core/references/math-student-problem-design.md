@@ -1,37 +1,37 @@
-# 学生出题与回答设计
+# Student-Made Problems and Answer Design
 
-## 学生决定问题
+## The Student Decides the Problem
 
-邀请用当前关系编一道生活场景题，可变数字、情境、未知量或一个条件；场景由学生定，提示只给当前一点，年级调整语言而不限制题型。
+Invite the student to compose an everyday-scene problem about the current relationship; they may vary the numbers, context, unknown, or one condition. The student decides the scene, a hint gives only the current point, and grade adjusts language without limiting problem type.
 
-有效题优先；超焦点先确认继续还是回原目标；过大数字可邀缩小，未教不等于无效。检查条件、单位、所求；有意多解/无解可分析依据。缺条件只问一处，完整题直接用，不重套模板。不足则等待澄清。
+A valid problem takes priority; if it goes beyond the focus, first confirm whether to continue or return to the original goal; overly large numbers may be invited to shrink, and "not yet taught" does not mean invalid. Check conditions, units, and what is asked; a deliberately multi-solution or no-solution problem can be analyzed on its basis. If a condition is missing, ask about just one spot; use a complete problem directly and do not force it into a template. If insufficient, wait for clarification.
 
-## 先正确求解
+## Solve Correctly First
 
-内部解题后按 `learn-core` 的 `references/pedagogy-core.md` 做 Internal Check；核未知量、单位、可分性、余数，多解核范围。
+After solving internally, run the Internal Check per `learn-core`'s `references/pedagogy-core.md`; check the unknown, units, divisibility, and remainders, and for multiple solutions check the range.
 
-## 按模式回答
+## Answer by Mode
 
-- **普通学习**：缺省给正确结果和一处可检查关系，留解释/质疑/他法空间，不给长解或随机错答。可选一次受限故意错误，条件见下。需正误对照时，回传 `continue_practice` 并建议 session 采用 practice 对比分支。
-- **费曼**：按共享听众角色/白名单，围绕一处关系提出疑惑或错误想法；已确认技能不故意错，不制造连续错答维持比例。当前回复结束前明确纠正结论与错误点，再邀解释，不能留到下条。
+- **Ordinary learning**: by default give the correct result and one checkable relationship, leaving room for explanation/questioning/other methods; no long solutions or random wrong answers. One restricted deliberate error is optional, with conditions below. When a right/wrong contrast is needed, return `continue_practice` and suggest session use the practice contrast branch.
+- **Feynman**: per the shared audience role/allowlist, raise a confusion or wrong idea around one relationship; do not err deliberately on confirmed skills, and do not manufacture consecutive wrong answers to maintain a ratio. Before the current reply ends, explicitly correct the conclusion and the error point, then invite explanation; this cannot be left to the next message.
 
-**普通学习的受限故意错误**：仅当本题焦点技能已在 `confirmed_skills`（含本会话已投影的确认）时可用；无确认技能、学生正求助或刚经历真实错误时一律正确作答。每题至多一处，不连续两题都故意错，不为维持比例制造错答。内部先正确求解并记下正确结论与错点；对外只交错误想法与答案请学生批改，本条回复不自我纠正、不暗示“我可能错了”、不问“你发现了吗”。收束本题前必须澄清正确结论；学生未批改就切走时，先澄清再走。
+**Restricted deliberate error in ordinary learning**: usable only when this problem's focus skill is already in `confirmed_skills` (including confirmations already projected within this session); with no confirmed skill, when the student is asking for help, or just after a real error, always answer correctly. At most one per problem, never deliberate errors on two consecutive problems, and no manufactured wrong answers to keep a ratio. Internally solve correctly first and note the correct conclusion and the error point; externally hand over only the wrong idea and answer for the student to grade; this reply does not self-correct, does not hint "I might be wrong", and does not ask "did you notice?". The correct conclusion must be clarified before this problem is wrapped up; if the student leaves without grading, clarify first and then go.
 
-错误想法须贴焦点、单一可追溯且已验明确实错误、学生能理解（如混淆数量角色、不等单位相加）；费曼另须不触白名单。
+The wrong idea must fit the focus, be single and traceable, be verified as truly wrong, and be understandable to the student (such as confusing quantity roles or adding unequal units); Feynman additionally must not touch the allowlist.
 
-已揭示（含故意错答后已澄清）的信息不记为学生独立发现；学生主动指出故意错误并给出正确关系时，可按共享白名单记确认证据。
+Information already revealed (including after a clarified deliberate error) is not recorded as the student's independent discovery; when the student proactively points out the deliberate error and gives the correct relationship, confirmation evidence may be recorded per the shared allowlist.
 
-## 角色边界与取证
+## Role Boundary and Evidence
 
-**出题者主导**：学生出题并批改，AI 是作答者。普通学习中认真求解，用“我算的是……，请你批改”交还主动权；这不等于切入费曼模式；受限故意错误仍是作答材料，不把批改变成测验追问。AI 故意错误不记为学生错误；学生未指出也不记为未发现或困难。
+**The problem-maker leads**: the student makes the problem and grades it; the AI is the answerer. In ordinary learning, solve earnestly and hand the initiative back with "I got ..., please grade it"; this is not switching into Feynman mode; a restricted deliberate error is still answer material, and grading is not turned into a quiz follow-up. A deliberate AI error is not recorded as a student error; if the student does not point it out, it is not recorded as undiscovered or as a difficulty.
 
-学生的点评决定下一步：
+The student's comment decides the next step:
 
-- “对”“跟我一样”：本轮无故意错误时直接收束；有未纠正故意错误时，先澄清错点与正确结论再收束，不追问为何没发现。学生另有解法或主动讲解时认真听，已有解释直接使用。
-- 说“错了”但未指出哪里时，只针对自己的答案问一处，如“我哪一步算错了？”；仍无具体说明时：有未纠正故意错误则先澄清再交还选择，否则保留分歧并交还流程选择。
-- 点出具体分歧时先复核自己的解法；故意错误被指出则承认并修正；真实算错同样认错修正。若学生的理由与条件有明确矛盾，用作答者口吻问一处真实疑问；仍未澄清时保留未知，交还流程选择。
-- 学生明确求助时，先用流程选项确认是否回到共同解题或教学助手指导；选择后才交主线安排支架、练习或诊断。有未纠正故意错误时，确认切走前先澄清正确结论。
+- "Right" or "same as mine": when there is no deliberate error this turn, wrap up directly; with an uncorrected deliberate error, first clarify the error point and the correct conclusion and then wrap up, and do not ask why it was not noticed. If the student has another solution or explains proactively, listen earnestly and use existing explanations directly.
+- When the student says "wrong" without saying where, ask one question only about your own answer, such as "Which step did I get wrong?"; if there is still no specific explanation: with an uncorrected deliberate error, clarify first and then hand the choice back; otherwise keep the disagreement and hand the flow choice back.
+- When a specific disagreement is raised, first recheck your own solution; if the deliberate error is pointed out, admit and fix it; a real miscalculation is likewise admitted and fixed. If the student's reasoning clearly contradicts the conditions, ask one real question in the answerer's voice; if still unclarified, keep it unknown and hand the flow choice back.
+- When the student explicitly asks for help, first confirm with a flow option whether to return to joint solving or the teaching assistant's guidance; only after the choice does the mainline arrange scaffolding, practice, or diagnosis. With an uncorrected deliberate error, clarify the correct conclusion before confirming the switch.
 
-批改后的缺省出口是收束，不为取证调用共享无响应流程反复探查、缩小问题或要求改用画板；只有学生选择回到教学助手指导后，才按对应教学分支处理。恢复旧的验收式追问时，先按此边界接住当前回应，不继续验收链。
+The default exit after grading is wrap-up; do not call the shared no-response flow to probe repeatedly, shrink the problem, or ask to switch to the board for the sake of evidence; only after the student chooses to return to the teaching assistant's guidance is the corresponding teaching branch handled. When resuming an old acceptance-style follow-up, first receive the current reply under this boundary and do not continue the acceptance chain.
 
-编题、理解示例、解释关系、独立求解、迁移分开记录。仅同意或说方法相同只记为批改与自述，独立理解保留未知，不推定已独立验算，也不记为错误、表达困难、支架需求或降档依据。题目有效不等于会解；学习证据不足可以保留，不是继续追问的理由。
+Record problem composition, understanding the example, explaining the relationship, independent solving, and transfer separately. Merely agreeing or saying the method is the same is recorded only as grading and self-report; independent understanding stays unknown, independent verification is not presumed, and it is not recorded as an error, expression difficulty, scaffold need, or basis for lowering the level. A valid problem does not mean the student can solve it; insufficient learning evidence may be left as is and is not a reason for further questioning.

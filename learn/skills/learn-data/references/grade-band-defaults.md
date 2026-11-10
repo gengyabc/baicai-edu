@@ -1,26 +1,26 @@
 # Grade Band Defaults
 
-教育阶段和年级是可选配置，不是能力标签。阶段/情境影响表达或支持时，加载 `learn-support` 的 `references/learner-stage.md`；当前任务证据优先。学科领域、任务类型、偏好键和初始水平由教学契约提供。
+Education stage and grade are optional settings, not ability labels. When stage/context affects expression or support, load `learn-support`'s `references/learner-stage.md`; evidence from the current task takes priority. Subject domains, task types, preference keys, and initial levels are provided by the teaching contract.
 
-## 阶段与兼容
+## Stage and compatibility
 
-`education_stage` 可选值：
+`education_stage` optional values:
 
-| 值 | 阶段 |
+| Value | Stage |
 |---|---|
-| `lower_primary` | 小学低段 |
-| `upper_primary` | 小学高段 |
-| `junior_secondary` | 初中 |
-| `senior_secondary` | 高中 |
-| `higher_education` | 大学及高职 |
-| `adult` | 成人 |
+| `lower_primary` | Lower primary school |
+| `upper_primary` | Upper primary school |
+| `junior_secondary` | Junior secondary school |
+| `senior_secondary` | Senior secondary school |
+| `higher_education` | University and vocational college |
+| `adult` | Adult |
 
-旧档案没有 `education_stage`，但有明确小学 `grade` 时可在快照中推导：grades 1-3 -> `lower_primary`，grades 4-6 -> `upper_primary`。保留旧 `grade` 与 `grade_band`，无需批量迁移。缺少阶段和可用小学年级时按 unknown（未知）处理，不强迫补填；未知是缺省语义，不新增枚举值。显式阶段与旧年级冲突时只澄清必要信息，不按数字把非小学误归小学。
+An old profile with no `education_stage` but with an explicit primary-school `grade` may derive it in the snapshot: grades 1-3 -> `lower_primary`, grades 4-6 -> `upper_primary`. Keep the old `grade` and `grade_band`; no bulk migration is needed. When there is no stage and no usable primary grade, treat it as unknown, and do not force it to be filled in; unknown is the default semantics, and no new enum value is added. When an explicit stage conflicts with the old grade, clarify only what is necessary, and do not misclassify a non-primary learner as primary by number.
 
-新建/修改时 `grade` 可缺省；非小学不填小学年级，不由年龄、职业或课程难度猜阶段。小学已知年级的 `grade_band` 沿用以上映射；非小学/未知没有小学年级段，不套最低年级模板。
+On create/modify, `grade` may be omitted; for non-primary learners do not fill in a primary grade, and do not guess a stage from age, occupation, or course difficulty. For a known primary grade, `grade_band` keeps the mapping above; non-primary/unknown has no primary grade band, so do not apply the lowest-grade template.
 
-## 默认值的来源
+## Source of defaults
 
-建档、补档或阶段修改前读 `references/teaching-resolver.md`，再取其 `core_skill` 契约的默认 `learning_state.active_domain`、`profile.current_levels` 与 `profile.preferences`。小学包当前适配范围为 `lower_primary` / `upper_primary`；其他阶段无声明适配时用通用任务教学。阶段未知不强迫选择，不凭包已安装就宣称适用；按解析协议回退。小学学生可以探究超年级内容，具体任务与证据决定支架，不以阶段封顶。
+Before creating a profile, filling in a profile, or changing stage, read `references/teaching-resolver.md`, then take the default `learning_state.active_domain`, `profile.current_levels`, and `profile.preferences` from the contract of its `core_skill`. The primary-school package currently fits `lower_primary` / `upper_primary`; for other stages with no declared fit, use general task teaching. An unknown stage is not forced to a choice, and do not claim fit merely because a package is installed; fall back per the resolution protocol. Primary students may explore above-grade content; the specific task and evidence decide scaffolding, and stage is not a cap.
 
-改阶段不自动重置水平、转换证据或热替换未完成任务；按生命周期先处理旧任务，再由解析协议确定后续实现。示例档案值不是初始化默认值。
+Changing stage does not automatically reset levels, convert evidence, or hot-swap an unfinished task; per the lifecycle, first handle the old task, then let the resolution protocol determine the subsequent implementation. Example profile values are not initialization defaults.

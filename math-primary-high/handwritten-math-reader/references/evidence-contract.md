@@ -63,9 +63,12 @@ tutoring_handoff:
 
 ## Minimal reporting sequence
 
-1. **我识别到的步骤**: one line per visible line; preserve wrong equations and crossed-out attempts.
-2. **需要确认的地方**: exact line/region and alternatives, or `无`.
-3. **数学检查**: only on adequately confirmed lines; earliest verified issue and a reason.
-4. **给孩子的下一句话**: one non-judgmental question or appropriately sized hint.
+The section headings below are English labels for agent-facing instructions; render them in the learner's language when showing the report to a child or parent.
+
+
+1. **Steps I recognized**: one line per visible line; preserve wrong equations and crossed-out attempts.
+2. **Needs confirmation**: exact line/region and alternatives, or `none`.
+3. **Math check**: only on adequately confirmed lines; earliest verified issue and a reason.
+4. **Next sentence for the child**: one non-judgmental question or appropriately sized hint.
 
 If `mode=transcription_only`, return (1) and (2) only. In `mode=tutor`, do not automatically display an adult answer key. If a diagram is unclear, describe visible strokes/labels and ask rather than inventing a geometric relation.

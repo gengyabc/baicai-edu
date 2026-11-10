@@ -1,59 +1,76 @@
-# 英语错误标签表
+# English Error Label Table
 
-英语诊断统一使用这份标签表；只选一个最值得先改的主标签，次要问题可写进持久化条目的 `notes`。学生可见回复用学生能懂的话说问题，不展示标签名。
+English diagnosis uses this single label table. Pick only the one main label most worth fixing first; secondary problems can go in the persisted entry's `notes`. Student-visible replies describe the problem in words the student understands and never show label names.
 
-## 迁移规则
+## Migration Rules
 
-- 新写入的 `error_history` 必须使用 `english:` 前缀。
-- `diagnosis.domain` 只能是 `listening_speaking`、`reading`、`writing`、`language_use` 或 `news_reading`。
-- 每条诊断只保留一个有学生表现依据的主标签；没有足够证据时省略诊断，先补问。
-- 语音、发音和口语流利度不在本表内：默认没有真实音频能力，不从文字回答反推这些表现。
-- 字段表见 `references/english-profile-fields.md`。
+- Newly written `error_history` entries must use the `english:` prefix.
+- Labels are English snake_case identifiers. Legacy `error_history` entries that still hold Chinese-named `english:` labels are read through the mapping in "Legacy Chinese Labels" below; never write new Chinese labels.
+- `diagnosis.domain` can only be `listening_speaking`, `reading`, `writing`, `language_use`, or `news_reading`.
+- Keep only one main label per diagnosis, backed by student performance; with insufficient evidence, omit the diagnosis and ask more first.
+- Pronunciation, speech, and speaking fluency are not in this table: by default there is no real audio capability, so do not infer these from text answers.
+- The field table is in `references/english-profile-fields.md`.
 
-## 存储方式
+## Storage
 
-诊断标签与技能追踪分开：标签描述本次主问题，写入 `diagnosis`；`confirmed_skills` / `skill_errors_observed` 只接收共享白名单技能及其证据，finalize 的 `skill_errors` 不承载诊断标签。记录链路：
+Diagnosis labels are separate from skill tracking: a label describes this turn's main problem and goes in `diagnosis`; `confirmed_skills` / `skill_errors_observed` accept only shared-whitelist skills and their evidence, and finalize's `skill_errors` does not carry diagnosis labels. Recording chain:
 
-1. 学科 skill 在 `session_segment.diagnosis` 写 `{ "domain", "label", "evidence" }`。
-2. `learn-data` finalize 把它写成一条 `error_history` 诊断条目：
-   `{ "source": "diagnosis", "domain", "label", "evidence", "next_step", "error_id": "diag_..." }`。
-3. `error_history` 保留最新 20 条；同一标签重复出现时保留最新证据，并在 `notes` 写“重复模式”。
+1. The subject skill writes `{ "domain", "label", "evidence" }` in `session_segment.diagnosis`.
+2. `learn-data` finalize writes it as one `error_history` diagnosis entry:
+   `{ "source": "diagnosis", "domain", "label", "evidence", "next_step", "error_id": "diag_..." }`.
+3. `error_history` keeps the latest 20 entries; when the same label recurs, keep the latest evidence and write "repeated pattern" in `notes`.
 
 ## error_type
 
-文件分析写 `error_type` 时用下表；它描述错误性质，`label` 描述具体主问题。会话内诊断可以只写 `label`，由 finalize 保留既有字段。
+When file analysis writes `error_type`, use the table below; it describes the nature of the error, while `label` describes the specific main problem. In-session diagnosis may write only `label`, and finalize keeps existing fields.
 
-| `error_type` | 含义 | 常见对应标签 |
+| `error_type` | Meaning | Common matching labels |
 |---|---|---|
-| `comprehension` | 理解偏离或漏信息 | `english:理解偏差`、`english:信息遗漏` |
-| `expression` | 理解但表达受阻 | `english:表达受阻`、`english:答非所问` |
-| `vocabulary` | 生词阻断 | `english:词义不明` |
-| `pattern` | 句型不能独立使用 | `english:句型不熟` |
-| `task` | 任务或问题理解错 | `english:任务误解` |
-| `spelling` | 拼写影响可读性 | `english:拼写偏差` |
-| `news_literacy` | 新闻事实与观点混淆 | `english:事实与观点混淆` |
+| `comprehension` | Understanding drifts or information is missed | `english:comprehension_gap`, `english:missed_information` |
+| `expression` | Understands but expression is blocked | `english:expression_blocked`, `english:off_topic_answer` |
+| `vocabulary` | An unknown word blocks | `english:unclear_word_meaning` |
+| `pattern` | Pattern cannot be used independently | `english:unfamiliar_pattern` |
+| `task` | The task or question is misunderstood | `english:task_misunderstanding` |
+| `spelling` | Spelling hurts readability | `english:spelling_deviation` |
+| `news_literacy` | News facts and opinions are confused | `english:fact_opinion_confusion` |
 
-## 标签
+## Labels
 
-| 标签 | domain | 定义 |
+| Label | domain | Definition |
 |---|---|---|
-| `english:任务误解` | `language_use` | 没听懂或读错问题、任务要求，答到别处 |
-| `english:理解偏差` | `reading` | 对已给英语语句或短文的理解偏离原意 |
-| `english:信息遗漏` | `reading` | 抓到一部分信息，漏掉影响理解的关键信息 |
-| `english:词义不明` | `language_use` | 生词或短语阻断理解或表达 |
-| `english:句型不熟` | `language_use` | 目标句型不能在语境中独立使用，只能依赖提示或背诵 |
-| `english:表达受阻` | `speaking` | 理解意思，但说不出来，长期停在中文、单词或半句 |
-| `english:答非所问` | `language_use` | 听懂了词但没接住对方的意思或问题重点 |
-| `english:拼写偏差` | `writing` | 抄写或仿写中拼写错误影响可读性 |
-| `english:事实与观点混淆` | `news_reading` | 读新闻时把观点、猜测或改编当成了已核实事实 |
+| `english:task_misunderstanding` | `language_use` | Did not understand or misread the question or task requirement and answered something else |
+| `english:comprehension_gap` | `reading` | Understanding of the given English sentence or short passage drifts from the original meaning |
+| `english:missed_information` | `reading` | Caught part of the information but missed key information that affects understanding |
+| `english:unclear_word_meaning` | `language_use` | An unknown word or phrase blocks understanding or expression |
+| `english:unfamiliar_pattern` | `language_use` | Cannot use the target pattern independently in context; relies on hints or memorization |
+| `english:expression_blocked` | `speaking` | Understands the meaning but cannot say it; stays in the first language, single words, or half sentences |
+| `english:off_topic_answer` | `language_use` | Understood the words but did not catch the other person's meaning or the point of the question |
+| `english:spelling_deviation` | `writing` | Spelling errors in copying or imitation hurt readability |
+| `english:fact_opinion_confusion` | `news_reading` | While reading news, treated opinion, speculation, or adaptation as verified fact |
 
-## 怎么选（按顺序判断）
+## How to Choose (judge in order)
 
-1. 先看是否理解任务：答到别处、做错方向 → `english:任务误解`；其他标签先不选。
-2. 读材料时看理解：整体意思错了 → `english:理解偏差`；只漏关键信息 → `english:信息遗漏`。
-3. 卡在词上 → `english:词义不明`；词都认识但句式用不出 → `english:句型不熟`。
-4. 理解了却说不出来，先记为 `english:表达受阻`，不因此同时记词义和句型两个标签。
-5. 写的句子拼写影响可读 → `english:拼写偏差`。
-6. 新闻阅读里把观点当事实 → `english:事实与观点混淆`。
+1. First check whether the task was understood: answered something else or went the wrong way → `english:task_misunderstanding`; do not choose other labels yet.
+2. When reading material, check comprehension: overall meaning wrong → `english:comprehension_gap`; only missed key information → `english:missed_information`.
+3. Stuck on a word → `english:unclear_word_meaning`; knows every word but cannot use the sentence form → `english:unfamiliar_pattern`.
+4. Understood but cannot say it: record `english:expression_blocked` first, and do not also record both word-meaning and pattern labels.
+5. Spelling in written sentences hurts readability → `english:spelling_deviation`.
+6. Treating opinion as fact in news reading → `english:fact_opinion_confusion`.
 
-一个学生可能同时有几个问题；只选当前最值得先改的一个主标签，不同时堆标签。
+A student may have several problems at once; pick only the one main label most worth fixing now, and do not stack labels.
+
+## Legacy Chinese Labels
+
+Older `error_history` entries may hold Chinese-named labels. Read them with this exact mapping; do not infer a different label and do not rewrite old entries during a normal turn.
+
+| Legacy label | Current label |
+|---|---|
+| `english:任务误解` | `english:task_misunderstanding` |
+| `english:理解偏差` | `english:comprehension_gap` |
+| `english:信息遗漏` | `english:missed_information` |
+| `english:词义不明` | `english:unclear_word_meaning` |
+| `english:句型不熟` | `english:unfamiliar_pattern` |
+| `english:表达受阻` | `english:expression_blocked` |
+| `english:答非所问` | `english:off_topic_answer` |
+| `english:拼写偏差` | `english:spelling_deviation` |
+| `english:事实与观点混淆` | `english:fact_opinion_confusion` |

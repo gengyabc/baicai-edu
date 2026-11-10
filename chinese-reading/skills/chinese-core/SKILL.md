@@ -1,6 +1,6 @@
 ---
 name: chinese-core
-description: 语文规则。阅读、写作、读写迁移、出题、评改、长期训练前加载；阅读因生活经验缺口难以感受情感、意境或人物处境时，按内部动作表桥接。
+description: Chinese shared rules. Load before reading, writing, read-write transfer, task generation, feedback, or long-term training; when reading stalls because of missing life experience for emotion, imagery, or character situation, bridge via the internal action table.
 user-invocable: false
 ---
 
@@ -41,19 +41,19 @@ user-invocable: false
 | 批改作文、判断档位或选择最值得改的 3 处前 | `references/chinese-assessment-rubric.md` |
 | 每次选择阅读/写作错误标签、记录诊断前 | `references/chinese-error-labels.md` |
 
-## 学科契约
+## Subject contract
 
 `supported_stages: lower_primary, upper_primary`。这是默认表达与流程的适配声明，不是内容门槛；其他阶段由统一解析选择通用教学。
 
-`subject: chinese`，教学入口 `chinese-session`，包 `dsh-edu-chinese-reading`。角色含义见 `learn-data` 的 `references/subject-contract.md`；入口与本包分支同样从这里读取。
+`subject: chinese`，教学入口 `chinese-session`，包 `dsh-edu-chinese-reading`。教学交付语言：共用档案 `language`（缺失或未知按 `zh-CN`）。角色含义见 `learn-data` 的 `references/subject-contract.md`；入口与本包分支同样从这里读取。
 
-| 角色 | 读取 |
+| Role | Read |
 |---|---|
-| 目标分类：`type` / `intent` 取值、文件交接后的语文目标 | `references/chinese-target.md` |
-| 学习推荐：生成、比较或重排语文小目标 | `references/learning-recommendations.md` |
-| 年级默认：初始化、重选年级或选择默认领域与题型 | `references/chinese-grade-defaults.md` |
-| 档案字段：偏好键与 `/learn-start` 选项、水平键、写科目档案 | `references/chinese-profile-fields.md` |
-| 诊断规则：阅读/写作标签与 `domain` | `references/chinese-error-labels.md` |
+| Target classification：`type` / `intent` 取值、文件交接后的语文目标 | `references/chinese-target.md` |
+| Learning recommendations：生成、比较或重排语文小目标 | `references/learning-recommendations.md` |
+| Grade defaults：初始化、重选年级或选择默认领域与题型 | `references/chinese-grade-defaults.md` |
+| Profile fields：偏好键与 `/learn-start` 选项、水平键、写科目档案 | `references/chinese-profile-fields.md` |
+| Diagnosis rules：阅读/写作标签与 `domain` | `references/chinese-error-labels.md` |
 
 ## 内部动作
 

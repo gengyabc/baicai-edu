@@ -1,23 +1,23 @@
-# 通用教学契约角色
+# General Teaching Contract Roles
 
-## 目标分类
+## Target Classification
 
-依 `learn-data` 的 `references/target-parsing.md` 保留原 topic、files、intent。明确主题用 `type: topic`；材料阅读、练习、项目、作品反馈均由任务意图决定，不猜原文。有材料未处理则先走文件交接；没有材料时先问当前小步骤所需信息。纯支持需求交生命周期，不强造题目。
+Keep the original topic, files, and intent per `references/target-parsing.md` in `learn-data`. An explicit topic uses `type: topic`; material reading, practice, projects, and feedback on works are all determined by task intent, and the original text is not guessed. If material is present and unprocessed, go through the file handoff first; without material, first ask for the information the current small step needs. A pure support need goes to the lifecycle, and no question is forced.
 
-## 年级默认
+## Grade Defaults
 
-所有阶段和未知阶段均可用。`active_domain: ""`、`current_levels: {}`，优先学生目标与材料；没有目标则问一个想解决的问题，不强测。小学年级不会成为成人初始化模板。
+Available for all stages and unknown stages. `active_domain: ""`, `current_levels: {}`, with the student's goals and materials taking priority; with no goal, ask one question about what they want to solve, and do not force a test. A primary-school grade never becomes the initialization template for adults.
 
-## 档案字段
+## Profile Fields
 
-`preferences: {}`，通用支持偏好使用共享 learning_preferences 中学生明确设置的目标和偏好。easy_topics/hard_topics 只作自述参考，不创建固定学习风格标签。
+`preferences: {}`; general support preferences use the goals and preferences the student explicitly set in shared learning_preferences. easy_topics/hard_topics serve only as self-reported reference, and no fixed learning-style labels are created.
 
-## 诊断规则
+## Diagnosis Rules
 
-不定义专门 `label` / `error_type` / `domain`，未知为空，不伪造学科诊断；记录实际问题、学生做法和可核对的证据。文件分析保留可辨认内容与引用，不把材料阅读冒充学生错误。
+No specialist `label` / `error_type` / `domain` is defined; unknown stays empty, and no subject diagnosis is fabricated; record the actual problem, what the student did, and verifiable evidence. File analysis keeps recognizable content and references, and does not pass off material reading as a student error.
 
-## 学习推荐
+## Learning Recommendation
 
-提供 2–3 个可立即开始、不同的小目标，唯一首选与中文 reason/basis；不足只给一个。目标/材料优先，通用历史只用同一 scope_id 的 general_progress，不从专门等级外推能力。结合学生已说明的价值、支持需求、时间成本选可行起点；没有表现则标探索性，不为推荐先测。
+Offer 2–3 distinct small goals that can start immediately, with a single preferred one, and a reason/basis in the active UI locale (see `references/ui-locale.md` in `learn-data`); if there are not enough, give only one. Goals/materials take priority; general history uses only general_progress of the same scope_id, and capability is not extrapolated from specialist levels. Pick a feasible starting point in light of the value, support needs, and time cost the student has stated; with no performance, mark it exploratory, and do not test first for the sake of a recommendation.
 
-学生明确希望探索其他领域时可以给跨领域方向；候选显式保留目标 subject 或中性任务描述，选择后由生命周期保存旧主题并切换，推荐本身不授权。无明确领域时先问一个感兴趣的问题或用途，不用所有历史混排。呈现、等待、拒绝与恢复只由 `learn-recommend` 处理。
+When the student explicitly wants to explore other areas, cross-domain directions may be offered; a candidate explicitly keeps the target subject or a neutral task description, and after selection the lifecycle saves the old topic and switches; the recommendation itself grants no authorization. With no explicit area, first ask one question about an interest or use, and do not mix all history. Presentation, waiting, rejection, and resume are handled only by `learn-recommend`.

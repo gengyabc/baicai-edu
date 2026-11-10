@@ -1,44 +1,44 @@
-# 难度调整
+# Difficulty Adjustment
 
-学生提出降低或提高难度时，本轮按一个负荷因素调整呈现方式，把方向和对象记进日志；finalize 后写入科目记忆，供后续材料沿用。难度是呈现偏好，不是水平，不改 `current_levels`。
+When a student asks to lower or raise difficulty, this turn adjusts the presentation along one load factor and records the direction and target in the log; after finalize it is written to subject memory for later materials to reuse. Difficulty is a presentation preference, not a level, and does not change `current_levels`.
 
-## 什么时候记录
+## When to record
 
-- 学生明确说材料、题目或文本“太难 / 简单一点 / 降低难度”或“太简单 / 难一点 / 提高难度”：记录。
-- 学生在某一步卡住、没听懂或答不出：先按 `references/guidance-non-response-handling.md` 和学科支架处理；只有同时表达“以后也这样”才记为难度要求。
-- 分不清是针对这一篇还是以后：按这一篇调整并记录方向，`note` 写清对象；不追问，不把一次请求当成水平结论。
+- The student explicitly says the material, question, or text is "too hard / make it easier / lower the difficulty" or "too easy / make it harder / raise the difficulty": record.
+- The student is stuck at a step, didn't understand, or can't answer: first handle it per `references/guidance-non-response-handling.md` and the subject scaffolding; record a difficulty request only if they also express a standing preference such as "keep it like this from now on".
+- Unclear whether it is about this piece or going forward: adjust for this piece and record the direction, with `note` stating the target; do not press for clarification, and do not treat a single request as a level conclusion.
 
-## 本轮怎么调
+## How to adjust this turn
 
-只改一个负荷因素，保留任务目标和材料完整意思。因素可以是句子长度与生词量、数字或步骤的复杂度、表示的具体程度、提示量、文本长度或问题层数；每轮只动一个，其余保持。
+Change only one load factor, keeping the task goal and the full meaning of the material. A factor can be sentence length and new-word count, complexity of numbers or steps, concreteness of representation, amount of hints, text length, or number of question layers; move only one per turn and keep the rest.
 
-- 材料已呈现时不重写全文；从下一个问题或下一篇开始按新方向。
-- 不宣布“你现在的水平是……”，不给等级，不把调整记成掌握或退步。
+- When the material has already been presented, do not rewrite it in full; apply the new direction from the next question or the next piece.
+- Do not announce "Your current level is...", give a grade, or record the adjustment as mastery or regression.
 
-## 记录在哪
+## Where to record
 
-`session_log.json` 的 `context.difficulty_request`：
+`context.difficulty_request` in `session_log.json`:
 
 ```json
 {
   "direction": "easier",
-  "note": "图片新闻句子长、生词多",
+  "note": "News from the image had long sentences and many new words",
   "requested_at": "2026-11-07T20:19:00+08:00"
 }
 ```
 
-- `direction`：`easier` / `harder` / `standard`。学生说“正常难度 / 不用调了”记 `standard`。
-- 同一会话后一次请求覆盖前一次；`note` 只写学生原话概括和对象，不写诊断标签。
-- 没有请求时不写这个字段；由入口统一写日志。
+- `direction`: `easier` / `harder` / `standard`. If the student says "normal difficulty / no need to adjust," record `standard`.
+- A later request in the same session overrides the earlier one; `note` only summarizes the student's own words and the target, with no diagnostic labels.
+- When there is no request, do not write this field; the entry writes the log uniformly.
 
-## 后续怎么用
+## How to use afterwards
 
-- 学科生成新材料、题目或文本前读 `memory.profile_memory.material_difficulty`，按 `direction` 调整一个负荷因素。
-- `note` 写明对象时，优先在同类材料上沿用；对象不明确时按一般材料处理。
-- 方向沿用，直到学生再次明确要求；学生没有再说时，不因为一次表现好就自动改回 `standard`。
-- 只在生成新材料时生效；已在进行的文本保持完整，不在中途改写。
+- Before generating new material, questions, or text, a subject reads `memory.profile_memory.material_difficulty` and adjusts one load factor according to `direction`.
+- When `note` names a target, prefer carrying it over on similar material; when the target is unclear, treat it as general material.
+- The direction carries over until the student explicitly asks again; if the student says nothing more, do not automatically revert to `standard` just because one performance went well.
+- It applies only when generating new material; text already in progress stays intact and is not rewritten midway.
 
-## 保存
+## Saving
 
-- 教学轮只写日志；finalize 的 memory patch 把 `context.difficulty_request` 并入 `profile_memory.material_difficulty`，`updated_at` 用 `requested_at`。
-- 不经过 finalize 的会话不写科目记忆，不声称已保存。
+- Teaching turns only write the log; finalize's memory patch merges `context.difficulty_request` into `profile_memory.material_difficulty`, using `requested_at` for `updated_at`.
+- A session that does not go through finalize does not write subject memory, and must not claim it was saved.

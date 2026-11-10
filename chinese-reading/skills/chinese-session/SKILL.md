@@ -1,6 +1,6 @@
 ---
 name: chinese-session
-description: 语文路由。学习入口确定 subject = chinese、恢复语文回合或切换阅读/写作领域时加载；按目标与 mode 分派一个子技能。
+description: Chinese routing. Load when the learning entry sets subject = chinese, resumes a Chinese turn, or switches reading/writing domains; dispatch one child skill by goal and mode.
 user-invocable: false
 ---
 

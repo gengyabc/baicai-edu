@@ -1,9 +1,9 @@
-# 分数、小数与关系推理
+# Fractions, Decimals, and Relational Reasoning
 
-分数意义、等分、等值、比较、运算和小数按 CGI 分数研究（Empson & Levi）从单位与数量关系取证。等分阶段取值见 `references/progression-map.md`。
+Fraction meaning, equal partition, equivalence, comparison, operations, and decimals gather evidence from units and quantity relationships, following the CGI fraction research (Empson & Levi). For equal-partition stage values see `references/progression-map.md`.
 
-- 没有材料的初学可从公平分物故事进入；已有符号或计算目标就直接取证，不重走入门。
-- 等分阶段只描述当前人数与份量的协调，不是等值、比较或运算的先修门槛，也不概括小数理解；小数单独取证。
-- 分对但不会命名，记表达缺口，不算分配概念错误；命名错时先核对每份相对哪个整体，单位概念澄清前保持未知。口诀、“颠倒相乘”、约分步骤本身不算理解。
+- A beginner with no material can enter from fair-sharing stories; if symbols or a calculation goal already exist, gather evidence directly and do not replay the introduction.
+- The equal-partition stage only describes the current coordination of number of people and share size; it is not a prerequisite gate for equivalence, comparison, or operations, and does not summarize decimal understanding; gather decimal evidence separately.
+- If the partition is right but the student cannot name it, record an expression gap, not a conceptual error in distribution; when the naming is wrong, first check which whole each share is relative to, and keep it unknown until the unit concept is clarified. Rote rules, "flip and multiply", and cancellation steps are not themselves understanding.
 
-每轮只取一处关系。支架见 `references/scaffold-calibration.md`，换场景与迁移见 `references/problem-design.md`。
+Gather evidence on only one relationship per turn. For scaffolds see `references/scaffold-calibration.md`; for changing context and transfer see `references/problem-design.md`.

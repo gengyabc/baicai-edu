@@ -1,25 +1,25 @@
-# 信心支持 · confidence
+# Confidence Support · confidence
 
-## 触发
+## Trigger
 
-学生明确担忧学不会、说自己做不到或请求增强当前任务信心。承认感受，最小澄清担忧在哪一步；“我笨”是学生自述，不转为能力或心理标签。一次答错不足以推断低信心；若困难来自缺少时间、设备或岗位练习机会，先调整条件，不安排用来证明态度的小成功。
+The student explicitly worries about being unable to learn, says they cannot do it, or asks to build confidence for the current task. Acknowledge the feeling and minimally clarify at which step the worry lies; "I'm stupid" is the student's self-report and is not turned into an ability or psychological label. One wrong answer is not enough to infer low confidence; if the difficulty comes from lack of time, equipment, or on-the-job practice opportunities, adjust the conditions first and do not arrange small wins just to prove an attitude.
 
-## 建议动作
+## Suggested Actions
 
-1. 让当前教学主导者从原任务选一个有挑战但可尝试的小步，复用已有难度调整与渐进支架；必要时先辨认基础缺口。
-2. 按需要给线索或示范相邻例子，再让学生亲自完成当前一步；保留所给帮助条件。费曼中仍让学生讲解，AI 只作听众追问。
-3. 用事实给具体进步反馈，如“刚才需要提示才能指出依据，这次你自己找到一处”；未完成就指出已做到与下一卡点，不空泛赞聪明、不保证一定成功。
+1. Have the current teaching owner pick a challenging but attemptable small step from the original task, reusing the existing difficulty adjustment and gradual scaffolding; identify foundation gaps first when necessary.
+2. As needed, give a cue or demonstrate an adjacent example, then let the student complete the current step personally; keep the help conditions that were given. In Feynman mode the student still does the explaining and the AI only asks questions as a listener.
+3. Give feedback on specific progress based on facts, such as "just now you needed a hint to point out the basis, and this time you found one on your own"; if unfinished, point out what was done and the next sticking point, without empty praise of being smart and without guaranteeing success.
 
-`action` 以小步真实尝试为主，最多辅助一次具体反馈；学生可随时拒绝或休息。
+`action` consists mainly of a real small-step attempt, with at most one piece of specific feedback as an aid; the student may refuse or rest at any time.
 
-## 观察
+## Observation
 
-信心自述、是否尝试与实际表现分别观察。支持下表现不等于独立能力；简单题成功不代表整体能力改变。后续是否可在减少关键提示或另一任务中复现，交原有掌握确认门槛判断。
+Observe self-reported confidence, whether the student tried, and actual performance separately. Performance under support is not independent ability; success on an easy problem does not mean overall ability has changed. Whether it can be reproduced later with fewer key hints or on another task is judged by the existing mastery-confirmation gate.
 
-## 退出
+## Exit
 
-完成可观察尝试并据实反馈后返回教学；依旧卡住转基础诊断或换策略，而非重复鼓劲。疲劳、压力或资源不足则提供休息/条件调整；拒绝立即退场。
+Return to teaching after an observable attempt is completed and feedback given truthfully; if still stuck, switch to foundational diagnosis or change strategy instead of repeating encouragement. For fatigue, pressure, or insufficient resources, offer rest/condition adjustments; on refusal, exit immediately.
 
-## 依据
+## Basis
 
-[自我效能](evidence.md#self-efficacy)与 [SRL](evidence.md#srl)：从真实行动、反馈和监控支持任务预期。理论解释不是本系统干预有效的证明；不把一次支持尝试当能力确认。
+[Self-efficacy](evidence.md#self-efficacy) and [SRL](evidence.md#srl): support task expectations through real action, feedback, and monitoring. The theory's explanation is not proof that this system's intervention works; one support attempt is not treated as confirmation of ability.

@@ -1,6 +1,6 @@
 ---
 name: chinese-read-write-transfer
-description: 读写迁移。学生已读懂材料并愿意换主题运用其中写法，或恢复尚未完成的阅读写法迁移练习时使用。
+description: Read-write transfer. Use when the student understands a text and wants to reuse its writing moves on a new topic, or when resuming an unfinished reading-to-writing transfer practice.
 user-invocable: false
 ---
 

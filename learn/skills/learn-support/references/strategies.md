@@ -1,45 +1,45 @@
-# 学习策略支持 · strategies
+# Learning Strategy Support · strategies
 
-## 触发
+## Trigger
 
-学生想学但方法不清，或当前方法反复未奏效。先区分未理解基础、已理解但提取困难、不会检查与任务过载；已有专门方法由专门会话选择和实施，不在此另立调度。
+The student wants to learn but the method is unclear, or the current method has repeatedly not worked. First distinguish between not understanding the foundation, understanding but struggling to retrieve, not knowing how to check, and task overload; existing specialist methods are chosen and implemented by the specialist session, and no separate scheduling is created here.
 
-## 建议动作
+## Suggested Actions
 
-围绕当前目标选一个策略，必要时最多一个辅助策略；先解释怎么做，再在当前真实任务中试一次，不只列学习窍门：
+Pick one strategy around the current goal and, if needed, at most one auxiliary strategy; first explain how to do it, then try it once in the current real task, rather than just listing study tips:
 
-| 当前问题 | 主方法的最小动作 | 检查点 |
+| Current problem | Minimal action of the main method | Checkpoint |
 |---|---|---|
-| 熟悉材料但回想不出 | 检索：暂遮答案，学生先回忆/尝试，再核对与纠错 | 不看答案能提取什么，哪些仍需提示 |
-| 学过后易忘 | 间隔：学生愿意时在未来可行时间再提取同一关键点 | 延迟后的实际回忆，不以当场流畅为保持证据 |
-| 会步骤但理由不清 | 自我解释：请学生解释一步为何成立，再用材料/例子核对 | 解释有无依据、能否发现缺口；想当小老师则沿既有入口确认费曼模式，不擅自切换 |
-| 不知哪里学会 | 元认知：先预测一小步能做到什么，完成后与实际对照，选下一处需学内容 | 判断与表现差异；自评不是掌握证据 |
-| 材料或步骤过多 | 认知负荷调节：分段、去无关信息，按需用示范与学生尝试交替 | 学生能否重新亲自完成关键一步；熟练后退让支架 |
+| Familiar material but cannot recall it | Retrieval: temporarily cover the answer, have the student recall/try first, then check and correct | What can be retrieved without looking at the answer, and what still needs a hint |
+| Forgets easily after learning | Spacing: when the student is willing, retrieve the same key point again at a feasible time in the future | Actual recall after a delay; in-the-moment fluency is not evidence of retention |
+| Knows the steps but not why | Self-explanation: ask the student to explain why a step holds, then check against material/examples | Whether the explanation has a basis and whether gaps are noticed; if they want to be the little teacher, confirm Feynman mode through the existing entry and do not switch on your own |
+| Does not know where they learned | Metacognition: first predict what one small step can achieve, compare with the actual result after finishing, and choose the next thing to learn | Gap between judgment and performance; self-assessment is not mastery evidence |
+| Too much material or too many steps | Cognitive load regulation: chunk, remove irrelevant information, and alternate demonstration with student attempts as needed | Whether the student can complete the key step personally again; fade scaffolding with fluency |
 
-已有语言复习、支架与交互方法继续复用其实现；本表只给建议，不代替其每轮选择权。
+Existing language review, scaffolding, and interaction methods continue to use their own implementations; this table gives suggestions only and does not replace their per-turn selection.
 
-### 有 AI 还要学什么
+### What to Still Learn When AI Is Available
 
-按当前目标、错误后果、关键依赖与现实时间选择深度，而不是所有内容都精学或全部交给 AI：
+Choose the depth according to the current goal, the consequence of errors, key dependencies, and real time, rather than studying everything deeply or delegating everything to AI:
 
-| 深度责任 | 最小行动与检查 |
+| Depth of responsibility | Minimal action and check |
 |---|---|
-| 必须独立掌握 | 对目标中的核心原理、关键判断或安全步骤，学生亲自解释、找反例或独立完成关键一步 |
-| 需要理解并验证 | 可借工具生成，但学生说清假设、查依据，并以样例/反例验证；发现问题能解释和修改 |
-| 可以委托但必须检查 | 明确委托边界和验收标准，学生检查产出是否满足要求；检查不了关键错误时升级理解深度或寻求合格人员复核 |
+| Must be mastered independently | For the core principles, key judgments, or safety steps in the goal, the student personally explains, finds a counterexample, or completes the key step independently |
+| Needs understanding and verification | A tool may generate it, but the student states the assumptions, checks the basis, and verifies with examples/counterexamples; when a problem is found, they can explain and fix it |
+| May be delegated but must be checked | Set the delegation boundary and acceptance criteria explicitly, and the student checks whether the output meets the requirements; if they cannot check for critical errors, raise the depth of understanding or seek review by a qualified person |
 
-两条路径按任务选择：**自底向上**从原理、机制和常见错误逐步应用；**自上而下**先看可运行作品与系统结构，再沿关键依赖补基础。遇到解释缺口或验证失败就回到相应原理，不把“作品跑了”当作学会。这是保守的任务设计原则，不宣称哪条路径普遍更优。
+Two paths are chosen by task: **bottom-up** applies step by step from principles, mechanisms, and common errors; **top-down** first looks at a working piece and the system structure, then fills in the foundation along the key dependencies. When an explanation gap or verification failure appears, return to the corresponding principle, and do not treat "the work runs" as having learned. This is a conservative task-design principle and does not claim that either path is universally better.
 
-能力归属分开判断：**AI 代做**只见 AI 产出；**提示下完成**保留关键提示条件；**AI 协作验证**要见学生检查依据、发现问题或解释并修改结果；**独立完成**要见不用关键帮助的学生表现，复现门槛仍由原教学规则决定。目标是独立解释时，不以协作成果替代；目标是协作能力时，也不把合理工具使用一概判为失败。高风险领域还须符合原有专业规范与复核要求。
+Judge capability attribution separately: **AI did it** shows only AI output; **completed with hints** keeps the key hint conditions; **AI-collaboration verification** requires seeing the student check the basis, find problems, or explain and revise the result; **independently completed** requires student performance without key help, with the reproduction threshold still decided by the original teaching rules. When the goal is independent explanation, a collaborative result does not substitute; when the goal is collaboration capability, reasonable tool use is not judged a failure across the board. High-risk domains must also comply with existing professional standards and review requirements.
 
-## 观察
+## Observation
 
-分开记策略是否被实际使用、学生自述是否有帮助及任务表现。保留提示/示范/AI 条件，区分独立能力、支持下表现和 AI 协作能力。没有延迟检查就不声称长期保持；没有跨任务复现就不声称广泛迁移。
+Record separately whether the strategy was actually used, whether the student reports it helped, and task performance. Keep the hint/demonstration/AI conditions, and distinguish independent capability, performance under support, and AI-collaboration capability. Without a delayed check, do not claim long-term retention; without cross-task reproduction, do not claim broad transfer.
 
-## 退出
+## Exit
 
-在实际任务试过并得到可观察结果就回教学。无效时回查基础、任务与条件再调整；疲劳、无时间或拒绝则退出。安排间隔复习不等于授权创建提醒或计划任务。
+Return to teaching once it has been tried in a real task with an observable result. If it does not work, re-check the foundation, task, and conditions before adjusting; on fatigue, no time, or refusal, exit. Scheduling spaced review does not authorize creating reminders or scheduled tasks.
 
-## 依据
+## Basis
 
-[学习策略综述与权威实践指南](evidence.md#strategies)支持检索、间隔、解释、示例与练习交替；[SRL](evidence.md#srl)提供预测—监控—反思机制。方法证据强度不一，AI 分工不从这些非 AI 研究推导确定效果。
+[Learning-strategy reviews and authoritative practice guides](evidence.md#strategies) support retrieval, spacing, explanation, and alternating examples with practice; [SRL](evidence.md#srl) provides the predict–monitor–reflect mechanism. The strength of evidence varies across methods, and AI division of labor does not derive definite effects from these non-AI studies.

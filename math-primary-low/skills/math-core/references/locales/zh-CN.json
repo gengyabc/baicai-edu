@@ -1,0 +1,16 @@
+{
+  "ui.stage.transfer": "迁移",
+  "ui.stage.practice": "练一练",
+  "ui.student_problem.continue": "继续出题",
+  "ui.student_problem.return_learning": "回到刚才的学习",
+  "ui.board.clear": "清空",
+  "ui.board.keep": "别清",
+  "ui.board.keep_these_items": "这几题都别清",
+  "ui.board.cleared": "已经清空",
+  "ui.board.clear_requested": "已发出清空请求",
+  "ui.board.clear_failed_hint": "画板没能自动清空，请在画板里点『清空』后再做新题。",
+  "ui.board.put_into_answer": "放入回答",
+  "ui.start.math_pref.likes_visual": "画一画",
+  "ui.start.math_pref.likes_story_context": "讲一讲",
+  "ui.start.math_pref.likes_direct_calculation": "直接算"
+}

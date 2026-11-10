@@ -1,17 +1,17 @@
-# 英语年级默认
+# English Grade Defaults
 
-年级到年级段、段内具体程度以 `learn-data` 的 `references/grade-band-defaults.md` 为准。本文是英语 `active_domain`、初始水平、默认任务与推进顺序的唯一来源。不要从共享 schema 的示例抄初始值。
+Grade to grade band, and the specific level within a band, follow `learn-data` `references/grade-band-defaults.md`. This file is the single source for English `active_domain`, initial levels, default tasks, and progression order. Do not copy initial values from the shared schema's examples.
 
-## 初始化
+## Initialization
 
-| 年级段 | `learning_state.active_domain` |
+| Grade band | `learning_state.active_domain` |
 |---|---|
 | `lower_primary` | `listening_speaking` |
 | `upper_primary` | `reading` |
 
-`profile.preferences` 的四个键初始全部为 `false`；`/learn-start` 只把学生选中的一项设为 `true`。键见 `references/english-profile-fields.md`。
+The four keys of `profile.preferences` all start as `false`; `/learn-start` sets only the student's selected one to `true`. Keys are in `references/english-profile-fields.md`.
 
-初始 `profile.current_levels` 四项都是 `pre_a1`：
+Initial `profile.current_levels` are all `pre_a1`:
 
 ```json
 {
@@ -22,45 +22,45 @@
 }
 ```
 
-年级不决定英语水平。学生可能在低年级已有基础，也可能在高年级刚刚起步；初始值统一保守，按实际表现一项一项更新。一次答对不足以升级，需要一个以上语境中的独立表现。
+Grade does not determine English level. A student may already have a foundation in the lower grades or may be just starting in the upper grades; initial values are uniformly conservative, then updated one skill at a time from actual performance. One correct answer is not enough to level up; it takes independent performance in more than one context.
 
-## 水平档
+## Level Bands
 
-| 值 | 含义 |
+| Value | Meaning |
 |---|---|
-| `pre_a1` | 依靠图片、动作和熟悉场景理解少量词；表达以单词、短语或中文补充为主 |
-| `a1` | 能理解日常短句和简短故事；能用短句说或写自己的简单需要 |
-| `a2` | 能读短段落、抓住主要信息；能做简短复述、描述和问答 |
-| `b1` | 能读较长材料、说明理由和简单观点；表达较连贯 |
+| `pre_a1` | Understands a few words with the help of pictures, actions, and familiar scenes; expresses mostly with single words, phrases, or first-language supplements |
+| `a1` | Understands everyday short sentences and short stories; can say or write simple needs in short sentences |
+| `a2` | Can read short paragraphs and catch main information; can do brief retelling, description, and Q&A |
+| `b1` | Can read longer material, give reasons and simple opinions; expression is more coherent |
 
-升级一次只走一档；没有足够证据时保留原值。不把年级、一次正确回答或流畅朗读当作长期水平证据。
+Level up only one band at a time; with insufficient evidence, keep the original value. Do not treat grade, one correct answer, or fluent reading aloud as long-term level evidence.
 
-`active_domain` 取以下值之一：`listening_speaking`、`reading`、`writing`、`language_use`、`news_reading`。
+`active_domain` takes one of: `listening_speaking`, `reading`, `writing`, `language_use`, `news_reading`.
 
-## 低年级（1–3，`lower_primary`）
+## Lower Primary (Grades 1–3, `lower_primary`)
 
-默认从听和说开始，句子短，活动具体。
+Default to starting with listening and speaking, with short sentences and concrete activities.
 
-1. 听指令做动作、看图说词、二选一
-2. 熟悉场景里的短对话和简单问答
-3. 绘本或短故事共读，理解主线
-4. 用一个词或半句回应，再逐步补成短句
-5. 把同一表达换到另一个生活场景再用一次
+1. Listen to instructions and act, name things from pictures, pick one of two
+2. Short dialogues and simple Q&A in familiar scenes
+3. Shared reading of picture books or short stories, grasping the main line
+4. Respond with one word or half a sentence, then gradually build up to a short sentence
+5. Reuse the same expression in another everyday scene
 
-常见主题：颜色、动物、家庭、数字、食物、动作、天气。三年级可以加一次小的比较或迁移，不因此提前讲语法体系。
+Common topics: colors, animals, family, numbers, food, actions, weather. Grade 3 can add a small comparison or transfer, without introducing a grammar system early.
 
-## 高年级（4–6，`upper_primary`）
+## Upper Primary (Grades 4–6, `upper_primary`)
 
-默认从短阅读开始，逐步加入复述、仿写和简单任务。
+Default to starting with short reading, gradually adding retelling, imitation writing, and simple tasks.
 
-1. 读短故事或信息短文，找出人物、地点、事件
-2. 回答一个理解问题，再复述一两句
-3. 用目标句型仿写自己的短句
-4. 在任务或游戏里把表达用起来
-5. 换主题或换场景检验是否独立
+1. Read a short story or informational passage and find who, where, and what happened
+2. Answer one comprehension question, then retell a sentence or two
+3. Imitate the target pattern to write a short sentence of one's own
+4. Put the expression to use in a task or game
+5. Change topic or scene to check independence
 
-常见主题：学校生活、自然与动物、科学小知识、节日、旅行、健康。六年级可以读稍长材料并说明一个简单理由，不把语法术语当门槛。
+Common topics: school life, nature and animals, small science facts, holidays, travel, health. Grade 6 can read slightly longer material and give one simple reason; grammar terms are not a threshold.
 
-## 推进顺序
+## Progression Order
 
-理解先于表达，支持下的表达先于独立表达，同一语境先于换语境。一个目标已经稳定时，再选近邻任务或换场景；不从年级表直接跳到下一档。
+Understanding comes before expression, supported expression before independent expression, and the same context before a changed context. Once a goal is stable, pick a neighboring task or switch scenes; do not jump to the next band directly from the grade table.

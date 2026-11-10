@@ -1,27 +1,27 @@
-# 高风险：彻底删除学生数据
+# High Risk: Completely Delete Student Data
 
-只在用户本次 `/learn-clean` 中明确选择高风险动作后执行。主技能第 2、3 节的路径核验、取消、变化重确认、失败停止、部分失败报告与缓存丢弃规则全部适用，本文件只写差异。
+Run only after the user has explicitly chosen a high-risk action in this `/learn-clean` invocation. All of the main skill's rules in sections 2 and 3 apply — path verification, cancellation, re-confirmation on change, stop on failure, partial-failure reporting, and cache discarding; this file states only the differences. All student-facing labels, warnings, and typed phrases are locale keys resolved through the active UI locale per `references/ui-locale.md` in `learn-data`.
 
-## 范围
+## Scope
 
-| 高风险动作 | 允许范围 |
+| High-risk action | Allowed scope |
 |---|---|
-| 彻底删除指定学生（高风险） | `outputs/students/<已确认id>/` 与 `data/students/<已确认id>/` 下全部文件；当前选择文件仅在指向该学生时列入。 |
-| 清空所有学生数据（高风险） | `outputs/students/` 与 `data/students/` 下全部学生数据，以及 `outputs/students/session.json`。 |
+| Completely delete a specified student (high risk) | All files under `outputs/students/<confirmed id>/` and `data/students/<confirmed id>/`; the current-selection file is listed only when it points to that student. |
+| Clear all student data (high risk) | All student data under `outputs/students/` and `data/students/`, plus `outputs/students/session.json`. |
 
-学生取两棵目录实际子目录的并集，包含只有原件、只有输出或档案损坏的孤立目录；身份缺失时按目录 id 展示，不猜姓名。目录名不符合学生 id 格式、出现未知顶层文件、特殊文件或符号链接时停止并说明，不把未知内容当作学生数据。
+Students are the union of the actual subdirectories of the two trees, including orphan directories that have only originals, only outputs, or a corrupted profile; when identity is missing, show the directory id and do not guess a name. If a directory name does not match the student id format, or an unknown top-level file, special file, or symlink appears, stop and explain; do not treat unknown content as student data.
 
-原件只列路径、数量与大小，不打开原件内容。清单包括所有文件和待移除的空目录。
+For originals, list only the path, count, and size, and do not open the original contents. The list includes all files and the empty directories to be removed.
 
-## 两次独立确认
+## Two Independent Confirmations
 
-1. **范围确认**：预览首部警告：**高风险、不可自动恢复。将永久删除学生身份、全部学习记录、用户原件及原件备份；本次不另建恢复副本。** 然后列出每位学生的姓名（可读时）、id、科目，以及身份、记录、原件、备份各类文件数量；全量操作给出完整学生名单与总数。说明未保存学习直接丢弃、不 finalize；源码、外部存储和聊天历史不在删除范围，不能宣称已删除。用 `ask_user_question` 让用户选「取消（保留全部）」或「继续高风险删除（尚未执行）」。
-2. **手动短语确认**：另问一轮 `ask_user_question`，只要文字、不提供确认按钮，请用户输入 `永久删除学生 <实际id>`（问题中填入真实 id）或 `永久删除所有学生数据`。去掉首尾空白后完全匹配才执行；其他任何回应都零变更并结束方案。
+1. **Scope confirmation**: the preview opens with the warning `ui.clean.high_risk_warning`, shown verbatim from the active locale. Then list each student's name (when readable), id, and subjects, and the number of files in each category: identity, records, originals, and backups; a full-scope operation gives the complete student list and total. State that unsaved learning is discarded directly and not finalized; source code, external storage, and chat history are outside the deletion scope and must not be claimed as deleted. Use `ask_user_question` to let the user choose `ui.clean.cancel_keep_all` or `ui.clean.continue_high_risk`.
+2. **Manual phrase confirmation**: in a separate `ask_user_question` round, ask for text only with no confirm button, and have the user type the phrase `confirm.phrase.delete_student` (with `{id}` filled in with the actual id, shown in the question) or `confirm.phrase.delete_all_students`, taken from the active locale. Execute only on an exact match after trimming leading and trailing whitespace; any other response makes zero changes and ends the plan.
 
-范围或文件内容变化后两次确认均失效，须从头重来。
+Both confirmations become invalid after the scope or file contents change, and must be redone from the start.
 
-## 执行差异
+## Execution Differences
 
-- 先解除激活（如清单含当前选择文件），再逐文件删除；随后自底向上用仅能删除空目录的操作移除清单中的目录，保留 `data/students/` 与 `outputs/students/` 根目录。目录非空即停止。
-- 部分失败时既有删除无法回滚；重试对剩余项重新走两次确认。
-- 不从聊天内容重建被删档案；该学生之后再用须重新建档。
+- Deactivate first (if the list contains the current-selection file), then delete file by file; afterward, remove the directories in the list from the bottom up with an operation that can delete only empty directories, keeping the `data/students/` and `outputs/students/` roots. Stop if a directory is not empty.
+- On partial failure, deletions already made cannot be rolled back; a retry runs both confirmations again for the remaining items.
+- Do not rebuild deleted profiles from the chat content; later use of that student requires creating a new profile.

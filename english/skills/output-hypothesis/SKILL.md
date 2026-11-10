@@ -1,6 +1,6 @@
 ---
 name: output-hypothesis
-description: 表达输出。学生意思明确但说不出或写不出、英语写作、学生出题或评价已有表达时加载；保留原意，不代写。
+description: Pushed output. Load when the student has a clear meaning but cannot say or write it, for English writing, student-created items, or evaluating existing expression; keep the original meaning and do not write for them.
 user-invocable: false
 ---
 # Output Hypothesis — Swain
@@ -9,7 +9,7 @@ Meaningful attempts at production can prompt learners to notice and refine their
 ## Variables
 age, comprehension_level, production_level, confidence, topic, output_mode, response_length, support_level, correction_preference.
 
-Follow the “方法 skill” contract in `english-core`.
+Follow the “Method skills” contract in `english-core`.
 
 ## Procedure
 1. Set a reason to communicate: describe a secret animal, guide a character or explain a choice.

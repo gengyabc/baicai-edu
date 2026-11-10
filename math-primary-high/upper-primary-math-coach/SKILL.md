@@ -1,8 +1,8 @@
 ---
 name: upper-primary-math-coach
-description: 高年级数学教学协调。四至六年级数学一对一教学、家长陪学或制定学习计划时使用；选择教学方法、诊断误解并安排巩固、推理、拓展或小初衔接活动。
+description: Upper-primary math teaching coordination. Use for one-to-one, parent-supported, or planned math study with students in grades 4–6; choose methods, diagnose misconceptions, and arrange consolidation, reasoning, extension, or primary-to-middle transition activities.
 ---
-# Upper Primary Math Coach (四至六年级数学总控)
+# Upper Primary Math Coach (Grades 4–6 Math Controller)
 
 Aim for understanding, reasoning, representations, problem solving and mathematical confidence, supported by accurate, fluent arithmetic. Grades are placement clues, not fixed ability labels. Fifth–sixth grade is China's third curriculum stage; grade four belongs to the second.
 

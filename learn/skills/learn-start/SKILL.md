@@ -1,63 +1,65 @@
 ---
 name: learn-start
-description: 选择科目或学习目标，切换学习者或为新生建档，准备开始学习。
+description: Choose a subject or learning goal, switch learners or create a profile for a new student, and prepare to start learning.
 disable-model-invocation: true
 ---
 
-# 开始学习
+# Start Learning
 
-加载尚未加载的 `learn-core`、`learn-data`。依次确认学习身份、识别学生、解析教学实现、激活档案；教学留给 `/learn`。已有日志包含 `finalize_plan` 时先按保存协议恢复，成功后才切换。
+Load `learn-core` and `learn-data` if not already loaded. In order: confirm the learning identity, identify the student, resolve the teaching implementation, and activate the profile; teaching is left to `/learn`. If the existing log contains a `finalize_plan`, recover it per the save protocol first and switch only after it succeeds.
 
-## 1. 选科目或目标
+All student-facing process labels and prompts below are locale keys, resolved through the active UI locale per `references/ui-locale.md` in `learn-data` (catalogs in `learn-data`'s `references/locales/`); never hard-code a language-specific literal.
 
-首次简述可直接学习，也可用费曼模式让 AI 当听众。可选科目只在这张表维护；学科字段约定见 `learn-data` 的 `references/subject-contract.md`。
+## 1. Choose a Subject or Goal
 
-| 选项 | subject id | 学科包 |
+A brief first contact may go straight into learning, or use Feynman mode so the AI acts as the audience. The selectable subjects are maintained only in this table; subject field conventions are in `references/subject-contract.md` in `learn-data`.
+
+| Option | subject id | Subject package |
 |---|---|---|
-| 数学 | `math` | `dsh-edu-math-primary-low` |
-| 语文 | `chinese` | `dsh-edu-chinese-reading` |
-| 英语 | `english` | `dsh-edu-english` |
+| Math | `math` | `dsh-edu-math-primary-low` |
+| Chinese | `chinese` | `dsh-edu-chinese-reading` |
+| English | `english` | `dsh-edu-english` |
 
-用 `ask_user_question` 问“今天想学什么，还是先聊聊？”，提供表中科目、「其他目标」及「先聊聊，暂不定目标」。用户已明确科目或只想交流时直接采用，不重复选项；其他输入保留原目标，不要求重选或强猜科目。纯交流沿用当前可用任务身份，不切换未完成任务；尚无身份时按解析协议创建中性 task 身份，不编造学习目标。后续只确认必要学习者身份，可跳过阶段与偏好；在本次身份确认期间保留已选择的纯交流意图。激活成功后立即把该意图交生命周期的新建/恢复与支持闸门，持久化最小交流选择：有原题仅叠加 resume_question 并保留完整任务，无原题用 activity: support，不等下一条消息才写入。写回成功才提示可直接交流或用 `/learn` 接续，确保随后无参数 `/learn` 仍保留交流选择；写回失败按生命周期停止并说明尚未保存选择，不宣称准备完成。不自动推荐或出题。
+Use `ask_user_question` with the prompt `ui.start.today_prompt`, offering the subjects in the table plus `ui.start.other_goal` and `ui.start.chat_first`. If the user has already named a subject or only wants to chat, adopt that directly without repeating the options; for other input keep the original goal and do not require reselection or force-guess a subject. Pure chat reuses the currently available task identity and does not switch an unfinished task; with no identity yet, create a neutral task identity per the resolution protocol and do not invent a learning goal. Afterward confirm only the necessary learner identity; stage and preferences may be skipped, and the chosen pure-chat intent is preserved throughout identity confirmation. Immediately after successful activation, hand that intent to the lifecycle's create/resume and support gates and persist the minimal chat selection: with an original question, only overlay resume_question and keep the full task; without one, use activity: support. Do not wait for the next message to write it. Only after the write-back succeeds, say the student can chat directly or continue with `/learn`, which guarantees that a later argument-less `/learn` still keeps the chat selection; if write-back fails, stop per the lifecycle and say the selection has not been saved yet, without claiming readiness. Do not auto-recommend or pose questions.
 
-先读取 `learn-data` 的 `references/teaching-resolver.md`：它统一决定真实 `subject`、中性任务身份与稳定 `scope_id`，以及 `teaching = { provider, core_skill, session_skill, evidence_namespace }`。未知目标按该协议使用 `task_<随机hex>`，明确新目标也按其范围规则隔离历史；不能全部写到同一个通用科目。未识别阶段前不提前加载专门包。缺少适配包可用通用任务教学，不要求安装后才能继续。
+First read `references/teaching-resolver.md` in `learn-data`: it jointly decides the real `subject`, the neutral task identity and stable `scope_id`, and `teaching = { provider, core_skill, session_skill, evidence_namespace }`. For an unknown goal, use `task_<random hex>` per that protocol; an explicit new goal also isolates history per its scope rules; do not write everything to one shared general subject. Do not load a specialist package before the stage is recognized. When no fitting package exists, general-task teaching can be used without requiring installation first.
 
-中途换目标须由生命周期先保存/中断旧任务并取得确认；选择科目本身不热替换未完成任务。
+Changing goals midway requires the lifecycle to save/interrupt the old task and obtain confirmation first; selecting a subject does not hot-swap an unfinished task.
 
-## 2. 清空旧学生选择
+## 2. Clear the Old Student Selection
 
-确认可以切换后，读取 `outputs/students/session.json`（可能不存在），按 `learn-data` 的 session.json 结构整文件写入过渡状态：`student_id: null`、已选 `subject` 及协议要求的身份字段，两个时间均为当前 ISO 时间。写入成功后再识别学生；失败则说明未切换成功并停止。
+Once switching is confirmed to be allowed, read `outputs/students/session.json` (it may not exist) and write the whole file in the transitional state per the session.json structure in `learn-data`: `student_id: null`, the selected `subject` and the identity fields the protocol requires, with both timestamps set to the current ISO time. Identify the student only after the write succeeds; on failure, say the switch did not succeed and stop.
 
-## 3. 识别学生
+## 3. Identify the Student
 
-按 `outputs/students/*/profile.json` 匹配共享档案，逐个读取 `student_id`、`name`、可选的 `grade`、`education_stage` 与 `personal.interests`。显示称呼；阶段/年级已知才附加说明，未知不显示“小学”或虚构年级。定位已有学生一律用选择卡，不用开放提问；问姓名只属于第 4 步建档。
+Match shared profiles by `outputs/students/*/profile.json`, reading each one's `student_id`, `name`, optional `grade`, `education_stage`, and `personal.interests`. Display the form of address; add stage/grade notes only when known; when unknown, do not show "primary school" or any fabricated stage or grade. Always use a selection card to locate an existing student, not an open question; asking for a name belongs only to step 4 (profile creation).
 
-- 无学生：进入建档。
-- 只有一人：用 `ask_user_question` 确认“我找到的是<name>，对吗？”，选项为「对，是我」「不是」。
-- 多人：按最近活跃（`current_state`、session 的 `updated_at`，缺失排后）取前 4 位，用 `ask_user_question` 列出称呼，末项为「都不是」；选「都不是」再按姓名分批翻页，每批 4 位加「都不是」，仍未找到才问是否新建。不一次列全，也不替学生猜身份。
-- 姓名重合：用文字问一个澄清问题，分别保留档案。
-- 姓名不存在：用 `ask_user_question` 问是否新建档案，确认后建档。
+- No students: go to profile creation.
+- Exactly one: use `ask_user_question` with the prompt `ui.identity.confirm_name_prompt` (filled with `<name>`) and options `ui.identity.yes_its_me` and `ui.identity.no`.
+- Several: take the top 4 by most recent activity (`current_state`, session `updated_at`; missing values rank last), list their names with `ask_user_question`, and make the last option `ui.identity.none_of_these`; if `ui.identity.none_of_these` is chosen, page by name in batches of 4 plus `ui.identity.none_of_these`, and only ask whether to create a new profile if the student is still not found. Never list everyone at once or guess the student's identity.
+- Duplicate names: ask one clarifying question in text, and keep the profiles separate.
+- Name does not exist: use `ask_user_question` to ask whether to create a new profile, and create it after confirmation.
 
-## 4. 新生建档
+## 4. Create a New Student Profile
 
-一次问一个问题，已提供的信息不重复问：
+Ask one question at a time, and do not repeat information already provided:
 
-1. 姓名或希望的称呼：用文字问。
-2. 可选教育阶段 `education_stage`：用 `ask_user_question` 先给小学、初中、高中、大学/高职、成人及「不确定/暂不提供」六项；选小学再问低段/高段或年级，单卡不超过六项。枚举与兼容规则读 `references/grade-band-defaults.md`；跳过就保持未知。小学阶段可补问年级；`grade` 可缺省，非小学不强填小学年级。
-3. 按已知身份和阶段读取 `references/teaching-resolver.md`，采用返回的 `core_skill` 档案字段与默认值；学习偏好用 `ask_user_question` 提供该契约的选项，可跳过。通用实现使用 `learn-general-core` / `learn-general-session`，证据命名空间为 `general_v1`；专门实现为 `specialist`。
+1. Name or preferred form of address: ask in text.
+2. Optional education stage `education_stage`: use `ask_user_question` to first offer six options, `ui.start.stage_primary`, `ui.start.stage_junior`, `ui.start.stage_senior`, `ui.start.stage_higher`, `ui.start.stage_adult`, and `ui.start.stage_uncertain`; if primary is chosen, further ask lower/upper band or grade, never more than six options on a card. Read the enum and compatibility rules in `references/grade-band-defaults.md`; skipping (`ui.common.skip`) keeps the stage unknown. Primary stage may additionally ask for grade; `grade` may be omitted, and do not force a primary grade for non-primary stages.
+3. Per the known identity and stage, read `references/teaching-resolver.md`, and adopt the profile fields and defaults of the returned `core_skill`; offer learning preferences through `ask_user_question` with that contract's options, skippable. The general implementation uses `learn-general-core` / `learn-general-session` with evidence namespace `general_v1`; a specialist implementation is `specialist`.
 
-兴趣、`learning_context`、长期目标与支持偏好均为可跳过项；只收当前建档必要信息，不邀请倾诉困境或敏感经历。学生明确设定要跨科使用的目标/支持偏好才写共享 `learning_preferences`，字段见 `references/create-student.md`；未提供不推断。
+Interests, `learning_context`, long-term goals, and support preferences are all skippable; collect only what is necessary for the current profile creation, and do not invite disclosure of difficulties or sensitive experiences. Write shared `learning_preferences` only for goals/support preferences the student explicitly sets for cross-subject use, with fields as in `references/create-student.md`; do not infer anything not provided.
 
-用一句话复述称呼、已提供的阶段/年级和偏好，用 `ask_user_question` 请学生确认，选项为「都对」「要改一下」。确认后读取并执行 `references/create-student.md`。阶段或学习情境影响表达/支持时，加载 `learn-support` 的 `references/learner-stage.md`，不把阶段当能力上限。
+Restate in one sentence the form of address, any stage/grade, and preferences provided, and ask the student to confirm with `ask_user_question`, with options `ui.start.confirm_ok` and `ui.start.confirm_edit`. After confirmation, read and execute `references/create-student.md`. When stage or learning context affects expression/support, load `references/learner-stage.md` from `learn-support`; do not treat stage as a ceiling on ability.
 
-建档并激活后，学习入口提示输入 `/learn` 开始；纯交流入口按第 1 步接续，不要求先定学习目标。
+After creating and activating the profile, a learning entry prompts the student to enter `/learn` to begin; a pure-chat entry continues per step 1 and does not require setting a learning goal first.
 
-## 5. 激活已有学生
+## 5. Activate an Existing Student
 
-1. 按 `references/grade-band-defaults.md` 兼容旧档案，再读 `references/teaching-resolver.md`。已有未完成任务保留原教学实现；新任务才按适配声明选择，不改真实 `subject`。
-2. 检查当前科目的 `profile.json`、`memory.json`、`current_state.json`、`milestones.json`、`session_log.json`，缺失文件按 `learn-data` Read Snapshot 初始化；默认值取解析出的教学契约，保留已有证据。
-3. 确保目录存在（已存在则保留）：`data/students/<id>/<subject>/raw`、`outputs/students/<id>/<subject>/extracted`、`outputs/students/<id>/<subject>/backups/raw`。
-4. 按 `learn-data` 的 session.json 结构写入当前学生、真实科目及所需身份/教学实现字段，更新时间。
-5. 必需文件、目录和 session 均写入成功后回复称呼与已明确的学习目标，提示输入 `/learn` 或直接说明意愿；纯交流不虚构目标，按第 1 步接续。失败时报告未完成操作，保留档案供重试。
+1. Make old profiles compatible per `references/grade-band-defaults.md`, then read `references/teaching-resolver.md`. An existing unfinished task keeps its original teaching implementation; only a new task selects one per the fit declaration, and the real `subject` is never changed.
+2. Check the current subject's `profile.json`, `memory.json`, `current_state.json`, `milestones.json`, and `session_log.json`; initialize missing files per `learn-data` Read Snapshot, with defaults taken from the resolved teaching contract and existing evidence preserved.
+3. Ensure these directories exist (keep them if already present): `data/students/<id>/<subject>/raw`, `outputs/students/<id>/<subject>/extracted`, `outputs/students/<id>/<subject>/backups/raw`.
+4. Write the current student, real subject, and required identity/teaching-implementation fields per the session.json structure in `learn-data`, and update the timestamps.
+5. Only after the required files, directories, and session are all written successfully, reply with the form of address and any explicit learning goal, and prompt the student to enter `/learn` or state their wish directly; pure chat does not invent a goal and continues per step 1. On failure, report the incomplete operation and keep the profile for retry.
 
-`outputs/students/` 不存在时由首次写入创建。
+`outputs/students/` is created by the first write if it does not exist.

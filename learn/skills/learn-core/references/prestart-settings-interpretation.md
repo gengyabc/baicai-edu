@@ -1,30 +1,30 @@
 # Prestart Settings Interpretation
 
-个性化只调整语气、例子和支架，不改学习目标，不覆盖学生当前消息。兴趣如何变成情境、题目或桥，由当前学科包规定。
+Personalization only adjusts tone, examples, and scaffolding; it does not change the learning goal or override the student's current message. How interests become contexts, problems, or bridges is set by the current subject package.
 
-字段路径与模板见 `learn-data` 的 `references/profile-schema.md`。共享档案是跨学科个性化的唯一来源；科目档案只放该学科的学习证据和偏好。不要到共享档案里找 `easy_topics`，也不要把兴趣写进 `learning_state`。会话开始随快照读取即可，不为个性化反复追问或补问。
+For field paths and templates see `learn-data`'s `references/profile-schema.md`. The shared profile is the only source of cross-subject personalization; the subject profile holds only that subject's learning evidence and preferences. Do not look for `easy_topics` in the shared profile, and do not write interests into `learning_state`. Read them with the snapshot at session start; do not repeatedly ask or follow up for personalization.
 
 ## Allowed Influence
 
-按当前学科包，用快照中的兴趣、经历、科目偏好与易/难调整呈现与支架。偏好只改变呈现方式，不降低目标，也不改变目标分类、水平判断或证据门槛。兴趣或经历一旦使用，每轮最多一个具体细节。
+Per the current subject package, use the interests, experiences, subject preferences, and easy/hard topics in the snapshot to adjust presentation and scaffolding. Preferences only change how things are presented; they do not lower the goal or change target classification, level judgment, or the evidence bar. Once an interest or experience is used, use at most one concrete detail per turn.
 
-## 易 / 难与自评
+## Easy / Hard and Self-Report
 
-`easy_topics` 只作进入当前目标的起点。显式目标和当轮表现优先于自评。`hard_topics` 只提示可能需要的支持，并围绕它多给支持；不因此降低目标，也不提前判难。
+`easy_topics` serve only as a starting point into the current goal. The explicit goal and the current turn's performance take priority over self-report. `hard_topics` only hint at support that may be needed, and give more support around them; do not lower the goal or pre-judge difficulty because of them.
 
 ## Disallowed Influence
 
-这些信息不得覆盖：
+This information must not override:
 
-- 本轮学习目标。
-- 学生当前消息。
-- 显式教学指令或真人教师指定的目标。
-- 学科证据：掌握度、困难、错误历史以科目档案为准。
+- This turn's learning goal.
+- The student's current message.
+- Explicit teaching instructions or goals set by a human teacher.
+- Subject evidence: mastery, difficulties, and error history follow the subject profile.
 
-## 隐私与用量
+## Privacy and Usage
 
-- 兴趣是例子的来源，不是对学生的判断。
-- 隐私问题问一次即可；学生不愿聊就换普通例子。
-- 难过经历和家庭信息不主动复述，`most_sad_event` 不作为反复使用的教学素材；学生不想说时立即停止。
-- 字段缺失就跳过，不编造。
-- 兴趣变化写入 `personal.interests` 或科目 `preferences`（写入协议见 `learn-data` / `/learn-profile`），不静默改学习目标。
+- Interests are a source of examples, not a judgment about the student.
+- Ask a privacy question once; if the student doesn't want to talk, switch to ordinary examples.
+- Do not proactively recount sad experiences or family information; `most_sad_event` is not used as repeatedly reused teaching material; stop immediately if the student doesn't want to say.
+- If a field is missing, skip it; do not invent.
+- Changes in interests are written to `personal.interests` or the subject `preferences` (write protocol in `learn-data` / `/learn-profile`); do not silently change the learning goal.

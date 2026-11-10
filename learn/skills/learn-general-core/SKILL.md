@@ -1,23 +1,23 @@
 ---
 name: learn-general-core
-description: 通用任务规则。教学解析选择通用路径，需初始化、分类目标、推荐或解释任务证据时加载；无适用专门包也继续实际教学。
+description: General-task rules. Load when teaching resolution selects the general path and needs initialization, goal classification, recommendation, or task-evidence interpretation; continue real teaching even without an applicable specialist package.
 user-invocable: false
 ---
 
-# 通用任务规则
+# General-Task Rules
 
-先加载 `learn-core`、`learn-data`，复用入口快照和 `references/teaching-resolver.md` 的解析结果；真实 subject 不变。具体教学只由 `learn-general-session` 产出；本技能不产回复、segment 或档案写入。
+First load `learn-core` and `learn-data`, and reuse the entry snapshot and the resolution result from `references/teaching-resolver.md`; the real subject does not change. Concrete teaching is produced only by `learn-general-session`; this skill produces no replies, segments, or profile writes.
 
-## 学科契约
+## Subject Contract
 
-本实现无固定学科目录，五角色由同一份参考按节提供；入口只读对应节。
+This implementation has no fixed subject directory; the five roles are provided section by section from one reference, and the entry reads only the relevant section.
 
-| 角色 | 参考 |
+| Role | Reference |
 |---|---|
-| 目标分类 | `references/general-contract.md` 的目标分类 |
-| 年级默认 | `references/general-contract.md` 的年级默认 |
-| 档案字段 | `references/general-contract.md` 的档案字段 |
-| 诊断规则 | `references/general-contract.md` 的诊断规则 |
-| 学习推荐 | `references/general-contract.md` 的学习推荐 |
+| Target classification | Target classification in `references/general-contract.md` |
+| Grade defaults | Grade defaults in `references/general-contract.md` |
+| Profile fields | Profile fields in `references/general-contract.md` |
+| Diagnosis rules | Diagnosis rules in `references/general-contract.md` |
+| Learning recommendation | Learning recommendation in `references/general-contract.md` |
 
-支持所有阶段及未知阶段；阶段只影响表达和支持，不自动生成掌握等级。所有证据带 `teaching.evidence_namespace: general_v1` 与 scope_id，隔离规则按解析参考执行。
+All stages and unknown stages are supported; stage affects only expression and support and never auto-generates a mastery level. All evidence carries `teaching.evidence_namespace: general_v1` and the scope_id, and isolation rules follow the resolver reference.

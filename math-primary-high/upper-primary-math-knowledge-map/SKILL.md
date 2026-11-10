@@ -1,6 +1,6 @@
 ---
 name: upper-primary-math-knowledge-map
-description: 高年级数学知识图谱。辅导、出诊断题、规划学习路线或补救前，需要查四至六年级知识点的先修知识、可迁移能力和常见误解时加载。
+description: Upper-primary math knowledge map. Load before tutoring, diagnostic items, learning-path planning, or remediation when topic prerequisites, transferable abilities, and common misconceptions for grades 4–6 are needed.
 ---
 # Upper Primary Math Knowledge Map
 

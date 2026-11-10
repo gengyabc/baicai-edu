@@ -1,19 +1,19 @@
-# 按数量关系选题
+# Choosing Problems by Quantity Relationship
 
-按 CGI 题型选当前一题：合并、拿走、部分-整体、比较、乘法、包含除、等分除，以及多步题和非常规题；未知量可以在不同位置。题干和配图不点名运算或策略。会做一种题型或一个未知位置，不推出其他的也会。
+Choose the current problem by CGI problem type: join, separate, part-part-whole, compare, multiplication, measurement (quotitive) division, partitive (equal-sharing) division, plus multi-step and non-routine problems; the unknown can be in different positions. The stem and any illustration do not name an operation or strategy. Being able to do one problem type or one unknown position does not imply the others.
 
-## 当前一题
+## The Current Problem
 
-从显式目标或证据选一个关系。题面默认是一段日常生活故事，停在问句；学生明确指定练习形式时优先采用。只核对一条已有数量事实时，也可用开放等式。
+Choose one relationship from the explicit goal or evidence. The default stem is an everyday-life story that stops at the question; when the student explicitly specifies a practice format, prefer it. When only checking one existing quantity fact, an open number sentence may also be used.
 
-按 CGI 用数字选择调难度、引导下一种策略，不点名策略。也可以给两三组数让学生选。
+Per CGI, use number choice to adjust difficulty and to guide toward the next strategy, without naming a strategy. You may also give two or three sets of numbers for the student to choose from.
 
-学生做不出时可以在同一故事里换更容易的数，做出后回到原数，见 `references/scaffold-calibration.md`。
+When the student cannot do it, you may swap in easier numbers within the same story and return to the original numbers once done; see `references/scaffold-calibration.md`.
 
-## 变式与迁移
+## Variation and Transfer
 
-按教学目的每次主改一项：数字结构、未知位置、题型或场景，其余尽量保持。发展策略或比较关系时，可以保留场景，也可以有意重复数字或结果；数字结构的变化也算变式`。当前题还没做完时保持原场景。
+By teaching purpose, change mainly one thing each time: number structure, unknown position, problem type, or scene, keeping the rest as much as possible. When developing a strategy or comparing relationships, you may keep the scene, and may deliberately repeat numbers or results; a change in number structure also counts as variation. While the current problem is not yet finished, keep the original scene.
 
-检验情境迁移时再换场景：关系与未知位置不变，数字近邻。新场景要换日常活动、物件和动作；只改人名或物件名称仍算同一场景。只在原场景做对，记为该场景的关系或数字变式证据；换场景后仍能解释，才记为情境迁移。
+Change the scene only when testing context transfer: the relationship and unknown position stay the same, with numbers nearby. A new scene must change the everyday activity, objects, and actions; changing only names of people or objects is still the same scene. Success only in the original scene is recorded as evidence of relationship or number variation in that scene; only if the student can still explain after the scene changes is it recorded as context transfer.
 
-故事复杂程度按学生表现调整，不绑定年级：先是一步、信息齐全的小故事，稳定后再加多余信息或过渡步骤，每次只加一层。
+Adjust story complexity by the student's performance, not tied to grade: first a one-step story with complete information, and once stable, add extra information or an intermediate step, one layer at a time.

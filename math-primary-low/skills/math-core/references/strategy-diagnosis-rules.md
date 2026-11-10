@@ -1,28 +1,28 @@
-# 策略诊断规则
+# Strategy Diagnosis Rules
 
-`math-diagnose` 取证并回传；本文限定推断。策略按 CGI 判断，写入档案的阶段只用 `references/progression-map.md` 列出的值。
+`math-diagnose` gathers evidence and returns; this file limits inference. Strategies are judged per CGI, and the stages written to the profile use only the values listed in `references/progression-map.md`.
 
-## 取证
+## Gathering Evidence
 
-辨当前题型、未知量、数域和学生的实际动作，只澄清当前一处，未涉及项保持未知。同一学生会随题型和数字换策略，换回具体表示不算退步。工具外观、快答或口诀本身不定阶段。提示后的表现分清原思路、教学助手提供与学生自己做成的部分。
+Identify the current problem type, unknown, number domain, and the student's actual actions; clarify only the current one point and keep untouched items unknown. The same student changes strategy with problem type and numbers, and returning to a concrete representation is not regression. Tool appearance, a fast answer, or a rote rule does not by itself set the stage. For performance after a hint, separate the original idea, what the teaching assistant supplied, and what the student completed themselves.
 
-无响应按 `learn-core` 的 `references/guidance-non-response-handling.md` 探查；有具体矛盾时问那一步怎样想。仅学生已认同算错时问“错在哪”。
+For non-response, probe per `learn-core`'s `references/guidance-non-response-handling.md`; when there is a specific contradiction, ask how they thought about that step. Ask "where did it go wrong" only when the student already agrees it was miscalculated.
 
-## 错因
+## Error Causes
 
-| `error_type` | 实际证据 |
+| `error_type` | Actual evidence |
 |---|---|
-| `calculation` | 关系正确，计数/事实/运算出错 |
-| `concept` | 单位、等量、数量角色或运算关系混淆 |
-| `process` | 漏条件、步骤未完成、答非所求；非单纯短答 |
-| `estimation` | 明确范围/数量级与结果冲突且未能协调 |
+| `calculation` | Relationship correct; counting/fact/operation wrong |
+| `concept` | Confusion of units, equal quantities, quantity roles, or operation relationships |
+| `process` | Missed condition, unfinished steps, answering a different question; not merely a short answer |
+| `estimation` | An explicit range/order of magnitude conflicts with the result and was not reconciled |
 
-结合历史区分偶发与重复。`diagnosis.label` 写具体错误，`diagnosis.evidence` 写关键动作或理由；方法不同、未发现教学助手错误、沉默、未答都不是学生错误证据。文件分析的 `domain` 见 `references/math-profile-fields.md`。
+Use history to tell one-off from repeated. `diagnosis.label` states the specific error, and `diagnosis.evidence` states the key action or reasoning; a different method, not noticing a teaching-assistant error, silence, or no answer is not evidence of a student error. For the file-analysis `domain` see `references/math-profile-fields.md`.
 
-## 保守结论
+## Conservative Conclusion
 
-- `strategy_summary` 写题型、未知量与实际动作；`next_target` 是一个可立即尝试的小目标。
-- `current_levels` 只更新有证据的 `arithmetic_strategy_stage` / `multidigit_strategy_stage` / `fraction_strategy_stage`，取值只用 `references/progression-map.md` 列出的值；阶段不明时保留原值。
-- `confidence`：`low` 自述或含混表现；`medium` 一次清楚展示、稳定待验；`high` 多个独立任务关键证据一致。
+- `strategy_summary` states the problem type, unknown, and actual actions; `next_target` is one small goal that can be tried immediately.
+- `current_levels` updates only `arithmetic_strategy_stage` / `multidigit_strategy_stage` / `fraction_strategy_stage` that have evidence, with values only from those listed in `references/progression-map.md`; when the stage is unclear, keep the original value.
+- `confidence`: `low` for self-report or ambiguous performance; `medium` for one clear showing, stable but to be verified; `high` when key evidence across multiple independent tasks agrees.
 
-完成条件：每项结论可追溯或明确未知，有支持的表现不冒充独立，只有一个下一步；证据够即停。学生只看到已观察的想法和一个问题或下一步。
+Completion condition: every conclusion is traceable or explicitly unknown, supported performance is not passed off as independent, and there is only one next step; stop when evidence suffices. The student sees only the ideas already observed and one question or next step.

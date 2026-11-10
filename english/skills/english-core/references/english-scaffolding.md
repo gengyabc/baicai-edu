@@ -1,28 +1,28 @@
-# 英语最小支架与退让
+# English Minimal Scaffolding and Fading
 
-学生明确求助、出现具体错误或任务卡点时读取。触发、无响应分流与最多 3 次支架预算沿用 `learn-core` 的 `references/guidance-non-response-handling.md`；本文是英语提示阶梯的唯一来源，各方法不另设阶梯。
+Read when the student explicitly asks for help, makes a specific error, or gets stuck on a task. Triggers, non-response routing, and the maximum scaffold budget of 3 follow `learn-core` `references/guidance-non-response-handling.md`; this file is the single source for the English hint ladder, and no method sets its own ladder.
 
-## 先辨卡点
+## First Identify the Sticking Point
 
-承接已收到的回答，只支持当前缺口：理解词义/指代、找信息、表达意思或回忆表达。单词、半句和中文可以表达完整意思，不因回答短而启动支架。空消息不算失败，不增加提示次数。
+Receive the answer already given and support only the current gap: understanding a word meaning/reference, finding information, expressing a meaning, or recalling an expression. Single words, half sentences, and the first language can express a complete meaning; a short answer does not trigger scaffolding. An empty message is not a failure and does not increase the hint count.
 
-## 提示阶梯
+## Hint Ladder
 
-从能够解决已知卡点的最轻一层开始，不机械走完各层。每轮只给一处提示，留学生能做的部分并等待回应；只在新回应表明确有需要时加一层，总次数受共享预算约束。
+Start from the lightest level that solves the known sticking point; do not mechanically walk every level. Give one hint per turn, leave what the student can do, and wait for a response; add a level only when a new response clearly shows the need, with total count bound by the shared budget.
 
-| 层次 | 当前动作 | 示例（不是连续输出脚本） |
+| Level | Current action | Example (not a continuous output script) |
 |---|---|---|
-| 1. 语境线索 | 指向相关句、对象或动作线索，不揭示所求答案 | “Look at what the cat does next.” |
-| 2. 缩小一步 | 给一个更具体的子问题或两个有意义的选择 | “Is the cat on the box or under it?” |
-| 3. 局部模型 | 提供句子开头、关键词或部分示例，保留关键信息给学生 | “The cat is …” |
+| 1. Context cue | Point to a relevant sentence, object, or action cue without revealing the sought answer | "Look at what the cat does next." |
+| 2. Narrow one step | Give a more specific sub-question or two meaningful choices | "Is the cat on the box or under it?" |
+| 3. Partial model | Provide a sentence start, keyword, or partial example, leaving key information to the student | "The cat is …" |
 
-选择题和句子开头只在需要支架时使用，不作为所有新题的默认附加答案。原问题后不立即补上提示或完整回答。
+Multiple choice and sentence starters are used only when scaffolding is needed, not as a default extra answer on every new question. Do not immediately add a hint or full answer after the original question.
 
-## 示范与退让
+## Modeling and Fading
 
-- 学生明确索要某个英语表达或完整示范时，可给一个短而正确的模型；注明这是已提供的表达，不把随后复述记成独立产出，也不要求重复才继续。
-- 用完预算仍卡住：session 根据现有任务证据定位缺口，保留未知；选择低负荷近邻任务、换活动或结束，不继续加提示，也不虚构独立诊断 skill。需要流程选择时按共享协议给选择卡。
-- 学生成功后，在下一个可比任务减少一级支持，先观察独立尝试；不立刻替他补完句子。
-- 学生沮丧、不想继续或要求结束时，交共享生命周期处理，不以完成阶梯为目标。
+- When the student explicitly asks for a particular English expression or a full model, give one short correct model; note that it is a provided expression, do not record the repetition that follows as independent production, and do not require repeating in order to continue.
+- Budget used up and still stuck: the session locates the gap from existing task evidence and leaves the unknown as unknown; choose a low-load neighboring task, change the activity, or end, and do not keep adding hints or invent an independent diagnosis skill. When a flow choice is needed, give a choice card per the shared protocol.
+- After the student succeeds, reduce one level of support on the next comparable task and first observe an independent attempt; do not immediately complete the sentence for them.
+- When the student is frustrated, does not want to continue, or asks to end, hand to the shared lifecycle; completing the ladder is not the goal.
 
-完成条件：学生有一次真实回应机会；将已用支持和实际回应交 session，证据分类按 `references/english-segment-fields.md`，不能把教学助手示范或提示后成功算成独立掌握。
+Completion condition: the student has had one real chance to respond; hand the support used and the actual response to the session, with evidence classification per `references/english-segment-fields.md`; teaching-assistant models or success after a hint cannot count as independent mastery.

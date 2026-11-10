@@ -1,6 +1,6 @@
 ---
 name: inquiry-and-proof
-description: 猜想与说理。四至六年级学生已会基本做法，适合发现规律、找反例或说明为什么成立时使用；用有引导的探究，不放任自由发现。
+description: Conjecture and reasoning. Use when students in grades 4–6 already know basic procedures and are ready to find patterns, counterexamples, or explain why something works; use guided inquiry, not open-ended free discovery.
 ---
 # Guided Inquiry and Mathematical Proof
 

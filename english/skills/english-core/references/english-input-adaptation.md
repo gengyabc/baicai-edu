@@ -1,32 +1,32 @@
-# 英语输入与难度适配
+# English Input and Difficulty Adaptation
 
-生成、改写或调整英语材料前读取。水平档位与档案升级门槛见 `references/english-grade-defaults.md`；本文只决定当前材料的语言负荷，不更新学生水平。
+Read before generating, rewriting, or adjusting English material. Level bands and the profile upgrade threshold are in `references/english-grade-defaults.md`; this file only decides the language load of the current material and does not update the student's level.
 
-## 定当前难度
+## Set the Current Difficulty
 
-1. 优先当前领域的实际理解/表达证据，再参考快照的对应水平。没有证据时先给一段短而完整的低负荷材料，问一个意思问题；不先做分级问卷。年龄决定题材成熟度与活动形式，不决定英语难度。
-2. 选一个交际目的或中心意思，以熟悉语言承载少量有用新表达；不以固定已知词比例或可读性公式证明材料合适。
-3. 按下表调整句子、衔接与信息量。只有确需展示材料档位时才标注为 provisional；材料难度不是学生已达到的 CEFR 等级。
+1. Prefer actual comprehension/expression evidence in the current domain, then refer to the snapshot's matching level. With no evidence, first give a short, complete, low-load passage and ask one meaning question; do not start with a leveling questionnaire. Age determines topic maturity and activity format, not English difficulty.
+2. Pick one communicative purpose or central idea, and carry a few useful new expressions in familiar language; do not use a fixed known-word ratio or readability formula to prove the material fits.
+3. Adjust sentences, cohesion, and information amount per the table below. Label the material as provisional only when the material's band truly needs to be shown; material difficulty is not a CEFR level the student has reached.
 
-| 材料目标 | 语言组织 |
+| Material target | Language organization |
 |---|---|
-| Pre-A1 | 具体熟悉的词、短独立句、少量信息；语境线索清楚 |
-| A1 | 日常词和简单分句，按时间或动作顺序展开 |
-| A2 | 连贯短段落，加入基本因果、比较及可从语境理解的主题词 |
-| B1+ | 较丰富的衔接、理由与观点；保留必要限定和不同视角 |
+| Pre-A1 | Concrete, familiar words, short independent sentences, little information; clear context cues |
+| A1 | Everyday words and simple clauses, unfolding in time or action order |
+| A2 | Coherent short paragraphs, adding basic cause, comparison, and topic words understandable from context |
+| B1+ | Richer cohesion, reasons, and opinions; keep necessary qualifiers and differing perspectives |
 
-## 保持材料完整
+## Keep the Material Whole
 
-- 故事或改编文章保留起因、经过与结果/后续，先整体呈现完整短文，再逐次提问；不把文章切成一句一句地喂，也不删成单句。
-- 简化语言而不扭曲含义。事实材料的数字、人物、来源和不确定性须保真；新闻事实核验仍由 `child-news-reader` 定义。原创虚构故事与事实材料分清，不拿编造情节补事实缺口。
-- 用场景、上下文和真实可用的媒介提供线索，不假装有图片、音频或动作观察。
-- 新表达放在自然语境里；不预列生词表或词义注释。学生明确求助时按 `references/english-scaffolding.md` 提供一处支持。
+- Stories or adapted articles keep cause, development, and result/aftermath; present the complete short text as a whole first, then ask questions one at a time. Do not feed the article one sentence at a time, and do not cut it down to a single sentence.
+- Simplify the language without distorting the meaning. Numbers, people, sources, and uncertainty in factual material must stay faithful; news fact verification is still defined by `child-news-reader`. Keep original fiction separate from factual material, and do not use invented plot to fill factual gaps.
+- Provide cues through scene, context, and genuinely available media; do not pretend to have images, audio, or action observation.
+- Put new expressions in natural context; do not pre-list vocabulary or glosses. When the student explicitly asks for help, provide one spot of support per `references/english-scaffolding.md`.
 
-## 根据回应调整
+## Adjust to the Response
 
-- 局部卡点：保留原材料，先定位那一处；不因一个生词便换整篇文章或整体降级。
-- 主线确实无法理解：一次调整一个负荷因素，如更短的句子、较少的新表达或更熟悉的背景；仍保留完整意思。
-- 理解轻松：换一个近邻场景或小幅增加一个新表达，不因单题答对直接跳档。
-- 短答、中文补充、答得慢或空消息不单独构成降难依据；无响应按 `learn-core` 的共享协议处理。
+- Local sticking point: keep the original material and locate that one spot first; do not replace the whole article or downgrade overall because of one new word.
+- Main line truly not understood: adjust one load factor at a time, such as shorter sentences, fewer new expressions, or more familiar background; still keep the complete meaning.
+- Understanding is easy: switch to a neighboring scene or add one new expression slightly; do not skip a band directly because one question was answered correctly.
+- Short answers, first-language supplements, slow answers, or empty messages alone do not justify lowering difficulty; non-response follows the shared `learn-core` protocol.
 
-完成条件：材料意义完整、当前负荷有依据、只留下一个主要待答问题；等待真实回应后再调整，不预演学生的理解。
+Completion condition: the material's meaning is complete, the current load has a basis, and only one main pending question remains; adjust after a real response, and do not rehearse the student's understanding.

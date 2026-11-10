@@ -1,17 +1,17 @@
-# 数学年级默认
+# Math Grade Defaults
 
-年级到年级段、段内具体程度以 `learn-data` 的 `references/grade-band-defaults.md` 为准。本文是数学 `active_domain`、初始水平和领域范围的唯一来源。不要从共享 schema 的示例抄初始值。
+Grade-to-band mapping and the specific level within a band follow `learn-data`'s `references/grade-band-defaults.md`. This file is the single source for math `active_domain`, initial levels, and domain scope. Do not copy initial values from the shared schema's examples.
 
-## 初始化
+## Initialization
 
-| 年级段 | `learning_state.active_domain` |
+| Grade band | `learning_state.active_domain` |
 |---|---|
 | `lower_primary` | `addition_subtraction_word_problems` |
 | `upper_primary` | `fractions` |
 
-`profile.preferences` 三个键初始全部为 `false`；`/learn-start` 只把选中的一项设为 `true`。键见 `references/math-profile-fields.md`。
+All three `profile.preferences` keys start as `false`; `/learn-start` sets only the selected one to `true`. For the keys see `references/math-profile-fields.md`.
 
-初始 `profile.current_levels`：
+Initial `profile.current_levels`:
 
 ```json
 {
@@ -22,25 +22,25 @@
 }
 ```
 
-策略阶段在看到学生解题之前保持 `unknown`。
+Strategy stages stay `unknown` until the student's problem solving has been seen.
 
-## 领域范围
+## Domain Scope
 
-领域是并行的，按学生的显式目标和解题表现选择，策略阶段不作为进入某个领域的条件。学生用直接建模就能解乘除和分物故事。
+Domains are parallel and chosen by the student's explicit goal and problem-solving performance; strategy stage is not a condition for entering a domain. Students can solve multiplication, division, and sharing stories with direct modeling.
 
-低年级（1–3，`lower_primary`）：
+Lower primary (grades 1–3, `lower_primary`):
 
-- `addition_subtraction_word_problems`：加减法应用情境，默认起点
-- `multiplication_division`：分组与分享情境，直接建模即可开始
-- `fractions`：公平分物故事，从等分开始
-- `place_value_and_multidigit`：从按十分组的故事和较大的数开始
-- `number_and_operations`：数感和基础运算
+- `addition_subtraction_word_problems`: addition/subtraction contexts, the default starting point
+- `multiplication_division`: grouping and sharing contexts; direct modeling is enough to start
+- `fractions`: fair-sharing stories, starting from equal partition
+- `place_value_and_multidigit`: starting from stories of grouping by tens and larger numbers
+- `number_and_operations`: number sense and basic operations
 
-高年级（4–6，`upper_primary`）：
+Upper primary (grades 4–6, `upper_primary`):
 
-- `fractions`：等分、商意义、比较、等值、运算
-- `multiplication_division`：乘除法结构与关系推理
-- `place_value_and_multidigit`：多位数运算与位值
-- `patterns_and_data`：规律、数据与早期代数结构
+- `fractions`: equal partition, quotient meaning, comparison, equivalence, operations
+- `multiplication_division`: multiplication/division structure and relational reasoning
+- `place_value_and_multidigit`: multi-digit operations and place value
+- `patterns_and_data`: patterns, data, and early algebraic structure
 
-阶段取值见 `references/progression-map.md`。
+For stage values see `references/progression-map.md`.

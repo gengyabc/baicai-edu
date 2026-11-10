@@ -1,6 +1,6 @@
 ---
 name: chinese-generate-tasks
-description: 语文出题。学生要求根据文章生成阅读题、生成作文题（含续写/改写题）或专项题型练习时使用，附答案或评价标准。
+description: Chinese task generation. Use when the student asks for reading questions from a passage, writing prompts (including continuation/rewrite), or focused item practice, with answers or scoring criteria.
 user-invocable: false
 ---
 

@@ -1,24 +1,24 @@
-# 持续学习支持 · persistence
+# Persistence Support · persistence
 
-## 触发
+## Trigger
 
-学生主动请求处理拖延、启动困难、中断或恢复；不从短答、一次迟到或未完成推断懒惰。明确结束时直接退出本方法。
+The student actively asks for help with procrastination, difficulty starting, interruption, or resuming; do not infer laziness from a short answer, a single late arrival, or unfinished work. On an explicit end, exit this method directly.
 
-## 建议动作
+## Suggested Actions
 
-1. 已知障碍就直接回应；确有信息缺口时只问一个必要问题：任务不清、基础卡住，还是时间/精力/资源不足。照护、轮班、费用、设备和工作安排先作为现实条件和现实成本处理，区分学生能调整与需同他人协商的部分，不用动力话术替代资源支持，也不承诺外部要求能取消。
-2. 学生愿意时降低启动成本：回到已保存的材料和待答位置，把下一步缩到当前可行的一小步；由学生确认何时、在什么条件下能做。需要基础教学则回当前主导者。
-3. 仅在需要且愿意安排时，帮助形成一条情境行动意图：“如果出现约定的可行条件，就做这一小步；如果被打断，就从这个位置恢复或重新商量。”行动必须具体、可调整，不要求打卡承诺或固定每日时长。
-4. 完全无法投入时允许暂停、休息或合理放弃。学生明确要求保存计划，只向生命周期回传非表现摘要；不自动创建提醒、计划任务，也不声称已经保存。
+1. When an obstacle is known, respond to it directly; when there is truly an information gap, ask only one necessary question: whether the task is unclear, the foundation is stuck, or time/energy/resources are insufficient. Caregiving, shift work, cost, equipment, and work schedules are first treated as real-world conditions and real costs; distinguish what the student can adjust from what must be negotiated with others, do not substitute motivational talk for resource support, and do not promise that external requirements can be cancelled.
+2. When the student is willing, lower the cost of starting: return to the saved material and pending position, and shrink the next step to one small step that is feasible now; let the student confirm when and under what conditions they can do it. If foundational teaching is needed, return to the current owner.
+3. Only when needed and the student is willing to plan, help form one situational implementation intention: "if the agreed feasible condition occurs, do this small step; if interrupted, resume from this position or renegotiate." The action must be specific and adjustable, with no check-in commitment or fixed daily duration required.
+4. When the student cannot engage at all, allow pausing, resting, or reasonably giving up. When the student explicitly asks to save a plan, return only a non-performance summary to the lifecycle; do not automatically create reminders or scheduled tasks, and do not claim it has been saved.
 
-## 观察
+## Observation
 
-分别看可行性自述、真实启动/恢复行动与任务表现；承诺、连续天数或继续次数不证明学习效果。条件改变或未执行只说明需要重估安排，不是人格评价。
+Look separately at self-reported feasibility, actual start/resume action, and task performance; commitments, streak days, or the number of continuations do not prove learning effect. A change of conditions or non-execution only means the arrangement needs to be reassessed and is not a judgment of personality.
 
-## 退出
+## Exit
 
-形成可行下一步或明确当前无法投入即退出；拒绝后停止追问。中断保留最小恢复位置，结束由生命周期清临时支持，避免下次被动重开旧讨论。恢复时重新检查旧条件是否仍适用。
+Exit once a feasible next step is formed or it is clear the student cannot engage right now; after a refusal, stop asking. An interruption keeps the minimal resume position, and at the end the lifecycle clears temporary support so an old discussion is not passively reopened next time. On resume, re-check whether the old conditions still apply.
 
-## 依据
+## Basis
 
-[SRL](evidence.md#srl)、[行动意图及其边界](evidence.md#implementation-intentions)提供计划—行动—反馈机制。行动意图研究涉及多种目标达成，不等于本系统能改善学习成绩；计划是否合适仍看可行条件、真实启动和任务表现。
+[SRL](evidence.md#srl) and [implementation intentions and their limits](evidence.md#implementation-intentions) provide the plan–action–feedback mechanism. Research on implementation intentions covers many kinds of goal attainment and does not mean this system can improve learning outcomes; whether a plan fits still depends on feasible conditions, real starting, and task performance.

@@ -1,25 +1,25 @@
 # Rule: Session End Signals
 
-`/learn`、`/learn-feynman` 与学科技能用本规则判断结束、歧义、危机、跳过和换主题。每条学生消息先归类，再决定要不要开展新教学。结束由 `learn-data` 的 finalize 写回；换主题由它的 `references/session-lifecycle.md` 写回。
+`/learn`, `/learn-feynman`, and subject skills use this rule to judge end, ambiguity, crisis, skip, and topic change. Classify every student message first, then decide whether to start new teaching. An end is written back by `learn-data`'s finalize; a topic change is written back by its `references/session-lifecycle.md`.
 
-## 1. 这句话在要什么
+## 1. What is this message asking for
 
-看意图。能确定就执行该行；同一句有两种读法、对不上下表时，走确认。
+Look at intent. If it can be determined, execute that row; if the same message has two readings and fits no row below, confirm.
 
-| 意图 | 动作 |
+| Intent | Action |
 |---|---|
-| 说出或暗示自伤、自杀、被伤害、被忽视、被欺凌、身处危险或不想活 | 停止教学，按 `references/llm-safety-boundaries.md` 回应。不 finalize，不把细节写入档案或日志。 |
-| 要结束今天的练习 | 直接 finalize。这条消息到此为止，不再教学，也不补造 segment。顺口提到以后学什么，仍按结束处理。 |
-| 想换学习内容但没指定目标、询问学什么或不知道学什么 | 交 lifecycle 推荐闸门加载 `learn-recommend`；选定前保留当前任务，不 finalize。 |
-| 已指定另一个学习主题，今天的练习还继续 | 先按 lifecycle 以 `interrupted` 结束当前主题，保存成功后再解析新主题。 |
-| 不要当前这一题：跳过或换题，但没有新主题，也没有要结束 | 在当前小目标里换一道题。跳过不是能力证据，会话继续。 |
-| 分不清是“这一题做完了”还是“今天结束” | 用 `ask_user_question` 问一句，选项为「结束今天的练习」「再继续一会儿」。选结束再 finalize；选继续或跳过卡片，回到当前教学。 |
-| 连续两次回复既不回答当前问题，也不顺着当前话题 | 用 `ask_user_question` 问要不要今天先到这，选项为「结束今天的练习」「再继续一会儿」。学生接着选择结束，按结束今天处理；否则回到当前教学。回答长短不单独决定归类。 |
-| 在做当前这一题，或只是一次没接上引导 | 进入第 2 步。这一次没接上时，支架按 `references/guidance-non-response-handling.md`，不在这里结束。 |
+| States or hints at self-harm, suicide, being hurt, being neglected, being bullied, being in danger, or not wanting to live | Stop teaching and respond per `references/llm-safety-boundaries.md`. Do not finalize; do not write details into the profile or log. |
+| Wants to end today's practice | Finalize directly. This message stops here: no further teaching and no fabricated segment. Even if the student casually mentions what to learn later, still treat it as an end. |
+| Wants to change learning content without specifying a target, asks what to learn, or doesn't know what to learn | Hand to the lifecycle recommendation gate, which loads `learn-recommend`; keep the current task until a choice is made, and do not finalize. |
+| Has specified another learning topic and today's practice continues | First end the current topic as `interrupted` per the lifecycle; after a successful save, parse the new topic. |
+| Doesn't want the current question: skip or change question, with no new topic and no wish to end | Swap in another question within the current small goal. A skip is not evidence of ability; the session continues. |
+| Unclear whether "this question is done" or "end for today" | Ask one line with `ask_user_question`, with options `ui.end.finish_today` and `ui.end.continue_a_bit`. Finalize only if the end is chosen; if continue is chosen or the card is skipped, return to the current teaching. |
+| Two consecutive replies that neither answer the current question nor follow the current topic | Ask with `ask_user_question` whether to stop for today, with options `ui.end.finish_today` and `ui.end.continue_a_bit`. If the student then chooses to end, treat it as ending today; otherwise return to the current teaching. Answer length alone does not decide the classification. |
+| Working on the current question, or just one failure to follow the guidance | Go to step 2. For a single failure to follow, scaffolding follows `references/guidance-non-response-handling.md`; do not end here. |
 
-## 2. 还在做这题时，要不要收
+## 2. While still working on this question, whether to wrap up
 
-只看当前小目标有没有证据。
+Look only at whether there is evidence for the current small goal.
 
-- 已经闭环，或再练只会重复已有证据：给一句阶段总结，按 lifecycle 的当前模式菜单提供阶段选择（普通学习用 `learn-data` 的 `references/next-step.md`）。知识点完成与结束今天的学习分开判断；学生选结束才 finalize。learn 的闭环是能讲清当前目标，并能用它解决同类问题；feynman 是能讲完并回答关键理由追问，或学生明确表示这段讲解已经讲完。
-- 还没有闭环：按 lifecycle 自然给一个下一步，等学生回应。阶段收束依据目标完成证据，结束依据学生意愿；回答形式和固定题数不作为结束依据。
+- Already closed, or further practice would only repeat existing evidence: give a one-line stage summary and offer the stage choice via the lifecycle's current-mode menu (ordinary learning uses `learn-data`'s `references/next-step.md`). Completing a knowledge point is judged separately from ending today's learning; finalize only if the student chooses to end. For learn, closure means the student can explain the current goal and use it to solve similar problems; for feynman, it means the student can finish the explanation and answer follow-ups on key reasons, or the student explicitly says this explanation is done.
+- Not yet closed: naturally give a next step per the lifecycle and wait for the student's response. Stage wrap-up is based on goal-completion evidence, and ending is based on the student's wishes; answer format and a fixed number of questions are not grounds for ending.

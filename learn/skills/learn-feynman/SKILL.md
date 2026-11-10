@@ -1,21 +1,21 @@
 ---
 name: learn-feynman
-description: 费曼学习。学生想当小老师、讲给 AI 听、检查自己是否讲懂，或从普通学习切换为学生主讲时使用；AI 扮演同龄听众。
+description: Feynman learning. Use when the student wants to be the little teacher, explain to the AI, check whether their explanation is clear, or switch from ordinary learning to student-led talk; the AI plays a same-age listener.
 ---
 
-# 费曼学习
+# Feynman Learning
 
-加载尚未加载的 `learn-core`、`learn-data`。开始前读取 `learn-core` 的 `references/feynman-mode.md`、`references/feynman-skill-whitelist.md`，执行角色、技能确认与故意犯错规则。
+Load `learn-core` and `learn-data` if not already loaded. Before starting, read `references/feynman-mode.md` and `references/feynman-skill-whitelist.md` from `learn-core`, and apply the role, skill confirmation, and deliberate-mistake rules.
 
-读取并执行 `learn-data` 的 `references/session-lifecycle.md`：
+Read and execute `references/session-lifecycle.md` from `learn-data`:
 
-- 已有活跃会话：执行其第 4 步“显式当小老师”。
-- 没有活跃会话：新会话使用 `entry_point: learn-feynman`、`mode: feynman`；未完成日志按生命周期接续或保存。
+- Active session exists: run its step 4, "explicitly act as the little teacher".
+- No active session: a new session uses `entry_point: learn-feynman` and `mode: feynman`; an unfinished log is resumed or saved per the lifecycle.
 
-## 选择目标
+## Choose a Target
 
-只在需要新目标时选择：`/learn-feynman` 后的文本或学生说出的讲解目标优先，其次 `current_state.active_focus`，再按生命周期 Resolve Target 的档案候选顺序。显式新目标按生命周期的 Resolve Target 解析（`learn-data` 的 `references/target-parsing.md` 加 `<subject>-core` 学科契约中的目标分类），按 `learn-data` 的 `references/teaching-resolver.md` 复用 teaching，以 `mode: feynman` 路由到 teaching.session_skill（专门路径为 `<subject>-session`，缺包或不适配则通用路径）；目标分类读同一实现的 core 契约。费曼优先于学科迁移。当前会话没有新目标时保留 focus 与 target_context。缺少学科所需材料时只问一个具体问题，不猜原文。
+Choose only when a new target is needed. Priority: the text after `/learn-feynman` or a topic the student says they want to explain, then `current_state.active_focus`, then the profile candidate order from the lifecycle's Resolve Target. Resolve an explicit new target per the lifecycle's Resolve Target (`references/target-parsing.md` in `learn-data`, plus the target classification in the `<subject>-core` subject contract), reuse teaching per `references/teaching-resolver.md` in `learn-data`, and route with `mode: feynman` to `teaching.session_skill` (`<subject>-session` on the specialist path, the general path when the package is missing or does not fit); read target classification from the same implementation's core contract. Feynman takes priority over subject transfer. When the current session has no new target, keep the focus and target_context. If subject-required material is missing, ask one specific question and do not guess the original text.
 
-## 回合
+## Turn
 
-学科技能返回回复和一个 segment，`mode`、`submode` 均为 `feynman`。技能证据与错误只记入本轮，由 finalize 写回。危机信号优先按 `learn-core` 的安全流程停止教学。
+The subject skill returns a reply and one segment, with both `mode` and `submode` set to `feynman`. Skill evidence and errors are recorded for this turn only and written back by finalize. Crisis signals take priority: stop teaching per the safety flow in `learn-core`.

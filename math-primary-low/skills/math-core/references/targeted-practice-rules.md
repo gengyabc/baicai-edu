@@ -1,25 +1,25 @@
-# 按证据选择练习
+# Choosing Practice by Evidence
 
-`math-practice` 执行与回传；本文统一目的、题量与调整。
+`math-practice` executes and returns; this file unifies purpose, problem count, and adjustment.
 
-## 只选当前目的
+## Choose Only the Current Purpose
 
-四类沿用层名，不是等级或必经顺序。一次一题；题量为上限，不补配额。
+The four kinds keep the tier names and are not levels or a required order. One problem at a time; the problem count is a cap, and no quota is filled.
 
-| 目的与证据 | 设计 | 上限 |
+| Purpose and evidence | Design | Cap |
 |---|---|---|
-| 第1层 诊断：起点/错误模式待查 | 保持题型与未知位置，换近邻数字；查数量角色时只改未知位置 | 1–2题 |
-| 第2层 对比：需看清一处差别 | 学生办法与明确标注的示例对比，只问一处关系 | 1题 |
-| 第3层 变式：独立关系未稳或要求多练 | 按目标改变数字结构、未知位置或题型；检验情境迁移时再换场景 | 2–3题 |
-| 第4层 连接：已有知识能支持当前学习/纠错 | 联系确已知道的事实或关系，用相关题或开放等式 | 1–2题 |
+| Tier 1 Diagnose: starting point/error pattern to check | Keep problem type and unknown position, change to nearby numbers; when checking quantity roles, change only the unknown position | 1–2 problems |
+| Tier 2 Contrast: one difference needs to be seen clearly | Contrast the student's method with a clearly labeled example, asking about just one relationship | 1 problem |
+| Tier 3 Vary: independent relationship not yet stable or more practice requested | Change number structure, unknown position, or problem type per the goal; change the scene only when testing context transfer | 2–3 problems |
+| Tier 4 Connect: existing knowledge can support current learning/error correction | Link to facts or relationships the student truly knows, using a related problem or an open number sentence | 1–2 problems |
 
-连接不要求先计算稳定。题目设计按 `references/problem-design.md`，分数另读 `references/fraction-relations.md`；偏好只改呈现，见 `references/math-personalization.md`。
+Connecting does not require calculation to be stable first. Problem design follows `references/problem-design.md`, with fractions also reading `references/fraction-relations.md`; preferences only change presentation, see `references/math-personalization.md`.
 
-## 逐题调整
+## Per-Problem Adjustment
 
-1. 出题停在问句；新的 `session_id` 直接给新故事。
-2. 回答后复用策略细节，按共享确认协议补缺口，不强制换法。
-3. 连错时找具体关系或计算卡点，当前题按 `references/scaffold-calibration.md` 支持，不换场景、不机械退层；下一题可以换近邻数字或重选目的。嫌麻烦或短答不是错误。
-4. 证据够即停；到上限仍未知就记录未知或局部卡点，返回主线，不追加题目或宣告掌握。
+1. Pose the problem and stop at the question; a new `session_id` gives a new story directly.
+2. After an answer, reuse strategy details, fill gaps per the shared confirmation protocol, and do not force a change of method.
+3. After consecutive errors, find the specific relationship or calculation sticking point and support the current problem per `references/scaffold-calibration.md`; do not change the scene or mechanically drop a tier; the next problem may use nearby numbers or re-pick the purpose. Finding it troublesome or giving a short answer is not an error.
+4. Stop when evidence suffices; if the cap is reached and it is still unknown, record the unknown or local sticking point, return to the mainline, and do not add more problems or declare mastery.
 
-完成条件：诊断辨明推理，对比说明差别，变式展示目标数字结构、未知位置或题型下的理解，连接展示联系；若目标是情境迁移，需有换场景后的证据，原场景做对不替代迁移证据。有缺口也可如实结束。收束用一句已展示的关系和一个近邻下一目标。
+Completion condition: diagnosis distinguishes the reasoning, contrast explains the difference, variation shows understanding under the target number structure, unknown position, or problem type, and connection shows the link; if the goal is context transfer, evidence after changing the scene is needed, and success in the original scene does not substitute for transfer evidence. It may also end honestly with gaps. Wrap up with one sentence on the relationship shown and one neighboring next goal.

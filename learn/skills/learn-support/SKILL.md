@@ -1,51 +1,51 @@
 ---
 name: learn-support
-description: 学习支持。学生问用途、担心学不会、不愿学或被要求学习、想先聊聊、把选择交给 AI、想学但方法不清或无效、求助时间/资源等现实限制或启动/坚持/恢复时加载；单次答错、沉默或短答不触发。只向当前教学主导者返回方法建议。
+description: Learning support. Load when the student asks about usefulness, fears they cannot learn, resists or is required to learn, wants to talk first, leaves choices to the AI, wants to learn but methods are unclear or ineffective, seeks help with time/resource constraints, or needs start/persist/recover support; a single wrong answer, silence, or short reply does not trigger. Return method advice only to the current teaching owner.
 user-invocable: false
 ---
 
-# 学习支持方法
+# Learning Support Methods
 
-当前会话仍有唯一教学主导者：专门会话或通用任务教学。本技能提供建议，不自行路由、不写档案、不产出 segment。先遵守 `learn-core` 和 `learn-data` 的生命周期门槛；明确结束优先于支持，未完成保存先恢复保存。
+The current session still has exactly one teaching owner: a specialist session or general-task teaching. This skill provides advice; it does not route by itself, write profiles, or produce segments. First obey the lifecycle gates of `learn-core` and `learn-data`: an explicit end takes priority over support, and an unfinished save is recovered first.
 
-## 输入与返回
+## Input and Return
 
-由调用者提供最小上下文；缺少当前步骤所需信息时只返回一个澄清问题：
+The caller supplies the minimal context; when information needed for the current step is missing, return only one clarifying question:
 
-| 输入 | 内容 |
+| Input | Content |
 |---|---|
-| `current_task` | 当前目标、已提交材料、教学实现、mode/activity、待答问题与恢复位置；纯支持可无学科目标 |
-| `need_evidence` | 当前需求及来源：学生自述、已观察行动；推断另列为待澄清假设 |
-| `willingness` | 学生愿意尝试、未知或拒绝；沿用当前任务中的选择 |
-| `constraints` | 当前时间、精力、资源、已有经验、可选阶段/情境；未知保持未知 |
+| `current_task` | Current goal, submitted materials, teaching implementation, mode/activity, pending question, and resume position; pure support may have no subject goal |
+| `need_evidence` | The current need and its source: student self-report or observed action; inferences are listed separately as hypotheses to clarify |
+| `willingness` | The student is willing to try, unknown, or refuses; reuse the choice already made in the current task |
+| `constraints` | Current time, energy, resources, prior experience, and optional stage/context; unknown stays unknown |
 
-返回给教学主导者：
+Return to the teaching owner:
 
-- `action`：一个主要方法，必要时最多一个辅助方法；说明教学主导者下一动作。有任务且学生愿意时给亲自尝试的一小步；纯交流不强加任务。建议由当前主导者落实，不另开教学轮次。
-- `observe`：分别观察自述、参与、任务表现，写清提示/示范条件；没有观察保持未知。
-- `exit`：本次方法何时返回教学、改为基础诊断、休息或结束；不以多聊或承诺为完成。
-- `support_update`：对 `context.learning_support` 的最小更新建议，由生命周期写入。状态和计划保存只遵循 `learn-data` 的 [会话结构](../learn-data/references/session-schema.md) 与 [生命周期](../learn-data/references/session-lifecycle.md)，这里不另造存储结构。
+- `action`: one main method and, if needed, at most one auxiliary method; state the teaching owner's next action. With a task and a willing student, give one small step for the student to try personally; pure chat has no task forced on it. The advice is carried out by the current owner and does not open a separate teaching turn.
+- `observe`: observe self-report, participation, and task performance separately, stating the hint/demonstration conditions; keep it unknown when there is no observation.
+- `exit`: when this method returns to teaching, switches to foundational diagnosis, rest, or ending; more chatting or a promise is not completion.
+- `support_update`: a minimal update suggestion for `context.learning_support`, written by the lifecycle. State and plan saving follow only the [session structure](../learn-data/references/session-schema.md) and the [lifecycle](../learn-data/references/session-lifecycle.md) of `learn-data`; no separate storage structure is invented here.
 
-## 选择与退场
+## Selection and Exit
 
-1. 无明确需求时沿用当前活动，不做固定问卷。沉默、短答、一次错误或修改次数不单独证明低动机。确需澄清才区分目标、基础/方法、学习条件与支持需求。需求可以是 `unknown`（证据不足）或 `conditions`（时间、费用、家庭/工作责任、环境与资源等现实条件）；两者都允许不进入五类方法。先处理实际限制，必要时只澄清一个条件，不将资源不足归为动机不足；状态如何表达以数据协议为准。
-2. 不愿学、被要求学习、想先聊天或纠正处境理解时，先读 [支持性交流](references/supportive-conversation.md)，按其回应、邀请与退出；再按下表只读明确命中的方法，不为普通聊天强找需求。普通学习不用加载全文。
-3. 保留当前目标、材料、待答问题、mode/activity 和恢复位置。专门方法调度仍归当前会话；语言活动已有调度复用其方法，本技能不另立每轮调度表。费曼保持学生主讲，支持不覆盖模式。
-4. 拒绝当前讨论返回 `status: declined`；具体回应和重新协商条件按支持性交流参考，不自动接回题目。现实成本不是意志或人格标签。
-5. 方法完成即交回当前主导者，下一活动按学生意愿与方法的退出条件决定。任务尝试无变化时先重查基础、策略与条件，不机械叠加。支架按当前表现渐退，新困难可增加支持。支持成效不能自动升级掌握、诊断或里程碑。
+1. With no explicit need, keep the current activity and run no fixed questionnaire. Silence, short answers, a single error, or the number of revisions do not by themselves prove low motivation. Distinguish goal, foundation/method, learning conditions, and support needs only when clarification is truly needed. A need may be `unknown` (insufficient evidence) or `conditions` (real-world conditions such as time, cost, family/work responsibilities, environment, and resources); both are allowed to stay outside the five method categories. Handle actual limits first, clarify only one condition if necessary, and do not attribute a lack of resources to a lack of motivation; how state is expressed follows the data protocol.
+2. When the student is unwilling to learn, is being required to learn, wants to chat first, or wants to correct the understanding of their situation, first read [supportive conversation](references/supportive-conversation.md) and follow its responses, invitations, and exits; then read only the method in the table below that is explicitly matched, and do not hunt for a need in ordinary chat. Ordinary learning does not need the full text loaded.
+3. Keep the current goal, material, pending question, mode/activity, and resume position. Specialist method scheduling still belongs to the current session; where a language activity already has scheduling, reuse its methods, and this skill sets up no per-turn scheduling table of its own. Feynman keeps the student as the explainer, and support does not override the mode.
+4. When the student declines the current discussion, return `status: declined`; specific responses and renegotiation conditions follow the supportive conversation reference, and the student is not automatically brought back to the question. Real-world cost is not a willpower or personality label.
+5. Once a method is complete, hand back to the current owner; the next activity is decided by the student's willingness and the method's exit conditions. When a task attempt produces no change, re-check foundation, strategy, and conditions first rather than stacking mechanically. Scaffolding fades with current performance, and may be added back when a new difficulty arises. The effect of support never auto-upgrades mastery, diagnosis, or milestones.
 
-| 需求 | 何时读取 | 方法 |
+| Need | When to read | Method |
 |---|---|---|
-| `value` 价值 | 问用途、认为与自身目标无关 | [价值支持](references/value.md) |
-| `confidence` 信心 | 明确担忧学不会 | [信心支持](references/confidence.md) |
-| `autonomy` 自主性 | 不愿学、被动目标、需理解选择或明确委托；先聊天按交流参考承接 | [自主性支持](references/autonomy.md) |
-| `strategies` 学习策略 | 想学但方法不清或方法无效 | [策略支持](references/strategies.md) |
-| `persistence` 持续学习 | 主动请求处理启动、中断或恢复 | [持续支持](references/persistence.md) |
+| `value` | Asks about usefulness, thinks it is unrelated to their own goals | [Value support](references/value.md) |
+| `confidence` | Explicitly worries about being unable to learn | [Confidence support](references/confidence.md) |
+| `autonomy` | Unwilling to learn, passive goals, needs to understand choices or explicitly delegates; chat first is handled per the conversation reference | [Autonomy support](references/autonomy.md) |
+| `strategies` | Wants to learn but the method is unclear or ineffective | [Strategy support](references/strategies.md) |
+| `persistence` | Actively asks for help with starting, interruption, or resuming | [Persistence support](references/persistence.md) |
 
-表达或陪伴程度需要适配时读 [阶段与情境](references/learner-stage.md)；需要解释理论或核对依据时读 [来源与限制](references/evidence.md)。理论提供机制，不替代任务证据。
+When expression or the degree of companionship needs adapting, read [stage and context](references/learner-stage.md); when a theory needs explaining or its basis needs checking, read [sources and limits](references/evidence.md). Theory provides mechanisms and does not replace task evidence.
 
-## 所有权
+## Ownership
 
-- 推荐、任务/学科切换、模式切换、画板操作、提醒均回既有授权入口；方法建议本身不授权这些动作。
-- 支持叠加普通教学保留原 activity；纯支持由生命周期使用 `activity: support`，无学科作答不造 segment。明确要求保存计划时只回传中性摘要与请求事实，由唯一保存入口处理；不声称已经长期保存。
-- 当前情绪、困境及需求假设保留为临时状态，不生成心理标签或自动跨任务传播。安全危机交安全规则优先处理，危机细节不进入支持状态或学习记录。
+- Recommendations, task/subject switches, mode switches, board operations, and reminders all go back to their existing authorization entries; method advice itself authorizes none of them.
+- Support layered on ordinary teaching keeps the original activity; pure support uses `activity: support` from the lifecycle, and with no subject answers no segment is made. When the student explicitly asks to save a plan, return only a neutral summary and the request facts for the single save entry to handle; do not claim it has been saved long-term.
+- Current emotions, difficulties, and need hypotheses stay temporary state, and no psychological labels are generated or automatically propagated across tasks. A safety crisis goes to the safety rules first, and crisis details do not enter support state or learning records.

@@ -1,17 +1,17 @@
 # Create Student
 
-仅在 `/learn-start` 收齐并确认必要信息后执行。字段外壳读 `references/profile-schema.md`，阶段兼容读 `references/grade-band-defaults.md`。先读 `references/teaching-resolver.md`，采用其真实 `subject`、稳定 `scope_id` 与 `teaching` 结果，不把通用教学当成科目身份。偏好键、`current_levels` 与 `active_domain` 取返回的 `core_skill` 学科契约（`references/subject-contract.md`），不直接假定专门包存在；示例值不是初始化默认值。
+Run only after `/learn-start` has collected and confirmed the necessary information. For the field shell, read `references/profile-schema.md`; for stage compatibility, read `references/grade-band-defaults.md`. First read `references/teaching-resolver.md` and adopt its real `subject`, stable `scope_id`, and `teaching` result; do not treat general teaching as a subject identity. Preference keys, `current_levels`, and `active_domain` come from the subject contract (`references/subject-contract.md`) of the returned `core_skill`, without directly assuming a specialist package exists; example values are not initialization defaults.
 
-1. 姓名转小写拼音或英文 slug，加 4 位随机 hex，生成 `stu_<slug>_<4hex>`。按 Data Root 发现已有学生，核对 id 唯一后再写入。
-2. 按 Base Profile 模板写 `outputs/students/<id>/profile.json`：
-   - 姓名、语言、创建与更新时间来自本次确认的信息。`grade` 可缺省；`education_stage`、`learning_context` 可选。已有小学年级可推导阶段；未知不强填小学年级或年级段。
-   - 兴趣写共享 `personal.interests`；可跳过项未提供时留空，不套用模板经历，不主动采集困境。
-   - 共享 `learning_preferences = { goals: [], support_preferences: [] }` 默认空数组；只有学生明确设定跨科复用的长期目标与支持偏好才写入。科目偏好仍归科目档案；学习困难、敏感家庭/职业/情绪细节不写共享字段，不由单次表现推断共享心理画像。
-3. 按模板写当前科目的 `profile.json`、`memory.json`、`current_state.json`、`milestones.json`、`session_log.json`：
-   - 使用解析所得教学契约的默认值；通用路径保留未知水平，不伪造小学等级、专门诊断或掌握标签。
-   - `profile.preferences` 全部先设为 `false`，再把学生实际选中的项设为 `true`；跳过则保留默认。
-   - 各科目都使用 `profile.self_report.easy_topics` / `hard_topics`，不要改名；不复制为共享学习困难。
-   - 支持计划/观察留在科目 `memory.json` 的 `learning_support_memory.plans` / `observations`，初始化为空；记录只能由 finalize 写，不在此将建档聊天变为支持观察，不另建记忆文件。
-4. 按 `learn-data` 的 session.json 结构写当前学生、真实科目及协议要求的教学实现与范围字段，激活档案。
-5. 创建目录（已存在则保留）：`data/students/<id>/<subject>/raw/`、`outputs/students/<id>/<subject>/extracted/`、`outputs/students/<id>/<subject>/backups/raw/`。
-6. 所有必需文件与目录写入成功、session 指向新学生及科目后，告诉学生建档完成，下一步用 `/learn`。任一步失败时报告未完成操作，保留已成功部分供重试，不提前宣布建档成功。
+1. Convert the name to a lowercase romanized (pinyin or English) slug and add 4 random hex characters to produce `stu_<slug>_<4hex>`. Discover existing students per Data Root and verify the id is unique before writing.
+2. Write `outputs/students/<id>/profile.json` per the Base Profile template:
+   - Name, language, and creation and update times come from the information confirmed this time. `grade` may be omitted; `education_stage` and `learning_context` are optional. An existing primary grade can derive the stage; when unknown, do not force-fill a primary grade or grade band.
+   - Write interests to the shared `personal.interests`; for skippable items not provided, leave them empty, do not apply template experiences, and do not proactively collect hardships.
+   - Shared `learning_preferences = { goals: [], support_preferences: [] }` defaults to empty arrays; write only long-term goals and support preferences the student explicitly set for cross-subject reuse. Subject preferences still belong to the subject profile; learning difficulties and sensitive family/occupation/emotion details are not written to shared fields, and a shared psychological profile is not inferred from a single performance.
+3. Write the current subject's `profile.json`, `memory.json`, `current_state.json`, `milestones.json`, and `session_log.json` per the templates:
+   - Use the defaults of the resolved teaching contract; the general path keeps unknown levels and does not fabricate primary-school grades, specialist diagnoses, or mastery labels.
+   - Set all `profile.preferences` to `false` first, then set the items the student actually chose to `true`; if skipped, keep the defaults.
+   - All subjects use `profile.self_report.easy_topics` / `hard_topics`; do not rename them, and do not copy them as shared learning difficulties.
+   - Support plans/observations stay in the subject `memory.json` under `learning_support_memory.plans` / `observations`, initialized empty; records may be written only by finalize, so do not turn the profile-creation chat into a support observation here, and do not create a separate memory file.
+4. Per the session.json structure in `learn-data`, write the current student, the real subject, and the teaching implementation and scope fields required by the protocol, to activate the profile.
+5. Create directories (keep them if they exist): `data/students/<id>/<subject>/raw/`, `outputs/students/<id>/<subject>/extracted/`, `outputs/students/<id>/<subject>/backups/raw/`.
+6. Once all required files and directories are written successfully and session points to the new student and subject, tell the student that profile creation is done and the next step is `/learn`. If any step fails, report the incomplete operation, keep the parts that succeeded for retry, and do not announce success early.

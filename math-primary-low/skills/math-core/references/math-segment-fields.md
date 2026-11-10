@@ -1,45 +1,45 @@
-# 数学 Segment 字段约定
+# Math Segment Field Conventions
 
-产出数学学习记录或合并内部子流程证据前，先读 `learn-data` 的 Session Segments 与其 `references/session-schema.md` 的 Session Segment。完整结构、必填字段、枚举和写回映射归共享 schema；本文只定义数学增量语义。
+Before producing a math learning record or merging internal sub-flow evidence, first read Session Segments in `learn-data` and the Session Segment section of its `references/session-schema.md`. The full structure, required fields, enums, and write-back mapping belong to the shared schema; this file defines only the math-specific semantics.
 
-## 一轮一条记录
+## One Record per Turn
 
-仅 `math-session` 产出本轮唯一 `session_segment`；三个 leaf 只回传证据、控制信号与待答状态，供 session 合并。信号不作为 segment 字段。日志由 lifecycle 追加，档案与 finalize 由共享流程写入。
+Only `math-session` produces this turn's single `session_segment`; the three leaves only return evidence, control signals, and awaiting state for session to merge. Signals are not segment fields. Lifecycle appends the log, and the shared flow writes the profile and finalize.
 
-合并规则：
+Merge rules:
 
-- `mode` 沿用调用方，费曼时 `submode: feynman`；普通学习按本轮学生实际作答的主任务选 submode：练习为 `practice`，学生出题/检查为 `student_problem`，诊断纠错为 `review`，其余为 `learn`。多分支时优先最后一个已有学生表现证据的任务；新提出的未答问题不覆盖前一任务，无作答证据时按当前任务记录但不推定表现。
-- `source` 对齐 `target_context.source`，文件来源按共享 target 协议归一化；进入练习、诊断或学生出题不自动改写来源。leaf 的分支元信息用于理解证据，不覆盖该字段。
-- `strategy_summary` 按实际发生顺序区分诊断、练习和出题中的证据，同一表现去重；示例后解释、提示后表现和独立完成分开。
-- 结论冲突时保留任务范围、支持条件与未知，不能拼接成更强的掌握结论；`diagnosis` 仍只选一个证据最充分的主标签，`current_levels` 只给有充分证据且无未解冲突的部分更新。
-- `next_step_candidate` 由 session 选一个具体下一步；待执行的建议、未回答的题或 AI 演示不计入学生表现。
+- `mode` is inherited from the caller; in Feynman, `submode: feynman`; in ordinary learning, choose the submode by the main task the student actually answered this turn: `practice` for practice, `student_problem` for the student making/checking problems, `review` for diagnosis and error correction, and `learn` for everything else. With multiple branches, prefer the last task that has student-performance evidence; a newly posed unanswered question does not override the earlier task; with no answer evidence, record by the current task but do not presume performance.
+- `source` aligns to `target_context.source`, with file sources normalized per the shared target protocol; entering practice, diagnosis, or student-made problems does not automatically rewrite the source. A leaf's branch metadata is used to understand evidence and does not override this field.
+- `strategy_summary` distinguishes evidence from diagnosis, practice, and problem-making in the order it actually happened, deduplicating the same performance; explanation after an example, performance after a hint, and independent completion are kept separate.
+- When conclusions conflict, keep the task scope, support conditions, and unknowns; do not stitch them into a stronger mastery conclusion; `diagnosis` still picks only the one best-evidenced main label, and `current_levels` gives partial updates only for parts with sufficient evidence and no unresolved conflict.
+- `next_step_candidate` is one concrete next step chosen by session; suggestions awaiting execution, unanswered problems, and AI demonstrations do not count as student performance.
 
-`focus` 记录本轮实际焦点；等待学生下一次回答时只记已观察到的证据，后续演示、判断和掌握状态留待后续回合。出题本身不构成学生表现证据。
+`focus` records the focus actually used this turn; while waiting for the student's next answer, record only the evidence already observed, and leave later demonstrations, judgments, and mastery state to later turns. Posing a problem is not itself student-performance evidence.
 
-## 字段语义
+## Field Semantics
 
-| 字段 | 数学约定 |
+| Field | Math convention |
 |---|---|
-| `subject` / `mode` / `submode` / `source` | `subject: math`，`mode` 沿用调用方；`submode` / `source` 由 session 按上方合并规则统一确定 |
-| `strategy_summary` | 当前题的数量关系/未知量、学生实际动作或所用已知关系；说明工具在推理中的作用，区分独立方法、解释教学助手示例与提示后完成，不只写答案或“用了画板” |
-| `strengths` / `difficulties` | 数量、单位、表示、计算、验证与支架响应的实际证据；表达短、画得不整齐、未作答或方法不够快不单独记为数学困难 |
-| `next_step_candidate` / `recommended_targets` | 一个保守、具体的小步骤与近邻目标 |
-| `feynman_handoff_recommended` | 是否适合转费曼讲解，依据实际表现填写 |
-| `confirmed_skills` / `skill_errors_observed` | 记录前读 `learn-core` 的 `references/feynman-skill-whitelist.md`，所有模式均按其门槛填写技能名；无证据为空数组。AI 故意犯错不算学生错误，按该协议记录学生真实错误。finalize 转对象时的 `domain` 按下表 |
-| `overall_performance_code` / `overall_performance_text`（可选） | `needs_support` 需支架，`basic_independent` 基本独立但个别步骤需提示，`stable` 稳定运用策略，`flexible` 同一关系换生活场景后仍能解释，或能比较关系；只在一个场景做对最多记到 `stable`。文字写清本轮证据，速度或单题答对不足以定档 |
-| `current_levels`（可选） | 有足够策略证据时给 `arithmetic_strategy_stage` / `multidigit_strategy_stage` / `fraction_strategy_stage` 部分更新；阶段解释归本 skill 的 `references/progression-map.md`，诊断证据归本 skill 的 `references/strategy-diagnosis-rules.md` |
-| `diagnosis`（可选） | 数学领域 `domain`、一个具体错误 `label` 与关键步骤 `evidence`；分类归同一诊断 reference，整题原文留在原件或分析文件 |
+| `subject` / `mode` / `submode` / `source` | `subject: math`, `mode` inherited from the caller; `submode` / `source` are set uniformly by session per the merge rules above |
+| `strategy_summary` | The quantity relationship/unknown of the current problem, the student's actual actions or known relationships used; explain the role of the tool in reasoning, distinguish independent method, explaining a teaching-assistant example, and completion after a hint; do not write only the answer or "used the board" |
+| `strengths` / `difficulties` | Actual evidence on quantities, units, representation, calculation, verification, and response to scaffolds; brief expression, untidy drawings, no answer, or a method that is not fast enough is not alone recorded as a math difficulty |
+| `next_step_candidate` / `recommended_targets` | One conservative, concrete small step and neighboring targets |
+| `feynman_handoff_recommended` | Whether switching to Feynman explanation fits, filled from actual performance |
+| `confirmed_skills` / `skill_errors_observed` | Before recording, read `learn-core`'s `references/feynman-skill-whitelist.md`; every mode fills skill names per its threshold; with no evidence, an empty array. A deliberate AI error does not count as a student error; record the student's real errors per that protocol. The `domain` used when finalize converts to objects follows the table below |
+| `overall_performance_code` / `overall_performance_text` (optional) | `needs_support` needs scaffolding, `basic_independent` mostly independent with individual steps needing hints, `stable` uses the strategy stably, `flexible` can still explain the same relationship after changing everyday scene, or can compare relationships; succeeding in only one scene is recorded at most as `stable`. The text states this turn's evidence; speed or one correct problem is not enough to set the level |
+| `current_levels` (optional) | With enough strategy evidence, give partial updates of `arithmetic_strategy_stage` / `multidigit_strategy_stage` / `fraction_strategy_stage`; stage interpretation belongs to this skill's `references/progression-map.md`, and diagnostic evidence to this skill's `references/strategy-diagnosis-rules.md` |
+| `diagnosis` (optional) | Math domain `domain`, one specific error `label`, and key-step `evidence`; classification belongs to the same diagnosis reference, and the full original problem text stays in the source file or analysis file |
 
-阶段、诊断与技能确认分别按各自证据门槛决定；未观察的可选字段省略，保留已有档案值。同一表现只按其任务范围解释，能用加法求一类差不推定所有减法已掌握，等分阶段也不概括全部分数或小数理解。已有 schema 足够时用自然语言保留差异，不新增阶段或全局等级。
+Stage, diagnosis, and skill confirmation are each decided by their own evidence thresholds; omit optional fields not observed and keep existing profile values. The same performance is interpreted only within its task scope: being able to use addition to find one kind of difference does not imply all subtraction is mastered, and an equal-sharing stage does not summarize all fraction or decimal understanding. When the existing schema suffices, keep differences in natural language and add no stage or global level.
 
-## 技能 Domain 对照
+## Skill Domain Mapping
 
-segment 只写技能名；finalize 写入 `confirmed_skills` 对象时用下表填 `domain`。找不到接近域时留与证据一致的最窄域，不发明表外大类。
+The segment writes only the skill name; when finalize writes a `confirmed_skills` object, it fills `domain` from the table below. If no close domain is found, keep the narrowest domain consistent with the evidence and do not invent a broad category outside the table.
 
-| Domain | 示例技能 |
+| Domain | Example skills |
 |---|---|
-| `addition_subtraction` | 凑十策略, 减法借位, 加减法逆运算 |
-| `multiplication_division` | 乘法口诀, 除法意义, 余数概念 |
-| `fractions` | 分数意义, 通分, 约分 |
-| `place_value` | 数位理解, 进位退位 |
-| `word_problems` | 理解题意, 找关键信息, 列式 |
+| `addition_subtraction` | make-ten strategy, subtraction regrouping, inverse of addition and subtraction |
+| `multiplication_division` | multiplication facts, meaning of division, concept of remainder |
+| `fractions` | fraction meaning, common denominators, simplifying |
+| `place_value` | place-value understanding, carrying and borrowing |
+| `word_problems` | understanding the problem, finding key information, writing the equation |

@@ -1,33 +1,33 @@
 ---
 name: child-english-coach
-description: 英语活动编排。学生想自由玩英语、尚未指定目标，或希望一次活动里组合故事、对话、任务与复习时加载；为英语主线提供跨轮计划，不另产学习记录。
+description: English activity orchestration. Load when the student wants free English play, has no specified goal, or wants one activity that combines story, talk, tasks, and review; supplies cross-turn plans for the English mainline without creating its own learning record.
 user-invocable: false
 ---
 
-# 英语活动编排
+# English Activity Orchestration
 
-为一次低压力英语活动提供跨轮计划与方法建议；当前回复、方法加载和唯一 `session_segment` 归 `english-session`。
+Provides a cross-turn plan and method suggestions for one low-pressure English activity; the current reply, method loading, and the single `session_segment` belong to `english-session`.
 
-## 输入与共享规则
+## Input and Shared Rules
 
-复用入口传入的快照、`target_context`、材料、学生消息与 `context.turn_state`，沿用当前焦点和待答问题，不重新问已记录的年龄、年级或兴趣。缺少真正影响下一动作的信息时，只建议一个短问题并等待，不重做问卷或建档。
+Reuse the snapshot, `target_context`, materials, student message, and `context.turn_state` passed in by the entry; keep the current focus and pending question, and do not re-ask for age, grade, or interests already recorded. When information that truly affects the next action is missing, suggest only one short question and wait; do not redo a questionnaire or profile setup.
 
-通过 `english-core` 读取：
+Read through `english-core`:
 
-- 设计活动和建议方法前，读 `references/english-teaching-core.md` 的唯一方法选择表（目标类型 + 当前观察）；本 skill 不再维护另一张表。把主方法或辅助方法建议交 session 决定，不自行加载方法 skill。
-- 调整材料难度时，读 `references/english-input-adaptation.md`，依据实际理解，不由年级推定英语水平。
-- 卡住或需要减少支持时，读 `references/english-scaffolding.md` 的唯一提示阶梯与退让规则。
-- 提供观察证据时，按 `references/english-segment-fields.md` 交 session 映射；反馈遵循 teaching-core，不另设评价等级。
+- Before designing an activity and suggesting methods, read the single method selection table (target type + current observation) in `references/english-teaching-core.md`; this skill does not maintain another table. Hand the main or auxiliary method suggestion to the session to decide; do not load method skills yourself.
+- When adjusting material difficulty, read `references/english-input-adaptation.md`, based on actual comprehension; do not infer English level from grade.
+- When the student is stuck or support should be reduced, read the single hint ladder and fading rules in `references/english-scaffolding.md`.
+- When providing observation evidence, hand it to the session for mapping per `references/english-segment-fields.md`; feedback follows teaching-core, with no separate evaluation levels.
 
-## 跨轮活动计划
+## Cross-Turn Activity Plan
 
-1. **定结果**：围绕当前目标提出一个学生愿意参与的场景或小任务。已有明确选择就沿用；确需选主题/做法时交 session 用 `ask_user_question` 给选项。完成条件：一个具体活动结果，不是方法清单。
-2. **排步骤**：给最短可行的跨轮计划，例如理解一个场景 → 为任务表达选择 → 换情境再用一次。注明当前一步、可用材料、方法建议和停止条件；不是每步都必须执行。完成条件：下一步可单独执行，不依赖预演学生答案。
-3. **交当前动作**：只提供当前一步所需材料和一个主要待答问题。教学问题保持纯文字；后续问题仅留在内部计划，等待真实回应后由 session 决定。完成条件：一个待答问题或一个已完成动作，不把整份计划变成学生的任务清单。
-4. **据回应调整**：同一活动按 `english-core` 的 `references/english-turn-arc.md` 逐个角度推进；一个角度答对不换活动，结果完成或学生要走才收束。发散只在当前材料上长一个相关追问，一到两轮回到主线。学生顺利时建议减少支持或换近邻场景，卡住时按共享支架规则建议当前一级支持；疲劳、换活动和结束请求交 session → lifecycle。完成条件：调整有本轮证据，未执行步骤不记作表现。
+1. **Set the outcome**: propose a scene or small task around the current goal that the student is willing to join. If a clear choice already exists, keep it; when a topic or approach truly must be chosen, hand it to the session to offer options via `ask_user_question`. Completion condition: one concrete activity outcome, not a list of methods.
+2. **Sequence the steps**: give the shortest workable cross-turn plan, for example understand a scene → choose expressions for the task → use them again in a new situation. Note the current step, available materials, method suggestions, and stopping conditions; not every step must be executed. Completion condition: the next step can run on its own without rehearsing student answers.
+3. **Hand off the current action**: provide only the material needed for the current step and one main pending question. Teaching questions stay plain text; later questions stay in the internal plan only, and the session decides after a real response. Completion condition: one pending question or one completed action; do not turn the whole plan into a task list for the student.
+4. **Adjust to the response**: advance the same activity one angle at a time per `english-core` `references/english-turn-arc.md`; a correct answer to one angle does not change the activity, and wrap-up happens only when the outcome is done or the student wants to leave. Divergence adds just one related follow-up on the current material and returns to the main line within one or two turns. When the student is doing well, suggest less support or a neighboring scene; when stuck, suggest the current level of support under the shared scaffolding rules; fatigue, activity changes, and end requests go to the session → lifecycle. Completion condition: the adjustment rests on this turn's evidence, and unexecuted steps are not recorded as performance.
 
-## 回传与恢复
+## Return and Resume
 
-回传活动目标、当前步骤、剩余计划、已呈现材料、学生实际回应、支持情况、最新待答问题与方法建议。session 以 `context.turn_state.active_method` / `method_step` 和共享 `pending_question` 保留执行位置，已呈现材料无持久引用时存 `context.materials`。恢复时接原问题，不重新邀请选活动。证据只描述实际观察，不把计划、教学助手示例或任务完成等同独立语言掌握。
+Return the activity goal, current step, remaining plan, materials presented, the student's actual responses, support given, the latest pending question, and method suggestions. The session keeps the execution position with `context.turn_state.active_method` / `method_step` and the shared `pending_question`; presented material without a persistent reference is stored in `context.materials`. On resume, pick up the original question and do not re-invite the student to choose an activity. Evidence describes only what was actually observed; do not equate plans, teaching-assistant examples, or task completion with independent language mastery.
 
-本 skill 不写学生文件、不独立生成进度便条、提醒或保存流程。新闻活动只提出需求与理由，交 session 决定使用新闻方法，来源验证和适龄筛选由该方法负责。鼓励书、游戏和真人交流；初学阅读可建议字母与发音对应，但不以自然拼读取代理解，也不声称具备环境未提供的音频/图片能力。
+This skill does not write student files or independently generate progress notes, reminders, or a saving flow. For news activities, only state the need and reason and let the session decide to use the news method; source verification and age-appropriate filtering are that method's responsibility. Encourage books, games, and real-person conversation; for early readers, letter-sound correspondence may be suggested, but phonics does not replace comprehension, and do not claim audio/image capabilities the environment does not provide.

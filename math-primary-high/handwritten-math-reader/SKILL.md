@@ -1,6 +1,6 @@
 ---
 name: handwritten-math-reader
-description: 手写数学识读。学生提交四至六年级手写数学的照片、扫描件或电子笔迹（分数、竖式、方程、图形、多行步骤）时使用；忠实保留错误、标出不清处，不擅自修正。
+description: Handwritten math reading. Use when the student submits handwritten grades 4–6 math photos, scans, or digital ink (fractions, vertical algorithms, equations, figures, multi-line steps); preserve errors faithfully, mark unclear parts, and do not silently correct.
 ---
 # Handwritten Math Reader
 

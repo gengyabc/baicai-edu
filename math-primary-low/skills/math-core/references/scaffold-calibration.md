@@ -1,9 +1,9 @@
-# 数学支架校准
+# Math Scaffold Calibration
 
-学生已经动手、卡住或明确求助后才用本文。
+Use this file only after the student has started working, is stuck, or has explicitly asked for help.
 
-按 CGI 回应学生思路（Jacobs & Empson 的四类：确认理解故事、追问已有策略的细节、鼓励考虑其他策略、连接到记录与算式），卡住时选一个支持动作：确认学生理解故事、追问他已做出的细节、提议工具（实物、画图、手指或画板，怎么用由他决定）、在同一故事里换更容易的数并在做出后回到原数、提醒相关的题。学生已试过仍无办法时，也可以按 `references/math-personalization.md` 用一个兴趣细节重述同一关系。
+Respond to the student's thinking per CGI (Jacobs & Empson's four kinds: confirm understanding of the story, ask about details of an existing strategy, encourage considering other strategies, connect to records and equations). When stuck, choose one support action: confirm the student understands the story, ask about details they have already produced, propose a tool (objects, drawing, fingers, or the board; how to use it is the student's decision), swap in easier numbers within the same story and return to the original numbers once done, or remind them of a related problem. When the student has tried and still has no way forward, you may also restate the same relationship with one interest detail per `references/math-personalization.md`.
 
-每次一个动作、一个待答问题，然后等待；能继续即撤。教学助手不主动示范、不点名解题策略。学生已经尝试并明确要看一种做法时，可以给一个标明为“示例”的办法，再请他用自己的话说说或拿去试；这算有支持。连续卡住交诊断，持续无回应按共享协议。
+One action and one pending question each time, then wait; withdraw once the student can continue. The teaching assistant does not demonstrate unprompted or name a solution strategy. When the student has already tried and explicitly asks to see one way, you may give one method labeled as an "example", then ask them to say it in their own words or try it; this counts as supported. Repeated sticking goes to diagnosis; sustained non-response follows the shared protocol.
 
-提示后的作答记为有支持，换过更容易的数或看过示例也如实记。若本轮带已发送的修改记录，连续卡住时先看学生是否在反复更换表示（重圈、拆开、清空后重摆），据此问他这两种表示各是什么，或交诊断；次数和撤销本身不构成困难结论。
+Record work after a hint as supported; also record honestly if easier numbers were swapped in or an example was seen. If this turn carries a sent edit history, when the student is stuck repeatedly, first see whether they keep changing representations (re-circling, splitting, re-laying after a clear); based on that, ask what each of the two representations means, or hand to diagnosis; counts and undos alone do not make a difficulty conclusion.

@@ -1,27 +1,27 @@
 # Feynman Skill Whitelist
 
-全模式可记录技能确认与真实错误；故意犯错缺省仅在费曼（AI 作听众）；学科包可在学生出题分支另定受限规则，记录与撤销仍按本文件。角色难度按 `references/feynman-mode.md`。学科技能名与 domain 由各科目约定；本文件只定证据与撤销。
+All modes may record skill confirmations and real errors; deliberate mistakes default to Feynman mode only (the AI as listener); a subject package may set restricted rules for the branch where the student poses questions, while recording and retraction still follow this file. Role difficulty follows `references/feynman-mode.md`. Subject skill names and domains are agreed by each subject; this file only defines evidence and retraction.
 
-## 故意犯错
+## Deliberate Mistakes
 
-回应前查 `confirmed_skills`（含本会话已投影、尚未 finalize 的确认）。
+Before responding, check `confirmed_skills` (including confirmations already projected in this session but not yet finalized).
 
-- **已在白名单**：该技能不故意犯错。
-- **不在白名单**：在关键概念步骤上犯略低于学生水平的真实错误（能错尽量错）；不只犯计算笔误。
-- 任何题目收束前都不得把错误答案当作正确结果留下；学科包若允许先交故意错答供批改，须在学生批改后或切走前澄清。
+- **Already on the whitelist**: do not deliberately make mistakes with that skill.
+- **Not on the whitelist**: make a real mistake slightly below the student's level at a key conceptual step (err where you can); do not only make calculation slips.
+- Before any question is wrapped up, never leave a wrong answer standing as the correct result; if a subject package allows first submitting a deliberately wrong answer for the student to grade, it must be clarified after the student grades it or before moving on.
 
-## 确认门槛
+## Confirmation Threshold
 
-学生成功纠正 AI，或清晰讲清概念时：
+When the student successfully corrects the AI or clearly explains a concept:
 
-1. 若技能尚不在 `confirmed_skills`，且达到 **two independent demonstrations**（different numbers/contexts）或 **one demonstration plus a correct explanation** of why it works，把技能名写入本轮 `session_segment.confirmed_skills`（字符串数组）。
-2. 回合内不写 `memory.json`；finalize 将名称转为带 `domain` / `confirmed_at` 的对象并一次写入。
-3. 初始化：新建或更新 memory 时，按 `learn-data` 的 `references/profile-schema.md` 从 `mastered_topics` 播种 `confirmed_skills`，仅按 `skill` 去重。
+1. If the skill is not yet in `confirmed_skills`, and it reaches **two independent demonstrations** (different numbers/contexts) or **one demonstration plus a correct explanation** of why it works, write the skill name into this turn's `session_segment.confirmed_skills` (array of strings).
+2. Do not write `memory.json` within the turn; finalize converts names into objects with `domain` / `confirmed_at` and writes them once.
+3. Initialization: when creating or updating memory, seed `confirmed_skills` from `mastered_topics` per `learn-data`'s `references/profile-schema.md`, deduplicating only by `skill`.
 
-## 错误与撤销
+## Errors and Retraction
 
-教学中把真实观察到的错误技能名追加到本轮 `skill_errors_observed`；用内存投影白名单，避免稍后回合仍把已应撤销的技能当已确认。同一 segment 内同一技能只记一次；重放同一作答不算新观察。AI 故意犯错不算学生错误。
+During teaching, append the skill name of a truly observed error to this turn's `skill_errors_observed`; use the in-memory projected whitelist so later turns do not still treat a skill that should have been retracted as confirmed. Record the same skill only once within the same segment; replaying the same response is not a new observation. A deliberate AI mistake is not a student error.
 
-finalize 按 segment 时间序处理：每次错误观察找到或创建该技能的 `skill_errors`，递增 `error_count` 并更新 `last_error_at`（累计次数，非连续 streak）。`error_count >= 2` 时从 `confirmed_skills` 移除该技能并清掉其错误计数项。再确认必须满足上文确认门槛的新证据；撤销前的旧证据不得在同一次 finalize 里加回。
+Finalize processes in segment time order: for each error observation, find or create that skill's `skill_errors`, increment `error_count`, and update `last_error_at` (cumulative count, not a consecutive streak). When `error_count >= 2`, remove the skill from `confirmed_skills` and clear its error-count entry. Re-confirmation must meet the confirmation threshold above with new evidence; old evidence from before the retraction must not be added back in the same finalize.
 
-写入时机：回合内只追加 `session_log.json`；finalize 与其它 memory 字段同一次合并 `confirmed_skills` / `skill_errors`。不并行写同一文件。
+Write timing: within a turn only append to `session_log.json`; finalize merges `confirmed_skills` / `skill_errors` in the same pass as other memory fields. Do not write the same file in parallel.

@@ -1,6 +1,6 @@
 ---
 name: chinese-reading-session
-description: 阅读教学与诊断。学生学习文章或未作答阅读题、评判已有阅读答案，或在费曼模式讲解阅读证据时使用。
+description: Reading teaching and diagnosis. Use when the student studies a passage or unanswered reading items, evaluates existing reading answers, or explains reading evidence in Feynman mode.
 user-invocable: false
 ---
 

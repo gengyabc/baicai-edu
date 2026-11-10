@@ -1,6 +1,6 @@
 ---
 name: chinese-writing-session
-description: 写作教学。学生有题无稿需起笔、修改已有草稿、要求作文评改，或在费曼模式讲解写作选择时使用。
+description: Writing teaching. Use when the student has a prompt but no draft, revises an existing draft, asks for composition feedback, or explains writing choices in Feynman mode.
 user-invocable: false
 ---
 

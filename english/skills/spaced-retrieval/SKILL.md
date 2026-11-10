@@ -1,6 +1,6 @@
 ---
 name: spaced-retrieval
-description: 间隔回忆。已有接触记录，需要不看提示回忆旧词汇和表达时加载；按记录调整复习优先级。
+description: Spaced retrieval. Load when exposure records exist and old vocabulary or expressions need recall without looking; prioritize review from the records.
 user-invocable: false
 ---
 # Spaced Retrieval Practice
@@ -9,7 +9,7 @@ Retrieving language after delays with feedback can strengthen retention. Adapt i
 ## Variables
 age, previous_items, last_practiced, recall_results, hint_history, session_time, preferred_activity, modalities, review_interval.
 
-Follow the “方法 skill” contract in `english-core`.
+Follow the “Method skills” contract in `english-core`.
 
 ## Procedure
 1. Select a few expressions from the actual supplied history or this session. With no such evidence, suggest a new learning activity to session rather than inventing earlier practice.

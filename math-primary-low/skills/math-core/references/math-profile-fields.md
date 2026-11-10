@@ -1,16 +1,16 @@
-# 数学档案字段
+# Math Profile Fields
 
-共享科目档案外壳见 `learn-data` 的 `references/profile-schema.md`。本文只定义数学增量；`self_report`、`learning_state` 数组与 `error_history` / `session_history` 不在此重复。初始领域与水平以 `references/math-grade-defaults.md` 为准。
+For the shared subject-profile shell see `learn-data`'s `references/profile-schema.md`. This file defines only the math additions; `self_report`, the `learning_state` arrays, and `error_history` / `session_history` are not repeated here. Initial domain and levels follow `references/math-grade-defaults.md`.
 
 ## preferences
 
-| 键 | `/learn-start` 选项 |
+| Key | `/learn-start` option label key |
 |---|---|
-| `likes_visual` | 画一画 |
-| `likes_story_context` | 讲一讲 |
-| `likes_direct_calculation` | 直接算 |
+| `likes_visual` | `ui.start.math_pref.likes_visual` |
+| `likes_story_context` | `ui.start.math_pref.likes_story_context` |
+| `likes_direct_calculation` | `ui.start.math_pref.likes_direct_calculation` |
 
-未选中的键保持 `false`。呈现方式见 `references/math-personalization.md`。
+Unselected keys stay `false`. Resolve label keys through `learn-data`'s `references/ui-locale.md` from `references/locales/` of `math-core`. For presentation see `references/math-personalization.md`.
 
 ## current_levels
 
@@ -19,10 +19,10 @@
 - `multidigit_strategy_stage`
 - `fraction_strategy_stage`
 
-阶段取值与旧值的读法见 `references/progression-map.md`。没有新证据时不要改写；旧档案缺 `multidigit_strategy_stage` 时按 `unknown` 读。
+For stage values and how to read old values see `references/progression-map.md`. Do not rewrite without new evidence; when an old profile lacks `multidigit_strategy_stage`, read it as `unknown`.
 
-## 文件分析的 domain
+## Domain for File Analysis
 
-`fractions`、`place_value_and_multidigit`、`multiplication_division`、`addition_subtraction`、`measurement_and_geometry`、`patterns_and_data`。
+`fractions`, `place_value_and_multidigit`, `multiplication_division`, `addition_subtraction`, `measurement_and_geometry`, `patterns_and_data`.
 
-`error_type` 与 `diagnosis.label` 的分类见 `references/strategy-diagnosis-rules.md`。
+For the classification of `error_type` and `diagnosis.label` see `references/strategy-diagnosis-rules.md`.

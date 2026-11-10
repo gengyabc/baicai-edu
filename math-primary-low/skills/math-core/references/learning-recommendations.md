@@ -1,35 +1,35 @@
-# 数学学习推荐
+# Math Learning Recommendations
 
-供 `learn-recommend` 经学科契约读取。这里只决定数学候选的内容、难度、理由与排序；选择和交接沿用共享流程。
+Read by `learn-recommend` through the subject contract. This file decides only the content, difficulty, reasons, and ordering of math candidates; selection and handoff follow the shared flow.
 
-## 候选：关系 × 策略 × 数字结构
+## Candidates: Relationship × Strategy × Number Structure
 
-从已有快照与最新真实表现中找一个可推进的数量关系，写成能马上开始的小目标，而不是「学加减法」「提升计算能力」。通常给 2–3 个有差异且有依据的候选，首选 1 个；只有一个合适目标就保留一个，不用同题换物件凑数。推荐阶段只描述任务，不呈现完整待答题。
+From the existing snapshot and the latest real performance, find one quantity relationship that can move forward, and write it as a small goal that can start right away, not "learn addition and subtraction" or "improve calculation ability". Usually give 2–3 candidates that differ and have a basis, with 1 as the first choice; if only one goal fits, keep one, and do not pad by swapping objects in the same problem. The recommendation stage only describes the task and does not present a complete problem awaiting an answer.
 
-- 优先核对 `strategy_summary` 的具体做法、题型、未知位置、数字与支持程度，再看 `priority_targets`、`developing_topics`、最近错误和 `session_history` 的下一步。最新独立表现可修正旧建议，提示后完成不能当成独立掌握。
-- 阶段与领域按 `references/progression-map.md`；算术、多位数、分数是独立轨道。未知阶段只支持低负荷探索候选，不把推荐变成施测，也不据年龄判阶段。
-- 按 `references/problem-design.md` 选关系和数字；发展策略时一次主要改变数字结构、未知位置、题型或场景中的一项。阶段是选数线索，不是内容准入门槛；不要求学生先学完低阶段。
+- First check the specific methods, problem types, unknown positions, numbers, and level of support in `strategy_summary`, then `priority_targets`, `developing_topics`, recent errors, and the next step in `session_history`. The latest independent performance can correct an old suggestion, and completion after a hint cannot be treated as independent mastery.
+- Stages and domains follow `references/progression-map.md`; arithmetic, multi-digit, and fractions are independent tracks. An unknown stage supports only low-load exploratory candidates; do not turn the recommendation into a test, and do not judge a stage by age.
+- Choose relationships and numbers per `references/problem-design.md`; when developing a strategy, change mainly one of number structure, unknown position, problem type, or scene at a time. A stage is a cue for choosing numbers, not a content entry gate; do not require the student to finish lower stages first.
 
-| 已有证据 | 可开始的小目标方向 | 数字与负荷 |
+| Existing evidence | Direction for a small starting goal | Numbers and load |
 |---|---|---|
-| 小数目靠逐个摆、逐个数 | 同一合并/拿走关系中探索数从哪里接着数；保留直接建模权利 | 小而可表示的数，不用大数迫使放弃原策略 |
-| 已能接着数，近十结构尚未连接 | 用已知数量关系探索凑十、近倍数等关联 | 如 8+7 的近十结构；不先点名或示范算法 |
-| 多位数仍逐一数，十与一关系待连接 | 用整十与零散几个解释一个两位数关系 | 从 30+20 与 30+24 中选相邻结构，不直接布置竖式训练 |
-| 能解释十与一的组合 | 比较同一关系中的数字变式，探索自己的分解 | 如 36+20 与 36+24；只增加一个负荷 |
-| 等分中份数与每份量尚未协调 | 在一个公平分享情境里连接人数、总量和每人所得 | 可操作的小数量，如 3 个饼分给 4 人；分数比较也可从此进入 |
-| 原场景做对且能解释 | 保留关系、未知位置与近邻数字，换真实活动检验迁移 | 换情境而非只改名；推荐不能宣称迁移已完成 |
+| With small numbers, lays out and counts one by one | Explore where to continue counting from within the same join/separate relationship; keep the right to direct modeling | Small, representable numbers; do not use large numbers to force abandoning the original strategy |
+| Can count on, near-ten structure not yet connected | Use known quantity relationships to explore make-ten, near doubles, and similar links | Near-ten structure such as 8+7; do not name or demonstrate an algorithm first |
+| Multi-digit still counted one by one, tens-and-ones relationship to be connected | Explain a two-digit relationship using whole tens and a few leftovers | Choose adjacent structures from 30+20 and 30+24; do not directly assign column-method drills |
+| Can explain combining tens and ones | Compare number variations within the same relationship and explore their own decompositions | Such as 36+20 and 36+24; add only one load |
+| In equal sharing, number of shares and amount per share not yet coordinated | In one fair-sharing context, connect number of people, total, and amount each gets | Small manipulable quantities, such as 3 pancakes shared among 4 people; fraction comparison can also enter from here |
+| Correct and able to explain in the original scene | Keep the relationship, unknown position, and nearby numbers, and change to a real activity to test transfer | Change the context, not just the names; a recommendation cannot claim transfer is complete |
 
-表中数字是结构示例，不是固定序列。分数候选按需读 `references/fraction-relations.md`；几何、测量或数据目标也按最新领域证据选一个关系，不硬套算术阶梯。
+Numbers in the table are structural examples, not a fixed sequence. For fraction candidates read `references/fraction-relations.md` as needed; for geometry, measurement, or data goals, likewise choose one relationship by the latest domain evidence and do not force the arithmetic ladder.
 
-## 排序与中文理由
+## Ranking and Reasons
 
-首选当前证据最明确、下一步跨度最小且能揭示关系的目标。重复困难先选可推进的一小步；已有独立解释时可把连接或迁移排在继续同类练习前。学生明确想换内容时优先不同关系/领域的可行候选，避免把旧卡点换包装排第一。普通恢复的下一步只是候选，可据新表现重排。
+The first choice is the goal with the clearest current evidence, the smallest step to the next, and one that reveals a relationship. For a repeated difficulty, first choose a small step that can move forward; when an independent explanation already exists, connection or transfer may be ranked before continued same-type practice. When the student explicitly wants to change content, prefer feasible candidates from a different relationship/domain, and avoid ranking the old sticking point in new packaging first. The next step of an ordinary resume is only a candidate and may be reordered by new performance.
 
-`personal.interests` 与科目偏好只在 `references/math-personalization.md` 的搭桥条件下决定情境或表示，不替代数量关系。`material_difficulty` 只调整一个负荷因素，不升级策略结论。无历史证据时按年级默认提供低负荷探索，理由说「可以先从……开始」，不伪称曾经观察。
+`personal.interests` and subject preferences decide context or representation only under the bridging conditions in `references/math-personalization.md` and never replace the quantity relationship. `material_difficulty` adjusts only one load factor and does not upgrade strategy conclusions. With no historical evidence, offer low-load exploration by grade default, with a reason like "we could start from ..." and never falsely claim a prior observation.
 
-理由用学生能懂的中文，指出记录中的具体动作及它与下一步的联系，不报 CGI 标签或档案键：
+Runtime reason text uses the active UI locale (see `learn-data` `references/ui-locale.md`), written in language the student can understand, pointing to the specific action in the record and its link to the next step, without CGI labels or profile keys. The examples below are English illustrations only:
 
-- 已记录 7+5 从 7 接着数：首选「用接近十的数找一个省力的合并办法」；理由：「你上次能从 7 接着数了，这次可以看看两堆数怎样凑得更好算。」另一候选可为同关系换场景解释，不宣称学生已经会凑十。
-- 已独立解释 36+20 的十与一：可把「探索加上二十几个时，十和一怎样变化」排在重复整十计算前；理由：「你已经说清加两个十时哪里变了，可以再看看多出几个一会怎样。」
+- Recorded: 7+5 counted on from 7. First choice: "find an easier way to combine using a number close to ten"; reason: "Last time you could count on from 7; this time let's see how the two piles can be put together more easily." Another candidate may be explaining the same relationship in a new scene; do not claim the student already can make ten.
+- Recorded: independently explained the tens and ones in 36+20. You may rank "explore how tens and ones change when adding twenty-something" before repeating whole-ten calculation; reason: "You already explained what changes when adding two tens; let's see what happens when a few more ones come along."
 
-完成标准：每个候选有具体关系与可开始的动作，难度和理由可回溯已有证据或明确默认；仅首选一个，推荐本身不产生策略证据。
+Completion standard: each candidate has a concrete relationship and an action that can start, difficulty and reasons trace back to existing evidence or an explicit default; only one first choice, and the recommendation itself produces no strategy evidence.

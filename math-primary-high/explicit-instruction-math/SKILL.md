@@ -1,6 +1,6 @@
 ---
 name: explicit-instruction-math
-description: 显式教学。四至六年级学生先修薄弱、误解反复出现，或需要例题示范和累积练习时使用。
+description: Explicit instruction. Use when students in grades 4–6 have weak prerequisites, recurring misconceptions, or need worked examples and cumulative practice.
 ---
 # Explicit and Systematic Math Instruction
 
