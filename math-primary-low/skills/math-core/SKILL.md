@@ -35,6 +35,7 @@ If `math-common` cannot be loaded, keep teaching under this safe fallback and do
 | Choosing the next goal, judging strategy stage | `references/progression-map.md` |
 | Choosing, modifying, or varying problems; addition, subtraction, multiplication, division, place value, multi-digit numbers | `references/problem-design.md` |
 | Fraction meaning, equal partition, equivalence, comparison, operations, or decimals | `references/fraction-relations.md` |
+| Equals sign, true/false or open number sentences, relating the two sides without computing, or a student-stated property such as swapping addends | `references/relational-thinking.md` |
 | Preparing a hint, the student finds it troublesome, asks for a new method, or a hint does not work | `references/scaffold-calibration.md` |
 | Message carries a board attachment or edit-history attachment (`我的画板.json` / `我的修改记录.json`), or the student asks how to use the board | `references/structured-drawing.md` |
 | Judging arithmetic / multi-digit / fraction strategy stage or analyzing error causes | `references/strategy-diagnosis-rules.md` |

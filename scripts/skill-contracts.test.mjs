@@ -1495,3 +1495,21 @@ test('upper-primary locale catalogs stay in sync and cover its own labels', () =
   assert.doesNotMatch(fields, /ui\.start\.math_pref\.likes_visual/)
   assert.match(text('math-primary-high/README.md'), /node scripts\/install\.mjs math-primary-high --profile web/)
 })
+
+test('CGI early algebra is band-local, wired from math-core, and evidence-bounded', () => {
+  const lowCore = text(skillPath('math-primary-low', 'math-core'))
+  assert.match(lowCore, /references\/relational-thinking\.md/)
+  assert.match(highCore, /references\/early-algebra\.md/)
+  const low = text('math-primary-low/skills/math-core/references/relational-thinking.md')
+  hasAll(low, ['`strategy_summary`', 'two contrasting items', 'not a goal', 'stop at the question'])
+  assert.doesNotMatch(low, /symbolic_strategy_stage/)
+  const high = highRef('early-algebra')
+  hasAll(high, ['`arithmetic_only`', '`relational_unknown`', '`generalized_structure`',
+    'Examples alone', 'not a content gate', 'counterexample'])
+  assert.match(highRef('math-teaching-core'), /Relational thinking and generalization \(CGI early algebra\)/)
+  assert.match(highRef('progression-map'), /references\/early-algebra\.md/)
+  assert.match(text('math-primary-low/tests/teaching-scenarios.md'), /## 等号与关系性思维/)
+  assert.match(text('math-primary-high/tests/teaching-scenarios.md'), /## 早期代数/)
+  assert.ok(existsSync(join(root, 'docs/cgi-early-algebra.md')))
+  for (const ref of [low, high]) assert.doesNotMatch(ref, /https?:\/\//)
+})

@@ -34,6 +34,7 @@ Read `references/scaffold-calibration.md` only after the student has started wor
 
 - Choosing problems, variations, addition, subtraction, multiplication, division, place value, multi-digit: `references/problem-design.md`.
 - Fractions and decimals: `references/fraction-relations.md`.
+- Equality, number sentences, and relational thinking: `references/relational-thinking.md`.
 - Everything else follows the `math-core` condition table; measurement, geometry, patterns, and data likewise do not force the four operations.
 
 ## Recording

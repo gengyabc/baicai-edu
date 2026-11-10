@@ -33,6 +33,7 @@ If `math-common` cannot be loaded, keep teaching under this safe fallback and do
 | Judging the strategy stage, choosing the next knowledge point, or analyzing an error cause | `references/strategy-diagnosis-rules.md`; for prerequisite edges, `references/topic-map.md` |
 | Changing difficulty, hint level, or the primary method; checking a promotion or a fallback threshold | `references/adaptive-thresholds.md` |
 | Fractions, decimals, equivalence, operations, or ratio/percent links | `references/fraction-relations.md` |
+| Equality, relational strategies, properties of operations, generalizing from cases, variables, or a two-quantity table | `references/early-algebra.md` |
 | Deciding which act the next step belongs to | `references/learn-act-allocation.md` |
 | Preparing a hint, the student finds it troublesome, asks for a new method, or a hint does not work | `references/scaffold-calibration.md` |
 | Snapshot contains interests, preferences, easy/hard topics, or experiences, or the student cannot do the current problem | `references/math-personalization.md` |

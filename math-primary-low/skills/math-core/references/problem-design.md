@@ -4,7 +4,7 @@ Use CGI problem types (join, separate, part-part-whole, compare, multiplication,
 
 ## The Current Problem
 
-Choose one focused unknown from the explicit goal or evidence. The default stem is an everyday-life story ending at one final question; a practice format the student explicitly asks for takes priority, and an open number sentence may check a single quantity fact. Use number choice for calculation or strategy goals, without naming a strategy; you may offer two or three sets of numbers for the student to choose from. If the student cannot do it, easier numbers in the same story are allowed, then return to the original numbers; see `references/scaffold-calibration.md`.
+Choose one focused unknown from the explicit goal or evidence. The default stem is an everyday-life story ending at one final question; a practice format the student explicitly asks for takes priority, and an open number sentence may check a single quantity fact; equality and relational sentences follow `references/relational-thinking.md`. Use number choice for calculation or strategy goals, without naming a strategy; you may offer two or three sets of numbers for the student to choose from. If the student cannot do it, easier numbers in the same story are allowed, then return to the original numbers; see `references/scaffold-calibration.md`.
 
 ## Relationship Complexity Before Number Size
 
