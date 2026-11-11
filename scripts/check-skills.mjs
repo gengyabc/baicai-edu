@@ -10,8 +10,8 @@ import { join, basename, extname } from 'node:path'
 
 const ROOT = new URL('..', import.meta.url).pathname
 const BUNDLES = ['learn', 'math-common', 'math-primary-low', 'math-primary-high', 'chinese-reading', 'english']
-// A band's shared math rules are loaded by name; the resolver still sees only
-// math-core / math-session candidates.
+// A band's shared math rules are loaded by name; the resolver selects the
+// unique math-low-* or math-high-* teaching implementation.
 const MATH_COMMON = 'math-common'
 const MATH_BANDS = ['math-primary-low', 'math-primary-high']
 const ENTRIES = new Set(['learn-start', 'learn', 'learn-feynman', 'learn-profile', 'learn-save', 'learn-clean'])
@@ -109,7 +109,12 @@ for (const bundle of BUNDLES) {
     if ('disableModelInvocation' in fm || 'userInvocable' in fm) {
       errors.push(`${file}: legacy camelCase invocation key`)
     }
-    skills.set(fm.name, { bundle, file, fm, text })
+    const previous = skills.get(fm.name)
+    if (previous) {
+      errors.push(`${file}: duplicate skill name "${fm.name}" (already registered by ${previous.file})`)
+    } else {
+      skills.set(fm.name, { bundle, file, fm, text })
+    }
 
     if (USER_ONLY.has(fm.name) && fm['disable-model-invocation'] !== 'true') {
       errors.push(`${file}: user-only entry must set disable-model-invocation: true`)
@@ -209,14 +214,6 @@ if (refErrors.length > 0) {
     const name = e.split('references/')[1]
     if (allRefFiles.has(name)) errors.splice(errors.indexOf(e), 1)
   }
-}
-
-// The subject is a real identity, not a skill name: lower- and upper-primary math
-// packages intentionally ship the same interface skill names, and each is loaded
-// from its own provider. Only the shared non-math names must stay unique.
-for (const [name, owners] of Object.entries(Object.groupBy([...skills.values()], ({ fm }) => fm.name))) {
-  const isMathInterface = /^math-(core|session|diagnose|practice|student-problem)$/.test(name)
-  if (owners.length > 1 && !isMathInterface) errors.push(`duplicate skill name "${name}"`)
 }
 
 for (const warning of warnings) console.warn(`warn  ${warning}`)

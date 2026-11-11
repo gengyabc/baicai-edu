@@ -15,7 +15,7 @@
 ## 决策
 
 1. 新增跨学科内部技能 `learn-read-image`（`user-invocable: false`），只在有图时加载；负责忠实转录、歧义标记、原图归档、转录记录与交回；不诊断、不代答、不产 `session_segment`。
-2. 数学特有的读图提示、核对事实与证据映射放进 `math-common` 的第四份契约 `handwritten-work-contract.md`；年级无关；两个 band 的 `math-core` 条件行先读契约再加载读取层，不建 band 本地指针。
+2. 数学特有的读图提示、核对事实与证据映射放进 `math-common` 的第四份契约 `handwritten-work-contract.md`；年级无关；两个 band 的 `math-low-core` / `math-high-core` 条件行先读契约再加载读取层，不建 band 本地指针。
    - 这是对 ADR-0001 决策 4（band 的对应 reference = 加载指针 + 本地增补）的有意例外：手写契约年级无关、没有本地增补，再放一个指针文件只会多一层空转。ADR-0001 对其余三份有本地差异的契约继续有效；共享文本仍不写 band 包名或跨包相对路径。
 3. 附件由当前学科 session 触发；路径 / `scan all` 仍由入口交 `learn-errors`，图片统一交给同一读取层；错题的诊断与 `error_history` 留在 `learn-errors`。
 4. 原图进 `raw`、转录进 `extracted`；内容哈希识别同一张图，同一张图只读第一次；原图是唯一忠实载体，不存 SVG。消息附件归档时在 `raw/` 建立一个**新的**原件并按最终名命名；已存在的 raw 原件不被覆盖、改写或删除，因为不替换任何文件，新副本不产生备份。

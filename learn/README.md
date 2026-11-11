@@ -35,7 +35,7 @@
 
 - `learn-core`：跨学科教学行为；年级默认、难度调整、费曼角色与白名单分别由其 references 定义。
 - `learn-data/references/session-lifecycle.md`：`/learn` 与 `/learn-feynman` 的唯一会话循环。模式切换沿用日志与 entry_point，不重开会话。
-- [教学解析](<skills/learn-data/references/teaching-resolver.md>)与[教学契约](<skills/learn-data/references/subject-contract.md>)：统一开始、初始化、目标分类、推荐和恢复；专门包仍按 `<subject>-session` / `<subject>-core` 定位，缺包采用同接口的通用路径。可选科目只在 `/learn-start` 科目表维护，其他目标可直接描述。
+- [教学解析](<skills/learn-data/references/teaching-resolver.md>)与[教学契约](<skills/learn-data/references/subject-contract.md>)：统一开始、初始化、目标分类、推荐和恢复；专门包按解析出的实际 core/session 技能名定位，缺包采用同接口的通用路径。可选科目只在 `/learn-start` 科目表维护，其他目标可直接描述。
 - `learn-data/references/session-schema.md`：每轮读取的日志与 segment 外壳。
 - `learn-data/references/profile-schema.md`：档案、记忆、状态、错题与里程碑模板，建档与 finalize 时读取；偏好键、水平、领域、标签和目标分类由学科包定义。
 - `learn-core/references/prestart-settings-interpretation.md`：个性化不得覆盖什么、隐私、用量与自评优先级。字段路径归 `profile-schema`；学科怎么用归学科包。
@@ -101,5 +101,5 @@ node scripts/install.mjs math-primary-high --profile web
 - 单独安装本包也能使用通用任务教学及五类支持；安装适用学科包后可使用专门教学，不自动重解释旧通用证据或热替换未完成任务。
 - 教育阶段、年级和情境可选；旧小学档案无需迁移，成人不强填小学年级。纯支持讨论可恢复；学生明确要求保存的中性计划与学科表现分开保存，仍走同一 finalize。
 - 设计与完整验收见[总体设计](<../docs/learn-support-design.md>)、[学习支持验收](<tests/learning-support-scenarios.md>)与[支持性交流回放](<tests/supportive-conversation-scenarios.md>)；静态检查与合成回放不代表真实模型教学、故障注入或纵向成效已验证。
-- 接入新学科：学科包提供 `<subject>-session` 与带「学科契约」节的 `<subject>-core`，再在 `learn-start` 的科目表登记；其他入口无需修改。同一学科可提供多个按年级段适配的包（数学即 `math-primary-low` 与 `math-primary-high`），由教学解析按 `supported_stages` 选一个，科目 id 不变。现有学科包有 `math-primary-low`、`math-primary-high`、`chinese-reading`、`english`。
+- 接入新学科：学科包提供 `<subject>-session` 与带「学科契约」节的 `<subject>-core`，再在 `learn-start` 的科目表登记；其他入口无需修改。同一学科可提供多个按年级段适配的包（数学即 `math-primary-low` 与 `math-primary-high`），由教学解析按明确年级选带（1–3 → low，4–6 → high，无明确年级回落 low），并用唯一技能名（`math-low-*` / `math-high-*`）载入和恢复，科目 id 不变。现有学科包有 `math-primary-low`、`math-primary-high`、`chinese-reading`、`english`。
 - `personal.interests` 是跨学科个性化字段，各学科 skill 都会读取；具体用法在学科包里。

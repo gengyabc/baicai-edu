@@ -6,7 +6,7 @@ Process-branch student copy (`ask_user_question` labels, stage menus, confirmati
 
 1. Read `language` from the shared base profile (`outputs/students/<id>/profile.json`).
 2. Normalize aliases: `zh` → `zh-CN`, `en` → `en`. Unknown or missing → `zh-CN`.
-3. Load catalogs in order until the key resolves; `<subject>-core`'s base directory and `learn-data`'s base directory give the roots:
+3. Load catalogs in order until the key resolves; the resolved `teaching.core_skill`'s base directory and `learn-data`'s base directory give the roots:
    - `references/locales/<locale>.json` of the current subject core skill (if a subject owns the string)
    - `references/locales/<locale>.json` of `learn-data`
    - the same two paths for fallback locale `zh-CN`

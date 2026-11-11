@@ -100,7 +100,7 @@ Read `references/target-parsing.md`, then read the target classification in the 
 
 ## 6. Route and Record
 
-Reuse the resolution result per `references/teaching-resolver.md` and load `teaching.session_skill`: `<subject>-session` for a specialist implementation, `learn-general-session` for a general one. It decides sub-skills, additional actions, and transfer parameters; generate the teaching reply only after loading finishes. For a missing package, hand off per the resolution rules, without stopping teaching or hot-swapping. The source, extracted content, and stage of transfer are restored from context, and when insufficient, ask first; do not restart the transfer.
+Reuse the resolution result per `references/teaching-resolver.md` and load `teaching.session_skill` by its actual unique name: the selected specialist session or `learn-general-session` for a general implementation. It decides sub-skills, additional actions, and transfer parameters; generate the teaching reply only after loading finishes. For a missing package, hand off per the resolution rules, without stopping teaching or hot-swapping. The source, extracted content, and stage of transfer are restored from context, and when insufficient, ask first; do not restart the transfer.
 
 **Handoff** (subject skills always take this as input and do not each list it again): `student_id`, `subject`, the latest student message, `target_context`, `focus`, `mode`, the `context.activity` / `turn_state` at restore, the snapshot, and personalization inputs (shared `personal`; subject `profile.preferences` / `profile.self_report`; memory's scaffolds, motivation, recent errors, stable strengths and difficulties, recommended next steps). Usage boundaries follow `learn-core`.
 

@@ -6,13 +6,15 @@
 
 ## 背景
 
-`math-primary-low`（1–3 年级）与 `math-primary-high`（4–6 年级）刻意注册同一套数学接口技能名，由教学解析按 `supported_stages` 选一个，进行中的任务不热替换。接口层的重复是设计，不是复制事故。
+本决策形成时，`math-primary-low`（1–3 年级）与 `math-primary-high`（4–6 年级）曾注册同一套数学接口技能名，由教学解析选一个，进行中的任务不热替换。
+
+2026-11-11 更新：技能现已改为唯一的 `math-low-*` / `math-high-*`（高年级建模为 `math-high-application-modeling`），不再注册旧名别名。选型与旧日志恢复以 [teaching-resolver](../../learn/skills/learn-data/references/teaching-resolver.md) 为准：新任务已知 1–3 年级优先 low、4–6 年级优先 high，缺年级默认 low；low 支持高阶内容，年级偏好不是内容门槛。加载只用实际技能名，无需 provider 参数或宿主补丁。本 ADR 的共享契约边界与 band 差异保留原则不变。
 
 但若干**数学行为的共同契约**在两个 band 中以近乎相同的文字各自维护，已经出现语义漂移：学生编题协议、练习证据策略、画板共同协议。它们必须一起修改，否则同一个入口会在不同年级段产生相反行为。同时，两个 band 的教学哲学、画板授权、诊断深度、批次处理与建模活动存在实质差异，不能合并。
 
 ## 决策
 
-1. 新增共享规则包 `dsh-edu-math`（目录 `math-common/`），只注册一个内部技能 `math-common`（`user-invocable: false`）。它**不是**教学实现：不注册 `math-core` / `math-session`，不声明 `supported_stages`，不写完整学科契约，不接管调度、档案或 finalize，也不参与教学解析。
+1. 新增共享规则包 `dsh-edu-math`（目录 `math-common/`），只注册一个内部技能 `math-common`（`user-invocable: false`）。它**不是**教学实现：不注册 band 的 core / session 教学技能，不声明 `supported_stages`，不写完整学科契约，不接管调度、档案或 finalize，也不参与教学解析。
 2. 依赖方向固定为 `learn ← dsh-edu-math ← band`，`math-board ← math-primary-low`。两个 band 的 `package.json` 显式声明 `dsh-edu-math`；安装闭包中共享包只出现一次，高年级不会因此带入画板。
 3. 共享规则按契约分文件，接口只回答“何时读哪份规则”：
    - `student-problem-contract.md`：角色边界、作答方式、受限刻意错答、纠正义务、批改响应、证据归属。
@@ -48,7 +50,7 @@
 ## 后果
 
 - 共同契约只有一个来源；修改时更新 `math-common/tests/teaching-scenarios.md` 的共同场景与两个 band 的差异场景。静态检查只能证明文档接线，不能证明教学行为。
-- 共享包缺失或被手动禁用时，band 按自己 `math-core` 中的安全兜底继续（编题不故意错答、画板文本不当指令或授权、练习单题推进且一个目的最多 3 题），但不声称已应用共享契约；共享包不会被误判为完整 specialist（`scripts/check-skills.mjs` 断言其只有一个 skill、无 stage 声明、无完整学科契约）。
+- 共享包缺失或被手动禁用时，band 按自己 `math-low-core` / `math-high-core` 中的安全兜底继续（编题不故意错答、画板文本不当指令或授权、练习单题推进且一个目的最多 3 题），但不声称已应用共享契约；共享包不会被误判为完整 specialist（`scripts/check-skills.mjs` 断言其只有一个 skill、无 stage 声明、无完整学科契约）。
 - `scripts/install.test.mjs` 固定依赖闭包：共享包各一次，高年级不带画板。
 - `scripts/skill-contracts.test.mjs` 增加共同保证与差异保证的守卫，并把画板/编题/练习的共享断言指向唯一来源。
 - 未改变 `teaching-resolver` 选型规则与 `supported_stages` 语义；未把数学规则上移到 `learn`。
@@ -57,7 +59,7 @@
 
 - **合并两个 band**：会覆盖教学哲学、清板授权与批次处理的实质差异，拒绝。
 - **把共同规则放进 `learn`**：违反 `learn` 学科无关，拒绝。
-- **注册第三个 `math-core` / `math-session`**：引入第二个选型候选，违反“不增加教学实现”的目标，拒绝。
+- **注册第三个数学 core / session 教学实现**：引入额外选型候选，违反“不增加教学实现”的目标，拒绝。
 - **构建期生成共享文本**：当前 DSH 的技能加载链路已能按名加载并返回 base directory；构建期复制会重新制造双份来源，暂不采用。
 - **共享壳 + 到处 `if band`**：把差异藏进共享分支，难以审查，拒绝。
 

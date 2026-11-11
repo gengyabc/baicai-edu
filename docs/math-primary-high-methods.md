@@ -1,6 +1,6 @@
 # Grade 4–6 method provenance (`math-primary-high`)
 
-Maintainer background only — **teaching material, not installed skills**. Runtime method choice and steps live in the installed package: [`math-teaching-core.md`](../math-primary-high/skills/math-core/references/math-teaching-core.md), plus leaf skills and the other `math-core` references listed below. `math-primary-high/package.json` → `files` ships only `cordis.patch.yml`, `skills`, and `README.md`.
+Maintainer background only — **teaching material, not installed skills**. Runtime method choice and steps live in the installed package: [`math-teaching-core.md`](../math-primary-high/skills/math-high-core/references/math-teaching-core.md), plus leaf skills and the other `math-high-core` references listed below. `math-primary-high/package.json` → `files` ships only `cordis.patch.yml`, `skills`, and `README.md`.
 
 Former module-style method skills were retired from the package tree so a single skill does not carry two conflicting control-flow rules for the same act. This page keeps the mapping from those method names to their installed homes.
 
@@ -15,18 +15,18 @@ Former module-style method skills were retired from the package tree so a single
 | `cgi-algebraic-thinking` (proposed, not created as a skill) | `math-teaching-core.md` (relational thinking and generalization); `references/early-algebra.md` | Equality, relational strategies, generalized arithmetic, variables, functional thinking; sources in [`cgi-early-algebra.md`](cgi-early-algebra.md) |
 | `explicit-instruction-math` | `math-teaching-core.md` (explicit); `scaffold-calibration.md` | Worked example → faded step → independent check when prerequisites are weak |
 | `formative-metacognition-math` | `math-teaching-core.md` (formative); scaffold notes | Elicit thinking → one actionable feedback point → child self-assessment |
-| `mathematical-modeling` | leaf `math-application-modeling` | Situation → assumptions → representation → solve → interpret and validate |
+| `mathematical-modeling` | leaf `math-high-application-modeling` | Situation → assumptions → representation → solve → interpret and validate |
 | `upper-primary-math-knowledge-map` | `references/topic-map.md` | Concept ids, prerequisite edges, misconception probes |
 | `adaptive-math-task-generator` | `references/problem-design.md` | Verified task bundles with a child view and an adult key |
 | `math-learning-progress-tracker` | `references/math-segment-fields.md` | Evidence per activity with independence and support; no aggregated score |
 | `handwritten-math-reader` | shared entry `learn-errors` | Faithful reading of handwritten photos, scans, or ink |
-| `upper-primary-math-coach` | `math-session` + `math-core` rules | Knowledge point, difficulty, hints, and method — one change at a time |
+| `upper-primary-math-coach` | `math-high-session` + `math-high-core` rules | Knowledge point, difficulty, hints, and method — one change at a time |
 
-`references/learn-act-allocation.md` chooses the activity owner; `math-teaching-core.md` chooses the teaching method independently. Interface skill names (`math-core`, `math-session`, `math-diagnose`, `math-practice`, `math-student-problem`) match the lower-primary package on purpose so the teaching resolver can select one math implementation per session.
+`references/learn-act-allocation.md` chooses the activity owner; `math-teaching-core.md` chooses the teaching method independently. This package registers unique `math-high-*` skill names; the lower-primary package uses `math-low-*`. The shared teaching resolver selects actual core/session names for a new task and preserves the resolved band for an unfinished task.
 
 ## Adaptive design constraints
 
-Packaging-era notes (old name `upper-primary-math-coach` → today's `math-session` and `math-core`). Implementation follows [`adaptive-thresholds.md`](../math-primary-high/skills/math-core/references/adaptive-thresholds.md) and [`learn-act-allocation.md`](../math-primary-high/skills/math-core/references/learn-act-allocation.md). Thresholds are configurable defaults, not claims of empirical calibration.
+Packaging-era notes (old name `upper-primary-math-coach` → today's `math-high-session` and `math-high-core`). Implementation follows [`adaptive-thresholds.md`](../math-primary-high/skills/math-high-core/references/adaptive-thresholds.md) and [`learn-act-allocation.md`](../math-primary-high/skills/math-high-core/references/learn-act-allocation.md). Thresholds are configurable defaults, not claims of empirical calibration.
 
 | Mechanism | Rule |
 |---|---|
@@ -46,7 +46,7 @@ Additional constraints still in force:
 
 ```mermaid
 flowchart TD
-    A["math-session + math-core<br/>four lightweight adaptive rule groups"]
+    A["math-high-session + math-high-core<br/>four lightweight adaptive rule groups"]
     A --> B["topic map"]
     A --> C["methods in math-teaching-core"]
     A --> D["problem design"]
@@ -57,7 +57,7 @@ flowchart TD
 
 ## Task bundle illustration
 
-Operational multi-part and verification rules are in [`problem-design.md`](../math-primary-high/skills/math-core/references/problem-design.md). Example shape for maintainers:
+Operational multi-part and verification rules are in [`problem-design.md`](../math-primary-high/skills/math-high-core/references/problem-design.md). Example shape for maintainers:
 
 ```yaml
 task_bundle:

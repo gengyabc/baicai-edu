@@ -21,6 +21,30 @@ test('one resolver keeps real identity and selects a complete applicable teachin
   assert.match(ref('subject-contract'), /teaching-resolver\.md/)
 })
 
+test('new mathematics tasks prefer explicit grade over band fit and default to low without grade', () => {
+  const resolver = ref('teaching-resolver')
+  const mathematics = resolver.split('## Mathematics band selection')[1]?.split(/\n## /)[0] ?? ''
+  hasAll(mathematics.replaceAll('`', ''), ['For a new mathematics task',
+    'an explicit grade takes precedence over overlapping supported_stages',
+    'grades 1–3 prefer math-low-core / math-low-session',
+    'grades 4–6 prefer math-high-core / math-high-session',
+    'Without an explicit grade, prefer math-low-core / math-low-session'])
+  // Grade routing is new-task selection, never permission to replace an active owner.
+  assert.match(resolver, /no hot replacement/i)
+})
+
+test('mathematics restore preserves the original band and asks when legacy provenance is missing', () => {
+  const resolver = ref('teaching-resolver')
+  const legacy = resolver.split('### Legacy mathematics restore')[1]?.split(/\n## /)[0] ?? ''
+  hasAll(legacy, ['unique skill names keeps those names',
+    'explicit package/provider metadata or reliable original loading provenance',
+    'turn_state.active_leaf', 'synchronize the session pointer',
+    'Keep the session id, scope, materials, pending question, and all historical evidence',
+    'do not rewrite old segments', "student's current grade",
+    'When the old band cannot be established, ask which band to continue with before teaching',
+    'migration inputs only, not loadable skills'])
+})
+
 test('bundled general teaching satisfies the same contract without claiming specialist mastery', () => {
   const core = read('learn/skills/learn-general-core/SKILL.md')
   for (const role of ['Target classification', 'Grade defaults', 'Profile fields', 'Diagnosis rules', 'Learning recommendation']) assert.ok(core.includes(role), role)

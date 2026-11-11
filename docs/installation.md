@@ -54,7 +54,7 @@ node scripts/install.mjs math-primary-low --profile web --dry-run
 dsh plugin --profile web add link:<checkout>/learn link:<checkout>/math-common link:<checkout>/math-board link:<checkout>/math-primary-low [link:<checkout>/math-primary-high]
 ```
 
-每个 bundle 成为 profile 的顶层依赖，由 DSH 原生处理安装与启用。各包仍只注册自己的技能或插件；学科 patch 不复制共享规则，不重复插入画板。`all` 只是三个已交付学科（数学两个年级段包）的快捷选择，不扫描实验目录为新学科。两个数学包互不依赖：科目 id 都是 `math`，由教学解析按学生阶段选择其中一个（见 `learn-data/references/teaching-resolver.md`），已安装但未被选中的包不影响正在进行的任务。共享数学契约由 `dsh-edu-math` 提供，闭包中只出现一次；它不含 `math-core` / `math-session`，不会被解析成第三个数学实现。
+每个 bundle 成为 profile 的顶层依赖，由 DSH 原生处理安装与启用。各包仍只注册自己的技能或插件；学科 patch 不复制共享规则，不重复插入画板。`all` 只是三个已交付学科（数学两个年级段包）的快捷选择，不扫描实验目录为新学科。两个数学包互不依赖：科目 id 都是 `math`，使用唯一技能名 `math-low-*` / `math-high-*`，由[教学解析](../learn/skills/learn-data/references/teaching-resolver.md)统一选择：已知 1–3 年级优先 low、4–6 年级优先 high，缺年级默认 low；优先级不是内容门槛，low 也可教高阶内容，已安装但未被选中的包不影响正在进行的任务。共享数学契约由 `dsh-edu-math` 提供，闭包中只出现一次；它不含 band 的 core / session 教学技能，不会被解析成第三个数学实现。
 
 ## 为什么不能只写 dependencies
 
@@ -62,7 +62,7 @@ dsh plugin --profile web add link:<checkout>/learn link:<checkout>/math-common l
 
 因此：
 
-- 只装了高年级包时，低年级学生会由解析回退到通用任务教学，而不是拒绝继续；反之亦然。想让两个年级段都可用，需分别安装或使用 `all`。
+- 首选年级段包不可用时，解析可选另一个完整且兼容的数学 band；仍不适配时回退通用任务教学，而不是拒绝继续。想让两个年级段的首选实现都可用，需分别安装或使用 `all`。
 - `dsh plugin ... add link:<checkout>/math-primary-low` **不是完整数学安装入口**：pnpm 的 `link:` 本身不安装目标目录的间接依赖，DSH 也不递归启用它们。
 - 改用 `file:` 让 pnpm 安装间接依赖，仍不能替代 bundle 启用。
 - 推荐使用上面的统一入口；手工安装时必须显式列出依赖闭包中的所有包。

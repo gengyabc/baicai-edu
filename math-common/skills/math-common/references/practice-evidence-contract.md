@@ -1,6 +1,6 @@
 # Practice Evidence Contract
 
-`math-practice` executes and returns; this contract unifies purpose, problem count, and adjustment across the primary math bands. The current band's supplement names its problem design, methods, scaffolds, and any batch or grade-band additions.
+The current band's practice skill executes and returns; this contract unifies purpose, problem count, and adjustment across the primary math bands. The current band's supplement names its problem design, methods, scaffolds, and any batch or grade-band additions.
 
 ## Choose Only the Current Purpose
 

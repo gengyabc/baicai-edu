@@ -35,7 +35,7 @@ Each teaching turn needs only this file: the structure of the log and segments. 
 
 ## Teaching implementation and support state
 
-A new context adds `scope_id` (the stable identity of the selected target) and `teaching`; the result and the defaults for old logs follow only `references/teaching-resolver.md`. A new segment also carries the same scope_id/teaching; an old segment without these fields is treated as specialist and is not migrated or rewritten. `activity` additionally allows `support`: with pure support, focus and target_context may be null and turn_state does not fabricate a current question; with a real task, support layers on top and keeps the original activity, material, mode, and pending question.
+A new context adds `scope_id` (the stable identity of the selected target) and `teaching`; its core/session fields store actual unique skill names, not just a subject-derived alias. The result and the defaults for old logs follow only `references/teaching-resolver.md`, including legacy mathematics-name restore. A new segment also carries the same scope_id/teaching; an old segment without these fields is treated as specialist and is not migrated or rewritten. `activity` additionally allows `support`: with pure support, focus and target_context may be null and turn_state does not fabricate a current question; with a real task, support layers on top and keeps the original activity, material, mode, and pending question.
 
 Optional `context.learning_support`:
 

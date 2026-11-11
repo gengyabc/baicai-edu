@@ -26,4 +26,4 @@ Loading this skill returns its base directory. Read only the one matching refere
 - Shared text never names a band package, band file, or relative path; where local detail is needed it says "the current provider's rule", and the band's supplement names its own file.
 - Stage fit, session ownership, clear authorization, method selection, diagnostic depth, batch tracking, and modeling work stay local to the band.
 - The handwriting contract supplies reading hints and deterministic step-check facts only; it assigns no error type, label, mastery, or next move, and names no grade.
-- If this skill cannot be loaded or is disabled, the band continues under the safe fallback in its own `math-core` and does not claim the shared contract was applied. This skill is never a math specialist and is never selected by the teaching resolver.
+- If this skill cannot be loaded or is disabled, the band continues under the safe fallback in its own core skill and does not claim the shared contract was applied. This skill is never a math specialist and is never selected by the teaching resolver.

@@ -1,6 +1,6 @@
 # 教学行为对照场景
 
-用于人工审阅与模型回放，不是已执行的自动化行为测试。先准备有效学生快照；每次只提交当前一条学生消息，检查回复与拟记录证据，再提交后续回应。判定语义，不要求固定话术。支架强度见[支架校准](../skills/math-core/references/scaffold-calibration.md)。
+用于人工审阅与模型回放，不是已执行的自动化行为测试。先准备有效学生快照；每次只提交当前一条学生消息，检查回复与拟记录证据，再提交后续回应。判定语义，不要求固定话术。支架强度见[支架校准](../skills/math-low-core/references/scaffold-calibration.md)。
 
 ## 数量关系与策略
 
@@ -61,7 +61,7 @@
 
 ## 等号与关系性思维
 
-按[等号与关系性思维](../skills/math-core/references/relational-thinking.md)回放；以下为待回放场景。
+按[等号与关系性思维](../skills/math-low-core/references/relational-thinking.md)回放；以下为待回放场景。
 
 | 场景与输入 | 应观察的行为 | 失败信号 |
 |---|---|---|
@@ -138,7 +138,7 @@
 
 ## 任务边界与自动清空
 
-按[唯一任务边界规则](../skills/math-core/references/board-task-boundary.md)回放。除学生话语与已发送材料外不给 AI 画板状态；工具与客户端事件分别注入，不能用工具成功模拟客户端确认。以下仍是待回放场景，不是行为通过记录。
+按[唯一任务边界规则](../skills/math-low-core/references/board-task-boundary.md)回放。除学生话语与已发送材料外不给 AI 画板状态；工具与客户端事件分别注入，不能用工具成功模拟客户端确认。以下仍是待回放场景，不是行为通过记录。
 
 | 场景与输入 | 应观察的行为 | 失败信号 |
 |---|---|---|

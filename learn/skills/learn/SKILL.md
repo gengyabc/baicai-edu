@@ -10,13 +10,13 @@ Load `learn-core` and `learn-data` if not already loaded, then read and execute 
 
 ## Choose a Target
 
-Resolve the target using the lifecycle's Resolve Target (`references/target-parsing.md` in `learn-data`, plus the target classification in the `<subject>-core` subject contract). This entry adds one rule: after an empty-argument `/learn`, if the student's first reply gives a topic, material, or path, adopt it as the target; only replies such as "OK" or "let's start" fall back to choosing from the profile.
+Resolve the target using the lifecycle's Resolve Target (`references/target-parsing.md` in `learn-data`, plus the target classification in the resolved `teaching.core_skill` subject contract). This entry adds one rule: after an empty-argument `/learn`, if the student's first reply gives a topic, material, or path, adopt it as the target; only replies such as "OK" or "let's start" fall back to choosing from the profile.
 
 When the student does not know what to learn, asks what to learn next, or wants to switch but has no specific target, load `learn-recommend` through the lifecycle recommendation gate. Reuse the current subject records to produce candidates, teach only after one is chosen, and do not directly apply the first profile item.
 
 ## Subject Routing
 
-Reuse teaching per `references/teaching-resolver.md` in `learn-data`; Route And Record loads `teaching.session_skill` (`<subject>-session` on the specialist path, general-task teaching when the package is missing or does not fit). Target classification also reads that implementation's core contract; do not guess package names. Ordinary teaching, additional actions, and transfer recovery all enter the current teaching owner first; general support does not create a separate loop.
+Reuse teaching per `references/teaching-resolver.md` in `learn-data`; Route And Record loads `teaching.session_skill` (the selected specialist session or general-task teaching when the package is missing or does not fit). Target classification also reads that implementation's core contract; do not guess package names. Ordinary teaching, additional actions, and transfer recovery all enter the current teaching owner first; general support does not create a separate loop.
 
 ## Continue
 
