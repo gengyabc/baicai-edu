@@ -6,8 +6,8 @@
 
 | 目录 | 包名 | 作用 |
 |---|---|---|
-| [`learn/`](./learn/README.md) | `dsh-edu-learn` | 共享入口（`/learn-start` `/learn` `/learn-feynman` `/learn-profile` `/learn-save` `/learn-clean`）、教学底座、学生数据协议、错题处理 |
-| [`math-common/`](./math-common/README.md) | `dsh-edu-math` | 两个数学 band 共享的数学契约（学生编题、练习证据、画板协议）；只给规则，不参与教学选型 |
+| [`learn/`](./learn/README.md) | `dsh-edu-learn` | 共享入口（`/learn-start` `/learn` `/learn-feynman` `/learn-profile` `/learn-save` `/learn-clean`）、教学底座、学生数据协议、错题处理、图片/手写读取 |
+| [`math-common/`](./math-common/README.md) | `dsh-edu-math` | 两个数学 band 共享的数学契约（学生编题、练习证据、画板协议、手写读取）；只给规则，不参与教学选型 |
 | [`math-primary-low/`](./math-primary-low/README.md) | `dsh-edu-math-primary-low` | 小学低年级为主的 CGI 数学（1–3 年级为主，不限制探究高年级内容）：一回合教学、策略诊断、分层练习、学生出题考 AI |
 | [`math-primary-high/`](./math-primary-high/README.md) | `dsh-edu-math-primary-high` | 小学高年级多方法数学（4–6 年级为主）：一回合教学、策略诊断、分层练习、学生出题考 AI、真实情境建模；方法步骤随技能安装，背景材料见 [methods](<docs/math-primary-high-methods.md>) |
 | [`chinese-reading/`](./chinese-reading/README.md) | `dsh-edu-chinese-reading` | 完整语文：阅读、写作、读写迁移、出题、评改、经验桥接 |

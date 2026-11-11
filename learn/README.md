@@ -23,7 +23,8 @@
 
 - `learn-core`：中文语气、以学生为中心、年级适配、难度调整、按需确认、引导无响应、结束信号、人格、费曼规则。
 - `learn-data`：`outputs/students/` JSON 数据协议、快照、建档、写回、finalize。
-- `learn-errors`：用户投放文件解析、`data/.../raw/` 只读、备份、extracted 写入、error_history 更新。
+- `learn-errors`：用户投放文件解析、`data/.../raw/` 只读、备份、extracted 写入、error_history 更新；图片读取交 `learn-read-image`。
+- `learn-read-image`：用户提供的图片（手写、扫描、截图、数字墨水）的忠实转录、原图归档、`extracted` 读取记录与交回；只在有图时加载，不诊断、不写档案。
 - `learn-recommend`：根据当前学科记录推荐具体小目标，标明首选与当前界面语言的理由；内容、难度与排序由教学契约决定，通用路径可按学生请求探索跨领域目标。
 - `learn-general-core` / `learn-general-session`：通用任务契约与实际教学；真实科目身份不变，记录不自动升级为专门等级。
 - `learn-support`：价值、信心、自主性、学习策略、持续学习的按需方法；自然回应、倾听、纠正、普通话题、公开邀请、拒绝与退出只由 `references/supportive-conversation.md` 维护，定位说明的时机归 `learn-core`。理论依据与阶段/情境参考按需读取，不增加固定动机问卷或第二教学调度者。
@@ -40,6 +41,7 @@
 - `learn-core/references/prestart-settings-interpretation.md`：个性化不得覆盖什么、隐私、用量与自评优先级。字段路径归 `profile-schema`；学科怎么用归学科包。
 - `learn-core/references/difficulty-adjustment.md`：学生要求降低或提高难度时的判定、当轮调整、日志记录与后续沿用；存储字段归 `profile-schema`。
 - `learn-data/references/finalize-session.md`：统一保存流程；保留策略归 `session-retention.md`。
+- `learn-read-image/references/reading.md`、`record.md`、`handoff.md`：图片读取、原图与转录记录、交回字段的唯一正文；触发条件由 `learn-core` 的条件行与 `learn-errors` 的图片分支维护，读取层本身不诊断。
 - 学科 references：方法、量规、标签与题型的唯一正文；学科 SKILL 保留分流、执行步骤和独有输出。
 
 验证：`node scripts/check-skills.mjs`；协议回归检查：`node --test scripts/*.test.mjs`。这些是静态检查，不替代真实对话验证。

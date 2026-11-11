@@ -196,7 +196,7 @@ test('stable public and subject interfaces remain installed without a bridge ski
   // installed interface set counts those names once.
   assert.deepEqual([...new Set(skills.map(({ name }) => name))].sort(), [
     'learn-start', 'learn', 'learn-feynman', 'learn-profile', 'learn-save', 'learn-clean', 'learn-core', 'learn-data', 'learn-errors', 'learn-recommend',
-    'learn-general-core', 'learn-general-session', 'learn-support',
+    'learn-general-core', 'learn-general-session', 'learn-support', 'learn-read-image',
     'math-common', 'math-core', 'math-session', 'math-diagnose', 'math-practice', 'math-student-problem',
     'math-application-modeling',
     'chinese-core', 'chinese-session', 'chinese-reading-session', 'chinese-writing-session',
@@ -1251,24 +1251,62 @@ test('shared math contract is a rule source, never a teaching implementation', (
 test('shared math contract replay scenarios live in one checklist', () => {
   const scenarios = text('math-common/tests/teaching-scenarios.md')
   for (const input of ['只批改「对」或「一样」', '故意错答', '费曼模式提出错误想法',
-    '题量上限', '每个图案代表 2', '两份修改记录']) {
+    '题量上限', '每个图案代表 2', '两份修改记录', '不做诊断', 'SVG']) {
     assert.ok(scenarios.includes(input), input)
   }
 })
 
 test('shared math interface returns one contract at a time and leaves bands their differences', () => {
-  for (const contract of ['student-problem-contract', 'practice-evidence-contract', 'board-contract']) {
+  for (const contract of ['student-problem-contract', 'practice-evidence-contract', 'board-contract',
+    'handwritten-work-contract']) {
     assert.ok(sharedMathSkill.includes(`references/${contract}.md`), contract)
     assert.ok(existsSync(join(root, sharedMathRoot, 'references', `${contract}.md`)), contract)
   }
   assert.match(sharedMathSkill, /returns its base directory/)
-  assert.match(sharedMathSkill, /do not pre-load all three/)
+  assert.match(sharedMathSkill, /one matching reference/i)
   assert.match(sharedMathSkill, /the current provider's rule/)
   for (const local of ['Clear authorization', 'stage fit', 'method selection', 'batch tracking']) {
     assert.ok(sharedMathSkill.includes(local), local)
   }
   // The interface must not grow a method / grade / board / batch switch matrix.
   assert.doesNotMatch(sharedMathSkill, /\bCGI\b|Pólya|CPA|grade band|feynman only/i)
+})
+
+test('handwritten image reading is a learn-level layer with math hints on the band side', () => {
+  const reader = text(skillPath('learn', 'learn-read-image'))
+  assert.match(reader, /^---\nname: learn-read-image\n/)
+  assert.match(reader, /user-invocable: false/)
+  assert.match(reader, /no `session_segment`/)
+  assert.match(reader, /no diagnosis/)
+  for (const reference of ['reading', 'record', 'handoff']) {
+    assert.ok(reader.includes(`references/${reference}.md`), reference)
+  }
+  const reading = text('learn/skills/learn-read-image/references/reading.md')
+  const record = text('learn/skills/learn-read-image/references/record.md')
+  const handoff = text('learn/skills/learn-read-image/references/handoff.md')
+  hasAll(reading, ['ambiguities', 'unreadable', 'LaTeX', 'printed', 'ink', 'confidence'])
+  hasAll(record, ['content_hash', 'sha256', 'raw', 'extracted', 'first reading', 'new original', 'archived: false'])
+  hasAll(handoff, ['reading_record_path', 'read_status', 'pending_question', 'observed_work', 'archived'])
+  assert.match(record, /Never store a model drawing or SVG/i)
+  assert.match(handoff, /archived/i)
+  assert.match(handoff, /owner/i)
+  assert.doesNotMatch(record, /tell the student/i)
+  assert.doesNotMatch(reading + record + handoff, /error_history|error_type|confirmed_skills/)
+  assert.match(text(skillPath('learn', 'learn-core')), /learn-read-image/)
+  const errors = text(skillPath('learn', 'learn-errors'))
+  assert.match(errors, /learn-read-image/)
+  assert.match(errors, /error_history/)
+  assert.match(errors, /subject core[\s\S]{0,160}image-reading condition/i)
+  for (const band of ['math-primary-low', 'math-primary-high']) {
+    const bandCore = text(skillPath(band, 'math-core'))
+    assert.match(bandCore, /handwritten-work contract[\s\S]{0,160}`learn-read-image`/, band)
+    assert.match(bandCore, /If `math-common` cannot be loaded/, band)
+  }
+  const contract = text(`${sharedMathRoot}/references/handwritten-work-contract.md`)
+  hasAll(contract, ['reading hints', 'step-check', 'no diagnosis', 'original'])
+  assert.match(contract, /Do not store a model drawing or SVG/i)
+  assert.ok(existsSync(join(root, 'docs/adr/0002-handwritten-image-reading.md')))
+  assert.ok(existsSync(join(root, 'learn/tests/image-reading-scenarios.md')))
 })
 
 // ---------------------------------------------------------------------------

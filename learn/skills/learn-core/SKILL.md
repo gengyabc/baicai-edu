@@ -19,6 +19,7 @@ Before teaching, read `references/pedagogy-core.md` and advance one small goal a
 | Using name, grade, interests, preferences, easy/hard topics, or experiences | `references/prestart-settings-interpretation.md` |
 | The student mentions self-harm, being hurt, being bullied, being in danger, or not wanting to live | `references/llm-safety-boundaries.md` |
 | Explicitly raises difficulties about value, confidence, autonomous choice, learning strategy, sustained learning, or practical conditions such as time/resources, or there are credible cues needing minimal clarification; includes not wanting to learn, being told to learn, or wanting to chat first | Load `learn-support`, handled by the lifecycle support gate; for communication methods read its `references/supportive-conversation.md`. Effective learning is not interrupted and no fixed questionnaire is used; ending takes priority; low motivation is not inferred from short answers, a single error, or the number of revisions |
+| A message carries an image (photo, scan, screenshot, digital ink) | Load `learn-read-image`; the current turn owner asks its one pending question, then continues |
 
 ## Positioning and Non-Manipulation Principles
 

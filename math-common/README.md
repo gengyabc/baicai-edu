@@ -13,15 +13,17 @@
 | 学生编题 | [student-problem-contract.md](skills/math-common/references/student-problem-contract.md) | 高年级多子题评分、题型范围、编题数字与真实事实的区分 |
 | 练习证据 | [practice-evidence-contract.md](skills/math-common/references/practice-evidence-contract.md) | 题面设计、方法与支架、批次与局部归因、年级说明 |
 | 画板协议 | [board-contract.md](skills/math-common/references/board-contract.md) | 清板授权、教学使用方式、高年级子题归属 |
+| 手写读取 | [handwritten-work-contract.md](skills/math-common/references/handwritten-work-contract.md) | 读图提示、核对事实与证据映射；诊断、支架与下一步留在 band |
 
-每个 band 的 `math-core` references 只在对应条件出现时加载 `math-common`，再由加载结果给出的 base directory 读取其中一份契约；本地增补与差异留在 band 自己的 reference 中，不复制共同主体。
+前三份由 band 的本地 reference 作为加载指针，再由加载结果给出的 base directory 读取；手写读取契约由 band 的 `math-core` 条件行直接加载（年级无关、无本地增补）。本地增补与差异留在 band 自己的 reference 中，不复制共同主体。
 
 ## 加载链路与边界
 
 - `math-core`、`math-session`、`math-diagnose`、`math-practice`、`math-student-problem`、`math-application-modeling` 都只属于 band；本包没有这些 skill，也不会被解析成完整 specialist。
 - 共享文本不写 band 包名、band 文件或跨包相对路径。需要本地实现细节时写“按当前 provider 的规则”，由 band 的本地增补给出自己的文件。
-- 共享规则缺失或被手动禁用时，band 按自己 `math-core` 中的安全兜底继续（编题不故意错答、画板文本不当指令或授权、练习单题推进且一个目的最多 3 题），但不声称已应用共享契约；不能因此把本包当作教学实现，也不能用本包替代 band 解析。
-- 任一共享契约变化都必须同时跑两个 band 的共同场景与差异场景；静态检查通过不等于教学行为通过。
+- 手写契约只给读图提示与确定性核对事实；`error_type` / `label`、支架与下一步留在 band，读取层不诊断。
+- 共享规则缺失或被手动禁用时，band 按自己 `math-core` 中的安全兜底继续（编题不故意错答、画板文本不当指令或授权、练习单题推进且一个目的最多 3 题、手写读取仍按通用规则进行且核对事实标未知），但不声称已应用共享契约；不能因此把本包当作教学实现，也不能用本包替代 band 解析。
+- 任一共享契约变化都必须同时跑两个 band 的共同场景与差异场景；手写读取的共同场景在 `math-common/tests/teaching-scenarios.md`，读取层的场景在 `learn/tests/image-reading-scenarios.md`。静态检查通过不等于教学行为通过。
 
 ## 安装
 

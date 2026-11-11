@@ -6,7 +6,7 @@
 
 - 两个包提供同一套接口技能（`math-core`、`math-session`、`math-diagnose`、`math-practice`、`math-student-problem`），由统一教学解析按学生阶段选择其一。同一场进行中的任务不会因为另一个包安装而热替换；`supported_stages` 只声明本包适配的默认表达与流程。
 - 本包的 `math-core`、`math-diagnose`、`math-practice` 等写法以高年级的认知与表达为默认，不等于低年级包的复制；两者的差异只在各自 `references/` 中维护。
-- 学生编题、练习证据策略与画板协议的共同规则由 [`math-common`](../math-common/README.md) 维护唯一一份，本包在对应分支出现时按名加载。本包保留并在本地 reference 中显式维护高年级差异：任务选方法、直接计算与显式教学开场、批次与局部归因、不自动清板、建模 leaf。共享包不参与教学选型，也不替代本包的 `math-core` / `math-session`。
+- 学生编题、练习证据策略、画板协议与手写读取的共同规则由 [`math-common`](../math-common/README.md) 维护唯一一份，本包在对应分支出现时按名加载。手写读取契约由本包 `math-core` 条件行直接加载（年级无关、无本地增补），先读契约再加载 `learn-read-image`。本包保留并在本地 reference 中显式维护高年级差异：任务选方法、直接计算与显式教学开场、批次与局部归因、不自动清板、建模 leaf。共享包不参与教学选型，也不替代本包的 `math-core` / `math-session`。
 - 高年级使用画板、需要图示或补基础，都不意味着应切换低年级包。学科判断先修缺口、支架及适配理由；learn 统一承接流程选择、确认、保存与新任务解析。低年级包按已确认的学生阶段适配，不按一次答错或工具需求推荐。
 - CGI 保留关注学生真实策略的作用，不再统领所有教学。概念用 CPA，程序可直接用显式教学，陌生题用 Pólya，辨析迁移用变式，规律用探究论证，真实决策用建模；形成性评价贯穿过程。选择与步骤见[教学核心](skills/math-core/references/math-teaching-core.md)。
 

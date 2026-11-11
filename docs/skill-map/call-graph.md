@@ -14,6 +14,7 @@ flowchart TB
   subgraph learn_pkg["learn / dsh-edu-learn"]
     L_entries["入口: learn-start · learn · learn-feynman · learn-profile · learn-save · learn-clean"]
     L_shared["底座: learn-core · learn-data · learn-errors · learn-recommend<br/>通用教学: learn-general-core · learn-general-session<br/>按需支持: learn-support"]
+    L_READ["learn-read-image<br/>有图才读；读取层不诊断"]
   end
 
   subgraph math_common_pkg["math-common / dsh-edu-math"]
@@ -44,6 +45,11 @@ flowchart TB
   math_common_pkg -->|按名加载 learn-core / learn-data 的共享确认规则| learn_pkg
   math_low_pkg -->|按名加载 learn-core / learn-data；文件交生命周期| learn_pkg
   math_high_pkg -->|按名加载 learn-core / learn-data；文件交生命周期| learn_pkg
+  math_low_pkg -->|有数学图片时按名加载读取层| L_READ
+  math_high_pkg -->|有数学图片时按名加载读取层| L_READ
+  math_common_pkg -.->|手写契约先于读取层| L_READ
+  chinese_pkg -.->|有图时按名加载读取层| L_READ
+  english_pkg -.->|有图时按名加载读取层| L_READ
   math_low_pkg -.->|同科目两个年级段包；解析按 supported_stages 二选一| math_high_pkg
   chinese_pkg -->|按名加载 learn-core / learn-data；文件交生命周期| learn_pkg
   english_pkg -->|按名加载 learn-core / learn-data；文件交生命周期| learn_pkg
@@ -51,8 +57,8 @@ flowchart TB
 
 | 包 | 对外入口 | 内部能力 |
 |---|---|---|
-| `learn` | `/learn-start` `/learn` `/learn-feynman` `/learn-profile` `/learn-save` `/learn-clean` | `learn-core` `learn-data` `learn-errors` `learn-recommend` |
-| `math-common` | 无入口；只被两个数学 band 按条件加载 | `math-common`（共享数学契约，不是教学实现，不参与选型） |
+| `learn` | `/learn-start` `/learn` `/learn-feynman` `/learn-profile` `/learn-save` `/learn-clean` | `learn-core` `learn-data` `learn-errors` `learn-read-image` `learn-recommend` |
+| `math-common` | 无入口；只被两个数学 band 按条件加载 | `math-common`（共享数学契约：学生编题、练习证据、画板协议、手写读取；不是教学实现，不参与选型） |
 | `math-primary-low` | 无用户 `/` 入口；生命周期统一进入 `math-session` | `math-session` 集中调度三个 leaf + `math-core` |
 | `math-primary-high` | 无用户 `/` 入口；生命周期统一进入 `math-session` | `math-session` 集中调度四个 leaf + `math-core`；方法选择与步骤在已安装的 [教学核心](<../../math-primary-high/skills/math-core/references/math-teaching-core.md>)；仓库 [methods](<../math-primary-high-methods.md>) 仅为背景材料，不随包安装 |
 | `chinese-reading` | 无用户 `/` 入口；由生命周期路由进入 | `chinese-session` 及子 skill + `chinese-core` |
@@ -80,6 +86,7 @@ flowchart LR
     learn_core["learn-core"]
     learn_data["learn-data"]
     learn_errors["learn-errors"]
+    learn_read_image["learn-read-image"]
     learn_recommend["learn-recommend"]
     math_all["math-*（当前解析选中的数学包）"]
     chinese_all["chinese-*"]
@@ -125,6 +132,7 @@ flowchart TB
   Chinese["语文线 → 见 3.3"]
   English["英语线 → 见 3.5"]
   LE["learn-errors<br/>投放文件处理一次"]
+  LR["learn-read-image<br/>有图才读；读取层不诊断"]
 
   SL --> Resolver["teaching-resolver<br/>真实 subject + 阶段 + 任务范围"]
   Resolver -->|适用专门包 math（按年级段二选一）| Math
@@ -134,6 +142,10 @@ flowchart TB
   SL -.->|明确支持需求| Support["learn-support<br/>方法建议，不另开教学循环"]
   Support -.->|由当前教学主导者实施| General
   SL -.->|路径 / scan all| LE
+  LE -.->|图片：读取层| LR
+  Math -.->|本轮附件或数学图片| LR
+  Chinese -.->|本轮附件或图片| LR
+  English -.->|本轮附件或图片| LR
   learn -.->|费曼| learn_feynman
 ```
 
@@ -194,7 +206,7 @@ flowchart LR
 
 ### 3.2 数学调用子图
 
-数学采用与英语相同的**集中调度原则**，不要求教学流程完全同构。两个年级段包提供相同的接口：生命周期（含费曼与 `activity=transfer`）统一进入解析所选包中的 `math-session`；只有它决定 leaf 的加载。leaf 只回传证据、等待状态与建议动作，`math-session` 合并本轮唯一 `session_segment`，leaf 之间不互调。`learn-core` / `learn-data` 已由入口加载；数学分支只再加载同一包中的 `math-core`。两个 band 的共同数学行为（学生编题、练习证据、画板协议）在 `math-common` 中维护一份，band 的对应 reference 只在条件出现时加载它，本地差异仍留在 band。
+数学采用与英语相同的**集中调度原则**，不要求教学流程完全同构。两个年级段包提供相同的接口：生命周期（含费曼与 `activity=transfer`）统一进入解析所选包中的 `math-session`；只有它决定 leaf 的加载。leaf 只回传证据、等待状态与建议动作，`math-session` 合并本轮唯一 `session_segment`，leaf 之间不互调。`learn-core` / `learn-data` 已由入口加载；数学分支只再加载同一包中的 `math-core`。两个 band 的共同数学行为（学生编题、练习证据、画板协议、手写读取）在 `math-common` 中维护一份，band 的对应 reference 只在条件出现时加载它，本地差异仍留在 band。手写读取契约由 band 的 `math-core` 条件行直接加载（年级无关、无本地增补）；读取层本身是 `learn` 的 `learn-read-image`，不诊断。
 
 低年级包调度 `math-diagnose`、`math-practice`、`math-student-problem` 三个 leaf。高年级包同一入口调度它们，并增加第四个 leaf `math-application-modeling`（真实情境建模：情境、方案、表示、数量与单位、验证、结论），另以 act 分配（`math-core/references/learn-act-allocation.md`）在开篇、练习、学生出题、应用建模之间切换；高年级仅在多子题回答时按 [批量题规则](<../../math-primary-high/skills/math-core/references/batch-board-boundary.md>) 处理证据归属；画板可选，换题不自动清空，仅学生明确要求清空时调用工具。低年级保留其任务边界自动清空规则。
 
@@ -203,7 +215,9 @@ flowchart TB
   SL["session-lifecycle"] -->|普通教学 / transfer / 费曼| MS["math-session"]
   SL -.->|投放文件处理一次| LE["learn-errors"]
   MS --> MC["math-core"]
-  MC -.->|编题 / 练习证据 / 画板协议条件出现时按名加载| MCOM["math-common"]
+  MC -.->|编题 / 练习证据 / 画板协议 / 手写读取条件出现时按名加载| MCOM["math-common"]
+  MS -.->|"数学图片：先读手写契约再加载读取层"| LR["learn-read-image"]
+  LR -.->|"证据 + 待答问题"| MS
   MD["math-diagnose"] --> MC
   MP["math-practice"] --> MC
   MSP["math-student-problem"] --> MC
@@ -226,6 +240,8 @@ leaf 用 `await_student` 表达等待，以 `continue_diagnose` / `continue_prac
 普通学习闭环时回传 `stage_options`：`迁移` → `math-student-problem`，`练一练` → `math-practice`（高年级另加 `ui.stage.modeling` → `math-application-modeling`）；由入口按 `next-step.md` 与基础菜单合并展示。未处理文件交回生命周期调用一次 `learn-errors`，已处理文件只读 extracted / `material_refs`；本包不直接加载 `learn-errors`。segment 的 `source` 沿用 `target_context.source`，不因切换 leaf 覆盖材料来源；`submode` 由 session 按本轮已有学生表现证据的主任务合并。leaf 收到结束请求先回传 session，再交生命周期处理；不直接 finalize。`mode=feynman` 优先于迁移，保持学生主讲，不并行开启出题迁移。
 
 画板：消息带 `我的画板.json` / `我的修改记录.json`，或学生问画板怎么用时，按 `math-core` 条件表 **read** `references/structured-drawing.md`（不是独立 skill），该 reference 再按条件加载 `math-common` 的 `board-contract`。出题不因此去写摆法。新的学习 `session_id` 不接上一场题面和画板修改；同一条未保存日志才接本场未答题。画板只认本场已发送附件。可选 Web 插件 `dsh-edu-math-board` 见 [`math-board/README.md`](../../math-board/README.md)。
+
+图片 / 手写：消息附件由当前学科 session 按 `learn-core` 条件行加载 `learn-read-image`；正文路径或 `scan all` 由入口交 `learn-errors`，图片再交同一读取层。数学先按 `math-core` 条件行加载 `math-common` 并读手写契约，再加载读取层；路径 / `scan all` 的数学图片同样按当前学科 core 的图片条件先读手写契约。读取层归档原图、写转录、交回事实与至多一个待答问题，诊断与证据合并仍归 `math-session`。读取层不直接对学生说话：原件未归档或格式不支持时，由当前回合所有者说明或提问。场景见 [4.10](#410-图片与手写读取)。
 
 ### 3.3 语文调用子图
 
@@ -592,6 +608,31 @@ sequenceDiagram
 
 新闻目标由 session 选择 `child-news-reader`，来源与成熟度筛选由新闻方法负责；没有可靠来源时明确说明无法核实。摘要文本可标暂定可读性水平，但不当作学生等级；一次答对不升级 `current_levels`。文章完整呈现，提问跨真实回应推进，不另产 progress note。阶段附加选项：`读一个故事` / `说一说` / `玩一个任务` / `复习旧表达`，由 `english-session` 执行；结束保存归 lifecycle。
 
+### 4.10 图片与手写读取
+
+学生发送手写作业、草稿、教材页或题目照片时，有图才加载读取层。附件由当前学科 session 按 `learn-core` 条件行加载；正文路径或 `scan all` 由入口交 `learn-errors`，再由它加载同一读取层。数学先按 `math-core` 条件行加载 `math-common` 并读手写契约，再加载读取层。读取层归档原图、写转录、交回事实与至多一个待答问题；问题由当前回合所有者问，诊断与证据合并仍由当前回合负责。
+
+```mermaid
+sequenceDiagram
+  actor S as 学生
+  participant Owner as 当前教学回合 / learn-errors
+  participant MC as math-common 手写契约
+  participant LR as learn-read-image
+  participant FS as raw / extracted
+
+  S->>Owner: 发送图片（附件或路径）
+  Owner->>MC: 数学：先读手写契约（读图提示与核对事实）
+  Owner->>LR: 加载读取层
+  LR->>FS: 原图 → raw；转录 → extracted
+  LR-->>Owner: 状态 / 歧义 / 待答问题 / 观察
+  alt 有影响判断的歧义
+    Owner->>S: 只问那一个问题
+  else 无歧义或已确认
+    Owner->>Owner: 核对事实并继续教学
+  end
+  Note over Owner,FS: 错题的诊断与 error_history 留在 learn-errors；做对的作业只留读取记录
+```
+
 ## 5. 数据与规则依赖
 
 ### 5.1 谁依赖谁（规则 / 数据）
@@ -615,6 +656,7 @@ flowchart LR
 | 规则 · 学科 | `math-core` / `chinese-core` / `english-core` | 教学、诊断、练习/写作标签等；数学含画板 reference，英语含唯一方法表、输入适配、提示阶梯/退让、反馈与证据映射；均含「学科契约」表 |
 | 数据 | `learn-data` | 快照、finalize、lifecycle / next-step / target-parsing；每轮日志与 segment 读 `session-schema.md`，建档与 finalize 再读 `profile-schema.md` |
 | 文件 | `learn-errors` | `data/.../raw/` 只读、备份、extracted、`error_history`；依赖 `learn-data` + 学科 core；由生命周期调用，学科包不自载 |
+| 读取 | `learn-read-image` | 图片忠实转录、原图归档、`extracted` 读取记录与交回；不诊断、不写档案；由当前学科 session 或 `learn-errors` 按条件加载，路径图片先按学科 core 的图片条件（数学先读手写契约） |
 | 产出 | `math-*` / `chinese-*` / `english-*` 教学 skill | 每轮一个 segment；lifecycle 路由 `<subject>-session`，由它决定内部调度；数学 leaf 回证据，由 `math-session` 合并；英语方法仅回建议，由 `english-session` 合并并唯一产段 |
 
 ### 5.2 写入时机
@@ -625,6 +667,7 @@ flowchart LR
 | 会话结束 / `/learn-save` / 换主题 | 科目 `profile` `memory` `current_state` `milestones`；清空或结束日志 | `finalize-session` |
 | 有 `finalize_plan` 未完成 | 先 replay 保存，再允许新教学或新文件处理 | lifecycle / `learn-errors` / `/learn-save` |
 | 用户投放文件分析 | `extracted/*.md`、科目 `profile.error_history`；`data/.../raw/` 仅 `mv` | `learn-errors` |
+| 有图片 | `data/.../raw` 原图归档、`outputs/.../extracted` 读取记录 | `learn-read-image` |
 | `/learn-start` 建档 | 共享 `profile.json` + 科目骨架 + `session.json`；mkdir 双根目录 | `learn-start` + `learn-data` Create Student |
 | `/learn-profile` 修改 | 共享或科目档案字段 | `learn-profile` + Write Protocol |
 
@@ -650,8 +693,9 @@ flowchart LR
 7. **流程分叉用卡片**：科目、身份、年级、偏好、基础菜单（继续/费曼/结束）与学科 `stage_options` 用 `ask_user_question`；教学追问保持纯文字。
 8. **学科未安装**：生命周期说明需要对应包，停止教学路由，保留已有日志。
 9. **静态检查**：`node scripts/check-skills.mjs` 校验 frontmatter、调用策略与悬空引用。
+10. **有图才读**：消息或文件带图片时加载 `learn-read-image`；读取层只转录、归档与交回，待答问题归当前回合所有者，诊断归学科规则。
 
-## 7. 技能清单（按包注册共 41 份；唯一技能名 36 个，数学两个年级段包同名）
+## 7. 技能清单（按包注册共 43 份；唯一技能名 38 个，数学两个年级段包同名）
 
 | 包 | Skill | 调用面 | 角色 |
 |---|---|---|---|
@@ -668,7 +712,8 @@ flowchart LR
 | learn | `learn-general-core` | 内部 | 通用任务教学规则与五角色 |
 | learn | `learn-general-session` | 内部 | 通用任务教学回合（`general_v1`） |
 | learn | `learn-support` | 内部 | 五类学习支持的方法建议 |
-| math-common | `math-common` | 内部 | 共享数学契约：学生编题、练习证据、画板协议；两个 band 按条件加载，不参与选型 |
+| learn | `learn-read-image` | 内部 | 图片/手写忠实读取、原图归档、读取记录与交回；不诊断 |
+| math-common | `math-common` | 内部 | 共享数学契约：学生编题、练习证据、画板协议、手写读取；两个 band 按条件加载，不参与选型 |
 | math-primary-low | `math-core` | 内部 | 数学规则（含画板 reference） |
 | math-primary-low | `math-session` | 内部 | 数学主回合、唯一 leaf 调度者与 segment 合并者 |
 | math-primary-low | `math-diagnose` | 内部 | 策略/错题诊断，回证据与建议动作 |
