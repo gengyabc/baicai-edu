@@ -1,0 +1,11 @@
+$ node --test scripts/skill-contracts.test.mjs
+✔ counterexample rules separate necessity from sufficiency and keep teacher cases hidden (0.346958ms)
+ℹ tests 110
+ℹ suites 0
+ℹ pass 110
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 156.093958
+[exit: 0]

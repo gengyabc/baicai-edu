@@ -1,0 +1,12 @@
+$ node --test --test-name-pattern=counterexample scripts/skill-contracts.test.mjs   # GREEN after implementation
+✔ counterexample checks reach the existing proof entry without a second logic framework (2.543292ms)
+✔ counterexample rules separate necessity from sufficiency and keep teacher cases hidden (0.616125ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 46.383333
+[exit: 0]

@@ -1,0 +1,56 @@
+$ node --test --test-name-pattern=counterexample scripts/skill-contracts.test.mjs   # RED before implementation
+✖ counterexample checks reach the existing proof entry without a second logic framework (1.380833ms)
+✖ counterexample rules separate necessity from sufficiency and keep teacher cases hidden (0.116375ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 44.520542
+
+✖ failing tests:
+
+test at scripts/skill-contracts.test.mjs:1920:1
+✖ counterexample checks reach the existing proof entry without a second logic framework (1.380833ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /references\/counterexamples-and-proposition-direction.md/. Input:
+
+    "Distinguish independent construction, understanding a supplied proof, checking/repairing an argument, and writing up an already-found argument. Apply **Guide before revealing** and its **Informed
+    "Completion: the claim's scope and requested output are clear enough to choose a next action; truth and missing assumptions are not taken on faith.\n" +
+    "Use the student's response to move between obstacles, including returning to an earlier one. Give one coherent thinking task and one pending question, then wait. A suggested direction should leav
+    "Inspect the student's actual reasoning, not the teacher's planned route. Use **facts → warrant → claim** to locate why an inference follows (a lightweight argument check, not a substitute for mat
+    "- **Write-up:** the student's established ideas become a connected argument from conditions to the stated conclusion; supplying polished prose for them is not evidence of their organization skill
+
+      at TestContext.<anonymous> (file:///Users/yugeng/programming/dsh-edu/.scratch/math-strategy-extension/worktrees/counterexample/scripts/skill-contracts.test.mjs:1924:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: "# Proof Teaching\n\nUse with `references/math-teaching-core.md`, `references/scaffold-calibration.md`, and `references/derivation-teaching.md` to construct, understand, check, repair, or
+    expected: /references\/counterexamples-and-proposition-direction.md/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at scripts/skill-contracts.test.mjs:1948:1
+✖ counterexample rules separate necessity from sufficiency and keep teacher cases hidden (0.116375ms)
+  Error: ENOENT: no such file or directory, open '/Users/yugeng/programming/dsh-edu/.scratch/math-strategy-extension/worktrees/counterexample/math-primary-high/skills/math-high-core/references/counter
+      at readFileSync (node:fs:441:20)
+      at text (file:///Users/yugeng/programming/dsh-edu/.scratch/math-strategy-extension/worktrees/counterexample/scripts/skill-contracts.test.mjs:11:24)
+      at highRef (file:///Users/yugeng/programming/dsh-edu/.scratch/math-strategy-extension/worktrees/counterexample/scripts/skill-contracts.test.mjs:1374:27)
+      at TestContext.<anonymous> (file:///Users/yugeng/programming/dsh-edu/.scratch/math-strategy-extension/worktrees/counterexample/scripts/skill-contracts.test.mjs:1950:27)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    errno: -2,
+    code: 'ENOENT',
+    syscall: 'open',
+    path: '/Users/yugeng/programming/dsh-edu/.scratch/math-strategy-extension/worktrees/counterexample/math-primary-high/skills/math-high-core/references/counterexamples-and-proposition-direction.md'
+  }
+[exit: 1]
