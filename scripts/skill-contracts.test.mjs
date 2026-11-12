@@ -1713,6 +1713,41 @@ test('proof teaching covers logical structure strategy validity and student orga
     '存在性见证', '有限范围穷举', '证明恢复', '完整证明的明确请求'])
 })
 
+test('geometry transformations load conditionally through the existing high math owner', () => {
+  // Architecture contract only: this does not execute a teaching dialogue.
+  const row = highCore.split('\n').find((line) => line.includes('references/geometry-reasoning.md'))
+  assert.ok(row, 'core condition reaches geometry rules')
+  assert.match(row, /area transformation|auxiliary construction/i)
+  assert.match(highRef('mathematical-strategies'), /references\/geometry-reasoning\.md/)
+  const geometry = highRef('geometry-reasoning')
+  for (const file of ['derivation-teaching', 'proof-teaching', 'prerequisite-learning',
+    'structured-drawing', 'math-segment-fields']) {
+    assert.ok(geometry.includes(`references/${file}.md`), file)
+  }
+  hasAll(geometry, ['math-high-session', 'current act', 'not a new', 'Teacher-only checked cases'])
+  assert.doesNotMatch(text(skillPath('math-primary-low', 'math-low-core')), /geometry-reasoning/)
+  assert.doesNotMatch(text(skillPath('math-common', 'math-common')), /geometry-reasoning/)
+  assert.doesNotMatch(geometry, /https?:\/\//)
+})
+
+test('geometry keeps area conditions and supplied constructions in the local rule source', () => {
+  // Static mathematical/safety contract; not a claim that a learner chose a route.
+  const geometry = highRef('geometry-reasoning')
+  hasAll(geometry, ['coverage', 'internal overlap', 'omissions', 'square units',
+    'perpendicular distance', 'extension of the base', 'not congruence or equal perimeter',
+    'student-visible clue', 'teacher-supplied', 'session_segment: null',
+    '48−6=42', '8×4+5×2=42', '5×6+3×4=42', '70−12=58', '12 and 15'])
+  // Worked answers belong behind the private-check boundary, not in the loading pointer.
+  const privateCases = geometry.split('## Teacher-only checked cases')[1]
+  assert.ok(privateCases)
+  for (const result of ['48−6=42', '70−12=58', '12 and 15']) {
+    assert.ok(privateCases.includes(result), result)
+    assert.ok(!geometry.split('## Teacher-only checked cases')[0].includes(result), result)
+    assert.ok(!highCore.includes(result), result)
+  }
+  hasAll(geometry, ['same base alone', 'valid student partition', 'not visual appearance'])
+})
+
 test('word-problem derivation reaches quantity bridges without forcing proof or modeling', () => {
   // Static contract coverage only; model behavior still requires dialogue replay.
   for (const ref of [highCore, highRef('math-teaching-core'), highRef('derivation-teaching'),

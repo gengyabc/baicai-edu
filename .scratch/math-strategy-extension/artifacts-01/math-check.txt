@@ -1,0 +1,4 @@
+PASS L-region complement/horizontal/vertical: 42, 42, 42
+PASS near transfer: 58 square cm
+PASS external foot (-2,0): same height 4, both areas 12
+PASS same base with heights 4 and 5: areas 12 and 15
