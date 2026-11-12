@@ -26,7 +26,8 @@
 | `node --test scripts/elementary-games.test.mjs scripts/skill-contracts.test.mjs scripts/math-strategy-recursion.test.mjs` | 通过，完整输出见[定向日志](<targeted.log>)。 |
 | `node scripts/check-skills.mjs` | 43 skills，0 errors，0 warnings；见[技能检查](<skills.log>)。 |
 | `node --check scripts/elementary-games.test.mjs` / `node --check scripts/skill-contracts.test.mjs` | 语法检查通过。仓库无根 package/typecheck 脚本，改动为 Markdown 与 `.mjs` 测试，不将语法检查冒称 TypeScript 类型检查。 |
-| `node --test scripts/*.test.mjs math-board/*.test.js` | 全套293测试，292通过、0失败、1跳过；见[全量日志](<full-suite.log>)。跳过为需 `DSH_INTEGRATION_TEST=1` 的安装集成测试；本次无安装授权，未启用。 |
+| `node --test scripts/*.test.mjs math-board/*.test.js` | 首轮回归293测试，292通过、0失败、1跳过；见[首轮日志](<full-suite.log>)。此命令未包含 geometry 子目录，完整补跑见下一行。跳过为需 `DSH_INTEGRATION_TEST=1` 的安装集成测试；本次无安装授权，未启用。 |
+| `node --test scripts/*.test.mjs math-board/*.test.js math-board/geometry/*.test.js` | 父代理在本 games worktree 补跑的完整回归：316测试，315通过、0失败、1跳过，退出码0（父代理回报）；本人读取[含geometry的完整日志](<full-suite-with-geometry.log>)确认汇总。该补跑没有新增教学回放证据。 |
 | `git diff --check` | 通过。 |
 
 检查按实现切片多次运行；全量在实现及审查修复后重跑。实际红灯按预期定位缺失入口/材料，不是环境失败；没有将之后的成功输出倒写成红灯记录。第一次对 stage-3-spec 误当目录的 glob 返回不存在，随后根目录列举确认其为 `.md` 文件，并以 read 从绝对路径读完。`git check-ignore` 对新证据路径返回1表示未忽略，证据可正常跟踪。
