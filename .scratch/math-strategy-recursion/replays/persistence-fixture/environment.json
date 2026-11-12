@@ -1,0 +1,20 @@
+{
+  "execution": "single-agent synthetic staged file replay",
+  "model": "gpt-6.1-sol",
+  "provider": "not exposed",
+  "sampling": "not exposed",
+  "node": "v24.15.0",
+  "workspace": "/Users/yugeng/programming/dsh-edu",
+  "captured_at": "2026-11-12T00:44:05.002Z",
+  "rules": {
+    "learn/skills/learn-data/references/learning-plan.md": {
+      "sha256": "85f63a4fad8979855b8ba96d91e4888eb1d6cd7708c79c2b796d94df36cd251d"
+    },
+    "learn/skills/learn-data/references/session-lifecycle.md": {
+      "sha256": "7d646abc1322e083cbe3ad5702fffd4c69f16e0f97e48dd784a7d62359d368c7"
+    },
+    "learn/skills/learn-data/references/finalize-session.md": {
+      "sha256": "7aed90ff421f7524c5d42802592c47092b6328e002bee40f7a0ef17410367c29"
+    }
+  }
+}

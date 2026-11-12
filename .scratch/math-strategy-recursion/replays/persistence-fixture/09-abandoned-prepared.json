@@ -1,0 +1,116 @@
+{
+  "session_id": "sess_fixture_03",
+  "entry_point": "learn",
+  "started_at": "2026-11-12T00:46:00Z",
+  "updated_at": "2026-11-12T00:46:00Z",
+  "context": {
+    "scope_id": "scope_cycle_fixture",
+    "teaching": {
+      "core_skill": "math-high-core",
+      "session_skill": "math-high-session",
+      "evidence_namespace": "specialist"
+    },
+    "learning_plan": {
+      "version": 1,
+      "id": "plan_cycle_fixture",
+      "revision": 7,
+      "root_scope_id": "scope_cycle_fixture",
+      "teaching": {
+        "core_skill": "math-high-core",
+        "session_skill": "math-high-session",
+        "evidence_namespace": "specialist"
+      },
+      "status": "abandoned",
+      "updated_at": "2026-11-12T00:46:00Z",
+      "summary": "按学生明确选择放弃周期原题及返回链；不再自动返回。"
+    },
+    "learning_plan_authorization": {
+      "source": "teaching_owner",
+      "owner_session_skill": "math-high-session",
+      "root_scope_id": "scope_cycle_fixture",
+      "provided_to_student": true
+    }
+  },
+  "segments": [],
+  "finalize_plan": {
+    "session_id": "sess_fixture_03",
+    "student_id": "stu_fixture_a001",
+    "subject": "math",
+    "record_kind": "learning_plan",
+    "final_summary": null,
+    "target_files": {
+      "profile": {
+        "profile": {
+          "current_levels": {}
+        },
+        "session_history": [
+          {
+            "session_id": "sess_fixture_01",
+            "date": "2026-11-12T00:42:00Z",
+            "entry_point": "learn",
+            "focus": "完整组",
+            "strategy_summary": "在10个每3个的新题中独立分成3个完整组剩1个；只支持完整组局部就绪，未证实余数位置和父题选择。",
+            "strengths": [
+              "按规定数量分完整组"
+            ],
+            "difficulties": [
+              "余数位置关系仍待验证"
+            ],
+            "next_step": "每一组都必须正好3个，分完后哪些算完整组？",
+            "recommended_targets": [],
+            "status": "completed"
+          }
+        ],
+        "error_history": [],
+        "learning_state": {},
+        "updated_at": "2026-11-12T00:42:00Z"
+      },
+      "memory": {
+        "profile_memory": {},
+        "learning_memory": {
+          "confirmed_skills": [],
+          "skill_errors": [],
+          "recent_focus": [
+            "完整组"
+          ]
+        },
+        "learning_support_memory": {
+          "plans": [],
+          "observations": []
+        },
+        "updated_at": "2026-11-12T00:42:00Z"
+      },
+      "milestones": {
+        "milestones": [],
+        "updated_at": "2026-11-12T00:38:32Z"
+      },
+      "current_state": {
+        "active_focus": "完整组",
+        "source": "practice",
+        "submode": "practice",
+        "scope_id": "scope_cycle_fixture",
+        "teaching": {
+          "core_skill": "math-high-core",
+          "session_skill": "math-high-session",
+          "evidence_namespace": "specialist"
+        },
+        "last_finalized_session_id": "sess_fixture_03",
+        "updated_at": "2026-11-12T00:46:00Z",
+        "learning_plan": {
+          "version": 1,
+          "id": "plan_cycle_fixture",
+          "revision": 7,
+          "root_scope_id": "scope_cycle_fixture",
+          "teaching": {
+            "core_skill": "math-high-core",
+            "session_skill": "math-high-session",
+            "evidence_namespace": "specialist"
+          },
+          "status": "abandoned",
+          "updated_at": "2026-11-12T00:46:00Z",
+          "summary": "按学生明确选择放弃周期原题及返回链；不再自动返回。"
+        }
+      }
+    }
+  }
+}

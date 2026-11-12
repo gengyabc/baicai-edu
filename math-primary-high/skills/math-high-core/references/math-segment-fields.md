@@ -42,6 +42,10 @@ For proof tasks, `strategy_summary` records the claim/scope, the student's actua
 
 Use the existing `context.turn_state` for the current proof obstacle and pending task per `references/proof-teaching.md`; these are continuation descriptions, not new required keys. Do not add a proof submode, stage, or profile field. Completion alone does not promote arithmetic or symbolic stages or establish transfer. Apply shared segment eligibility first: a supplied explanation with no student performance is context-only (`session_segment: null`), not a fabricated performance record. The session remains the sole segment owner.
 
+## Recursive Tool Learning and Strategy Monitoring
+
+A recursive plan's `active_frame_id` identifies the actual local task; it does not change the root scope or teaching owner. In the existing `strategy_summary` and optional `ability_evidence`, distinguish child tool execution, parent strategy selection, teacher-provided tools/constructions, student monitoring decisions and still-unknown transfer. One merged segment may contain evidence from a child and its immediate parent without counting either response twice. Pure plan/choice/teacher-example turns are context-only (`session_segment: null`). Local readiness permits one-layer return, not automatic long-term confirmation, parent success or stage promotion. The optional learning-plan snapshot belongs to shared lifecycle/current-state storage, not a new ability field or diagnosis enum.
+
 ## Showing Progress to a Parent
 
 Describe per activity the observed response and the support given (none, a hint, an example, a parent prompt), separating calculation, concept, reasoning, representation, and transfer where evidence exists. Do not aggregate them into a total score, and do not claim the package stores tracking state across sessions; storage is the shared lifecycle's job.

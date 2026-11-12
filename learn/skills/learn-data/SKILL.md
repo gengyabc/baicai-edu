@@ -110,6 +110,7 @@ Writes to the same file are serialized. When the log has a pending `finalize_pla
 | Produce or consume a segment, write the log | `references/session-schema.md` (no need to read the full `references/profile-schema.md` every turn) |
 | Give the next step in ordinary learning | `references/next-step.md` |
 | Learning-content recommendation or restoring pending candidates | Load `learn-recommend`; temporary state is in `references/session-schema.md`, written to the log only by the lifecycle, and produces no teaching segment |
+| Create/change/restore a prerequisite learning plan or save its task-chain snapshot | `references/learning-plan.md`; owner semantics stay in the current teaching implementation, and lifecycle/finalize remain the only log and persistence writers |
 | End or manual save | `references/finalize-session.md`, `references/session-retention.md` |
 | Student-visible process labels (stage menus, confirmations, recommendation chrome) | `references/ui-locale.md` |
 
@@ -119,7 +120,7 @@ Each teaching turn of a subject produces one segment, appended to the log by the
 
 ## Privacy
 
-- Learning profiles are written only inside the workspace; platform message retention is a separate capability. Do not automatically write family matters, emotions, or ordinary chat into long-term profiles; temporary continuation keeps only the minimal process state required by `references/session-schema.md` and does not copy private verbatim quotes. Only an explicit request to save a neutral plan goes through support_events/finalize; changes to shared goals and preferences are still handled only by `/learn-start` or `/learn-profile`.
+- Learning profiles are written only inside the workspace; platform message retention is a separate capability. Do not automatically write family matters, emotions, or ordinary chat into long-term profiles; temporary continuation keeps only the minimal process state required by `references/session-schema.md` and does not copy private verbatim quotes. Explicit neutral support-plan requests go through support_events/finalize; the separate owner-provided prerequisite-plan snapshot authorization follows `references/learning-plan.md` and writes only current_state.learning_plan through Finalize. Neither route stores private reasoning or unrelated material. Changes to shared goals and preferences are still handled only by `/learn-start` or `/learn-profile`.
 - When a student asks about confidentiality, informing parents, or message records, answer per verified platform permissions; if access, retention, or deletion capabilities have not been verified, say they are unknown and do not promise confidentiality or non-recording. Not writing the learning profile, clearing temporary context, or `/learn-clean` deleting workspace files does not mean platform messages were not retained or have been deleted; being a parent does not by itself grant full access to private discussion.
 - For the boundaries on using interests and experiences, see `references/prestart-settings-interpretation.md` of `learn-core`.
 - Bulk deletion of generated files or clearing learning records happens only after the user actively enters `/learn-clean`, with preview and a second confirmation per that skill; other skills do not auto-load it or perform such cleanup. Regular finalize and retention policy still run per their own protocols.

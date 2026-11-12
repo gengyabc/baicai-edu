@@ -13,7 +13,7 @@ Former module-style method skills were retired from the package tree so a single
 | `variation-theory-math` | `math-teaching-core.md` (variation); practice rules | Contrast examples that differ in one critical feature and expose invariants |
 | `inquiry-and-proof` | `math-teaching-core.md` (inquiry) | Constrained pattern → conjecture → test and counterexample → reason |
 | `cgi-algebraic-thinking` (proposed, not created as a skill) | `math-teaching-core.md` (relational thinking and generalization); `references/early-algebra.md` | Equality, relational strategies, generalized arithmetic, variables, functional thinking; sources in [`cgi-early-algebra.md`](cgi-early-algebra.md) |
-| `explicit-instruction-math` | `math-teaching-core.md` (explicit); `scaffold-calibration.md` | Worked example → faded step → independent check when prerequisites are weak |
+| `explicit-instruction-math` | `math-teaching-core.md` (explicit); `scaffold-calibration.md` | Worked example → faded step → independent check when the current task's tools are available; a confirmed missing tool first enters a recorded prerequisite child |
 | `formative-metacognition-math` | `math-teaching-core.md` (formative); scaffold notes | Elicit thinking → one actionable feedback point → child self-assessment |
 | `mathematical-modeling` | leaf `math-high-application-modeling` | Situation → assumptions → representation → solve → interpret and validate |
 | `upper-primary-math-knowledge-map` | `references/topic-map.md` | Concept ids, prerequisite edges, misconception probes |
@@ -23,6 +23,10 @@ Former module-style method skills were retired from the package tree so a single
 | `upper-primary-math-coach` | `math-high-session` + `math-high-core` rules | Knowledge point, difficulty, hints, and method — one change at a time |
 
 `references/learn-act-allocation.md` chooses the activity owner; `math-teaching-core.md` chooses the teaching method independently. This package registers unique `math-high-*` skill names; the lower-primary package uses `math-low-*`. The shared teaching resolver selects actual core/session names for a new task and preserves the resolved band for an unfinished task.
+
+## Strategy pilot and recursive prerequisites
+
+Source rules now live in the [three-method index](<../math-primary-high/skills/math-high-core/references/mathematical-strategies.md>) and [recursive prerequisite teaching](<../math-primary-high/skills/math-high-core/references/prerequisite-learning.md>); the [shared plan protocol](<../learn/skills/learn-data/references/learning-plan.md>) owns task snapshots and persistence. This changes confirmed missing-tool handling from an inline example to a recorded child task; normal instruction remains available inside the child. See the [design specification](<../.scratch/math-strategy-recursion/spec.md>), [decision and trade-offs](<adr/0003-prerequisite-learning-plans.md>) and [separate acceptance results](<../.scratch/math-strategy-recursion/acceptance.md>). Source changes do not mean a running profile has been upgraded; installation and real-student effectiveness are separate from static or synthetic checks.
 
 ## Adaptive design constraints
 

@@ -1,0 +1,208 @@
+{
+  "environment": {
+    "provider": "openai-codex",
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "medium",
+    "note": "batched synthetic cases; no real student profiles"
+  },
+  "cases": [
+    {
+      "id": "A1",
+      "input": "20×2=40，比56少16条腿。",
+      "reply": "你算出了全是鸡时少16条腿。要在总数仍是20只的情况下增加腿数，可以把鸡换成兔：每换一只，腿数会怎样变化？",
+      "turn_state": {
+        "owner": "math-high-session/root",
+        "scope_id": "scope_A1",
+        "mode": "learn",
+        "active_act": "opening",
+        "current_task": "鸡兔共20只56条腿，各几只？",
+        "response_format": "用自己的方法求数量并解释。",
+        "student_response": "20×2=40，比56少16条腿。",
+        "continuation": "全鸡基准由教师首轮提出，学生算得40及差16；现由教师提出保持总只数的一次鸡换兔，等待学生推得每次变化量。尚未提供兔数算法。",
+        "pending_question": "总数仍是20只，每把一只鸡换成一只兔，腿数会怎样变化？"
+      },
+      "segment_projection": {
+        "strategy_summary": "学生在教师给定全鸡假设后，正确执行20×2及56与40的比较，得到差16。教师接续提供鸡换兔方向以研究差量如何补足；关系选择仍有支持，未认定独立掌握假设法。",
+        "ability_evidence": [
+          {"kind": "supported", "observation": "正确算出20只鸡有40条腿，比56少16条。", "conditions": "教师首轮给出全鸡基准及比较任务；本轮未展示一次替换变化或兔数推算。"}
+        ]
+      }
+    },
+    {
+      "id": "A2",
+      "input": "少了两条鸡腿，多了四条兔腿，所以一共多2条。",
+      "reply": "你把每次多2条腿的原因说清楚了。要补足原来少的16条腿，你怎样据此确定兔子的只数？",
+      "turn_state": {
+        "owner": "math-high-session/root",
+        "scope_id": "scope_A2",
+        "mode": "learn",
+        "active_act": "opening",
+        "current_task": "鸡兔共20只56条腿，各几只？",
+        "response_format": "用自己的方法求数量并解释。",
+        "student_response": "少了两条鸡腿，多了四条兔腿，所以一共多2条。",
+        "continuation": "已有学生全鸡基准40、差16，以及在教师指定一次替换后推得4−2=2。下一桥梁是把总差量与每次变化量连接，确定替换次数即兔数；尚未给16÷2。",
+        "pending_question": "要补足原来少的16条腿，你怎样据每换一只多2条确定兔子的只数？"
+      },
+      "segment_projection": {
+        "strategy_summary": "学生说明一次鸡换兔先去2条再加4条，因此净增2条，建立了替换与腿数变化的关系。替换方向由教师提出；本轮让学生把已建立的变化量连接到缺少的16条，不代算兔数。",
+        "ability_evidence": [
+          {"kind": "supported", "observation": "解释每换一只鸡为兔净增2条腿，理由为减少2条再增加4条。", "conditions": "教师指定保持总只数的一次替换；学生完成变化关系的推理。由总差量确定兔数及原题检验仍待观察。"}
+        ]
+      }
+    },
+    {
+      "id": "A3",
+      "input": "我先试10只鸡10只兔，发现60条腿太多；后来把兔子减少到8只，12只鸡，就有24+32=56条腿，而且12+8=20。",
+      "reply": "你已经讲出了先试一组、再调整，并且检查了腿数和总只数。还差调整时的依据：你是怎样根据多出的4条腿，决定把兔子减少2只的？",
+      "turn_state": {
+        "owner": "math-high-session/root",
+        "scope_id": "scope_A3",
+        "mode": "learn",
+        "active_act": "opening",
+        "current_task": "鸡兔共20只56条腿，各几只？",
+        "response_format": "解释自己的试算、调整依据和检查。",
+        "student_response": "先试10鸡10兔共60腿，再调到12鸡8兔，24+32=56且12+8=20。",
+        "continuation": "沿用学生试算调整路线；已展示两次尝试与双条件检查，当前仅补从60多4条到减少2只兔的选择依据。不改教全鸡假设法，不要求重复已有检验。",
+        "pending_question": "你是怎样根据多出的4条腿，决定把兔子减少2只的？"
+      },
+      "segment_projection": {
+        "strategy_summary": "在教师仅请其讲述原试法后，学生说明10鸡10兔共60腿，再改为12鸡8兔，并以腿数和只数检验。调整方向与检验由学生提供；为何根据多4条选择减少2只兔尚未说明，本轮仅补这一理由。",
+        "ability_evidence": [
+          {"kind": "independent", "observation": "讲述两组有效尝试，并正确用24+32=56及12+8=20检查最终答案。", "conditions": "教师只追问学生已有试算过程，未提供尝试数量、调整方法或检验式；证据为本题自述并展示的计算，不是新题独立迁移。调整2只的选择依据仍待观察。"}
+        ]
+      }
+    },
+    {
+      "id": "B1",
+      "input": "十位是1的有12、13、14。这样比乱写好检查。",
+      "reply": "这一组列齐了，你也发现固定十位更好检查。沿着这个办法，其余十位的数可以怎样有顺序地补齐？",
+      "turn_state": {
+        "owner": "math-high-session/root",
+        "scope_id": "scope_B1",
+        "mode": "learn",
+        "active_act": "opening",
+        "current_task": "用1、2、3、4组成数字不重复的两位数，有多少个？",
+        "response_format": "有序列举并解释总数。",
+        "student_response": "十位是1的有12、13、14。这样比乱写好检查。",
+        "continuation": "教师首轮提供固定十位分类；学生完整列出十位1的一组并指出方便检查。现撤去具体十位提示，让学生补其余类别，暂不提供总数或完整性证明。",
+        "pending_question": "沿着固定十位的办法，其余十位的数可以怎样有顺序地补齐？"
+      },
+      "segment_projection": {
+        "strategy_summary": "学生在教师指定十位1的分类任务中，列出12、13、14并评价其可检查性。教师沿用该有效整理办法，让学生自行组织其余组；还未观察完整枚举和不重不漏解释。",
+        "ability_evidence": [
+          {"kind": "supported", "observation": "完整列出十位为1时的三个有效两位数，并指出比无序书写好检查。", "conditions": "固定十位及先做十位1由教师提供；其余分类、总数和完整性理由尚未完成。"}
+        ]
+      }
+    },
+    {
+      "id": "B2",
+      "input": "漏了十位是4这一组：41、42、43。现在四组，每组三个。",
+      "reply": "你补齐了十位是4的一组，现在有四组、每组三个。为什么按这四种十位分组，就能把所有符合条件的两位数都包括进去？",
+      "turn_state": {
+        "owner": "math-high-session/root",
+        "scope_id": "scope_B2",
+        "mode": "learn",
+        "active_act": "opening",
+        "current_task": "用1、2、3、4组成数字不重复的两位数，有多少个？",
+        "response_format": "说明有序枚举与计数的理由。",
+        "student_response": "十位4的一组为41、42、43；现在四组，每组三个。",
+        "continuation": "学生原先展示按十位分组的前三组，在补组提醒后完成第四组并总结4组各3。完整列表已有，当前补全部可能被覆盖的理由，不重列列表，不将此前未完成标成错误模式。",
+        "pending_question": "为什么按这四种十位分组，就能把所有符合条件的两位数都包括进去？"
+      },
+      "segment_projection": {
+        "strategy_summary": "学生在教师提醒补组后，识别十位4并列41、42、43，正确概括四组各三个。已完成本题列表，独立选择分类的支持史未知；本轮聚焦分类覆盖性的解释，尚不认定已证明不重不漏。",
+        "ability_evidence": [
+          {"kind": "supported", "observation": "补出十位为4的全部三个数，并概括四组、每组三个。", "conditions": "分类办法在入口已由学生展示，先前支持未知；教师首轮提醒还需补一组，未给缺失十位或数值。覆盖全部情况的理由仍待观察。"}
+        ]
+      }
+    },
+    {
+      "id": "B3",
+      "input": "4是十位有4种，3是个位不能和十位一样剩3种。每个数只有一个十位，所以不会跑到两组里。",
+      "reply": "你说清了4和3的含义，也说明了同一个数不会分到两组。现在只补“不会漏”的一环：任意一个符合条件的两位数，为什么一定能在这四组中的某一组里找到？",
+      "turn_state": {
+        "owner": "math-high-session/root",
+        "scope_id": "scope_B3",
+        "mode": "learn",
+        "active_act": "opening",
+        "current_task": "用1、2、3、4组成数字不重复的两位数，有多少个？",
+        "response_format": "解释4×3及不重不漏的理由。",
+        "student_response": "十位4种，个位排除同数后剩3种；每个数只有一个十位，故不会分到两组。",
+        "continuation": "学生已解释因子意义及分类不重。教师首轮提供按十位分类再列个位、任意数归位的方向；目前只补每个有效数必被某组覆盖的理由，不重问不重部分，不视为已完成全部论证。",
+        "pending_question": "任意一个符合条件的两位数，为什么一定能在这四组中的某一组里找到？"
+      },
+      "segment_projection": {
+        "strategy_summary": "学生在分类归位的教师框架内，解释十位4种和每种剩3种个位，并用十位唯一说明组间不重复。覆盖每个有效数的理由还未明确，本轮只追问覆盖性，不抹去已有正确论证。",
+        "ability_evidence": [
+          {"kind": "supported", "observation": "正确解释4×3的因子意义，并以每个数仅有一个十位说明不会跨组重复。", "conditions": "分类和任意有效数归位的论证方向由教师首轮给出；学生完成因子及不重的解释。覆盖性尚待明确，未认定独立构造证明。"}
+        ]
+      }
+    },
+    {
+      "id": "C1",
+      "input": "每三颗红蓝绿一组，33组是99颗，但我不确定剩下1颗怎么算。",
+      "reply": "你找到红蓝绿这个重复的小组，也算出33组到第99颗。剩下的第100颗会落在下一组的什么位置，因而是什么颜色？",
+      "turn_state": {
+        "owner": "math-high-session/root",
+        "scope_id": "scope_C1",
+        "mode": "learn",
+        "active_act": "opening",
+        "current_task": "明确规定红蓝绿三色一直重复，第100颗是什么颜色？",
+        "response_format": "确定颜色并解释依据。",
+        "student_response": "每三颗红蓝绿一组，33组是99颗，不确定剩下1颗怎么算。",
+        "continuation": "教师首轮指向重复小段，未给长度和运算；学生提出三颗分组并算到33组99颗。当前只桥接剩余1颗与下一组位置和颜色，不重教分组，不提供颜色答案。",
+        "pending_question": "剩下的第100颗会落在下一组的什么位置，因而是什么颜色？"
+      },
+      "segment_projection": {
+        "strategy_summary": "学生在教师邀请寻找重复段后，确定红蓝绿三颗一组，并把33组对应到99颗；已不再逐颗数。学生明确剩余1颗的位置解释未定，教师只追问此桥梁。",
+        "ability_evidence": [
+          {"kind": "supported", "observation": "识别三颗重复组并正确算得33组为99颗。", "conditions": "教师提示可寻找反复出现的小段，但未给长度或计算式；学生完成分组与成组计数。剩余位置及颜色仍待观察。"}
+        ]
+      }
+    },
+    {
+      "id": "C2",
+      "input": "是下一组第一颗，所以是红色。",
+      "reply": "你把“余1”和下一组第一颗连起来了，所以第100颗是红色。检查看看：如果改问第99颗，你会怎样确定颜色？",
+      "turn_state": {
+        "owner": "math-high-session/root",
+        "scope_id": "scope_C2",
+        "mode": "learn",
+        "active_act": "opening",
+        "current_task": "红蓝绿三色一直重复，第99颗是什么颜色？",
+        "response_format": "确定颜色并解释依据；一次相邻数值检查。",
+        "student_response": null,
+        "continuation": "原题学生先给三颗一组与100÷3余1，在教师询问余数意义后说明下一组第一颗是红色。原题理由已补齐；现只改变位置为99作一次边界检查，未提示整除的位置意义。不是情境迁移，未宣称稳定掌握。",
+        "pending_question": "如果改问第99颗，你会怎样确定颜色？"
+      },
+      "segment_projection": {
+        "strategy_summary": "学生解释余1表示下一组第一颗并确定红色，完成原题分组—余数—颜色的关系链。此解释是在教师追问余数意义后完成；教师以第99颗作一次无位置提示的相邻边界检查，等待新表现。",
+        "ability_evidence": [
+          {"kind": "supported", "observation": "把余1解释为下一组第一颗，并正确确定第100颗为红色。", "conditions": "分组三颗与带余除法在入口由学生给出，此前支持未知；教师本轮前已提醒完整组和剩余1颗、询问其位置。第99颗尚未作答，不能计为独立检查成功。"}
+        ]
+      }
+    },
+    {
+      "id": "C3",
+      "input": "100除以3是33余1，整组后第一颗是红色；如果刚好没剩，我有点拿不准。",
+      "reply": "你已经用整组和余1说明了第100颗为什么是红色。就用第99颗来弄清“没剩”：99除以3没有余数时，第99颗在最后一个完整组的什么位置，是什么颜色？",
+      "turn_state": {
+        "owner": "math-high-session/root",
+        "scope_id": "scope_C3",
+        "mode": "learn",
+        "active_act": "opening",
+        "current_task": "红蓝绿三色一直重复，第99颗是什么颜色？",
+        "response_format": "解释整除时目标珠子在完整组中的位置与颜色。",
+        "student_response": null,
+        "continuation": "原题中学生在教师仅追问题设依据、未给分组或除法后，自行提出100÷3余1并连接颜色，已超过前十颗观察。学生自述不确定余0含义，尚无错误表现。现用99隔离整除边界，教师给无余数及最后完整组的关注方向，等待具体位置解释。",
+        "pending_question": "99除以3没有余数时，第99颗在最后一个完整组的什么位置，是什么颜色？"
+      },
+      "segment_projection": {
+        "strategy_summary": "学生从有限观察转向用题设重复结构与100÷3余1论证红色，教师此前没有提供分组或除法。学生另自述整除情形拿不准，未作错误判断；本轮保持同一重复序列，以99及最后完整组的位置作局部支持，不直接给余0规则。",
+        "ability_evidence": [
+          {"kind": "independent", "observation": "提出100÷3=33余1，并用整组后第一颗解释第100颗是红色。", "conditions": "教师仅要求用题设持续重复说明结论，未提供三颗分组、除法或余数映射；这是在已有答案之后自行补出的本题理由，不是新任务独立迁移。整除边界仅有不确定的自述，无错误或成功表现。"}
+        ]
+      }
+    }
+  ]
+}

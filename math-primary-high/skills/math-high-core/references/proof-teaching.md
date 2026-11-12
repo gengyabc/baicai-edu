@@ -31,7 +31,7 @@ Candidate strategies are options, not keyword rules or a student checklist:
 | Geometric relationship | Direct properties or auxiliary construction | What visible constraint motivates this particular object and ensures it can be constructed? |
 | Equality or inequality | Transformations, bounds, known results, or invariants | Which steps are reversible, and are domain and inequality direction preserved? |
 
-Teach a genuinely missing logical tool explicitly with a small reasoned example, then reconnect to the current obstacle. A candidate strategy is useful only through specific available relations; knowing its name is not a prerequisite. A supplied construction needs an origin and purpose and remains teacher-supplied evidence.
+For a genuinely missing logical tool, follow `references/prerequisite-learning.md`: preserve the proof goal and enter a tool-learning child through session dispatch. Teach normally once its prerequisites are available; return one layer after independent use and reconnect to the proof obstacle. A candidate strategy is useful only through specific available relations; knowing its name is not a prerequisite. A supplied construction needs an origin and purpose and remains teacher-supplied evidence.
 
 Completion: one verified candidate has a reachable next strategic decision, or one specific missing tool is selected for teaching; neither a whole route menu nor an unexplained trick is assigned to the student.
 
@@ -78,7 +78,7 @@ Match evidence to the actual goal:
 
 Completion criteria describe evidence to seek, not a compulsory exit test after a direct-solution request. Mark supported completion, reconstruction after answer exposure, and independent construction separately. Transfer is optional and follows agreement; recitation does not show when a strategy applies.
 
-In existing `context.turn_state`, retain only the current claim/scope, goal, provisional route, local obstacle, tool evidence/support, teacher-supplied help, and pending question needed to resume. These are descriptions within existing state, not new required keys, profile fields, stages, or mastery probabilities. Follow `references/math-segment-fields.md` for the single segment and shared thresholds for durable confirmation. An unfinished proof alone is not evidence of a student difficulty.
+In existing `context.turn_state`, retain only the current claim/scope, goal, provisional route, local obstacle, tool evidence/support, teacher-supplied help, and pending question needed to resume. These proof descriptions within existing state are not new required keys, profile fields, stages, or mastery probabilities. A confirmed tool gap uses the separate optional task-recovery plan in `references/prerequisite-learning.md`; it is not a proof diagnosis field. Follow `references/math-segment-fields.md` for the single segment and shared thresholds for durable confirmation. An unfinished proof alone is not evidence of a student difficulty.
 
 Completion: the record states what the student established, under what support, and what remains unknown without turning completion of the teaching process into a mastery claim.
 

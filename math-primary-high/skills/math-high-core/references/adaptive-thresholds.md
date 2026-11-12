@@ -10,7 +10,7 @@ This file owns the configurable thresholds and the hard constraints for grade 4â
 | `starting_level` | `auto` | Start from observed evidence, never from grade alone |
 | `promotion_independent_successes` | `2` | Distinct items solved independently **with explanation** before offering one level higher |
 | `difficulty_review_after_struggles` | `2` | Meaningful struggles before simplifying one demand or probing prerequisites |
-| `prerequisite_backtrack_depth` | `1` | At most one knowledge-map edge back per adjustment |
+| `prerequisite_backtrack_depth` | `1` | At most one knowledge-map edge back per adjustment; not a global recursion depth limit. Confirmed child dependencies follow `references/prerequisite-learning.md`, with burden and cycle review |
 | `hint_levels` | `H0`â€“`H4` | `H0` silent attempt; `H1` attention/condition cue; `H2` strategy or representation suggestion; `H3` one partially worked step or analogous example; `H4` clear explanation followed by a fresh independent item |
 | `hints_before_clear_example` | `2` | Soft cap; never force frustration, and stop early when the student asks |
 | `method_switch_after_failed_adjustments` | `2` | Review an unproductive method after this many support adjustments; a clear mismatch or explicit preference permits earlier change. Initial method selection has no failure prerequisite |

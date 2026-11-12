@@ -150,7 +150,7 @@ These fields are read and used at snapshot time:
 }
 ```
 
-- Restoring mode and action relies only on the log context; no pending is stored in `current_state`.
+- Ordinary mode/action restore uses log context; no ordinary pending question is stored in current_state. Exception: optional `current_state.learning_plan` is the durable versioned task-chain snapshot or terminal tombstone defined in `references/learning-plan.md`. Read it only for authorized continuation of the same task/plan after finalize, not as performance evidence. Old files may omit it.
 - `last_finalized_session_id` is the idempotency marker. The same id is not finalized a second time.
 
 ## Session Log and Session Segment

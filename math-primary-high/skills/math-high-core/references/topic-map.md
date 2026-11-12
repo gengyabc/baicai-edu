@@ -27,6 +27,10 @@ Each entry: `id | usual entry band (indicative, not mandated) | prerequisite IDs
 | chance / informal probability | 5–6 | fractions-as-number, data-graphs | short-run outcomes must match exact proportion | uncertainty reasoning |
 | multi-step-models / multi-constraint problems | 4–6 | operation-meaning, relevant domain nodes | computes before deciding what matters | budgeting, project planning |
 
+## Method links (conditional, many-to-many)
+
+`references/mathematical-strategies.md` indexes ways to think, separate from this knowledge graph. Assume/adjust may use operation-meaning, multiplicative-thinking and multi-step-models; enumeration may use operation-meaning, multiplicative-thinking and data-graphs; remainders/cycles may use whole-number-division, factors-multiples and patterns-generalize. These are possible tools, not mandatory tests or a unique method for each node. For an evidenced missing tool, follow `references/prerequisite-learning.md`; preserve the parent rather than overwriting the learning goal. One-edge prerequisite adjustments do not impose a global recursion depth limit.
+
 ## Graph usage guidance
 
 - Check prerequisite chains conditionally, not as a mandatory exhaustive diagnostic. A grade-6 child solving percentages accurately need not retake place-value questions.

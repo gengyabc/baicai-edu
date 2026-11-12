@@ -14,6 +14,10 @@ Before moving a focus or stepping back a knowledge point, use `references/topic-
 
 Use two contrasting probes for a suspected misconception (for example `0.9` and `0.87`, then placing both on a number line) instead of one more example of the same kind.
 
+## Local Thinking Obstacles
+
+Use a local obstacle description to select an action, not a new `error_type`, six-dimensional score, or persistent student type. Understanding, representation, strategy selection, execution, justification and transfer can overlap; retain only the best-supported current description in `strategy_summary`. A missing enumeration branch may be an incomplete classification or a copying slip: ask a discriminating question before concluding. A student who can calculate but cannot organize cases needs an organization bridge, not automatic arithmetic remediation. Use `references/mathematical-strategies.md` for the three-method pilot and student monitoring. Confirmed tool gaps return to session for `references/prerequisite-learning.md`; only the shared lifecycle writes the plan, and the diagnostic leaf does not route another skill.
+
 ## Error Causes
 
 | `error_type` | Actual evidence |

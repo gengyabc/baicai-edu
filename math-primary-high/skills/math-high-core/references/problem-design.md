@@ -18,6 +18,8 @@ Change the scene only when testing context transfer: the relationship and unknow
 
 Adjust story complexity by the student's performance, not tied to grade: a one-step story with complete information first, then one extra condition or intermediate step at a time. In grades 5–6 a two- or three-step story, a ratio, or a percent situation can be the target itself when the evidence supports it.
 
+For fixed-total contribution differences, organized finite choices, or repeating states/positions, use `references/mathematical-strategies.md` to design cases from structure rather than a type-name/strategy match. Distinguish near transfer (new surface, same structure) from boundary discrimination (change one decisive condition and examine whether the method still applies). Examples include fixed versus variable unit adjustment, ordered roles versus an unranked pair, or a stated repeat rule versus a finite prefix. Reuse valid student alternatives; no method name is required. Transfer is optional and needs agreement; without independent evidence keep transfer unknown, not inferred from repeating the teacher's summary.
+
 ## Multi-Part Exercises
 
 When the student brings a printed exercise with several sub-questions on one quantity relationship, or when the chosen problem naturally has several graded parts, design the parts as a task bundle: a child view with one entry part, then one variation part, then one check part, and an adult key that stays hidden until the student has attempted, asked, or graded. The student does the organisation of a multi-part answer; the teaching assistant chooses at most one entry part this turn and does not list all parts as pending questions.

@@ -33,6 +33,10 @@ Each teaching turn needs only this file: the structure of the log and segments. 
 - `finalize_plan` is defined only by `references/finalize-session.md`. While a plan is incomplete, finish the save first, then teach, edit profiles, or write error items.
 - `/learn` and `/learn-feynman` both go through `references/session-lifecycle.md` to append the single subject segment and update context. Append only for actual student performance; in other turns the segment is null and only context is written. After Finalize commits the four subject files, segments, context, and plan are then cleared.
 
+## Prerequisite learning plans
+
+Optional `context.learning_plan` follows `references/learning-plan.md`: versioned local task frames, one active projection, stable root scope/teaching, and evidence-based single-parent returns. Read that reference before creating/changing/restoring a plan; the current teaching owner owns subject semantics. Its durable snapshot is `current_state.learning_plan`, separate from support_events and performance memory. Old logs without it keep the single-task flow.
+
 ## Teaching implementation and support state
 
 A new context adds `scope_id` (the stable identity of the selected target) and `teaching`; its core/session fields store actual unique skill names, not just a subject-derived alias. The result and the defaults for old logs follow only `references/teaching-resolver.md`, including legacy mathematics-name restore. A new segment also carries the same scope_id/teaching; an old segment without these fields is treated as specialist and is not migrated or rewritten. `activity` additionally allows `support`: with pure support, focus and target_context may be null and turn_state does not fabricate a current question; with a real task, support layers on top and keeps the original activity, material, mode, and pending question.

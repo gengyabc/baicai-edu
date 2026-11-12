@@ -1,0 +1,181 @@
+{
+  "session_id": "sess_fixture_01",
+  "entry_point": "learn",
+  "started_at": "2026-11-12T00:38:32Z",
+  "updated_at": "2026-11-12T00:38:32Z",
+  "context": {
+    "scope_id": "scope_cycle_fixture",
+    "teaching": {
+      "core_skill": "math-high-core",
+      "session_skill": "math-high-session",
+      "evidence_namespace": "specialist"
+    },
+    "focus": "完整组",
+    "mode": "learn",
+    "activity": "teaching",
+    "target_context": {
+      "type": "topic",
+      "topic": "完整组",
+      "source": "manual_topic",
+      "files": [],
+      "intent": null
+    },
+    "materials": {},
+    "turn_state": {
+      "current_task": "7个圆片，每3个放一盒，哪些盒子是完整组？",
+      "response_format": "说明每盒数量和未装物品",
+      "student_response": "懂了",
+      "pending_question": "换一个：10个圆片每3个装一盒，请你自己分并说明哪些完整、哪些剩下。",
+      "leaf": "practice",
+      "support_used": [
+        "教师说明：一组必须正好3个，2个不能算完整组"
+      ]
+    },
+    "learning_plan": {
+      "version": 1,
+      "id": "plan_cycle_fixture",
+      "revision": 4,
+      "root_scope_id": "scope_cycle_fixture",
+      "teaching": {
+        "core_skill": "math-high-core",
+        "session_skill": "math-high-session",
+        "evidence_namespace": "specialist"
+      },
+      "status": "active",
+      "active_frame_id": "grouping",
+      "frames": [
+        {
+          "id": "root",
+          "parent_id": null,
+          "goal": "说明第100颗的颜色",
+          "status": "parked",
+          "task": {
+            "focus": "周期位置",
+            "mode": "learn",
+            "activity": "teaching",
+            "target_context": {
+              "type": "topic",
+              "topic": "周期位置",
+              "source": "manual_topic",
+              "files": [],
+              "intent": null
+            },
+            "materials": {},
+            "turn_state": {
+              "current_task": "红蓝绿一直重复，第100颗是什么颜色？",
+              "response_format": "说明位置理由",
+              "student_response": "我数到第10颗是红，不知道100怎么数。",
+              "pending_question": "怎样知道第100颗落在每组哪个位置？",
+              "leaf": "practice",
+              "support_used": []
+            }
+          },
+          "tool_evidence": [],
+          "return_condition": null
+        },
+        {
+          "id": "remainder",
+          "parent_id": "root",
+          "goal": "理解余数表示剩下的数量",
+          "status": "parked",
+          "task": {
+            "focus": "余数",
+            "mode": "learn",
+            "activity": "teaching",
+            "target_context": {
+              "type": "topic",
+              "topic": "余数",
+              "source": "manual_topic",
+              "files": [],
+              "intent": null
+            },
+            "materials": {},
+            "turn_state": {
+              "current_task": "11个物品每3个一组，几组还剩几个？",
+              "response_format": "实际分组并解释剩余",
+              "student_response": "我把11个放成3堆：4、4、3，所以没有剩下。",
+              "pending_question": "每一组都必须正好3个，分完后哪些算完整组？",
+              "leaf": "practice",
+              "support_used": []
+            }
+          },
+          "tool_evidence": [],
+          "return_condition": "在新题中独立正确分组并解释余数"
+        },
+        {
+          "id": "grouping",
+          "parent_id": "remainder",
+          "goal": "每组恰好3个的完整组",
+          "status": "active",
+          "task": {
+            "focus": "完整组",
+            "mode": "learn",
+            "activity": "teaching",
+            "target_context": {
+              "type": "topic",
+              "topic": "完整组",
+              "source": "manual_topic",
+              "files": [],
+              "intent": null
+            },
+            "materials": {},
+            "turn_state": {
+              "current_task": "7个圆片，每3个放一盒，哪些盒子是完整组？",
+              "response_format": "说明每盒数量和未装物品",
+              "student_response": "懂了",
+              "pending_question": "换一个：10个圆片每3个装一盒，请你自己分并说明哪些完整、哪些剩下。",
+              "leaf": "practice",
+              "support_used": [
+                "教师说明：一组必须正好3个，2个不能算完整组"
+              ]
+            }
+          },
+          "tool_evidence": [],
+          "return_condition": "独立在不同数量的新题按每组3个分出完整组和剩余"
+        }
+      ],
+      "confirmed_gaps": [
+        {
+          "frame_id": "root",
+          "tool": "余数含义",
+          "evidence": "把每3个一组误作分成3组",
+          "conditions": "11个每3个的实际分组"
+        },
+        {
+          "frame_id": "remainder",
+          "tool": "完整组",
+          "evidence": "把3、2、2都称为每3个的完整组",
+          "conditions": "7个每3个一组"
+        }
+      ],
+      "unverified_dependencies": [],
+      "steps": [
+        {
+          "frame_id": "root",
+          "goal": "说明第100颗的颜色",
+          "status": "parked",
+          "tool_use_condition": null,
+          "return_condition": null
+        },
+        {
+          "frame_id": "remainder",
+          "goal": "理解余数表示剩下的数量",
+          "status": "parked",
+          "tool_use_condition": "在新题中独立正确分组并解释余数",
+          "return_condition": "在新题中独立正确分组并解释余数"
+        },
+        {
+          "frame_id": "grouping",
+          "goal": "每组恰好3个的完整组",
+          "status": "active",
+          "tool_use_condition": "独立在不同数量的新题按每组3个分出完整组和剩余",
+          "return_condition": "独立在不同数量的新题按每组3个分出完整组和剩余"
+        }
+      ],
+      "summary": "原周期题保留；先学完整组，再解释余数，最后回到周期位置。",
+      "next_step": "换一个：10个圆片每3个装一盒，请你自己分并说明哪些完整、哪些剩下。",
+      "updated_at": "2026-11-12T00:38:32Z"
+    }
+  },
+  "segments": []
+}

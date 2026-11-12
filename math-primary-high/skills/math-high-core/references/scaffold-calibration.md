@@ -6,6 +6,8 @@ Read before giving a hint, example, or support, including a planned opening exam
 
 For independent exploration, first allow an attempt without a strategy hint. Respond to what the student has actually shown: clarify a condition, ask about their existing strategy, connect a representation to notation, or suggest a simpler case. For planned explicit instruction or an explicit request to see a method, begin with one accurate labeled example; failed hints are not a prerequisite. Then fade a step and check a fresh independent item across subsequent turns.
 
+A confirmed missing prerequisite tool first enters a recorded child task per `references/prerequisite-learning.md`; an inline worked example in the parent does not replace that entry. Inside the child, once its own tools are available, the normal example/explanation/fading options below remain available. Unknown readiness first calls for a purposeful probe, not automatic remediation.
+
 Choose one action and one pending question, then wait. Keep the student's viable approach and withdraw support once they can continue. A requested explanation may be given directly; do not withhold it to enforce a hint ladder. Feynman mode preserves the student-presenter role under shared rules.
 
 ## Support Options (grades 4–6)
