@@ -12,6 +12,8 @@ Privately identify the assumptions, conclusion, domain/quantifiers, definitions,
 - Finite examples and numerical or diagrammatic tests can motivate a universal conjecture; one genuine counterexample refutes it. A valid witness can prove existence if it satisfies every requirement. An exhaustive finite check can prove a genuinely finite claim when all cases and checks are justified.
 - A diagram can support a general argument when its stated relationships justify every inference; appearance or measurement alone does not establish those relationships.
 
+When the claim is to be tested rather than proved — a proposed counterexample, a necessary condition someone hopes is sufficient, or an attempt to refute a universal claim — read `references/counterexamples-and-proposition-direction.md` before the next action. It adds how the two ends of a counterexample are checked and how it is attributed; this section keeps ownership of direction, necessity and refutation.
+
 Completion: the claim's scope and requested output are clear enough to choose a next action; truth and missing assumptions are not taken on faith.
 
 ## 2. Connect tools to candidate routes

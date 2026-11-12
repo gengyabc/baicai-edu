@@ -1916,3 +1916,64 @@ test('proof evidence stays scoped supported and within the shared record schema'
     'teacher-supplied', 'context-only', 'session_segment: null',
     'Do not add a proof submode, stage, or profile field'])
 })
+
+test('counterexample checks reach the existing proof entry without a second logic framework', () => {
+  // Static reachability guard only; it does not replay a teaching dialogue.
+  const ref = 'references/counterexamples-and-proposition-direction.md'
+  const proof = highRef('proof-teaching')
+  assert.match(proof, new RegExp(ref))
+  assert.match(highRef('problem-design'), /A claim to test[^\n]*references\/counterexamples-and-proposition-direction\.md/)
+  assert.match(highRef('mathematical-strategies'), /references\/proof-teaching\.md/)
+  assert.doesNotMatch(highRef('mathematical-strategies'), new RegExp(ref.replaceAll('.', '\\.')))
+  const counterexamples = highRef('counterexamples-and-proposition-direction')
+  hasAll(counterexamples, ['references/proof-teaching.md', 'references/derivation-teaching.md',
+    'references/prerequisite-learning.md', 'math-high-session', 'Counterexamples · contract coverage',
+    'Teacher-only checked cases', 'references/math-segment-fields.md'])
+  // The proof file keeps owning direction, necessity and refutation; it points and does not copy.
+  for (const heading of ['## Teacher-only checked cases', '## Counterexamples · contract coverage']) {
+    assert.ok(!proof.includes(heading), `proof-teaching must not copy ${heading}`)
+  }
+  const proofSection = (number) => proof.split(`\n## ${number}. `)[1]?.split('\n## ')[0] ?? ''
+  for (const own of ['Candidate strategies are options', '- **Direction error:**', '- **Scope error:**']) {
+    assert.ok(proofSection('2').includes(own) || proofSection('4').includes(own), `proof-teaching keeps ${own}`)
+  }
+  assert.ok((counterexamples.match(/\n## /g) ?? []).length <= 7, 'supplement stays one task-selected file')
+  // Band-local: neither the shared contract nor the lower band gains this file.
+  for (const [bundle, name] of [['math-common', 'math-common'], ['math-primary-low', 'math-low-core']]) {
+    assert.doesNotMatch(text(skillPath(bundle, name)), /counterexamples-and-proposition-direction/, name)
+  }
+  for (const path of markdownFiles('math-primary-high/skills')) {
+    assert.doesNotMatch(text(path), /[（(]12[）)]|\bissue 12\b/, `${path}: no ticket-number routing`)
+  }
+  assert.doesNotMatch(counterexamples, /https?:\/\//)
+})
+
+test('counterexample rules separate necessity from sufficiency and keep teacher cases hidden', () => {
+  // Architecture and disclosure only; mathematical counts live in the case script.
+  const counterexamples = highRef('counterexamples-and-proposition-direction')
+  const [, checked] = counterexamples.split('## Teacher-only checked cases')
+  assert.ok(checked?.trim(), 'checked cases have a teacher-only boundary')
+  const [, coverage] = counterexamples.split('## Counterexamples · contract coverage')
+  assert.ok(coverage?.trim(), 'rules carry their own static coverage section')
+  hasAll(coverage, ['voluntary probing', 'teacher-supplied counterexample', 'one relevant clarification',
+    'necessary', 'not sufficient', 'failed search is not a proof', 'every premise holds',
+    'the conclusion fails', 'a tileable instance does not rescue', 'universal scope and an P→Q direction',
+    'do not record a correct necessity result as an error', 'connectivity', 'four odd vertices',
+    'supported understanding', 'session_segment: null', 'one merged segment per turn',
+    'contacting this reference remains optional', 'Informed full-solution choice',
+    'prerequisite learning', 'no new boundary file', 'for a bare “can\'t be tiled” claim'])
+  // Private conventions of the board artifact stay out of the installed rules.
+  for (const hidden of ['blue lines', '(row, column)', 'one black and one white', 'necessary condition, so']) {
+    assert.ok(!coverage.toLowerCase().includes(hidden.toLowerCase()), `not in runtime rules: ${hidden}`)
+  }
+  hasAll(checked, ['(1,1)', '(1,2)', '(2,1)', '(3,3)', '(4,4)', '6 black', '6 white',
+    'not sufficient', 'at most its two endpoints can be odd'])
+  const scenarios = text('math-primary-high/tests/teaching-scenarios.md')
+  hasAll(scenarios, ['## 反例与命题方向', 'CB1', 'CB2', '不否定'])
+  // The supplement adds no state, act, submode, or band change.
+  assert.doesNotMatch(counterexamples, /^name:|^supported_stages:|ui\.solution\.|learning_plan_update|active_frame_id|new submode/m)
+  for (const row of highCore.split('\n').filter((line) => line.startsWith('| ') && line.includes('“'))) {
+    const label = row.split('|')[1].trim()
+    assert.ok(label.length <= 260, `core condition label stays short: ${label}`)
+  }
+})

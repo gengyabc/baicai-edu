@@ -1,0 +1,4 @@
+$ node scripts/check-skills.mjs
+
+43 skills checked, 0 errors, 0 warnings
+[exit: 0]

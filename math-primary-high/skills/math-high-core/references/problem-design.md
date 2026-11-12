@@ -14,6 +14,8 @@ When the student cannot do it, you may swap in easier numbers within the same st
 
 By teaching purpose, change mainly one thing each time: number structure, unknown position, problem type, or scene, keeping the rest as much as possible. When developing a strategy or comparing relationships, you may keep the scene, and may deliberately repeat numbers or results; a change in number structure also counts as variation. While the current problem is not yet finished, keep the original scene.
 
+A claim to test, rather than to prove, can be explicit: state the claim and the objects it covers without the answer. Keep teacher-checked counterexamples private per `references/counterexamples-and-proposition-direction.md`, and paste them only as labelled examples.
+
 Change the scene only when testing context transfer: the relationship and unknown position stay the same, with numbers nearby. A new scene must change the everyday activity, objects, and actions; changing only names of people or objects is still the same scene. Success only in the original scene is recorded as evidence of relationship or number variation in that scene; only if the student can still explain after the scene changes is it recorded as context transfer.
 
 Adjust story complexity by the student's performance, not tied to grade: a one-step story with complete information first, then one extra condition or intermediate step at a time. In grades 5–6 a two- or three-step story, a ratio, or a percent situation can be the target itself when the evidence supports it.
