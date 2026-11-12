@@ -1762,6 +1762,63 @@ test('proof teaching covers logical structure strategy validity and student orga
     '存在性见证', '有限范围穷举', '证明恢复', '完整证明的明确请求'])
 })
 
+// ---------------------------------------------------------------------------
+// Structural boundary variation: one load-bearing condition changes, so the
+// teaching has to say which step of the old method still holds and which must
+// be rebuilt. These are wiring and architecture guards only; whether a model
+// teaches this way still needs the stage-3 V/B replay recorded as untested.
+// ---------------------------------------------------------------------------
+
+test('boundary variation supplements the existing problem design and method index', () => {
+  // Reachability only: no assertion on teaching phrasing or checked-case answers.
+  const path = 'references/boundary-variation.md'
+  assert.match(highRef('problem-design'), /references\/boundary-variation\.md/)
+  assert.match(highRef('mathematical-strategies'), /references\/boundary-variation\.md/)
+  const row = highCore.split('\n').find((line) => line.includes('boundary-variation.md')) ?? ''
+  assert.ok(row, 'no core condition row reaches the supplement')
+  assert.match(row, /references\/mathematical-strategies\.md/)
+  assert.match(row, /load-bearing|decisive condition/i)
+  const supplement = highRef('boundary-variation')
+  for (const file of ['mathematical-strategies', 'problem-design', 'proof-teaching',
+    'prerequisite-learning', 'math-segment-fields', 'math-teaching-core']) {
+    assert.ok(supplement.includes(`references/${file}.md`), file)
+  }
+  hasAll(supplement, ['math-high-session', 'no new leaf', 'Teacher-only checked cases'])
+  // The shared informed choice stays owned in learn-core; a disclosure copy here would fork it.
+  assert.ok(!supplement.includes('ui.solution.'), 'local copy of the disclosure protocol')
+  assert.doesNotMatch(supplement, /^name:|supported_stages|^## Subject contract$/m)
+})
+
+test('boundary variation reuses one movement and leaves its neighbours their owners', () => {
+  // Static guards only: no exact phrase or student-facing wording is asserted.
+  const supplement = highRef('boundary-variation')
+  hasAll(supplement, ['one', 'load-bearing', 'near transfer', 'supported work'])
+  // Counting, proof scope, recurrence scope and prerequisite descent keep their single owners.
+  assert.match(supplement, /references\/mathematical-strategies\.md/)
+  assert.match(supplement, /references\/proof-teaching\.md/)
+  assert.match(supplement, /references\/prerequisite-learning\.md/)
+  // No second teaching loop: the supplement adds no state field or UI choice protocol.
+  assert.doesNotMatch(supplement, /learning_plan_update|active_frame_id|new submode|error_type/i)
+  // Band-local: the shared package and the other band do not load it.
+  assert.doesNotMatch(text(skillPath('math-common', 'math-common')), /boundary-variation/)
+  assert.doesNotMatch(text(skillPath('math-primary-low', 'math-low-core')), /boundary-variation/)
+  assert.doesNotMatch(supplement, /https?:\/\//)
+})
+
+test('boundary variation keeps its checked cases behind one teacher-only boundary', () => {
+  // Structure only: the answers and routes inside are content, not assertions.
+  const supplement = highRef('boundary-variation')
+  const [rule, checked = ''] = supplement.split('## Teacher-only checked cases')
+  assert.ok(checked.trim().length > 0, 'checked cases have a teacher-only boundary')
+  // The checked section points at the owner of the disclosure rule rather than restating it.
+  hasAll(checked, ['informed full-solution choice', 'learn-core'])
+  // Probes are checked-case answers that must stay inside the checked section.
+  for (const probe of ['deputy', 'triangular-dot']) {
+    assert.ok(checked.toLowerCase().includes(probe.toLowerCase()), `${probe} case stays in the checked section`)
+    assert.ok(!rule.toLowerCase().includes(probe.toLowerCase()), `${probe} leaks into the rule body`)
+  }
+})
+
 test('geometry transformations load conditionally through the existing high math owner', () => {
   // Architecture contract only: this does not execute a teaching dialogue.
   const row = highCore.split('\n').find((line) => line.includes('references/geometry-reasoning.md'))

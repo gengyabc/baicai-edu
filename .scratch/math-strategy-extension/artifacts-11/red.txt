@@ -1,0 +1,98 @@
+✖ boundary variation supplements the existing problem design and method index (1.074958ms)
+✖ boundary variation reuses one movement and leaves its neighbours their owners (0.079166ms)
+✖ boundary variation keeps its checked cases behind one teacher-only boundary (0.053458ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 0
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 42.477791
+
+✖ failing tests:
+
+test at scripts/skill-contracts.test.mjs:1772:1
+✖ boundary variation supplements the existing problem design and method index (1.074958ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /references\/boundary-variation\.md/. Input:
+  
+  '# Choosing Problems by Quantity Relationship\n' +
+    '\n' +
+    'Choose the current problem by mathematical purpose and structure. For quantity stories, CGI distinctions remain useful: join, separate, part-part-whole, compare, equal groups (multiplication), measurement (quotitive) division, partitive (equal-sharing) division, and multiplicative comparison, plus multi-step, multi-constraint, ratio, percent, and non-routine problems; the unknown can be in different positions. The stem and any illustration do not name an operation or strategy. Being able to do one problem type or one unknown position does not imply the others.\n' +
+    '\n' +
+    '## The Current Problem\n' +
+    '\n' +
+    'Choose one relationship from the explicit goal or evidence. Match format to purpose: a situation for quantity meaning, direct computation for procedure practice, a diagram or table for structure, an equation for symbolic relationships, and a claim for reasoning or proof. Honour an explicit feasible practice format. Stories are useful when context matters, not a wrapper required for every task. An assessment item stops at its question without naming its solution strategy; any instructional example is subject to the shared Guide before revealing gate, not licensed by choosing an instructional format.\n' +
+    '\n' +
+    'Use number choice to adjust difficulty and to guide toward the next strategy, without naming a strategy. You may also give two or three sets of numbers for the student to choose from. In grades 4–6, larger numbers, decimals, fractions, and multiple steps are a load change, not a proof of a weaker or stronger strategy.\n' +
+    '\n' +
+    'When the student cannot do it, you may swap in easier numbers within the same story and return to the original numbers once done; see `references/scaffold-calibration.md`.\n' +
+    '\n' +
+    '## Variation and Transfer\n' +
+    '\n' +
+    'By teaching purpose, change mainly one thing each time: number structure, unknown position, problem type, or scene, keeping the rest as much as possible. When developing a strategy or comparing relationships, you may keep the scene, and may deliberately repeat numbers or results; a change in number structure also counts as variation. While the current problem is not yet finished, keep the original scene.\n' +
+    '\n' +
+    'Change the scene only when testing context transfer: the relationship and unknown position stay the same, with numbers nearby. A new scene must change the everyday activity, objects, and actions; changing only names of people or objects is still the same scene. Success only in the original scene is recorded as evidence of relationship or number variation in that scene; only if the student can still explain after the scene changes is it recorded as context transfer.\n' +
+    '\n' +
+    "Adjust story complexity by the student's performance, not tied to grade: a one-step story with complete information first, then one extra condition or intermediate step at a time. In grades 5–6 a two- or three-step story, a ratio, or a percent situation can be the target itself when the evidence supports it.\n" +
+    '\n' +
+    "For fixed-total contribution differences, organized finite choices, or repeating states/positions, use `references/mathematical-strategies.md` to design cases from structure rather than a type-name/strategy match. Distinguish near transfer (new surface, same structure) from boundary discrimination (change one decisive condition and examine whether the method still applies). Examples include fixed versus variable unit adjustment, ordered roles versus an unranked pair, or a stated repeat rule versus a finite prefix. Reuse valid student alternatives; no method name is required. Transfer is optional and needs agreement; without independent evidence keep transfer unknown, not inferred from repeating the teacher's summary.\n" +
+    '\n' +
+    '## Multi-Part Exercises\n' +
+    '\n' +
+    'When the student brings a printed exercise with several sub-questions on one quantity relationship, or when the chosen problem naturally has several graded parts, design the parts as a task bundle: a child view with one entry part, then one variation part, then one check part, and an adult key that stays hidden until the student has attempted, asked, or graded. The student does the organisation of a multi-part answer; the teaching assistant chooses at most one entry part this turn and does not list all parts as pending questions.\n' +
+    '\n' +
+    '## Task Verification\n' +
+    '\n' +
+    'Before presenting a new problem, verify that the conditions are sufficient, the arithmetic is right, the units match, and the answer is unique or that several answers are explicitly intended. Open problems need success criteria, not a simulated unique answer; an invented real-world figure must not be presented as factual data.\n'
+  
+      at TestContext.<anonymous> (file:///Users/yugeng/programming/dsh-edu/.scratch/math-strategy-extension/worktrees/boundary/scripts/skill-contracts.test.mjs:1775:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: "# Choosing Problems by Quantity Relationship\n\nChoose the current problem by mathematical purpose and structure. For quantity stories, CGI distinctions remain useful: join, separate, part-part-whole, compare, equal groups (multiplication), measurement (quotitive) division, partitive (equal-sharing) division, and multiplicative comparison, plus multi-step, multi-constraint, ratio, percent, and non-routine problems; the unknown can be in different positions. The stem and any illustration do not name an operation or strategy. Being able to do one problem type or one unknown position does not imply the others.\n\n## The Current Problem\n\nChoose one relationship from the explicit goal or evidence. Match format to purpose: a situation for quantity meaning, direct computation for procedure practice, a diagram or table for structure, an equation for symbolic relationships, and a claim for reasoning or proof. Honour an explicit feasible practice format. Stories are useful when context matters, not a wrapper required for every task. An assessment item stops at its question without naming its solution strategy; any instructional example is subject to the shared Guide before revealing gate, not licensed by choosing an instructional format.\n\nUse number choice to adjust difficulty and to guide toward the next strategy, without naming a strategy. You may also give two or three sets of numbers for the student to choose from. In grades 4–6, larger numbers, decimals, fractions, and multiple steps are a load change, not a proof of a weaker or stronger strategy.\n\nWhen the student cannot do it, you may swap in easier numbers within the same story and return to the original numbers once done; see `references/scaffold-calibration.md`.\n\n## Variation and Transfer\n\nBy teaching purpose, change mainly one thing each time: number structure, unknown position, problem type, or scene, keeping the rest as much as possible. When developing a strategy or comparing relationships, you may keep the scene, and may deliberately repeat numbers or results; a change in number structure also counts as variation. While the current problem is not yet finished, keep the original scene.\n\nChange the scene only when testing context transfer: the relationship and unknown position stay the same, with numbers nearby. A new scene must change the everyday activity, objects, and actions; changing only names of people or objects is still the same scene. Success only in the original scene is recorded as evidence of relationship or number variation in that scene; only if the student can still explain after the scene changes is it recorded as context transfer.\n\nAdjust story complexity by the student's performance, not tied to grade: a one-step story with complete information first, then one extra condition or intermediate step at a time. In grades 5–6 a two- or three-step story, a ratio, or a percent situation can be the target itself when the evidence supports it.\n\nFor fixed-total contribution differences, organized finite choices, or repeating states/positions, use `references/mathematical-strategies.md` to design cases from structure rather than a type-name/strategy match. Distinguish near transfer (new surface, same structure) from boundary discrimination (change one decisive condition and examine whether the method still applies). Examples include fixed versus variable unit adjustment, ordered roles versus an unranked pair, or a stated repeat rule versus a finite prefix. Reuse valid student alternatives; no method name is required. Transfer is optional and needs agreement; without independent evidence keep transfer unknown, not inferred from repeating the teacher's summary.\n\n## Multi-Part Exercises\n\nWhen the student brings a printed exercise with several sub-questions on one quantity relationship, or when the chosen problem naturally has several graded parts, design the parts as a task bundle: a child view with one entry part, then one variation part, then one check part, and an adult key that stays hidden until the student has attempted, asked, or graded. The student does the organisation of a multi-part answer; the teaching assistant chooses at most one entry part this turn and does not list all parts as pending questions.\n\n## Task Verification\n\nBefore presenting a new problem, verify that the conditions are sufficient, the arithmetic is right, the units match, and the answer is unique or that several answers are explicitly intended. Open problems need success criteria, not a simulated unique answer; an invented real-world figure must not be presented as factual data.\n",
+    expected: /references\/boundary-variation\.md/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at scripts/skill-contracts.test.mjs:1792:1
+✖ boundary variation reuses one movement and leaves its neighbours their owners (0.079166ms)
+  Error: ENOENT: no such file or directory, open '/Users/yugeng/programming/dsh-edu/.scratch/math-strategy-extension/worktrees/boundary/math-primary-high/skills/math-high-core/references/boundary-variation.md'
+      at readFileSync (node:fs:441:20)
+      at text (file:///Users/yugeng/programming/dsh-edu/.scratch/math-strategy-extension/worktrees/boundary/scripts/skill-contracts.test.mjs:11:24)
+      at highRef (file:///Users/yugeng/programming/dsh-edu/.scratch/math-strategy-extension/worktrees/boundary/scripts/skill-contracts.test.mjs:1374:27)
+      at TestContext.<anonymous> (file:///Users/yugeng/programming/dsh-edu/.scratch/math-strategy-extension/worktrees/boundary/scripts/skill-contracts.test.mjs:1794:22)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    errno: -2,
+    code: 'ENOENT',
+    syscall: 'open',
+    path: '/Users/yugeng/programming/dsh-edu/.scratch/math-strategy-extension/worktrees/boundary/math-primary-high/skills/math-high-core/references/boundary-variation.md'
+  }
+
+test at scripts/skill-contracts.test.mjs:1808:1
+✖ boundary variation keeps its checked cases behind one teacher-only boundary (0.053458ms)
+  Error: ENOENT: no such file or directory, open '/Users/yugeng/programming/dsh-edu/.scratch/math-strategy-extension/worktrees/boundary/math-primary-high/skills/math-high-core/references/boundary-variation.md'
+      at readFileSync (node:fs:441:20)
+      at text (file:///Users/yugeng/programming/dsh-edu/.scratch/math-strategy-extension/worktrees/boundary/scripts/skill-contracts.test.mjs:11:24)
+      at highRef (file:///Users/yugeng/programming/dsh-edu/.scratch/math-strategy-extension/worktrees/boundary/scripts/skill-contracts.test.mjs:1374:27)
+      at TestContext.<anonymous> (file:///Users/yugeng/programming/dsh-edu/.scratch/math-strategy-extension/worktrees/boundary/scripts/skill-contracts.test.mjs:1810:22)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    errno: -2,
+    code: 'ENOENT',
+    syscall: 'open',
+    path: '/Users/yugeng/programming/dsh-edu/.scratch/math-strategy-extension/worktrees/boundary/math-primary-high/skills/math-high-core/references/boundary-variation.md'
+  }

@@ -1,0 +1,11 @@
+✔ boundary variation supplements the existing problem design and method index (0.924625ms)
+✔ boundary variation reuses one movement and leaves its neighbours their owners (0.224583ms)
+✔ boundary variation keeps its checked cases behind one teacher-only boundary (0.100625ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 40.615084
