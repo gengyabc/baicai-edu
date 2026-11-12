@@ -1,7 +1,7 @@
 # M0 回归基线与隔离
 
 Type: task
-Status: ready-for-agent
+Status: resolved
 
 ## 目标
 
@@ -13,13 +13,13 @@ Status: ready-for-agent
 
 ## 验收
 
-- [ ] `node --test math-board/*.test.js` 全通过（当前基线 126 项全通过）；`node build.mjs` 与 `node --check client.js` 通过。
-- [ ] 一个入口、顶部数量／几何两个 tab；两 tab 各自的画布、撤销历史、选择与视口，切换不互见。
-- [ ] 几何草稿使用独立存储键（建议 `dsh-edu-math-board:geometry:v1:${sessionId}`），数量模式原 key、v1–v4 迁移、clear envelope、config watermark 原样保留。
-- [ ] 刷新与切换 tab 后各 draft 恢复；数量模式的导入、导出、放入回答、清空行为无差异。
-- [ ] 几何空状态严格校验；导入失败不改变当前草稿。
-- [ ] 几何 tab 中不显示 `math_board_clear` 请求的任何入口或提示（`issues/07-hide-quantity-clear.md`）。
-- [ ] `math_board_settings` 的投影仍只作用于数量模式；几何 tab 切换不触发 `applyHostConfig` 对几何状态的重放。
+- [x] `node --test math-board/*.test.js` 全通过（当前基线 126 项全通过）；`node build.mjs` 与 `node --check client.js` 通过。
+- [x] 一个入口、顶部数量／几何两个 tab；两 tab 各自的画布、撤销历史、选择与视口，切换不互见。
+- [x] 几何草稿使用独立存储键（建议 `dsh-edu-math-board:geometry:v1:${sessionId}`），数量模式原 key、v1–v4 迁移、clear envelope、config watermark 原样保留。
+- [x] 刷新与切换 tab 后各 draft 恢复；数量模式的导入、导出、放入回答、清空行为无差异。
+- [x] 几何空状态严格校验；导入失败不改变当前草稿。
+- [x] 几何 tab 中不显示 `math_board_clear` 请求的任何入口或提示（`issues/07-hide-quantity-clear.md`）。
+- [x] `math_board_settings` 的投影仍只作用于数量模式；几何 tab 切换不触发 `applyHostConfig` 对几何状态的重放。
 
 ## 不在本单
 

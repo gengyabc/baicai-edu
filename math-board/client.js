@@ -2096,6 +2096,7 @@ window.__ModuleLoader__.load({
     const [rename, setRename] = React.useState(null);
     const gesture = React.useRef(null);
     const svgRef = React.useRef(null);
+    const fileInputRef = React.useRef(null);
     const noteRef = React.useRef(null), nameRef = React.useRef(null);
     const revision = React.useRef(0);
     const phase = props.useInput((s) => s.phase);
@@ -2345,6 +2346,39 @@ window.__ModuleLoader__.load({
         setStatus(t('insertFailed'));
       }
     }
+    // Files reuse the same browser pickers as the quantity board; the remembered
+    // handle is not shared, so each mode remembers its own last file.
+    async function saveFile() {
+      const text = G.serialize(boardRef.current);
+      if (typeof window !== 'undefined' && window.showSaveFilePicker) {
+        try {
+          const handle = await window.showSaveFilePicker({ suggestedName: t('geometryAttachmentName'),
+            types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }] });
+          const writable = await handle.createWritable();
+          await writable.write(text); await writable.close();
+          setStatus(t('fileSaved'));
+          return;
+        } catch (error) { if (error?.name === 'AbortError') return; }
+      }
+      const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+      const anchor = document.createElement('a');
+      anchor.href = url; anchor.download = t('geometryAttachmentName'); anchor.click();
+      URL.revokeObjectURL(url);
+      setStatus(t('fileDownloaded'));
+    }
+    async function importInput(event) {
+      const file = event.target.files?.[0]; event.target.value = '';
+      if (!file) return;
+      try {
+        if (file.size > 262144) throw new Error(t('fileTooLarge'));
+        const next = G.validate(JSON.parse(await file.text()));
+        // A rejected file never changes the current draft.
+        publish(next); setHistory({ past: [], future: [] }); setSelection([]);
+        setStatus(t('imported'));
+      } catch (error) {
+        setStatus(/Another board kind|Invalid/.test(error.message) ? t('otherBoardFile') : `${t('failed')}: ${error.message}`);
+      }
+    }
     function clearMode() {
       // Clearing this mode resets the geometry canvas and its undo history only.
       publish(G.empty());
@@ -2474,10 +2508,10 @@ window.__ModuleLoader__.load({
         title: noteTarget ? `${t('note')} · ${noteTarget.label}` : `${t('note')} · ${t('noteGeneral')}`,
         'aria-label': t('note'), onClick: () => setOverlay({ kind: 'note' }),
       }, icon('note', 18)),
-      h('button', {
-        type: 'button', className: 'eb-icon-button eb-danger', title: t('clearGeometry'), 'aria-label': t('clearGeometry'),
-        onClick: () => setOverlay({ kind: 'clear' }),
-      }, icon('clear', 18)),
+      h('button', { type: 'button', className: 'eb-icon-button eb-danger', title: t('clearGeometry'), 'aria-label': t('clearGeometry'),
+        onClick: () => setOverlay({ kind: 'clear' }) }, icon('clear', 18)),
+      h('button', { type: 'button', title: t('export'), 'aria-label': t('export'), onClick: saveFile }, t('export')),
+      h('button', { type: 'button', title: t('import'), 'aria-label': t('import'), onClick: () => fileInputRef.current?.click() }, t('import')),
       h('button', {
         type: 'button', className: 'eb-primary', title: t('insert'), disabled: phase !== 'plain' || (!board.points.length && !board.elements.length && !board.note),
         onClick: () => insertGeometry(),
@@ -2507,7 +2541,8 @@ window.__ModuleLoader__.load({
           h('button', { type: 'button', className: 'eb-primary', onClick: applyRename }, t('apply')))));
     const statusNode = status && h('div', { className: 'eb-status-toast', role: 'status', 'aria-live': 'polite' }, status);
     return h(React.Fragment, null,
-      h('div', { className: 'eb-workspace eb-geometry-workspace' }, tools, stage, dock, statusNode, overlayNode, renameNode));
+      h('div', { className: 'eb-workspace eb-geometry-workspace' }, tools, stage, dock, statusNode, overlayNode, renameNode),
+      h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: fileInputRef, onChange: importInput }));
   };
 };
     const createGeoModel = function createGeometryModel() {

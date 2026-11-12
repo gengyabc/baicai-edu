@@ -402,3 +402,31 @@ test('a refused geometry attachment leaves no draft behind and keeps the canvas'
     });
   } finally { globalThis.File = previousFile; }
 });
+
+test('a geometry JSON import replaces the draft and a wrong-kind file changes nothing', async () => {
+  const previousFile = globalThis.File;
+  globalThis.File = class {
+    constructor(parts, name) { this.text = async () => parts.join(''); this.name = name; this.size = String(parts.join('')).length; }
+  };
+  try {
+    const other = G.reduce(G.reduce(G.empty(), { type: 'addPoint', x: 200, y: 200 }), { type: 'addPoint', x: 400, y: 400 });
+    const h = mount();
+    try {
+      h.tab('geometry');
+      h.tool('point');
+      h.clickAt(100, 100);
+      const before = h.board();
+      const input = h.find((node) => node.type === 'input' && node.props.type === 'file');
+      // A quantity file is refused and the geometry draft survives untouched.
+      input.props.onChange({ target: { files: [{ text: async () => M.serialize(M.reduce(M.empty(), { type: 'add', shape: 'circle' })), size: 100 }], value: '' } });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      h.render();
+      assert.deepEqual(h.board(), before);
+      // A geometry file replaces the draft.
+      input.props.onChange({ target: { files: [{ text: async () => G.serialize(other), size: 100 }], value: '' } });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      h.render(); h.render();
+      assert.deepEqual(h.board().points.map((p) => p.id), ['p-1', 'p-2']);
+    } finally { h.unmount(); }
+  } finally { globalThis.File = previousFile; }
+});

@@ -1,6 +1,6 @@
 # 实施顺序与集成分支
 
-> 状态：**尚未实施**。实施前请读本文件、`../spec.md` 与各工单。
+> 状态：**已实施**（#20–#23 均已提交；#20 的 tab 与隔离随 #22 落地）。
 
 ## 背景
 
@@ -26,3 +26,9 @@ flowchart LR
 2. 在集成分支上按 20 → 21 → 22 → 23 推进；每张工单单独提交，便于回滚。
 3. 每完成一张：`node --test math-board/*.test.js`、`node build.mjs`、`node --check client.js`。
 4. 最后跑一次全部 Node 测试与 `node scripts/check-skills.mjs`，再做 `code-review`。
+
+## 落地情况
+
+- 提交 `1da1226`（#21 模型）、`7981363`（#22 视图与 tab，含 #20 的隔离与回归）、`63b8ce5`（#23 提交与系统提示）。
+- #20 的两 tab、独立存储键、几何 tab 隐藏数量清空、数量回归基线随 #22 的 `board-shell.js` 落地；数量单页在无几何时仍是原来的组件树。
+- 校验：`node --test math-board/*.test.js math-board/geometry/model.test.js` 161 项通过、`node build.mjs`、`node --check math-board/client.js`、`node scripts/check-skills.mjs` 通过。
