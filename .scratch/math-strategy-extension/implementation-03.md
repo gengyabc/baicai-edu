@@ -17,6 +17,7 @@
 3. `node scripts/check-skills.mjs`：43 skills，0错误/0警告、退出0，见[输出](<artifacts-03/skill-check.txt>)。
 4. `node --test scripts/*.test.mjs`：156项，155通过、0失败、1安装集成skip，退出0，见[完整输出](<artifacts-03/full-tests.txt>)。skip未算通过。
 5. `git diff --check`：退出0。提交前检查仅暂存本票四个源码/测试文件及本记录/专属 artifacts。
+6. 父代理提示全仓另含画板测试，补跑 `node --test math-board/*.test.js`：126/126通过、退出0，见[完整输出](<artifacts-03/math-board-tests.txt>)。两个测试目录合计282项，281通过、1 skip、0失败；不代表模型行为回放。
 
 ## 数学核验（不是教学行为）
 
