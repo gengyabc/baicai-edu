@@ -12,6 +12,8 @@ For interacting conditions on candidate assignments, elimination/propagation, or
 
 For finite objects assigned to categories with an at-least/must-exist goal, read `references/pigeonhole-existence.md`. Check why every object belongs to a category and compare total capacity; an existence claim alone or a story keyword does not select division. Distinguish a guaranteed lower bound from an actual count or identification of particular objects.
 
+For route counts or network traversals constrained by connections, direction, obstacles or repetition, read `references/path-network-construction.md`. Distinguish a feasible witness from complete counting; ordinary arithmetic does not require a graph. Ordered enumeration below remains the classification rule source; structural recurrence uses `references/early-algebra.md`.
+
 For an agreed contrast that changes one load-bearing condition of the student's own method, or when they reuse an old reason after a condition changed, read `references/boundary-variation.md`. This file still owns the method families and student monitoring; the new file adds only the one-condition change, the outcomes and the survival statement.
 
 ## Student monitoring and local obstacles
