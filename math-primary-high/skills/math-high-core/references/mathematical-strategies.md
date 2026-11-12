@@ -1,6 +1,8 @@
-# Mathematical Strategies: First Three Methods
+# Mathematical Strategies
 
 Read for fixed-total/different-contribution reasoning, finite choices requiring organization, repeating states/positions, or when a student's explanation or monitoring is blocked on these structures. Reuse Pólya and the existing derivation/proof loops, not a second mandatory sequence. Methods, topic-map tools, and problem families have many-to-many links: accept a verified student alternative. Names and formulas are not entry requirements. A confirmed tool gap uses `references/prerequisite-learning.md`; unknown tools first need discriminating evidence.
+
+For all-divisor counts, least factors completing a square/cube, or parity/prime claims, read `references/number-theory-reasoning.md`. It links factor tools to completeness, minimality and general reasons; remainders/cycles stay here as their single rule source.
 
 ## Student monitoring and local obstacles
 
