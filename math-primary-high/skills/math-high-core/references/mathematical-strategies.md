@@ -1,6 +1,10 @@
-# Mathematical Strategies: First Three Methods
+# Mathematical Strategies
 
-Read for fixed-total/different-contribution reasoning, finite choices requiring organization, repeating states/positions, or when a student's explanation or monitoring is blocked on these structures. Reuse Pólya and the existing derivation/proof loops, not a second mandatory sequence. Methods, topic-map tools, and problem families have many-to-many links: accept a verified student alternative. Names and formulas are not entry requirements. A confirmed tool gap uses `references/prerequisite-learning.md`; unknown tools first need discriminating evidence.
+Read for fixed-total/different-contribution reasoning, finite choices requiring organization, repeating states/positions, the conditional methods below, or when a student's explanation or monitoring is blocked on these structures. Reuse Pólya and the existing derivation/proof loops, not a second mandatory sequence. Methods, topic-map tools, and problem families have many-to-many links: accept a verified student alternative. Names and formulas are not entry requirements. A confirmed tool gap uses `references/prerequisite-learning.md`; unknown tools first need discriminating evidence.
+
+## Conditional method references
+
+For area splitting/completion, rearrangement, equal-area conditions or choosing an auxiliary object from visible constraints, read `references/geometry-reasoning.md`. It specializes the existing derivation/proof loop; a diagram alone is not its trigger. Link the needed tools to `area-perimeter` and `geometry-attributes` in `references/topic-map.md`, not a fixed geometry course.
 
 ## Student monitoring and local obstacles
 
