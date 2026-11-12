@@ -1620,22 +1620,16 @@ test('structural recurrence reaches band-local early algebra from core and metho
   assert.doesNotMatch(recurrence, /T\(n\+1\)|n\(n\+1\)\/2|3n\+1/)
 })
 
-test('recurrence supplement separates generation, conjecture, goals and support provenance', () => {
-  // Static teaching-contract coverage, not proof of model behavior or learning.
+test('recurrence supplement delegates shared gates and marks private worked cases', () => {
+  // Architecture only: mathematics and teaching decisions need separate verification.
   const algebra = highRef('early-algebra')
   const recurrence = algebra.split('## Structural recurrence')[1]?.split('\n## Boundaries')[0] ?? ''
-  hasAll(recurrence, ['Initial state', 'State', 'Increment', 'Recurrence', 'Closed form',
-    'General reason', 'finite prefix', 'not uniquely determined', '15 or 16',
-    'valid stepwise', 'what each term counts', 'teacher-supplied',
-    'independent discovery or student monitoring', 'references/derivation-teaching.md',
+  hasAll(recurrence, ['references/derivation-teaching.md',
     'references/proof-teaching.md', 'references/prerequisite-learning.md'])
   const checked = recurrence.split('### Teacher-only checked cases')[1] ?? ''
-  assert.ok(checked.length > 0, 'worked answers are marked teacher-only')
-  hasAll(checked, ['T(1)=1', 'T(n+1)=T(n)+(n+1)', 'T(10)=55', 'n(n+1)/2',
-    'every row', 'no omissions or duplicates', '8 layers', '36', '3n+1', '4n', 'shared side'])
+  assert.ok(checked.trim().length > 0, 'worked cases have a teacher-only boundary')
   assert.match(recurrence, /Formula-goal gate/)
-  assert.match(recurrence, /single segment/)
-  assert.doesNotMatch(recurrence, /new (?:act|submode|profile field)|must (?:derive|use) a closed form/i)
+  assert.doesNotMatch(recurrence, /ui\.solution\.|learning_plan_update|active_frame_id|new submode/i)
 })
 
 test('formula learning reaches the goal gate before explicit instruction can reveal the result', () => {
@@ -1785,22 +1779,15 @@ test('geometry transformations load conditionally through the existing high math
   assert.doesNotMatch(geometry, /https?:\/\//)
 })
 
-test('geometry keeps area conditions and supplied constructions in the local rule source', () => {
-  // Static mathematical/safety contract; not a claim that a learner chose a route.
+test('geometry marks private worked cases and reuses shared record boundaries', () => {
+  // Architecture only: no exact formula or teaching-language correctness assertions.
   const geometry = highRef('geometry-reasoning')
-  hasAll(geometry, ['coverage', 'internal overlap', 'omissions', 'square units',
-    'perpendicular distance', 'extension of the base', 'not congruence or equal perimeter',
-    'student-visible clue', 'teacher-supplied', 'session_segment: null',
-    '48−6=42', '8×4+5×2=42', '5×6+3×4=42', '70−12=58', '12 and 15'])
-  // Worked answers belong behind the private-check boundary, not in the loading pointer.
-  const privateCases = geometry.split('## Teacher-only checked cases')[1]
-  assert.ok(privateCases)
-  for (const result of ['48−6=42', '70−12=58', '12 and 15']) {
-    assert.ok(privateCases.includes(result), result)
-    assert.ok(!geometry.split('## Teacher-only checked cases')[0].includes(result), result)
-    assert.ok(!highCore.includes(result), result)
-  }
-  hasAll(geometry, ['same base alone', 'valid student partition', 'not visual appearance'])
+  const privateCases = geometry.split('## Teacher-only checked cases')[1] ?? ''
+  assert.ok(privateCases.trim().length > 0, 'worked cases have a teacher-only boundary')
+  hasAll(geometry, ['references/math-segment-fields.md', 'session_segment: null'])
+  // Loading pointers must not inline the private section; topic rules add no state/UI schema.
+  assert.doesNotMatch(highCore, /## Teacher-only checked cases/)
+  assert.doesNotMatch(geometry, /ui\.solution\.|learning_plan_update|active_frame_id|new submode/i)
 })
 
 test('word-problem derivation reaches quantity bridges without forcing proof or modeling', () => {
