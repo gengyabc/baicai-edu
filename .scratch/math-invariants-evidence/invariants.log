@@ -1,0 +1,13 @@
+✔ legal-operation and coverage structures reach invariants through the existing index (1.478084ms)
+✔ invariants inherit proof, tool recovery, solution choice and attribution boundaries (0.486583ms)
+✔ 8x8 and 6x6 cases count colors and check every legal horizontal and vertical placement (2.44675ms)
+✔ IB2 has an exact one-piece construction; IB3 balance has no legal placement (0.444542ms)
+✔ IB4 every adjacent diagonal pair is same-colored and breaks the old difference (0.476ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 44.218583
