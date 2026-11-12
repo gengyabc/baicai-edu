@@ -12,7 +12,8 @@
 2. **补充文件缺 `math-teaching-core` 指针**：正文原写「The teaching core selects…」而未引用文件，已改为明确引用 `references/math-teaching-core.md`，并在边界说明一节区分方法选择（teaching core）与 act 分配（learn-act-allocation）。
 3. **守卫自身错误**：`informed full-solution choice` 原本在「规则正文」里断言，而该措辞只存在于教师案例节；改由 `checked` 段断言。探针 `fifty`、`k = 5`、`no-solution` 与文档实际内容不符（`k = 5` 根本不存在，`no-solution` 出现在规则正文），已改为确实只出现在案例节的探针（`deputy`、`triangular-dot`）；父代理中间还写过一版 `three ways` 的临时断言并立刻被测试抓住，最终版本已清理掉该临时结构。
 4. **数学案例错误（脚本当场抓住）**：子会话的案例 D2/D4 用「贵票前 10 张 5 元、之后 4.4 元」说明“路线失效但题目有解”，但 20 张票时贵票数最多 20、且旧梯度法给出的票数总在 10 以内，该阶梯价实际**从未生效**，于是 `80` 在真实价格下**无解**而非“另有直接答案”；D2 又留下注释未完成的段落。父代理先自行重算时的「12 张贵票得 88」也算错（实为 78），被 `node:assert` 当场断言失败。最终改为**可核验的阶梯价**（贵票前 10 张 5 元、之后 6 元）：64 → 8 贵 12 便宜；78 由 12 张贵票达成，而旧 3 元梯度法给出 38/3（非整数）；86 由 14 张贵票达成，旧法给 46/3。文档正文的两条教师案例同步改为 78/86，不再出现 80 与 4.4 的错误说法。
-5. **红跑证据**：子会话留下的 `red.txt` 是**真实的红**（3 项全失败：缺指针 + `ENOENT`），但它在守卫尚未修正前产生。父代理用「仅保留守卫、实现全部 stash 掉」的方式重新验证：三项在基线上确实全失败、退出码 1，见[重跑红跑](<artifacts-11/red.txt>)；恢复实现后同命令 3/3 通过，见[绿跑](<artifacts-11/contracts-targeted.txt>)。
+5. **回放场景缺失（用户复核发现）**：子会话未在 `math-primary-high/tests/teaching-scenarios.md` 写入本票的 V0–V2/VB1 回放场景，父代理初次整理时漏查，仍按源码/数学层记了"实现完成"。12 与 10 两票都各自新增了场景段（+21/+11 行），本票按同一约定补 `## 边界变式（承重条件改变）`（V0、V1、V2、VB1 及拒绝/近迁移/复述三条边界行），并在静态守卫中加入场景可达断言；该断言在移除场景段时确实失败（2/3 pass），补回后 3/3 通过。这属于交付缺口而非行为测试，已修复。
+6. **红跑证据**：子会话留下的 `red.txt` 是**真实的红**（3 项全失败：缺指针 + `ENOENT`），但它在守卫尚未修正前产生。父代理用「仅保留守卫、实现全部 stash 掉」的方式重新验证：三项在基线上确实全失败、退出码 1，见[重跑红跑](<artifacts-11/red.txt>)；恢复实现后同命令 3/3 通过，见[绿跑](<artifacts-11/contracts-targeted.txt>)。
 
 ## 已执行：静态、契约与有限数学核验
 
@@ -22,6 +23,7 @@
 |---|---|
 | `node --test --test-name-pattern='boundary variation' scripts/skill-contracts.test.mjs`（仅守卫、基线实现 stash） | **RED**：3 项失败，退出1。失败点为 `problem-design` 无指针与两个 `ENOENT`，属预期失败。见[红跑](<artifacts-11/red.txt>)。 |
 | 同上（实现恢复后） | **GREEN**：3 passed，退出0。见[绿跑](<artifacts-11/contracts-targeted.txt>)。逐步 DEBUG：缺指针、错误探针、teaching-core 指针各修一次后转绿。 |
+| `node --test --test-name-pattern='boundary variation'`（移除场景段后） | **RED**：1 项失败（场景可达断言），退出1；补回场景段后 3/3 通过。 |
 | `node --test scripts/skill-contracts.test.mjs` | 111 tests：111 passed，0 failed，0 skipped，退出0。见[完整输出](<artifacts-11/contracts-full.txt>)。 |
 | `node scripts/check-skills.mjs` | 43 skills，0 errors，0 warnings，退出0。见[输出](<artifacts-11/skill-check.txt>)。 |
 | `node .scratch/math-strategy-extension/boundary-case-validation.mjs` | PASS，14 组案例，退出0。见[数学核验输出](<artifacts-11/math-check.txt>)。 |
@@ -56,7 +58,7 @@
 | 3. 4 人队长/副队长 12，改无角色 6 组；每个无序组恰对应两个有序选择须说明，不用一个例子代替全体对应 | **满足（数学核验）** | A1–A4 逐组验证 6/6 对应。 |
 | 4. 5 人无角色 10 组、有角色 20 种；先定义计数对象再决定是否去重，不机械除 2 | **满足（数学核验 + 显式规则）** | B1–B3。 |
 | 5. 近迁移答对、复述教师总结或教师直接指出变化都不自动证明独立边界辨别；拒绝变式可返回原题或结束，不降低能力判断 | **满足（源码层）** | `## Evidence and completion` 四类归因 + 拒绝不改判。行为未观察。 |
-| 6. 完成阶段 3 变式 V0–V2 三起点各一组旧/新多轮对照及 VB1 | **未测试** | 无教学模型多轮 replay 环境；见下。 |
+| 6. 完成阶段 3 变式 V0–V2 三起点各一组旧/新多轮对照及 VB1 | **部分满足（场景已录，回放未测）** | V0–V2/VB1 场景行已写入教学场景表并有静态可达断言；实际多轮回放仍无环境，见下。 |
 | 7. confirmed gap 走既有子任务，保存/恢复保留原比较条件与提示来源；知情全解、学生自主选择和每轮单一表现段不回退 | **部分满足（源码层）** | 规则文本已写并静态守卫；实际恢复/全解交互未测。 |
 | 8. 核验例题、条件接线、既有静态/契约回归和真实回放留痕；学生监控与教师决策分清，未测试和失败如实记录 | **部分满足** | 例题、接线、静态、契约已执行；无真实回放，未写假轨迹。 |
 
@@ -87,4 +89,4 @@
 
 ## 合并提示（给父会话）
 
-本分支修改 `math-primary-high/skills/math-high-core/SKILL.md`、`references/math-teaching-core.md`、`references/mathematical-strategies.md`、`references/problem-design.md`、新增 `references/boundary-variation.md`、`scripts/skill-contracts.test.mjs`、本票文件与本记录及其 artifacts（本分支未修改高年级教学场景表）。12（counterexample）分支同样修改 `problem-design.md`、`proof-teaching.md` 与 `scripts/skill-contracts.test.mjs`，10 分支同样修改 `problem-design.md`、`math-high-student-problem/SKILL.md` 与测试场景文件；合入顺序 11→12→10，逐票 rebase 并重跑本记录中的全部命令。
+本分支修改 `math-primary-high/skills/math-high-core/SKILL.md`、`references/math-teaching-core.md`、`references/mathematical-strategies.md`、`references/problem-design.md`、新增 `references/boundary-variation.md`、`scripts/skill-contracts.test.mjs`、本票文件、高年级教学场景表的 `## 边界变式（承重条件改变）` 段与本记录及其 artifacts。12（counterexample）分支同样修改 `problem-design.md`、`proof-teaching.md` 与 `scripts/skill-contracts.test.mjs`，10 分支同样修改 `problem-design.md`、`math-high-student-problem/SKILL.md` 与测试场景文件；合入顺序 11→12→10，逐票 rebase 并重跑本记录中的全部命令。

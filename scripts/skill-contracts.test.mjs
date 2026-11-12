@@ -1833,6 +1833,9 @@ test('boundary variation reuses one movement and leaves its neighbours their own
   assert.doesNotMatch(text(skillPath('math-common', 'math-common')), /boundary-variation/)
   assert.doesNotMatch(text(skillPath('math-primary-low', 'math-low-core')), /boundary-variation/)
   assert.doesNotMatch(supplement, /https?:\/\//)
+  // The replay checklist for this ticket is reachable, so the boundary rows cannot be dropped.
+  hasAll(text('math-primary-high/tests/teaching-scenarios.md'),
+    ['## 边界变式（承重条件改变）', 'V0', 'V1', 'V2', 'VB1', '不降低能力判断'])
 })
 
 test('boundary variation keeps its checked cases behind one teacher-only boundary', () => {
