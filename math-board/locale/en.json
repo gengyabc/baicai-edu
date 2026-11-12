@@ -201,13 +201,10 @@
   "tabs": "Mode",
   "tabQuantity": "Quantity",
   "tabGeometry": "Geometry",
-  "geometryTab": "Geometry board",
   "geometryCanvas": "Geometry canvas",
   "geometryEmpty": "Pick a tool, then click on the canvas to start drawing",
   "geometryEmptyHint": "Point · segment · polygon · circle · parallelogram · rectangle",
   "geometryTools": "Geometry tools",
-  "geometryHintSelect": "Click a shape to select it; drag a free point to move it.",
-  "geometrySteps": "{n} points chosen — keep clicking.",
   "point": "Point",
   "segment": "Segment",
   "polygon": "Polygon",
@@ -227,6 +224,6 @@
   "geometryAttachmentName": "my-geometry-board.json",
   "clearGeometry": "Clear geometry canvas",
   "geometryClearQuestion": "Clear the geometry canvas and its undo history? Files already added to an answer stay. This cannot be undone.",
-  "geometryInsertPrompt": "Geometry board: after Add to answer, the message carries only a read-only geometry snapshot (kind: \"geometry-board\", schemaVersion: 1) and the board note.",
-  "select": "Select"
+  "select": "Select",
+  "geometryImportFailed": "That file could not be opened; the geometry canvas is unchanged."
 }

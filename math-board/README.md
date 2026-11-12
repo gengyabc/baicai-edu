@@ -66,7 +66,7 @@ note:     整张画板的普通说明
 summary:  确定性数量汇总（不是对错结论）
 ```
 
-`settings.defaults` 覆盖全部 20 个图案，默认值不会因图案收起而丢失；`settings.shapes` 是图案轨当前显示的图案顺序（至少一个）。图形和组各可带一条 `note`；`notes` 只保存两个及以上具体对象的集合说明，任一目标对象被删除或合并时，该集合说明失效或转移到合并结果。撤销与重做也覆盖这些说明。`model.js` 是画板状态的领域实现，`trace.js` 独立处理修改事实及有界保留；`config-bridge.js` 是宿主设置同步桥（工具、命令、会话投影共用同一操作）。画板草稿与修改记录只存在浏览器本地并按 DSH 会话隔离，刷新页面、关闭工作台或关闭浏览器再打开仍保留；直到点「放入回答」，才把只读快照及学生勾选的修改记录作为附件上传到本机 Host。坐标不隐含算式。
+`settings.defaults` 覆盖全部 20 个图案，默认值不会因图案收起而丢失；`settings.shapes` 是图案轨当前显示的图案顺序（至少一个）。图形和组各可带一条 `note`；`notes` 只保存两个及以上具体对象的集合说明，任一目标对象被删除或合并时，该集合说明失效或转移到合并结果。撤销与重做也覆盖这些说明。`model.js` 是数量画板状态的领域实现，`geometry/model.js` 是几何画板状态的领域实现，`trace.js` 独立处理修改事实及有界保留，`config-bridge.js` 是宿主设置同步桥（工具、命令、会话投影共用同一操作）；`view-component.js` 是数量页，`geometry-view.js` 是几何页，`board-shell.js` 组合两个 tab 与共享对话框。画板草稿与修改记录只存在浏览器本地并按 DSH 会话隔离，刷新页面、关闭工作台或关闭浏览器再打开仍保留；直到点「放入回答」，才把只读快照及学生勾选的修改记录作为附件上传到本机 Host。坐标不隐含算式。
 
 「放入回答」把完整 JSON 作为 `我的画板.json` 文件附件放进草稿，不把图形、分组或划去清单写进输入框。学生在「我想说」里写过的话会原样放进去。画布和修改记录都保留，学生可以在同一块画板上改错并再次放入。附件是只读的精确快照，模型读取它再回应，不把清单复述给学生，也不把更早消息里的修改记录串成总过程。附件在点击「放入回答」时上传到本机 Host，但直到学生自己发送才进入会话；学生可以像普通附件一样撤销它。点「清空」才同时清掉画布和本地修改记录，已经放入或发送的附件不删除，清空后不能撤销。
 
@@ -122,7 +122,7 @@ note:     整板说明
 ```bash
 node math-board/build.mjs
 node --check math-board/client.js
-node --test math-board/*.test.js
+node --test math-board/*.test.js math-board/geometry/model.test.js
 node scripts/check-skills.mjs
 node math-board/preview.mjs /tmp/math-board-shapes.html   # 可选：在无头 Chrome 或浏览器里目视检查图案
 # 安装数学会自动配齐画板和共享学习包：

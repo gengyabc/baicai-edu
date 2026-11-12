@@ -33,7 +33,7 @@
   ],
   "scripts": {
     "build": "node build.mjs",
-    "test": "node --test *.test.js",
+    "test": "node --test *.test.js geometry/model.test.js",
     "preview": "node preview.mjs"
   },
   "dsh": {

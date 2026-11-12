@@ -162,8 +162,10 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
     const levels = board.settings.levels;
     const visibleShapes = board.settings.shapes;
     // The keyed chat reader is live: select a primitive derived from its values,
-    // not its identity, so settled responses and visibility changes update us.
-    const referenceJson = props.useChat?.((chat) => JSON.stringify(boardQuestionReferences(chat))) || '[]';
+    // not its identity, so settled responses and visibility changes update us. A split
+    // layout shares the shell's single reader and receives its question strip instead.
+    const referenceJson = !props.question && props.useChat
+      ? props.useChat((chat) => JSON.stringify(boardQuestionReferences(chat))) : '[]';
     const references = JSON.parse(referenceJson);
     const [questionKey, setQuestionKey] = React.useState(null);
     const reference = references.find((item) => item.key === questionKey) || references.at(-1);

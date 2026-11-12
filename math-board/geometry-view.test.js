@@ -334,6 +334,25 @@ test('grid and snap are local view state, never snapshot fields', () => {
   });
 });
 
+test('undo and redo shortcuts work inside the geometry tab', () => {
+  withMount((h) => {
+    h.tab('geometry');
+    h.tool('point');
+    h.clickAt(100, 100);
+    const workspace = h.find((node) => String(node.props.className || '').includes('eb-geometry-workspace'));
+    let prevented = false;
+    workspace.props.onKeyDown({ key: 'z', metaKey: true, shiftKey: false, preventDefault() { prevented = true; } });
+    h.render();
+    assert.equal(prevented, true);
+    assert.equal(h.board().points.length, 0);
+    // Re-read the handler after the re-render; closures capture the rendered state.
+    const again = h.find((node) => String(node.props.className || '').includes('eb-geometry-workspace'));
+    again.props.onKeyDown({ key: 'z', metaKey: true, shiftKey: true, preventDefault() {} });
+    h.render();
+    assert.equal(h.board().points.length, 1);
+  });
+});
+
 test('clearing this mode empties the canvas and its undo history but keeps the board note', () => {
   withMount((h) => {
     h.tab('geometry');

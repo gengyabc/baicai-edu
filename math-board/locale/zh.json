@@ -201,13 +201,10 @@
   "tabs": "模式",
   "tabQuantity": "数量",
   "tabGeometry": "几何",
-  "geometryTab": "几何画板",
   "geometryCanvas": "几何画布",
   "geometryEmpty": "选一个工具，在画布上点一下开始画",
   "geometryEmptyHint": "点 · 线段 · 多边形 · 圆 · 平行四边形 · 矩形",
   "geometryTools": "几何工具",
-  "geometryHintSelect": "点一下图形选中它；拖自由点可移动。",
-  "geometrySteps": "已经点了 {n} 个点，继续点下去。",
   "point": "点",
   "segment": "线段",
   "polygon": "多边形",
@@ -227,6 +224,6 @@
   "geometryAttachmentName": "我的几何画板.json",
   "clearGeometry": "清空几何画布",
   "geometryClearQuestion": "要清空几何画布和它的撤销历史吗？已经放进回答的文件还在。清空后不能撤销。",
-  "geometryInsertPrompt": "几何画板：学生点「放入回答」后，消息只附带只读的几何快照（kind: \"geometry-board\", schemaVersion: 1）和整板说明。先读取附件再回应。",
-  "select": "选择"
+  "select": "选择",
+  "geometryImportFailed": "这个文件打不开，几何画布没有变化。"
 }

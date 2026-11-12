@@ -188,18 +188,23 @@ export function createGeometryModel() {
       return rimIds.has(p.id) ? { ...p, x: p.x + dx, y: p.y + dy } : p;
     }) });
   }
+  // Walk start -> target and return the last position the predicate still accepts.
+  function lastLegal(start, target, legal) {
+    let good = start, bad = target;
+    for (let step = 0; step < 40; step++) {
+      const probe = { x: (good.x + bad.x) / 2, y: (good.y + bad.y) / 2 };
+      if (legal(probe)) good = probe; else bad = probe;
+    }
+    return good;
+  }
   function moveWithCircles(canonical, id, at) {
     if (!circlesAt(canonical, id).length) return withPoint(canonical, id, at);
     try { return translateCircles(canonical, id, at); } catch {
       // The rim would leave the board or break another shape: stop the drag short.
       const start = canonical.points.find((p) => p.id === id);
-      let good = start, bad = at;
-      for (let step = 0; step < 40; step++) {
-        const probe = { x: (good.x + bad.x) / 2, y: (good.y + bad.y) / 2 };
-        let candidate = null;
-        try { candidate = translateCircles(canonical, id, probe); } catch { /* still illegal */ }
-        if (candidate) good = probe; else bad = probe;
-      }
+      const good = lastLegal(start, at, (probe) => {
+        try { return Boolean(translateCircles(canonical, id, probe)); } catch { return false; }
+      });
       if (good === start) fail('The circle cannot move there');
       return translateCircles(canonical, id, good);
     }
@@ -238,20 +243,10 @@ export function createGeometryModel() {
       const wanted = { x: start.x + leg.unit.x * along, y: start.y + leg.unit.y * along };
       const goal = { x: Math.max(MARGIN, Math.min(WIDTH - MARGIN, wanted.x)), y: Math.max(MARGIN, Math.min(HEIGHT - MARGIN, wanted.y)) };
       if (allowed(canonical, id, goal)) return goal;
-      let good = start, bad = goal;
-      for (let step = 0; step < 40; step++) {
-        const probe = { x: (good.x + bad.x) / 2, y: (good.y + bad.y) / 2 };
-        if (allowed(canonical, id, probe)) good = probe; else bad = probe;
-      }
-      return good;
+      return lastLegal(start, goal, (probe) => allowed(canonical, id, probe));
     }
-    // Any other shape: bisect the segment start -> target for the last legal point.
-    let good = start, bad = clamped;
-    for (let step = 0; step < 40; step++) {
-      const probe = { x: (good.x + bad.x) / 2, y: (good.y + bad.y) / 2 };
-      if (allowed(canonical, id, probe)) good = probe; else bad = probe;
-    }
-    return good;
+    // Any other shape: stop at the last legal point on the requested segment.
+    return lastLegal(start, clamped, (probe) => allowed(canonical, id, probe));
   }
   function dependents(canonical, id) {
     const result = [];
@@ -308,14 +303,20 @@ export function createGeometryModel() {
     if (!Number.isSafeInteger(max + 1)) fail('ID sequence exhausted');
     return `${prefix}-${max + 1}`;
   }
-  // Labels are display names only; a deleted label is never recycled, so A stays the same A.
-  function nextLabel(canonical) {
+  // Labels are display names only. A new point is named from its own stable number, so a
+  // deleted label is never recycled: A, B, C then B deleted yields D, not B again.
+  const letters = (n) => {
+    let name = '';
+    for (let k = n; k > 0; k = Math.floor((k - 1) / 26)) name = String.fromCharCode(65 + ((k - 1) % 26)) + name;
+    return name;
+  };
+  function nextLabel(canonical, id) {
     const used = new Set(canonical.points.map((p) => p.label));
-    const letters = (n) => {
-      let name = '';
-      for (let k = n; k > 0; k = Math.floor((k - 1) / 26)) name = String.fromCharCode(65 + ((k - 1) % 26)) + name;
-      return name;
-    };
+    const match = /-(\d+)$/.exec(id);
+    if (match) {
+      const numbered = letters(Number(match[1]));
+      if (!used.has(numbered)) return numbered;
+    }
     for (let n = 1; n < 10000; n++) if (!used.has(letters(n))) return letters(n);
     for (let n = 1; n < 10000; n++) if (!used.has(`P${n}`)) return `P${n}`;
     fail('Label space exhausted');
@@ -348,13 +349,14 @@ export function createGeometryModel() {
     switch (action.type) {
       case 'addPoint': {
         if (canonical.points.length >= 300) fail('Point limit exceeded');
-        const label = Object.hasOwn(action, 'label') ? action.label : nextLabel(canonical);
+        const id = nextId(canonical, 'p');
+        const label = Object.hasOwn(action, 'label') ? action.label : nextLabel(canonical, id);
         limited(label);
         if (canonical.points.some((p) => p.label === label)) fail('Labels must be unique');
         const target = { x: action.x, y: action.y };
         if (!finite(target.x) || !finite(target.y) || !inside(target)) fail('Invalid coordinate');
         return validate({ ...canonical, points: [...canonical.points,
-          { id: nextId(canonical, 'p'), label, kind: 'free', x: target.x, y: target.y, construction: null, note: '' }] });
+          { id, label, kind: 'free', x: target.x, y: target.y, construction: null, note: '' }] });
       }
       case 'addElement': {
         if (canonical.elements.length >= 300) fail('Element limit exceeded');
@@ -382,7 +384,7 @@ export function createGeometryModel() {
           const at = fourthPoint(...orderedIds.map(pointById));
           if (!inside(at)) fail('The fourth point would leave the board');
           const derivedId = nextId(canonical, 'p');
-          const derived = { id: derivedId, label: nextLabel(canonical), kind: 'derived', ...at,
+          const derived = { id: derivedId, label: nextLabel(canonical, derivedId), kind: 'derived', ...at,
             construction: { op: action.elementType, inputs: orderedIds }, note: '' };
           const candidate = validate({ ...canonical, points: [...canonical.points, derived] });
           const shape = { id, type: action.elementType, points: [...orderedIds, derivedId], role, note };
@@ -406,10 +408,11 @@ export function createGeometryModel() {
         if (action.a === action.b) fail('A midpoint needs two different points');
         const at = midpoint(a, b);
         if (!inside(at)) fail('The midpoint would leave the board');
-        const label = Object.hasOwn(action, 'label') ? action.label : nextLabel(canonical);
+        const id = nextId(canonical, 'p');
+        const label = Object.hasOwn(action, 'label') ? action.label : nextLabel(canonical, id);
         limited(label);
         if (canonical.points.some((p) => p.label === label)) fail('Labels must be unique');
-        return validate({ ...canonical, points: [...canonical.points, { id: nextId(canonical, 'p'), label, kind: 'derived',
+        return validate({ ...canonical, points: [...canonical.points, { id, label, kind: 'derived',
           ...at, construction: { op: 'midpoint', inputs: [action.a, action.b] }, note: '' }] });
       }
       case 'renamePoint': {

@@ -32,4 +32,4 @@ flowchart LR
 - 提交 `1da1226`（#21 模型）、`7981363`（#22 视图与 tab，含 #20 的隔离与回归）、`63b8ce5`（#23 提交与系统提示）。
 - #20 的两 tab、独立存储键、几何 tab 隐藏数量清空、数量回归基线随 #22 的 `board-shell.js` 落地；数量单页在无几何时仍是原来的组件树。
 - 实现取舍：矩形以直角角为定点锚，两个自由角沿各自边滑动（三点闭式 `P4 = P1 + P3 - P2` 决定了第四点）；这保证“怎么拖都还是矩形”，代价是直角角本身不能被拖走。圆拖圆心按“整体平移”处理，半径保持不变。
-- 校验：`node --test math-board/*.test.js math-board/geometry/model.test.js` 161 项通过、`node build.mjs`、`node --check math-board/client.js`、`node scripts/check-skills.mjs` 通过。
+- 校验：`node --test math-board/*.test.js math-board/geometry/model.test.js`（package.json 的 npm test 也已覆盖几何模型）通过、`node build.mjs`、`node --check math-board/client.js`、`node scripts/check-skills.mjs` 通过。

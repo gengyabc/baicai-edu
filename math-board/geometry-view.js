@@ -6,7 +6,9 @@ export function createGeometryPage(React, G, ctx, t) {
   const STORAGE_PREFIX = 'dsh-edu-math-board:geometry:v1:';
   const HISTORY_LIMIT = 40;
   const SNAP_RADIUS = 12;
-  const TOOLS = ['select', 'point', 'segment', 'polygon', 'circle', 'parallelogram', 'rectangle', 'midpoint'];
+  // The drawable library comes from the model so the two lists cannot drift;
+  // "select" and "midpoint" are tools, not shapes.
+  const TOOLS = ['select', ...G.shapeLibrary, 'midpoint'];
   const ICONS = {
     select: 'M5 3l14 8-6 1.5L11 19z',
     point: 'M12 8a4 4 0 1 1 0 8a4 4 0 1 1 0-8',
@@ -26,6 +28,52 @@ export function createGeometryPage(React, G, ctx, t) {
     width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor',
     strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true,
   }, h('path', { d: ICONS[name] || ICONS.select }));
+
+  // A separate IndexedDB entry keeps each mode's last file, so geometry save/open
+  // starts where the student left it while the quantity board keeps its own.
+  const DB_NAME = 'dsh-edu-math-board';
+  const DB_STORE = 'files';
+  const DB_LAST = 'last-geometry-board-file';
+  const JSON_TYPES = [{ description: 'JSON', accept: { 'application/json': ['.json'] } }];
+  function openFileDb() {
+    return new Promise((resolve, reject) => {
+      if (typeof indexedDB === 'undefined') return reject(new Error('unsupported'));
+      const request = indexedDB.open(DB_NAME, 1);
+      request.onupgradeneeded = () => {
+        if (!request.result.objectStoreNames.contains(DB_STORE)) request.result.createObjectStore(DB_STORE);
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+  async function readRememberedHandle() {
+    const db = await openFileDb();
+    try {
+      return await new Promise((resolve, reject) => {
+        const request = db.transaction(DB_STORE, 'readonly').objectStore(DB_STORE).get(DB_LAST);
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => reject(request.error);
+      });
+    } finally { db.close(); }
+  }
+  async function rememberHandle(handle) {
+    const db = await openFileDb();
+    try {
+      await new Promise((resolve, reject) => {
+        const transaction = db.transaction(DB_STORE, 'readwrite');
+        transaction.objectStore(DB_STORE).put(handle, DB_LAST);
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+      });
+    } finally { db.close(); }
+  }
+  async function allowHandle(handle, mode) {
+    try {
+      const options = { mode };
+      if (await handle.queryPermission(options) === 'granted') return true;
+      return await handle.requestPermission(options) === 'granted';
+    } catch { return false; }
+  }
 
   return function GeometryPage(props) {
     const key = `${STORAGE_PREFIX}${props.sessionId}`;
@@ -50,6 +98,8 @@ export function createGeometryPage(React, G, ctx, t) {
     const gesture = React.useRef(null);
     const svgRef = React.useRef(null);
     const fileInputRef = React.useRef(null);
+    const fileHandle = React.useRef(null);
+    const [fileName, setFileName] = React.useState('');
     const noteRef = React.useRef(null), nameRef = React.useRef(null);
     const phase = props.useInput((s) => s.phase);
     const width = G.bounds.width, height = G.bounds.height;
@@ -72,6 +122,14 @@ export function createGeometryPage(React, G, ctx, t) {
       return () => clearTimeout(timer);
     }, [status]);
     React.useEffect(() => {
+      let live = true;
+      readRememberedHandle().then((handle) => {
+        if (!live || !handle) return;
+        fileHandle.current = handle; setFileName(handle.name || '');
+      }).catch(() => {});
+      return () => { live = false; };
+    }, []);
+    React.useEffect(() => {
       if (rename) { const node = nameRef.current; node?.focus(); node?.select?.(); }
     }, [rename]);
     React.useEffect(() => {
@@ -84,7 +142,7 @@ export function createGeometryPage(React, G, ctx, t) {
       try {
         const next = G.reduce(boardRef.current, a);
         if (JSON.stringify(next) !== JSON.stringify(boardRef.current)) {
-              setHistory((old) => ({ past: [...old.past, boardRef.current].slice(-HISTORY_LIMIT), future: [] }));
+          setHistory((old) => ({ past: [...old.past, boardRef.current].slice(-HISTORY_LIMIT), future: [] }));
           publish(next);
         }
         return next;
@@ -169,7 +227,7 @@ export function createGeometryPage(React, G, ctx, t) {
       else if (tool === 'parallelogram' || tool === 'rectangle') next = G.reduce(before, { type: 'addElement', elementType: tool, points: ids, role: auxiliary ? 'auxiliary' : 'main' });
       else if (tool === 'midpoint') next = G.reduce(before, { type: 'addMidpoint', a: ids[0], b: ids[1] });
       if (JSON.stringify(next) !== JSON.stringify(before)) {
-          setHistory((old) => ({ past: [...old.past, before].slice(-HISTORY_LIMIT), future: [] }));
+        setHistory((old) => ({ past: [...old.past, before].slice(-HISTORY_LIMIT), future: [] }));
         publish(next);
       }
       setPending([]);
@@ -236,7 +294,7 @@ export function createGeometryPage(React, G, ctx, t) {
         g.moved = true;
         // The drag previews the position the model accepts; release is the only undo step.
         const accepted = G.constrainedMove(g.base, g.id, p.x, p.y);
-        if (accepted) setPreview({ id: g.id, x: accepted.x, y: accepted.y });
+        if (accepted) setPreview({ id: g.id, ...previewOffset(g.base, g.id, accepted) });
         return;
       }
       if (tool !== 'select') setHover(snapTo(p));
@@ -301,10 +359,18 @@ export function createGeometryPage(React, G, ctx, t) {
       const text = G.serialize(boardRef.current);
       if (typeof window !== 'undefined' && window.showSaveFilePicker) {
         try {
-          const handle = await window.showSaveFilePicker({ suggestedName: t('geometryAttachmentName'),
-            types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }] });
+          let handle = fileHandle.current;
+          if (handle && await allowHandle(handle, 'readwrite')) {
+            const writable = await handle.createWritable();
+            await writable.write(text); await writable.close();
+            setStatus(t('fileSaved'));
+            return;
+          }
+          handle = await window.showSaveFilePicker({ suggestedName: t('geometryAttachmentName'), types: JSON_TYPES });
           const writable = await handle.createWritable();
           await writable.write(text); await writable.close();
+          fileHandle.current = handle; setFileName(handle.name || '');
+          try { await rememberHandle(handle); } catch { /* remembering is best effort */ }
           setStatus(t('fileSaved'));
           return;
         } catch (error) { if (error?.name === 'AbortError') return; }
@@ -315,18 +381,53 @@ export function createGeometryPage(React, G, ctx, t) {
       URL.revokeObjectURL(url);
       setStatus(t('fileDownloaded'));
     }
+    function applyImportedFile(text) {
+      // Validation runs before anything is published: a bad file changes nothing.
+      const next = G.validate(JSON.parse(text));
+      publish(next); setHistory({ past: [], future: [] }); setSelection([]);
+      setStatus(t('imported'));
+    }
+    function importFailure(error) {
+      // Only a file from the other board is named; everything else stays a plain failure.
+      if (error?.message === t('fileTooLarge')) return setStatus(t('fileTooLarge'));
+      if (error?.message === 'Another board kind') return setStatus(t('otherBoardFile'));
+      setStatus(t('geometryImportFailed'));
+    }
+    async function openFile() {
+      if (typeof window !== 'undefined' && window.showOpenFilePicker) {
+        try {
+          const options = { multiple: false, types: JSON_TYPES };
+          if (fileHandle.current) options.startIn = fileHandle.current;
+          let handles;
+          try { handles = await window.showOpenFilePicker(options); }
+          catch (error) {
+            if (error?.name === 'TypeError' && options.startIn) { delete options.startIn; handles = await window.showOpenFilePicker(options); }
+            else throw error;
+          }
+          const handle = handles?.[0]; if (!handle) return;
+          const file = await handle.getFile();
+          try { applyImportedFile(await file.text()); }
+          catch (error) { importFailure(error); return; }
+          fileHandle.current = handle; setFileName(handle.name || '');
+          try { await rememberHandle(handle); } catch { /* remembering is best effort */ }
+          return;
+        } catch (error) {
+          if (error?.name === 'AbortError') return;
+          if (!['NotAllowedError', 'SecurityError', 'NotSupportedError'].includes(error?.name)) {
+            setStatus(`${t('failed')}`); return;
+          }
+        }
+      }
+      setStatus(t('fileOpenFallback'));
+      fileInputRef.current?.click();
+    }
     async function importInput(event) {
       const file = event.target.files?.[0]; event.target.value = '';
       if (!file) return;
       try {
         if (file.size > 262144) throw new Error(t('fileTooLarge'));
-        const next = G.validate(JSON.parse(await file.text()));
-        // A rejected file never changes the current draft.
-        publish(next); setHistory({ past: [], future: [] }); setSelection([]);
-        setStatus(t('imported'));
-      } catch (error) {
-        setStatus(/Another board kind|Invalid/.test(error.message) ? t('otherBoardFile') : `${t('failed')}: ${error.message}`);
-      }
+        applyImportedFile(await file.text());
+      } catch (error) { importFailure(error); }
     }
     function clearMode() {
       // Clearing this mode resets the geometry canvas and its undo history only.
@@ -336,9 +437,22 @@ export function createGeometryPage(React, G, ctx, t) {
       setStatus(t('geometryClearDone'));
     }
 
+    // A centre drag previews the whole circle, rim included, so it matches the release.
+    const previewOffset = (base, id, accepted) => {
+      const centre = base.points.find((q) => q.id === id);
+      const dx = accepted.x - centre.x, dy = accepted.y - centre.y;
+      const rims = {};
+      for (const e of base.elements) {
+        if (e.type !== 'circle' || e.centerPointId !== id) continue;
+        const rim = base.points.find((q) => q.id === e.radiusPointId);
+        if (rim) rims[rim.id] = { x: rim.x + dx, y: rim.y + dy };
+      }
+      return { x: accepted.x, y: accepted.y, rims };
+    };
     const at = (id) => {
       const q = pointById(id);
       if (!q) return null;
+      if (preview?.rims?.[id]) return preview.rims[id];
       return preview && preview.id === id ? { x: preview.x, y: preview.y } : { x: q.x, y: q.y };
     };
     function renderElement(e) {
@@ -366,7 +480,7 @@ export function createGeometryPage(React, G, ctx, t) {
       return h('g', group, h('polygon', { points: points.map((p) => `${p.x},${p.y}`).join(' '), ...stroke }));
     }
     function renderPoint(q) {
-      const shown = preview && preview.id === q.id ? preview : q;
+      const shown = preview?.rims?.[q.id] || (preview && preview.id === q.id ? preview : q);
       const picked = selection.includes(q.id), staged = pending.includes(q.id);
       const label = `${q.label}${q.kind === 'derived' ? ` · ${t('derivedPoint')}` : ''}${q.note ? ` · ${t('hasNote')}` : ''}`;
       return h('g', {
@@ -460,7 +574,7 @@ export function createGeometryPage(React, G, ctx, t) {
       h('button', { type: 'button', className: 'eb-icon-button eb-danger', title: t('clearGeometry'), 'aria-label': t('clearGeometry'),
         onClick: () => setOverlay({ kind: 'clear' }) }, icon('clear', 18)),
       h('button', { type: 'button', title: t('export'), 'aria-label': t('export'), onClick: saveFile }, t('export')),
-      h('button', { type: 'button', title: t('import'), 'aria-label': t('import'), onClick: () => fileInputRef.current?.click() }, t('import')),
+      h('button', { type: 'button', title: t('import'), 'aria-label': t('import'), onClick: openFile }, t('import')),
       h('button', {
         type: 'button', className: 'eb-primary', title: t('insert'), disabled: phase !== 'plain' || (!board.points.length && !board.elements.length && !board.note),
         onClick: () => insertGeometry(),
@@ -490,7 +604,12 @@ export function createGeometryPage(React, G, ctx, t) {
           h('button', { type: 'button', className: 'eb-primary', onClick: applyRename }, t('apply')))));
     const statusNode = status && h('div', { className: 'eb-status-toast', role: 'status', 'aria-live': 'polite' }, status);
     return h(React.Fragment, null,
-      h('div', { className: 'eb-workspace eb-geometry-workspace' }, tools, stage, dock, statusNode, overlayNode, renameNode),
+      h('div', { className: 'eb-workspace eb-geometry-workspace', onKeyDown: (event) => {
+        // Undo/redo shortcuts work from anywhere inside the geometry tab.
+        if (!(event.metaKey || event.ctrlKey)) return;
+        if (event.key === 'z' || event.key === 'Z') { event.preventDefault(); if (event.shiftKey) redo(); else undo(); }
+        if (event.key === 'y' || event.key === 'Y') { event.preventDefault(); redo(); }
+      } }, tools, stage, dock, statusNode, overlayNode, renameNode),
       h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: fileInputRef, onChange: importInput }));
   };
 }

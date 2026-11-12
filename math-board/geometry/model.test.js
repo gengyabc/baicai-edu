@@ -65,8 +65,8 @@ test('deleted labels are never recycled and a new point takes the next free lett
   let b = add(add(add(G.empty(), 100, 100), 300, 100), 300, 300);
   b = G.reduce(b, { type: 'delete', ids: ['p-2'] });
   b = add(b, 500, 400);
-  // B is not recycled while any point is named B; the new point takes the first free letter.
-  assert.deepEqual(b.points.map((p) => [p.id, p.label]), [['p-1', 'A'], ['p-3', 'C'], ['p-4', 'B']]);
+  // A deleted label is never recycled: the next point is named from its own number.
+  assert.deepEqual(b.points.map((p) => [p.id, p.label]), [['p-1', 'A'], ['p-3', 'C'], ['p-4', 'D']]);
 });
 
 test('isolated points are legal; free points can be renamed and annotated', () => {
