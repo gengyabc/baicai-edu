@@ -1,0 +1,16 @@
+CASE 20 tickets, 2 and 5 yuan, total 64: gap 3, all cheap 40, (64−40)/3 = 8, solvable true
+  check: 8 dear + 12 cheap = 20 tickets; 8×5 + 12×2 = 64 yuan
+CASE 20 tickets, 2 and 5 yuan, total 65: gap 3, all cheap 40, (65−40)/3 = 8.333333333333334, solvable false
+  check: every whole split of 20 tickets was tried; none reaches 65
+CASE 20 tickets, 2 and 5 yuan, total 70: gap 3, all cheap 40, (70−40)/3 = 10, solvable true
+  check: 10 dear + 10 cheap = 20 tickets; 10×5 + 10×2 = 70 yuan
+CASE 20 tickets, 2 and 5 yuan, total 41: gap 3, all cheap 40, (41−40)/3 = 0.3333333333333333, solvable false
+  check: every whole split of 20 tickets was tried; none reaches 41
+CASE 20 tickets, 2 and 5 yuan, total 58: gap 3, all cheap 40, (58−40)/3 = 6, solvable true
+  check: 6 dear + 14 cheap = 20 tickets; 6×5 + 14×2 = 58 yuan
+REACHABLE totals 40..100 by 3: 40, 43, 46, 49, 52, 55, 58, 61, 64, 67, 70, 73, 76, 79, 82, 85, 88, 91, 94, 97, 100
+UNREACHABLE samples: 41, 42, 65, 98, 99 (no whole-ticket split)
+NEIGHBOURS of 65: 64, 67 (neither is 65)
+PASS: checked answers stay behind the teacher-only heading
+
+PASS: finite enumeration of teacher cases only; no teaching, model, or student claim.

@@ -42,6 +42,36 @@ test('number structure keeps checked cases hidden and inherits guidance and evid
   assert.doesNotMatch(number, /ui\.solution\.|learning_plan_update|active_frame_id|new submode/i)
 })
 
+test('student-authored problems wire the shared answerer role into the upper-primary design path', () => {
+  // Architecture contract only: this does not execute a teaching dialogue.
+  const design = highRef('problem-design')
+  assert.match(design, /references\/math-student-problem-design\.md/)
+  hasAll(design, ['makes the student the problem-maker', 'Composing stays the teacher\'s role'])
+  const supplement = highRef('math-student-problem-design')
+  // Reachable neighbours (math-teaching-core, mathematical-strategies, problem-design, pedagogy-core)
+  // are all owned elsewhere; the band file must only point at them, never copy them.
+  for (const ref of ['math-teaching-core', 'mathematical-strategies', 'problem-design', 'pedagogy-core']) {
+    assert.ok(supplement.includes(`${ref}.md`), ref)
+  }
+  hasAll(supplement, ['decline', 'no lesson completed first', 'Composition', 'Solving', 'Grading', 'Transfer',
+    'not the student\'s independent solving', 'one thing', 'nod at it as theirs',
+    'no warning and no extra', 'teacher-led oral quiz', 'confirms returning',
+    'Only an affirming grade closes the loop', 'never recorded as a student difficulty',
+    'not generalized to the student\'s homework or ordinary requests', '## Teacher-only checked cases',
+    '(64−40)/3 = 8', '8 dearer and 12 cheap', '25/3', 'respect that intent',
+    'no nonnegative whole-number solution'])
+  // The band keeps local additions: the shared body stays in math-common alone.
+  for (const shared of ['## The Student Decides the Problem', 'The student decides the scene',
+    '## Role Boundary', '## Evidence Attribution', 'Restricted deliberate error in ordinary learning',
+    'independent verification is not presumed', '## 1. ', 'new submode', 'ui.solution.']) {
+    assert.ok(!supplement.includes(shared), `duplicated ${shared}`)
+  }
+  // The low band keeps its own authored-problem entry, so the guard is about the band staying
+  // separate rather than about the filename being absent.
+  assert.match(text(skillPath('math-primary-low', 'math-low-core')), /references\/math-student-problem-design\.md/)
+  assert.notEqual(highRef('math-student-problem-design'), text('math-primary-low/skills/math-low-core/references/math-student-problem-design.md'))
+})
+
 // Subject contract roles (English role names; singular/plural of the last role is accepted).
 const contractRoles = ['Target classification', 'Grade defaults', 'Profile fields', 'Diagnosis rules', 'Learning recommendation']
 const subjectContractSection = (content) => content.split(/^## Subject contract\s*$/im)[1]?.split(/\n## /)[0] ?? ''
