@@ -1607,6 +1607,37 @@ test('CGI early algebra is band-local, wired from band cores, and evidence-bound
   for (const ref of [low, high]) assert.doesNotMatch(ref, /https?:\/\//)
 })
 
+test('structural recurrence reaches band-local early algebra from core and method index', () => {
+  // Installed-rule reachability only; this does not execute a teaching dialogue.
+  assert.match(highCore, /\| [^\n]*old and new parts[^\n]*\| `references\/early-algebra\.md`/i)
+  const methods = highRef('mathematical-strategies')
+  const recurrence = methods.split('## Structural recurrence')[1]?.split('\n## ')[0] ?? ''
+  assert.match(recurrence, /references\/early-algebra\.md/)
+  assert.match(recurrence, /patterns-generalize/)
+  assert.match(recurrence, /references\/derivation-teaching\.md/)
+  assert.match(recurrence, /references\/proof-teaching\.md/)
+  // The index points at the owner instead of maintaining another worked lesson.
+  assert.doesNotMatch(recurrence, /T\(n\+1\)|n\(n\+1\)\/2|3n\+1/)
+})
+
+test('recurrence supplement separates generation, conjecture, goals and support provenance', () => {
+  // Static teaching-contract coverage, not proof of model behavior or learning.
+  const algebra = highRef('early-algebra')
+  const recurrence = algebra.split('## Structural recurrence')[1]?.split('\n## Boundaries')[0] ?? ''
+  hasAll(recurrence, ['Initial state', 'State', 'Increment', 'Recurrence', 'Closed form',
+    'General reason', 'finite prefix', 'not uniquely determined', '15 or 16',
+    'valid stepwise', 'what each term counts', 'teacher-supplied',
+    'independent discovery or student monitoring', 'references/derivation-teaching.md',
+    'references/proof-teaching.md', 'references/prerequisite-learning.md'])
+  const checked = recurrence.split('### Teacher-only checked cases')[1] ?? ''
+  assert.ok(checked.length > 0, 'worked answers are marked teacher-only')
+  hasAll(checked, ['T(1)=1', 'T(n+1)=T(n)+(n+1)', 'T(10)=55', 'n(n+1)/2',
+    'every row', 'no omissions or duplicates', '8 layers', '36', '3n+1', '4n', 'shared side'])
+  assert.match(recurrence, /Formula-goal gate/)
+  assert.match(recurrence, /single segment/)
+  assert.doesNotMatch(recurrence, /new (?:act|submode|profile field)|must (?:derive|use) a closed form/i)
+})
+
 test('formula learning reaches the goal gate before explicit instruction can reveal the result', () => {
   // Static reachability guard only; these assertions do not simulate a dialogue.
   const core = text(skillPath('math-primary-high', 'math-high-core'))
