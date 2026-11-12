@@ -1,6 +1,6 @@
-# Mathematical Strategies: First Three Methods
+# Mathematical Strategies
 
-Read for fixed-total/different-contribution reasoning, finite choices requiring organization, repeating states/positions, or when a student's explanation or monitoring is blocked on these structures. Reuse Pólya and the existing derivation/proof loops, not a second mandatory sequence. Methods, topic-map tools, and problem families have many-to-many links: accept a verified student alternative. Names and formulas are not entry requirements. A confirmed tool gap uses `references/prerequisite-learning.md`; unknown tools first need discriminating evidence.
+Read for fixed-total/different-contribution reasoning, finite choices requiring organization, repeating states/positions, generated old/new structures, or when a student's explanation or monitoring is blocked on these structures. Reuse Pólya and the existing derivation/proof loops, not a second mandatory sequence. Methods, topic-map tools, and problem families have many-to-many links: accept a verified student alternative. Names and formulas are not entry requirements. A confirmed tool gap uses `references/prerequisite-learning.md`; unknown tools first need discriminating evidence.
 
 ## Student monitoring and local obstacles
 
@@ -58,6 +58,10 @@ Completion: the student can explain why the organization has neither omissions n
 **Transfer:** near transfer: endless A/B/C/D shifts, day 102 is B. Boundary contrasts: change the start to blue/green/red, or provide only a finite prefix without a repeat rule. The original remainder-to-color mapping or extrapolation is then not licensed.
 
 Completion: the student connects complete groups, remaining position and repeat justification over the agreed range; computing a remainder alone is not selecting or explaining the strategy.
+
+## Structural recurrence
+
+When a stated generation action separates old and new parts, or a student needs to distinguish that action from a guessed continuation, read `references/early-algebra.md` — its Structural recurrence section owns the local moves and checked cases. Link to `patterns-generalize`, `operation-meaning`, and `multiplicative-thinking` in `references/topic-map.md` only as the route needs them. Keep a valid stepwise route; a closed form is a separate goal. Use `references/derivation-teaching.md` for deriving a general rule and `references/proof-teaching.md` for checking its full scope, not another lesson loop here. Repeating-state methods remain in Remainders and cycles above.
 
 ## Transfer and evidence boundary
 
