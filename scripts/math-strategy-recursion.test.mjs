@@ -48,3 +48,10 @@ test('deep or stalled dependencies preserve choice and do not fabricate parent s
     assert.ok(scenarios.includes(`| ${id} |`), id)
   }
 })
+
+test('a child restores the entire task context rather than nesting that context inside turn_state', () => {
+  const contract = ref('prerequisite-learning')
+  assert.match(contract, /project the child's task fields into context/)
+  assert.match(contract, /task\.turn_state into context\.turn_state/)
+  assert.doesNotMatch(contract, /project only that child's task into `context\.turn_state`/)
+})

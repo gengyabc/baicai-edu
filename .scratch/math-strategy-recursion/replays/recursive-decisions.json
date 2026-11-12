@@ -1,0 +1,77 @@
+{
+  "environment": {
+    "provider": "ark",
+    "model": "deepseek-v4-1-flash-economy-261017",
+    "reasoning_effort": "default (not exposed)",
+    "date": "2026-11-12",
+    "note": "Single implementation-author acting as synthetic teacher; one decision per isolated case. Not a host end-to-end run, not an independent reviewer, and not a real student. Proposed state only; no real profile written."
+  },
+  "cases": [
+    {
+      "id": "D1",
+      "input": "周期题root→余数子题→完整组子题。又发现完整组子题需要较完整的加法学习，学生难以追踪原题；无信念或情绪证据。学生问：为什么越学越多，我现在到底该学哪个？",
+      "reply": "你觉得越学越多，是因为那条路还没到能回到原题的地方。先看这张计划：原题没丢，还停在第100颗颜色那一步；我们已经确认余数没通，接着在余数里又发现完整组的定义还不稳，所以又下一层。现在的问题是这一层会牵出较多加法内容，继续往下挖，你反而更难看清自己在解决什么。我的建议是先把近期目标改成“练习把10个、11个物品按3个一组分清楚”，回原题的计划保留着，等这里独立做出来再回来。你也可以坚持现在就把原题学下去，那样我需要你先学较多加法，而且会拖更久，也不保证今天能回到第100颗。你想选哪个？",
+      "proposed_state": {
+        "learning_plan_update": "Set status parked-recommended for root; keep root frames/task; add confirmed_gaps.entry for grouping with evidence 'definition unstable; requires substantial addition load'; add readable plan summary with original goal, active child, confirmed vs unverified dependencies, order, return condition; next_step: offer the process choice about changing the near goal",
+        "pending_question": "你想先改近期目标练分组，还是保留原题继续最小补缺？",
+        "segment_projection": null,
+        "notes": "No auto target switch; no belief inference; plan provided before advancing."
+      }
+    },
+    {
+      "id": "D2",
+      "input": "在 D1 的建议后，学生说：我不想换原来的目标，但可以先学你说的分组。",
+      "reply": "好，原题的目标保留着，不改。我把风险说清楚：这条先修路可能要多花一些时间，今天不一定能回到第100颗颜色，到了那一步我也不会替你跳过余数。现在只学你同意的这一块：用圆片或小记号，把10个物品每3个分一组，自己说明分了几组、还剩几个。先做10个。",
+      "proposed_state": {
+        "learning_plan_update": "keep root parked with goal; record student accepted minimal child learning but declined changing the near goal; keep return_condition; steps show grouping child active; risk stated",
+        "pending_question": "把10个物品每3个分一组，你自己分分看：能分几组，还剩几个？",
+        "segment_projection": null,
+        "notes": "Refusal honored; no skipping dependencies, no infinite descent, no fabricated readiness."
+      }
+    },
+    {
+      "id": "D3",
+      "input": "学生说：原题我还要学，但分组和余数我都不想学，也不想现在做题。",
+      "reply": "那我先停在这里，不逼你做题。原题我记着，但它差的那两步你暂时不愿意学，所以今天没法往前推。你可以选：先歇一会儿，下次再说；或者换一个你现在愿意碰的小问题；或者只聊聊哪里让你烦。三种我都接，不用现在给答案。",
+      "proposed_state": {
+        "learning_plan_update": "park plan without advancing; record the decline as a temporary choice, not an inability; keep original goal and chain; no readiness evidence",
+        "pending_question": "今天想先歇一会儿、换个小问题，还是聊聊？",
+        "segment_projection": null,
+        "notes": "No forced work; no claimed mastery; exit respected."
+      }
+    },
+    {
+      "id": "D4",
+      "input": "祖先目标『理解余数』→子层『完整组』的过程中，又准备建立『理解余数』子任务，工具证据没有变化。学生说：这不就是刚才那一步吗？",
+      "reply": "你说得对，兜回来了。我不再往下开新层。先核对：上一层卡在“完整组怎么算”的定义，不是缺新的余数知识；所以再学一次余数不会多出证据。我们换个检查方式：用7个圆片每3个一盒，你先摆出来，说一下盒里各几个、盒外几个。如果这次还是分不清哪盒算完整，我就改从“装满”和“剩下”的说法重建，而不是继续加层。",
+      "proposed_state": {
+        "learning_plan_update": "Stop descending; record cycle warning; review route/representation; no revision claimed as progress; keep existing frames",
+        "pending_question": "7个圆片每3个一盒，盒里各几个、盒外几个？",
+        "segment_projection": null,
+        "notes": "Repeated tool/goal without new evidence stops recursion; more calls are not progress."
+      }
+    },
+    {
+      "id": "D5",
+      "input": "原计划为周期补除法。学生自己画了100位置表，正确标出红蓝绿并用33组三颗加1说明红色（未使用除法符号），问：我这样已经能说明了，为什么还要做除法练习？",
+      "reply": "你这个说明是有效的：33个完整的三颗组到第99颗，后面第1颗就是红色，位置表也标对了。所以除法练习不是必须的，我把它从计划里去掉。只问一句：如果换成第1000颗，你的表要画很久，这时你会怎么找位置？这一步留给下回。",
+      "proposed_state": {
+        "learning_plan_update": "Revise plan: mark the division sub-step no-longer-required with reason 'valid alternative established'; record the student's table method as demonstrated; keep transfer to larger positions unknown; do not record division as independently mastered",
+        "pending_question": "换成第1000颗，你会怎样找它的位置？",
+        "segment_projection": null,
+        "notes": "Plans are dynamic; verified alternative removes a dependency; no fabricated division success."
+      }
+    },
+    {
+      "id": "D6",
+      "input": "学生说：余数我学过，会算，但没想到这里能用。",
+      "reply": "那就先按你会算。这里要用的不是“算余数”，而是想到“每3颗一组，剩下的位置就是下一组的第几个”。你先试试：100除以3的余数是多少？这个余数对应红蓝绿里的哪一颗？",
+      "proposed_state": {
+        "learning_plan_update": "Treat remainder execution as self-reported and provisionally available; do not open a tool-learning child yet; no confirmed mastery; record selection still unknown",
+        "pending_question": "100除以3的余数是多少？它对应红蓝绿里的哪一颗？",
+        "segment_projection": null,
+        "notes": "Self-report is not missing; selection vs execution separated; no forced remediation."
+      }
+    }
+  ]
+}

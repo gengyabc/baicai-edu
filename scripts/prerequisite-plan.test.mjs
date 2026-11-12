@@ -42,3 +42,24 @@ test('finalized plan continuation restores root identity without overriding a ne
   assert.match(save, /current concrete learning_plan/)
   assert.match(save, /no duplicate support_events/)
 })
+
+test('invalid or stale plan updates stop before no-op cleanup can discard the task chain', () => {
+  const finalize = read('finalize-session')
+  assert.match(finalize, /invalid or stale learning_plan[\s\S]*STOP before No-op/)
+  const lifecycle = read('session-lifecycle')
+  assert.match(lifecycle, /invalid or stale learning_plan[\s\S]*must not clear context/)
+})
+
+test('a direct new answer survives recovery of a pending automatic checkpoint and is consumed once', () => {
+  const lifecycle = read('session-lifecycle')
+  assert.match(lifecycle, /direct answer to the saved active frame/)
+  assert.match(lifecycle, /original message exactly once/)
+  assert.match(lifecycle, /before the generic restore-save row/)
+})
+
+test('an abandoned goal cannot reopen through an unscoped history fallback', () => {
+  const lifecycle = read('session-lifecycle')
+  assert.match(lifecycle, /terminal learning_plan.*no unfinished context/)
+  assert.match(lifecycle, /before the ordinary candidate chain/)
+  assert.match(lifecycle, /unscoped history.*not authorization/)
+})

@@ -20,12 +20,16 @@
 | 任务链形状/单活动层 | prerequisite-plan.test 第1项失败：缺 version | 补共享计划协议/schema 后 1/1 |
 | 计划-only授权与耐久重放 | 同文件第2项失败：缺 provided_to_student | 补授权/finalize/profile后，联合已有 persistence 5/5 |
 | 计划恢复/终止与保存入口 | 同文件第3项失败：缺 learning_plan_update | 补 lifecycle/save后，联合已有 persistence 6/6 |
+| 子任务完整投影 | math-strategy-recursion.test 第4项失败：本地写“project ... into context.turn_state” | 改为 task 各字段→context、仅 turn_state→context.turn_state 后 4/4 |
+| 无效/过期计划不得当空保存 | prerequisite-plan.test 第4项失败：Finalize 无 STOP 优先 | Finalize/lifecycle 补“先停、留 context”后 4/4 |
+| 保存恢复后直接回答不得被吞 | 同文件第5项失败：缺直接回答优先行 | Open/Resume 加首行，原消息仅消费一次后 5/5 |
+| 终止计划不得经历史回退重开 | 同文件第6项失败：缺 unscoped history 限制 | Resolve Target 补“先问目标”后 6/6 |
 
 均为安装指令契约守卫，不能当作确定性模型行为测试。[数学守卫](<../../scripts/math-strategy-recursion.test.mjs>)与[计划守卫](<../../scripts/prerequisite-plan.test.mjs>)只约束公开入口、规则和保存协议。
 
 中间检查：`node --check` 两份新增测试通过；本仓库没有根 package 脚本或 TypeScript 配置，本次未修改 TypeScript，不虚报 typecheck。`node scripts/check-skills.mjs` 检查 43 skills，0 errors，0 warnings。`git diff --check` 通过。
 
-首次全量：`node --test scripts/*.test.mjs math-board/*.test.js` 共 272 项，271 通过、1 跳过、0 失败；跳过的是需显式启用的真实 DSH 安装集成测试，不将跳过当作通过。
+首次全量：`node --test scripts/*.test.mjs math-board/*.test.js` 共 272 项，271 通过、1 跳过、0 失败；跳过的是需显式启用的真实 DSH 安装集成测试，不将跳过当作通过。审阅修复后复跑：276 项，275 通过、1 跳过、0 失败；`node scripts/check-skills.mjs` 43 skills / 0 errors / 0 warnings；`git diff --check` 通过。
 
 ## 回放环境与限制
 
@@ -44,4 +48,23 @@
 
 [递归与隔离文件回放](<replays/persistence-replay.md>)已做实际fixture写入和9组只读文件断言：三级父快照、懂了不返回、独立使用后单层返回、原镜像准备/重试、marker最后、Finalize后恢复、纯计划parked与abandoned终止、旧日志原样恢复。父代理重跑只读verify命令9/9通过。人工故障信号不等于实际文件工具异常；诊断起点注入、单agent分阶段执行及中间时间戳更新不完整均保留。未测试的拒绝/循环实际决策、真实OS错误、清理失败、stale/no-op/completed异常等不提升为通过。
 
-真实DSH安装/宿主自动调度、真实学生学习效果未验证，未触碰真实学生档案。详见[验收场景](<acceptance.md>)。代码审阅结果待追加。
+### 双轴审阅与修复
+
+按用户确认的基线 `e5d3a29` 并行做 Standards 与 Spec 两轴只读审阅（提交 `2dd1c6b`）。两条确定问题与两条风险，均已用新守卫复现红灯后修复：
+
+| 发现 | 类型 | 修正 | 守卫 |
+|---|---|---|---|
+| 本地规则把 child.task 整个投到 `context.turn_state`，与共享完整投影冲突 | Spec/Standards 硬违例 | 明确 task 字段→context、仅 task.turn_state→context.turn_state | math-strategy-recursion 第4项 |
+| 无效/过期 learning_plan 可能落到 generic no-op 而清 context | Spec 风险 | Finalize 与 lifecycle 明确 STOP 优先、保留任务链 | prerequisite-plan 第4项 |
+| 自动 checkpoint 后学生直接回答待答题会被恢复分支显示结果后吞掉 | Spec 确定问题 | Open/Resume 首行：先恢复、再同 root 新空日志、原消息仅消费一次 | prerequisite-plan 第5项 |
+| abandoned tombstone 只拦计划链，历史候选仍可能重开旧目标 | Spec 待确认风险 | 终止计划且无未完成 context/明确目标时，candidate chain 前先问目标 | prerequisite-plan 第6项 |
+
+遗留的判断性建议：lifecycle 的 park/abandon 段落与 learning-plan 有部分重述，可能随机漂移。本版保留入口优先级与关键词以减少 generic 表漏分支，细节仍以共享权威为准；未把重复措辞当缺陷删除。审阅代理在修订复核阶段中途失败，未取得最终确认；上表以本地复现的守卫结果为准，不虚构审阅结论。
+
+### 恢复边界与递归决策合成回放
+
+[恢复边界 fixture](<replays/recovery-edge-fixture/>)：从既有 `05-prepared` 准备镜像继续，实际写入四镜像（current_state 最后）、清理、按快照恢复同 root/teaching 与活动余数层，再把学生直接回答消费一次并追加一条带 frame_id 的 segment；另一分支用终止快照确认 bare `/learn` 只问目标。只读 [verify.mjs](<replays/recovery-edge-fixture/verify.mjs>) 断言通过：父/根回答不变、旧摘要不重复、无伪造 support plan、单 segment 归活动层。单 agent 显式操作，非宿主自动调度；无故障注入分支仍按原限制。
+
+[递归决策六例](<replays/recursive-decisions.json>)覆盖过深建议改目标、拒绝改目标但接受最小补缺、连子题也拒绝、祖先循环、有效替代路线、只自报会算。全部为单轮合成决策且由实现作者本人扮演教师，存在自洽偏差；只证明规则可给出预期形态的决策，不证明独立模型或真实学生行为。
+
+真实DSH安装/宿主自动调度、真实学生学习效果未验证，未触碰真实学生档案。详见[验收场景](<acceptance.md>)。
