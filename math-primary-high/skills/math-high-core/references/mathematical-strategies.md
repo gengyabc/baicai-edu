@@ -8,6 +8,8 @@ For area splitting/completion, rearrangement, equal-area conditions or choosing 
 
 For all-divisor counts, least factors completing a square/cube, or parity/prime claims, read `references/number-theory-reasoning.md`. It links factor tools to completeness, minimality and general reasons; remainders/cycles stay here as their single rule source.
 
+For finite objects assigned to categories with an at-least/must-exist goal, read `references/pigeonhole-existence.md`. Check why every object belongs to a category and compare total capacity; an existence claim alone or a story keyword does not select division. Distinguish a guaranteed lower bound from an actual count or identification of particular objects.
+
 ## Student monitoring and local obstacles
 
 At a meaningful decision or actual stall, help the student judge what this attempt established, what remains uncertain, and why continuing or changing the organization may help. Use their actual work; do not ask for a monitoring report after every step. A failed attempt may rule out a case or expose a duplicate without solving the problem. Teacher replanning alone is not student monitoring.
