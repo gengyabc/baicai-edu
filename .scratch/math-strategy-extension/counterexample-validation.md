@@ -70,7 +70,7 @@
 
 ## Code review
 
-已加载并按文件执行 `tdd`、`code-review`、`writing-for-agents` 的流程。`code-review` 要求并行双子代理；本层 delegation 为 0 且不能自启，故两轴由本人依 `git diff 9250e20...HEAD` 与 `git log 9250e20..HEAD --oneline` 完成，**未**声称有独立审查者。
+已加载并按文件执行 `tdd`、`code-review`、`writing-for-agents` 的流程。走查中曾尝试在 worktree 外的临时目录（`~/.dsh-ticket12`）复制父票与阶段规格作只读对照，沙箱拒绝（workspace-write）；未请求提权，改为在工作区内就地阅读父目录原文件，因此**本分支没有提交任何票文件副本**，Comments 留给父代理合并时追加。`code-review` 要求并行双子代理；本层 delegation 为 0 且不能自启，故两轴由本人依 `git diff 9250e20...HEAD` 与 `git log 9250e20..HEAD --oneline` 完成，**未**声称有独立审查者。
 
 ### Standards（本地）
 
