@@ -1,0 +1,18 @@
+✔ extremal tasks reach a conditional reference through the existing method index (0.711167ms)
+✔ extremal supplement delegates recursion, full solutions and evidence to their existing owners (0.435458ms)
+✔ E0–E2 and EB3 integer domain: complete areas, maximum witness and minimum witness (0.347334ms)
+✔ EB1 and EB2 recheck all allowed integer rectangles rather than reuse the old equality case (0.0945ms)
+✔ balancing strictly improves every nonbalanced integer candidate in the checked examples (0.081666ms)
+✔ EB3 rational samples remain positive and admit smaller feasible areas (not a real-domain proof) (0.141541ms)
+✔ a confirmed missing tool enters a recoverable child task through the same teaching owner (1.079542ms)
+✔ the three-method pilot is reachable with structure clues, monitoring and boundary checks (0.341875ms)
+✔ deep or stalled dependencies preserve choice and do not fabricate parent success (0.397083ms)
+✔ a child restores the entire task context rather than nesting that context inside turn_state (0.083042ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 36.277334
