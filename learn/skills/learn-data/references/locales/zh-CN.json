@@ -43,5 +43,9 @@
   "ui.feynman.start_new": "开新的",
   "ui.feynman.keep_talking": "继续讲",
   "ui.feynman.switch_point": "换一个点",
+  "ui.solution.warning": "直接看完整解答会失去这次独立发现解法的机会；看懂也不等于能独立完成。我更建议继续引导，但你仍可以选择看全解。",
+  "ui.solution.question": "这道题接下来想怎么学？",
+  "ui.solution.guided": "继续引导我思考",
+  "ui.solution.full": "我了解，仍要看全解",
   "ui.common.skip": "跳过"
 }

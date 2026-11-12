@@ -6,7 +6,7 @@ Read when a route-critical tool gap is confirmed, a tool-learning child task rev
 
 Reuse demonstrated / self-reported / unknown tool evidence with support conditions. Unknown is not missing: ask a minimal discriminating task only if it changes the next action. A self-report may be tried provisionally without confirming mastery. A student's question about why a method helps usually concerns selection, not inability to execute it. Do not diagnose a tool gap from one wrong answer, unfamiliar terminology, grade, silence, or no ideas alone.
 
-When a necessary tool is genuinely missing, enter a tool-learning child task instead of explaining that tool inside the parent and calling the gap repaired. Choose only the nearest useful dependency; do not prescribe a chapter or test the whole prerequisite graph. An explicitly requested supplied solution is still delivered at the requested depth under the goal gate, with no compulsory recursive lesson or invented performance.
+When a necessary tool is genuinely missing, enter a tool-learning child task instead of explaining that tool inside the parent and calling the gap repaired. Choose only the nearest useful dependency; do not prescribe a chapter or test the whole prerequisite graph. Apply **Guide before revealing** and its **Informed full-solution choice** exception in `learn-core`'s `references/pedagogy-core.md` to parent and child tasks alike. Informed full-solution choice is not conditional on completing prerequisite study; it does not establish tool readiness or repair a gap. Respect pause/end without a compulsory recursive lesson or invented performance.
 
 Completion: an evidenced dependency or a reachable selection bridge is identified; unanswered probes wait.
 
@@ -26,7 +26,7 @@ Completion: one active child and one pending question, a preserved parent, and a
 
 ## 3. Check readiness; return one parent
 
-A new appropriate task must show independent tool use under stated conditions before returning. “I understand”, reciting an example, or filling arithmetic after the teacher chose the method is not that evidence. Supplied examples and critical constructions remain teacher help. Local readiness does not automatically confirm long-term mastery or promote a strategy stage.
+For a guided-learning return, a new appropriate task must show independent tool use under stated conditions before returning. This readiness check is not a prerequisite for the shared informed full-solution path. “I understand”, reciting an example, or filling arithmetic after the teacher chose the method is not that evidence. Supplied examples and critical constructions remain teacher help. Local readiness does not automatically confirm long-term mastery or promote a strategy stage.
 
 Record the child's actual evidence, complete that child, and restore exactly one parent, including its original problem, answer, pending position and support. Do not use the child's answer as the parent's answer. Reconnect the learned tool to the parent's obstacle, leaving the student to judge its purpose where selection is still unknown. Re-evaluate readiness at that parent rather than popping the whole chain.
 

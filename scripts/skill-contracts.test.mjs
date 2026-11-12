@@ -1004,7 +1004,9 @@ test('posing a math problem stops at the question', () => {
     assert.match(supplement, /this session's `session_id`/, band)
     assert.match(supplement, /a new learning session does not read snapshots or histories sent in a previous one/, band)
   }
-  assert.match(scaffold, /does not demonstrate unprompted or name a solution strategy/)
+  assert.match(scaffold, /an attempt plus a local request to see a method does not alone justify solving the task/)
+  assert.match(teaching, /Ordinary explanation or local-help requests remain guided/)
+  assert.match(teaching, /Explicit complete-solution requests use that shared choice/)
   assert.match(scenarios, /停在问句/)
   assert.match(scenarios, /两堆合起来是多少/)
 })
@@ -1496,12 +1498,12 @@ test('upper-primary methods are task-selected from the opening and retain eviden
   hasAll(teaching, ['methods are available from the opening',
     'Concrete–pictorial–abstract (CPA)', 'Explicit instruction', 'Pólya problem solving',
     'Variation and contrast', 'Inquiry and proof', 'Mathematical modeling',
-    'Formative assessment and reflection', 'no failed attempts are required first',
+    'Formative assessment and reflection', 'reuse that evidence rather than forcing new failed attempts',
     'student-as-presenter, AI-as-listener', 'fresh independent work'])
   assert.doesNotMatch(teaching, /all judged per CGI|Only after representation adjustments have failed/)
   hasAll(highRef('problem-design'), ['direct computation for procedure practice',
     'Stories are useful when context matters', 'claim for reasoning or proof'])
-  assert.match(highRef('scaffold-calibration'), /failed hints are not a prerequisite/)
+  assert.match(highRef('scaffold-calibration'), /avoid fixed failure quotas/)
   assert.match(highRef('progression-map'), /preserve record compatibility/)
 })
 
@@ -1588,7 +1590,8 @@ test('formula learning reaches the goal gate before explicit instruction can rev
   const teaching = highRef('math-teaching-core')
   const gate = teaching.indexOf('Formula-goal gate')
   assert.ok(gate >= 0 && gate < teaching.indexOf('## Method Selection'), 'goal gate precedes method selection')
-  assert.match(teaching, /explicit instruction does not bypass this gate/i)
+  assert.match(teaching, /Explicit instruction follows these shared reveal rules/)
+  assert.match(teaching, /Informed full-solution choice/)
   const session = text(skillPath('math-primary-high', 'math-high-session'))
   assert.match(session, /Before choosing an opening or revealing a formula[\s\S]*Formula-goal gate/)
 })
@@ -1598,10 +1601,10 @@ test('formula-goal gate preserves discovery intent and narrowly scopes permissio
   const destination = ref.split('## 1. Establish the destination')[1]?.split('## 2.')[0] ?? ''
   hasAll(destination, ['Formula-goal gate', 'withhold the target formula',
     'a faster general method', 'a confirmation of expression or scope',
-    'does not authorize formula delivery', 'explicitly requests the formula',
+    'does not authorize formula delivery', 'explicitly requests the target formula',
     'student-supplied formula', 'smallest relevant hint', 'already revealed',
     'not independent discovery', 'mathematical learning goal',
-    'mixed scope and permission', 'single explicit offer',
+    'mixed scope and permission', 'shared informed-choice path',
     'ambiguous request to explain or demonstrate',
     'without a mandatory exercise or follow-up question'])
   hasAll(highRef('derivation-teaching'), ['statement of no ideas', 'self-reported'])
@@ -1740,9 +1743,96 @@ test('word-problem derivation checks intermediate quantities intervals and strat
     '80t=60(t+5)', '无法追上', '停车后的间距'])
 })
 
+test('learner-owned tasks share a guide-before-reveal gate across task types', () => {
+  const pedagogy = text('learn/skills/learn-core/references/pedagogy-core.md')
+  hasAll(pedagogy, ['Guide before revealing', 'genuine impasse',
+    'proofs, calculations, word problems, reading answers, writing, and other learner-owned tasks',
+    'request for a complete answer is not evidence of an impasse',
+    'one meaningful thinking task', 'wait for the response',
+    'smallest necessary demonstration', 'no fixed number of failed attempts',
+    'silence, a short reply, or a scope confirmation',
+    'already exposed', 'student-authored quiz'])
+  assert.match(text(skillPath('learn', 'learn-core')), /Guide before revealing/)
+  assert.match(text(skillPath('learn', 'learn-general-session')), /Guide before revealing/)
+  for (const [bundle, name] of [['math-primary-low', 'math-low-core'], ['math-primary-high', 'math-high-core']]) {
+    const base = `${bundle}/skills/${name}/references/`
+    for (const file of ['math-teaching-core', 'scaffold-calibration']) {
+      assert.match(text(`${base}${file}.md`), /Guide before revealing/, `${name}: ${file}`)
+    }
+  }
+  for (const file of ['proof-teaching', 'derivation-teaching', 'word-problem-derivation', 'prerequisite-learning']) {
+    assert.match(highRef(file), /Guide before revealing/, file)
+  }
+  const scenarios = text('learn/tests/guided-teaching-scenarios.md')
+  hasAll(scenarios, ['乱切性', '是的', '直接给我完整证明', '计算', '阅读', '写作',
+    '确实卡住', '空消息', '学生编题', '已泄露'])
+})
+
+test('guided language teaching preserves input while protecting learner answers and revisions', () => {
+  const english = text('english/skills/english-core/references/english-scaffolding.md')
+  hasAll(english, ['ordinary conversational language input', 'Guide before revealing',
+    'not permission from the request alone', 'do not count imitation as independent production'])
+  const chinese = 'chinese-reading/skills/'
+  const generation = text(`${chinese}chinese-core/references/chinese-task-generation.md`)
+  hasAll(generation, ['在内部备齐', '不泄露答案', '不随题提前公开', 'Guide before revealing',
+    '教师或出题者', '不是代做学生当前练习', '仅说“要答案”不改变任务归属'])
+  assert.match(text(`${chinese}chinese-reading-session/SKILL.md`), /自行修正主问题/)
+  assert.match(text(`${chinese}chinese-writing-session/SKILL.md`), /并先试改/)
+  assert.doesNotMatch(text(`${chinese}chinese-generate-tasks/SKILL.md`), /题目列表 → 参考答案|「先看一道示例」/)
+})
+
+test('explicit full-solution requests offer a localized informed choice without requiring inability', () => {
+  const pedagogy = text('learn/skills/learn-core/references/pedagogy-core.md')
+  hasAll(pedagogy, ['### Informed full-solution choice',
+    'read `references/informed-full-solution-choice.md` before responding',
+    'await an explicit same-task choice before revealing',
+    'Help requests and scope confirmations alone do not trigger this branch'])
+  const choice = text('learn/skills/learn-core/references/informed-full-solution-choice.md')
+  hasAll(choice, ['ask_user_question', 'ui.solution.warning', 'ui.solution.question',
+    'ui.solution.guided', 'ui.solution.full', 'ui.recommend.badge', 'Stop and wait',
+    'without requiring an impasse', 'repeated warnings', 'compulsory follow-up exercise',
+    'clicking or equivalent custom text', 'same-task warning has already been shown',
+    'ambiguous “yes”, silence, skip', 'not blanket permission',
+    'no performance segment', 'no solution is revealed on the first unconfirmed request'])
+  assert.match(text(skillPath('learn', 'learn-core')), /informed full-solution choice in pedagogy-core/)
+  hasAll(dataRef('session-schema'), ['turn_state.solution_choice', 'warning_shown',
+    'awaiting_choice', 'full_requested', 'delivered', 'same task',
+    'Absent in old logs means no recorded authorization'])
+  assert.match(dataRef('session-lifecycle'), /pending same-task solution choice/)
+  for (const locale of ['zh-CN', 'en']) {
+    const catalog = JSON.parse(text(`learn/skills/learn-data/references/locales/${locale}.json`))
+    for (const key of ['warning', 'question', 'guided', 'full']) {
+      assert.ok(catalog[`ui.solution.${key}`], `${locale}: ui.solution.${key}`)
+    }
+  }
+  for (const file of ['proof-teaching', 'derivation-teaching', 'word-problem-derivation', 'prerequisite-learning', 'scaffold-calibration']) {
+    assert.match(highRef(file), /Informed full-solution choice/, file)
+  }
+  for (const [bundle, name] of [['math-primary-low', 'math-low-core'], ['learn', 'learn-general-session']]) {
+    const source = bundle === 'learn' ? text(skillPath(bundle, name))
+      : text(`${bundle}/skills/${name}/references/scaffold-calibration.md`)
+    assert.match(source, /Informed full-solution choice/, name)
+  }
+  hasAll(text('learn/tests/guided-teaching-scenarios.md'), ['知情后', '跳过', '同一道题',
+    '不再弹重复卡', '换题', '工具不可用', '不生成表现段'])
+})
+
+test('runtime teaching removes direct-answer permission based only on an unconfirmed request', () => {
+  for (const path of [
+    'math-primary-high/skills/math-high-core/references/proof-teaching.md',
+    'math-primary-high/skills/math-high-core/references/derivation-teaching.md',
+    'math-primary-high/skills/math-high-core/references/word-problem-derivation.md',
+    'math-primary-high/skills/math-high-core/references/prerequisite-learning.md',
+    'math-primary-high/skills/math-high-core/references/scaffold-calibration.md',
+    'math-primary-low/skills/math-low-core/references/scaffold-calibration.md',
+  ]) {
+    assert.doesNotMatch(text(path), /explicit request for a complete proof receives|deliver the requested level directly|complete-solution request receives|supplied solution is still delivered|begin with one accurate labeled example|failed hints are not a prerequisite|explicitly asks to see one way, you may give/i, path)
+  }
+})
+
 test('proof evidence stays scoped supported and within the shared record schema', () => {
   const proof = highRef('proof-teaching')
-  hasAll(proof, ['without compulsory exercises', 'hint request during construction',
+  hasAll(proof, ['not compulsory exercises', 'hints during construction',
     'supported completion', 'reconstruction after answer exposure',
     'independent construction', 'unfinished proof alone', 'Transfer is optional'])
   hasAll(highRef('math-segment-fields'), ['Proof Evidence', 'claim/scope',

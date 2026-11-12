@@ -35,7 +35,7 @@ Subject packages may define only the keys they own (for example stage option lab
 | Key prefix | Owner |
 |---|---|
 | `ui.stage.*` basic four + more/back | `learn` |
-| `ui.recommend.*`, `ui.identity.*`, `ui.start.*`, `ui.clean.*`, `ui.end.*`, `ui.feynman.*` | `learn` |
+| `ui.recommend.*`, `ui.identity.*`, `ui.start.*`, `ui.clean.*`, `ui.end.*`, `ui.feynman.*`, `ui.solution.*` | `learn` |
 | `ui.stage.*` subject extras / descriptions | subject package |
 | `ui.board.*` | owning subject package |
 | `confirm.phrase.*` | `learn` |

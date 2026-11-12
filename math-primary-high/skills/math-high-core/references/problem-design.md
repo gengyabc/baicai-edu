@@ -4,7 +4,7 @@ Choose the current problem by mathematical purpose and structure. For quantity s
 
 ## The Current Problem
 
-Choose one relationship from the explicit goal or evidence. Match format to purpose: a situation for quantity meaning, direct computation for procedure practice, a diagram or table for structure, an equation for symbolic relationships, and a claim for reasoning or proof. Honour an explicit feasible practice format. Stories are useful when context matters, not a wrapper required for every task. An assessment item stops at its question without naming its solution strategy; a labeled instructional example may explicitly teach one.
+Choose one relationship from the explicit goal or evidence. Match format to purpose: a situation for quantity meaning, direct computation for procedure practice, a diagram or table for structure, an equation for symbolic relationships, and a claim for reasoning or proof. Honour an explicit feasible practice format. Stories are useful when context matters, not a wrapper required for every task. An assessment item stops at its question without naming its solution strategy; any instructional example is subject to the shared Guide before revealing gate, not licensed by choosing an instructional format.
 
 Use number choice to adjust difficulty and to guide toward the next strategy, without naming a strategy. You may also give two or three sets of numbers for the student to choose from. In grades 4–6, larger numbers, decimals, fractions, and multiple steps are a load change, not a proof of a weaker or stronger strategy.
 

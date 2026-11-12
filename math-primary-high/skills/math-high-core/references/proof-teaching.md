@@ -4,7 +4,7 @@ Use with `references/math-teaching-core.md`, `references/scaffold-calibration.md
 
 ## 1. Map the claim and goal
 
-Distinguish independent construction, understanding a supplied proof, checking/repairing an argument, and writing up an already-found argument. Preserve the agreed depth: a hint request during construction keeps the proof route open; an explicit request for a complete proof receives a verified, labeled explanation without compulsory exercises. Exploration and derivation retain the goal gate in `references/derivation-teaching.md`.
+Distinguish independent construction, understanding a supplied proof, checking/repairing an argument, and writing up an already-found argument. Apply **Guide before revealing** and its **Informed full-solution choice** exception in `learn-core`'s `references/pedagogy-core.md` before proof delivery. Ordinary “how to prove”, explanation requests, hints during construction, and scope confirmations remain guided; explicit complete-proof requests use the shared informed-choice path. In guided work, clarify the claim if needed, then pose one reachable reasoning task and wait. A supplied proof means material already present or a verified demonstration allowed by the shared rules. Exploration and derivation also retain the goal gate in `references/derivation-teaching.md`.
 
 Privately identify the assumptions, conclusion, domain/quantifiers, definitions, and logical shape: implication, equivalence, universal property, existence, uniqueness, identity, inequality, or geometric relationship. Check truth and edge cases before planning a proof. A false or under-specified statement calls for a counterexample or one relevant clarification, not a manufactured proof or silently added assumption.
 
@@ -76,7 +76,7 @@ Match evidence to the actual goal:
 - **Repair:** the student identifies and actually closes the gap, checking any changed conditions or cases.
 - **Write-up:** the student's established ideas become a connected argument from conditions to the stated conclusion; supplying polished prose for them is not evidence of their organization skill.
 
-Completion criteria describe evidence to seek, not a compulsory exit test after a direct-solution request. Mark supported completion, reconstruction after answer exposure, and independent construction separately. Transfer is optional and follows agreement; recitation does not show when a strategy applies.
+Completion criteria describe evidence to seek, not compulsory exercises after a shared-rule demonstration or informed full solution, or a requirement to continue when the student wants to stop. Mark supported completion, reconstruction after answer exposure, and independent construction separately. Transfer is optional and follows agreement; recitation does not show when a strategy applies.
 
 In existing `context.turn_state`, retain only the current claim/scope, goal, provisional route, local obstacle, tool evidence/support, teacher-supplied help, and pending question needed to resume. These proof descriptions within existing state are not new required keys, profile fields, stages, or mastery probabilities. A confirmed tool gap uses the separate optional task-recovery plan in `references/prerequisite-learning.md`; it is not a proof diagnosis field. Follow `references/math-segment-fields.md` for the single segment and shared thresholds for durable confirmation. An unfinished proof alone is not evidence of a student difficulty.
 

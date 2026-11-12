@@ -40,7 +40,7 @@ user-invocable: false
 2. 齐备题目、原文与学生答案后逐点对照；缺哪项先索取哪项。复用文件处理时已有的自我诊断，否则先问“你自己觉得哪一句最没底？”，得到回应后再给判断。
 3. 按 `references/chinese-reading-core.md` 的“诊断流程”定位失分点，再按 `references/chinese-error-labels.md` 的“阅读标签”选主标签；答案没有明确错误时直接反馈证据与方法，省略纠偏和诊断标签。
 4. 用具体文本证据说明“分丢在哪”，不说“理解不深”这类老师话。
-5. 针对主问题示范一句修正，保留学生思路和用词；请学生补改另一处，能说明改法与证据的关系后才确认纠偏。
+5. 请学生依据已定位的证据自行修正主问题；示范遵循 `learn-core` 的 `references/pedagogy-core.md` 中“Guide before revealing”，保留学生思路和用词。学生能自行修正并说明改法与证据的关系后，才确认纠偏。
 6. 给一个同题型的小练习，换一句话或一段检验；收到学生独立作答前，只记录已观察到的困难与提示后表现。
 7. 把主标签写进本轮 `session_segment.diagnosis`：`domain: "reading"`、`label`（如 `reading:证据不足`）、`evidence`（原文 + 学生原话）。finalize 会写成 `error_history` 诊断条目。
 8. 同一标签在 `error_history` 里反复出现时，在 `diagnosis.evidence` 里写清是重复模式，并在 `recommended_targets` 里保留该标签对应的训练点。

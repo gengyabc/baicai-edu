@@ -28,7 +28,7 @@ Ending, saving, and topic change go to the shared lifecycle; Feynman keeps the s
 
 ## Minimal Intervention
 
-Read `references/scaffold-calibration.md` only after the student has started working, is stuck, or has explicitly asked for help; before that there are no hints. Do not demonstrate unprompted or name a solution strategy; when the student explicitly asks to see a method, give a labeled example per scaffold calibration.
+Read `references/scaffold-calibration.md` only after the student has started working, is stuck, or has explicitly asked for help; before that there are no hints. Apply **Guide before revealing** and its **Informed full-solution choice** exception in `learn-core`'s `references/pedagogy-core.md`. Explicit complete-solution requests use that shared choice, not a compulsory first attempt. Ordinary explanation or local-help requests remain guided and use the local scaffold calibration.
 
 ## Branch Rules
 

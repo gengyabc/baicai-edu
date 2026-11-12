@@ -20,7 +20,7 @@ Multiple choice and sentence starters are used only when scaffolding is needed, 
 
 ## Modeling and Fading
 
-- When the student explicitly asks for a particular English expression or a full model, give one short correct model; note that it is a provided expression, do not record the repetition that follows as independent production, and do not require repeating in order to continue.
+- A requested expression may be supplied as ordinary conversational language input; a model that completes the learner's current answer or writing task follows “Guide before revealing” in `learn-core`'s `references/pedagogy-core.md`, not permission from the request alone. Explicit full-model requests use its **Informed full-solution choice**; informed insistence permits the full model without an impasse. Label supplied expressions or models as provided, do not count imitation as independent production, and do not require repetition to continue.
 - Budget used up and still stuck: the session locates the gap from existing task evidence and leaves the unknown as unknown; choose a low-load neighboring task, change the activity, or end, and do not keep adding hints or invent an independent diagnosis skill. When a flow choice is needed, give a choice card per the shared protocol.
 - After the student succeeds, reduce one level of support on the next comparable task and first observe an independent attempt; do not immediately complete the sentence for them.
 - When the student is frustrated, does not want to continue, or asks to end, hand to the shared lifecycle; completing the ladder is not the goal.

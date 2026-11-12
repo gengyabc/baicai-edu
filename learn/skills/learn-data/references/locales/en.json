@@ -43,5 +43,9 @@
   "ui.feynman.start_new": "Start new",
   "ui.feynman.keep_talking": "Keep explaining",
   "ui.feynman.switch_point": "Switch topic",
+  "ui.solution.warning": "Seeing the full solution gives up this chance to discover it yourself; understanding it does not establish independent mastery. I recommend guided thinking, but you can still choose the full solution.",
+  "ui.solution.question": "How would you like to approach this task?",
+  "ui.solution.guided": "Keep guiding my thinking",
+  "ui.solution.full": "I understand; show the full solution",
   "ui.common.skip": "Skip"
 }

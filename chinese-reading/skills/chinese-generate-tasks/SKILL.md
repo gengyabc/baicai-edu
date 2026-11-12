@@ -1,6 +1,6 @@
 ---
 name: chinese-generate-tasks
-description: Chinese task generation. Use when the student asks for reading questions from a passage, writing prompts (including continuation/rewrite), or focused item practice, with answers or scoring criteria.
+description: Chinese task generation. Use when the student asks for reading questions from a passage, writing prompts (including continuation/rewrite), or focused item practice, with role-appropriate scoring criteria and answer-key delivery.
 user-invocable: false
 ---
 
@@ -30,11 +30,11 @@ user-invocable: false
 2. 按 `references/chinese-task-generation.md` 的“训练目标对齐”确定一个目标。阅读标出原文可用考点；写作优先从兴趣中找可写的具体情境，合适才用。
 3. 阅读分支先齐备原文，再按该文件“阅读题出题”及学段规则生成；每题均能指回原文。写作分支按“写作题出题”提供单题，或用 `ask_user_question` 列 2-3 个题目供选；学生选择前，题目仍是候选。
 4. 逐题完成该文件“检查清单”；未通过的当场改好后再输出。
-5. 交付题目及配套答案/评价标准，不在本 skill 接着讲解、批改或代写；学生作答后交回入口重新路由。
+5. 按出题规则区分学生练习与教师/出题者交付，交付相应题目、答案或评价要求；不在本 skill 接着讲解、批改或代写，学生作答后交回入口重新路由。
 
 ## 预期输出形态
 
-- 阅读：材料概览 → 目标与年级难度 → 题目列表 → 参考答案 → 命题意图 → 分点判分标准。填空及开放答案的合理边界按 reference 必填。
+- 阅读：材料概览 → 目标与年级难度 → 题目列表 → 按出题规则交付的答案/评价要求。内部参考答案、命题意图、分点判分及填空/开放题的合理边界仍须齐备。
 - 写作：题目 → 适用年级 → 训练目标 → 审题提示 → 可写方向 → 评价重点。
 
 ## 会话段
@@ -47,4 +47,4 @@ user-invocable: false
 
 ## 结束状态规则
 
-一句话说明这组题练什么、怎么算过关，交回入口用 `ask_user_question` 提供「现在做」「换一组」「先看一道示例」。
+一句话说明这组题练什么、怎么算过关，交回入口用 `ask_user_question` 提供「现在做」「换一组」「讨论怎么开始」；选择帮助仍按共享引导规则推进，不直接揭示答案。

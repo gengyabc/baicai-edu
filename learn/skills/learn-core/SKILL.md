@@ -6,7 +6,7 @@ user-invocable: false
 
 # Teaching Rules
 
-Before teaching, read `references/pedagogy-core.md` and advance one small goal at a time; before choosing the concrete level by grade, read `references/grade-band-defaults.md` of `learn-data`. Subject domains, question types, initial levels, and strategy stages are defined by the current subject package. Read and apply the remaining rules when the conditions in the table below match; `references/...` is relative to this skill's directory.
+Before teaching, read `references/pedagogy-core.md`, apply its **Guide before revealing** gate, including its informed full-solution choice, to every learner-owned task (including explicit requests for a proof, solution, or demonstration), and advance one small goal at a time; before choosing the concrete level by grade, read `references/grade-band-defaults.md` of `learn-data`. Subject domains, question types, initial levels, and strategy stages are defined by the current subject package. Read and apply the remaining rules when the conditions in the table below match; `references/...` is relative to this skill's directory.
 
 | When | Read |
 |---|---|
@@ -37,7 +37,7 @@ Present teaching content and save summaries in short sentences, natural paragrap
 
 ## Questions and Options
 
-For process forks (choosing a subject, confirming student identity, grade, learning preferences, continue/end, acting as the little teacher/transfer), use `ask_user_question` to give the student clickable options rather than only a text question.
+For process forks (choosing a subject, confirming student identity, grade, learning preferences, continue/end, acting as the little teacher/transfer, or the informed full-solution choice in pedagogy-core), use `ask_user_question` to give the student clickable options rather than only a text question.
 
 - One question per call; `options` has 2–6 short labels, resolved from locale keys (see `learn-data`'s `references/ui-locale.md`) and in one-to-one correspondence with the branches that follow. When a recommendation is needed, put the recommended option first and append `ui.recommend.badge` to its label, and the UI shows "recommended"; with no clear recommendation, don't add it. An answer label may carry this suffix, so strip it before deciding the branch.
 - Follow-up questions, invitations, and comprehension checks during teaching ("How did you think about it?", "Want to try?"), as well as natural listening and ordinary topic follow-ups, stay as text questions. Natural conversation is not a process fork every turn; use a choice card only when a process decision is actually needed, and do not turn thinking questions or every emotional remark into a menu. If the student has already decided clearly, execute by meaning without asking again.

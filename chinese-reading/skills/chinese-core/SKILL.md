@@ -63,7 +63,7 @@ user-invocable: false
 |---|---|---|
 | 经验桥接：学生能复述字面，却因缺少生活经验难以感受情感、意境或人物处境 | `references/experience-gap-bridging.md` | 阅读片段、情感目标、理解状态、原文证据 → `status` 与桥接证据；回到阅读当前焦点，不另产段 |
 
-阅读角度、写作题目、迁移主题与桥接按 `references/chinese-personalization.md` 从 `personal.interests` 选一个具体细节；不合适则用年级默认主题。学生保留表达与作答主体权：教学只给局部示范，完整作文或完整作答由学生完成；出题配套参考答案按出题规则提供。不要新写 `submode: experience_bridging`。
+阅读角度、写作题目、迁移主题与桥接按 `references/chinese-personalization.md` 从 `personal.interests` 选一个具体细节；不合适则用年级默认主题。学生保留表达与作答主体权：教学示范遵循 `learn-core` 的 `references/pedagogy-core.md` 中“Guide before revealing”，默认由学生完成完整作文或作答；明确索要完整示范时走该规则的“Informed full-solution choice”，提示风险并推荐引导，学生知情后仍坚持则可提供标明来源的完整示范；出题答案的内部准备与对外交付范围按出题规则区分，不以生成题目绕过学生自主作答。不要新写 `submode: experience_bridging`。
 
 ## 回合交付规则
 

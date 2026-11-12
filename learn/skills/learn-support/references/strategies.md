@@ -20,7 +20,7 @@ Existing language review, scaffolding, and interaction methods continue to use t
 
 ### What to Still Learn When AI Is Available
 
-Choose the depth according to the current goal, the consequence of errors, key dependencies, and real time, rather than studying everything deeply or delegating everything to AI:
+Choose the depth according to the current goal, the consequence of errors, key dependencies, and real time, rather than studying everything deeply or delegating everything to AI. Delegation supports an agreed collaboration or verification goal; it does not bypass “Guide before revealing” in `learn-core`'s `references/pedagogy-core.md` for the learner's own solving, proving, or composing task:
 
 | Depth of responsibility | Minimal action and check |
 |---|---|
