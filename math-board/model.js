@@ -170,6 +170,9 @@ export function createBoardModel() {
   }
   /** Return detached canonical v4 state; validated v1/v2/v3 states/exports migrate transparently. */
   function validate(input) {
+    // Only this board's own envelope may reach the v4 field list; another board is
+    // refused outright, with no confirmation prompt and no conversion.
+    if (record(input) && Object.hasOwn(input, 'kind') && input.kind !== 'math-board') fail('Another board kind');
     if (record(input) && input.schemaVersion === 1) return migrateV1(input);
     if (record(input) && (input.schemaVersion === 2 || input.schemaVersion === 3)) {
       keys(input, ['schemaVersion', 'settings', 'objects', 'groups', 'note'], ['kind', 'summary']);

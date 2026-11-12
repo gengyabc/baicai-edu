@@ -23,4 +23,4 @@ Status: ready-for-agent
 
 ## 不在本单
 
-- 几何图元、渲染、提交；见 02、03。
+- 几何图元、渲染、提交；见 `21-geometry-model.md`、`22-geometry-view.md`、`23-submission-prompt.md`。
