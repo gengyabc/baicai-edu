@@ -8,6 +8,8 @@ For area splitting/completion, rearrangement, equal-area conditions or choosing 
 
 For all-divisor counts, least factors completing a square/cube, or parity/prime claims, read `references/number-theory-reasoning.md`. It links factor tools to completeness, minimality and general reasons; remainders/cycles stay here as their single rule source.
 
+For finite terminating deterministic perfect-information two-player alternating games, where a strategy must cover every legal opponent response, read `references/elementary-games.md`. It owns rule clarification, small-state backward reasoning and winning guarantees; a game-themed arithmetic story alone is not a trigger.
+
 ## Student monitoring and local obstacles
 
 At a meaningful decision or actual stall, help the student judge what this attempt established, what remains uncertain, and why continuing or changing the organization may help. Use their actual work; do not ask for a monitoring report after every step. A failed attempt may rule out a case or expose a duplicate without solving the problem. Teacher replanning alone is not student monitoring.

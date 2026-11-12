@@ -42,6 +42,33 @@ test('number structure keeps checked cases hidden and inherits guidance and evid
   assert.doesNotMatch(number, /ui\.solution\.|learning_plan_update|active_frame_id|new submode/i)
 })
 
+test('finite alternating games reach a conditional reference through the existing high math entry', () => {
+  const core = text(skillPath('math-primary-high', 'math-high-core'))
+  const session = text(skillPath('math-primary-high', 'math-high-session'))
+  const index = text('math-primary-high/skills/math-high-core/references/mathematical-strategies.md')
+  for (const source of [core, session]) {
+    assert.match(source, /finite[\s\S]*?perfect-information[\s\S]*?references\/mathematical-strategies\.md/i)
+  }
+  assert.match(index, /finite[\s\S]*?references\/elementary-games\.md/i)
+  const games = text('math-primary-high/skills/math-high-core/references/elementary-games.md')
+  hasAll(games, ['math-high-session', 'current act', 'references/proof-teaching.md',
+    'references/prerequisite-learning.md', 'references/topic-map.md'])
+  assert.doesNotMatch(games, /^name:|^supported_stages:|https?:\/\//m)
+  for (const bundle of ['math-primary-low', 'math-common']) {
+    assert.doesNotMatch(text(skillPath(bundle, bundle === 'math-common' ? bundle : 'math-low-core')), /elementary-games/)
+  }
+})
+
+test('game material delegates choice, recovery and evidence instead of owning parallel protocols', () => {
+  const games = text('math-primary-high/skills/math-high-core/references/elementary-games.md')
+  hasAll(games, ['## Teacher-only checked cases', 'informed full-solution choice',
+    'same-task confirmation', 'no prerequisite or compulsory exercise',
+    'references/prerequisite-learning.md', 'references/math-segment-fields.md',
+    'session_segment: null', 'context.turn_state', 'strategy_summary',
+    'one pending question', 'abandoned goals', 'teacher-supplied'])
+  assert.doesNotMatch(games, /ui\.solution\.|learning_plan_update|active_frame_id|new submode/i)
+})
+
 // Subject contract roles (English role names; singular/plural of the last role is accepted).
 const contractRoles = ['Target classification', 'Grade defaults', 'Profile fields', 'Diagnosis rules', 'Learning recommendation']
 const subjectContractSection = (content) => content.split(/^## Subject contract\s*$/im)[1]?.split(/\n## /)[0] ?? ''

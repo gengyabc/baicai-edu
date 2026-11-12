@@ -2,6 +2,8 @@
 
 用于人工审阅与模型回放，不是已执行的自动化行为测试。先准备有效学生快照；每次只提交当前一条学生消息，检查回复与拟记录证据，再提交后续回应。判定语义，不要求固定话术。支架强度见[支架校准](../skills/math-high-core/references/scaffold-calibration.md)，act 分配见[学分活动分配](../skills/math-high-core/references/learn-act-allocation.md)，任务边界见[任务边界规则](../skills/math-high-core/references/board-task-boundary.md)与[批量题边界](../skills/math-high-core/references/batch-board-boundary.md)。
 
+初级博弈的 B0–B2、BB1–BB2 及选择/恢复观察见[博弈回放矩阵](<elementary-games.md>)；该矩阵仍待实际旧/新多轮执行，不能以静态或数学核验代替。
+
 ## 年级与内容门槛
 
 | 场景与输入 | 应观察的行为 | 失败信号 |
