@@ -1,7 +1,7 @@
 // Geometry tab: a draw-only canvas with points, segments, polygons, circles, parallelograms
 // and rectangles. Embedded into client.js by build.mjs. Nothing here reads the quantity
 // board: no patterns, no values, no shared storage key, no shared undo history.
-export function createGeometryPage(React, G, t) {
+export function createGeometryPage(React, G, ctx, t) {
   const h = React.createElement;
   const STORAGE_PREFIX = 'dsh-edu-math-board:geometry:v1:';
   const HISTORY_LIMIT = 40;
@@ -270,6 +270,34 @@ export function createGeometryPage(React, G, t) {
       if (rename) action({ type: 'renamePoint', id: rename.id, label: value });
       setRename(null);
     }
+    // "Add to answer" places only the geometry snapshot and the student's own words.
+    // The composer keeps whatever it already held, and a failed insert leaves nothing behind.
+    function insertGeometry() {
+      if (!ready) return;
+      const conversation = ctx.get('conversation');
+      let drafts = [];
+      const discard = () => {
+        for (const draft of drafts) {
+          try { props.inputActions?.removeAttachment?.(draft.id); } catch { /* composer may be locked */ }
+        }
+        drafts = [];
+      };
+      try {
+        if (!conversation?.createDrafts || !props.inputActions) throw Error();
+        // The board note is the student's own words; it goes into the composer verbatim.
+        const note = boardRef.current.note || '';
+        const file = new File([G.serialize(boardRef.current)], t('geometryAttachmentName'), { type: 'application/json' });
+        drafts = conversation.createDrafts(props.sessionId, [file]);
+        if (!props.inputActions.addAttachments(drafts.map((draft) => draft.id))) throw Error();
+        if (note.trim()) props.inputActions.insertText(`\n${note}\n`, props.inputActions.captureInsertion());
+        props.inputActions.persistDraft();
+        setStatus(t(note.trim() ? 'insertedNote' : 'inserted'));
+        props.close?.();
+      } catch {
+        discard();
+        setStatus(t('insertFailed'));
+      }
+    }
     function clearMode() {
       // Clearing this mode resets the geometry canvas and its undo history only.
       publish(G.empty());
@@ -405,7 +433,7 @@ export function createGeometryPage(React, G, t) {
       }, icon('clear', 18)),
       h('button', {
         type: 'button', className: 'eb-primary', title: t('insert'), disabled: phase !== 'plain' || (!board.points.length && !board.elements.length && !board.note),
-        onClick: () => props.insertGeometry?.(boardRef.current),
+        onClick: () => insertGeometry(),
       }, t('insert')));
     const overlayNode = overlay && h('div', { className: 'eb-overlay', onPointerDown: (event) => { if (event.target === event.currentTarget) setOverlay(null); } },
       h('div', { className: `eb-overlay-card eb-overlay-${overlay.kind}`, role: 'dialog', 'aria-modal': 'true' },

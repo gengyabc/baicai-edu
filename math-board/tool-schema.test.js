@@ -64,5 +64,5 @@ test('settings tool keeps its contract after keyword removal', async () => {
   assert.deepEqual(tool.output.schema.required, ['kind', 'status', 'revision', 'settings']);
   assert.equal(tool.output.schema.properties.kind.const, 'edu-board-config');
   assert.equal(command.name, 'math-board-settings');
-  assert.deepEqual(prompts, ['edu-math-board-clear', 'edu-math-board-submission', 'edu-math-board-settings']);
+  assert.deepEqual(prompts, ['edu-math-board-clear', 'edu-math-board-submission', 'edu-math-board-geometry', 'edu-math-board-settings']);
 });

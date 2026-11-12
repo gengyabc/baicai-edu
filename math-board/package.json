@@ -3,7 +3,7 @@
   "version": "0.6.0",
   "private": true,
   "type": "module",
-  "description": "表达型数学工作台：预设颜色创建图案、可命名分组与同形合并；学生用整板、图形或组说明表达想法，并以画板快照和可选修改记录提交。",
+  "description": "表达型数学工作台：数量画板（预设颜色创建图案、可命名分组与同形合并）与几何画板（点、线段、多边形、圆、平行四边形、矩形）并列两个 tab；以只读快照和学生自述提交。",
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",
@@ -19,6 +19,9 @@
     "view.js",
     "view-component.js",
     "question-reference.js",
+    "geometry/model.js",
+    "geometry-view.js",
+    "board-shell.js",
     "board.css",
     "build.mjs",
     "preview.mjs",

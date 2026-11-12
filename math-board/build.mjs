@@ -45,7 +45,7 @@ window.__ModuleLoader__.load({
         // One entry, two tabs: each page keeps its own draft, selection and history.
         const Board = createTabs(React, t, ${JSON.stringify(stylesheet)},
           () => createView(React, M, ctx, t, ${JSON.stringify(stylesheet)}, art, applyHostConfig, T),
-          () => createGeometry(React, G, t));
+          () => createGeometry(React, G, ctx, t));
         function SessionBoard(props) { return React.createElement(Board, {...props, key: props.sessionId}); }
         ctx.slots.inject('conversation.input.right', () => ctx.slots.register({
           name: 'conversation.input.right', id: 'edu-math-board-launch-v3', order: 50,

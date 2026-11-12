@@ -42,7 +42,6 @@ function mount(options = {}) {
   // Each component type owns its hook slots, so nested pages keep independent state
   // exactly as React does; the harness expands function components into their trees.
   const stores = new Map(); const dom = new Map(); const effects = [];
-  const attached = new Map(); const inserted = [];
   let active = null; let dirty = false; let tree;
   const storeFor = (type) => {
     if (!stores.has(type)) stores.set(type, { slots: [] });
@@ -72,20 +71,21 @@ function mount(options = {}) {
       }
     },
   };
+  const drafts = []; const attached = new Map(); const removed = []; const texts = []; let persisted = 0;
   const inputActions = {
     captureInsertion: () => ({ offset: 0 }),
-    addAttachments(ids) { ids.forEach((id) => attachments.set(id, id)); return true; },
-    removeAttachment(id) { attachments.delete(id); },
-    insertText() { return true; },
-    persistDraft() {}, send() {},
+    addAttachments(ids) { ids.forEach((id) => attached.set(id, id)); return true; },
+    removeAttachment(id) { removed.push(id); attached.delete(id); },
+    insertText(value) { texts.push(value); return true; },
+    persistDraft() { persisted++; }, send() {},
   };
   const conversation = {
-    createDrafts(sessionId, files) { return files.map((file) => ({ id: `draft-${file.name}`, file })); },
+    createDrafts(sessionId, files) { drafts.push(files); return files.map((file) => ({ id: `draft-${file.name}` })); },
     releaseDraftAttachment() {},
   };
   const ctx = { locale: { subscribe: () => () => {}, getSnapshot: () => 'zh' }, get: () => conversation };
   const quantityPage = () => createBoardView(React, M, ctx, t, '', createShapeArt(React), applyHostConfig, T);
-  const geometryPage = () => createGeometryPage(React, G, t);
+  const geometryPage = () => createGeometryPage(React, G, ctx, t);
   const Board = createTabbedBoardView(React, t, '', quantityPage, geometryPage);
   const props = { sessionId: 'tabbed', useProjection: () => null, useInput: () => 'plain', inputActions };
 
@@ -141,7 +141,8 @@ function mount(options = {}) {
   const button = (label) => find((node) => node.type === 'button'
     && (node.props['aria-label'] === label || text(node) === label));
   const api = {
-    storage,
+    storage, drafts, attached, removed, texts, inputActions,
+    get persisted() { return persisted; },
     get tree() { return tree; },
     render: refresh, find, button,
     tab(name) {
@@ -355,4 +356,49 @@ test('a cross-mode file is refused and the current geometry draft stays', () => 
     assert.throws(() => G.validate(quantity));
     assert.deepEqual(h.board(), before);
   });
+});
+
+test('geometry add-to-answer attaches only the geometry snapshot and keeps the note verbatim', () => {
+  const previousFile = globalThis.File;
+  globalThis.File = class { constructor(parts, name, options) { this.parts = parts; this.name = name; this.type = options?.type; } };
+  try {
+    withMount((h) => {
+      h.tab('geometry');
+      h.tool('point');
+      h.clickAt(100, 100);
+      h.click(t('note'));
+      h.find((n) => n.type === 'textarea').props.ref.current.value = '  我画了一个点  ';
+      h.click(t('save'));
+      h.click(t('insert'));
+      assert.equal(h.drafts.length, 1);
+      assert.equal(h.drafts[0].length, 1, 'no trace attachment for geometry');
+      assert.equal(h.drafts[0][0].name, t('geometryAttachmentName'));
+      const snapshot = JSON.parse(h.drafts[0][0].parts.join(''));
+      assert.equal(snapshot.kind, 'geometry-board');
+      assert.equal(snapshot.schemaVersion, 1);
+      assert.equal(snapshot.points.length, 1);
+      assert.equal(Object.hasOwn(snapshot, 'summary'), false);
+      assert.deepEqual(h.texts, ['\n  我画了一个点  \n']);
+      assert.equal(h.persisted, 1);
+    });
+  } finally { globalThis.File = previousFile; }
+});
+
+test('a refused geometry attachment leaves no draft behind and keeps the canvas', () => {
+  const previousFile = globalThis.File;
+  globalThis.File = class { constructor(parts, name) { this.parts = parts; this.name = name; } };
+  try {
+    withMount((h) => {
+      h.tab('geometry');
+      h.tool('point');
+      h.clickAt(100, 100);
+      // A composer that refuses attachments must not leave a half-inserted draft.
+      h.inputActions.addAttachments = () => false;
+      h.click(t('insert'));
+      assert.equal(h.persisted, 0);
+      assert.equal(h.texts.length, 0);
+      assert.equal(h.board().points.length, 1);
+      assert.equal(h.find((n) => n.props.role === 'status').children.flat().join(''), t('insertFailed'));
+    });
+  } finally { globalThis.File = previousFile; }
 });
