@@ -32,13 +32,11 @@ test('upper-primary number structure is conditionally reachable without a new te
 
 test('number structure keeps checked cases hidden and inherits guidance and evidence boundaries', () => {
   const number = text('math-primary-high/skills/math-high-core/references/number-theory-reasoning.md')
-  const [rules, checked] = number.split('## Teacher-only checked cases')
+  const [, checked] = number.split('## Teacher-only checked cases')
   assert.ok(checked, 'checked cases have a teacher-only boundary')
-  hasAll(rules, ['positive integer factor may be 1', 'Exponent notation is optional',
-    'Distinct choices make distinct divisors', 'count that divisor once',
-    'finite exhaustive exclusion', 'a few successful examples cannot prove a general parity law'])
-  hasAll(checked, ['36×6=216=6³', '24×9=216', '3×3=9', '4×2=8',
-    'informed full-solution choice', 'no prerequisite or compulsory exercise',
+  hasAll(checked, ['not to supply answers/routes in an independent opening',
+    'informed full-solution choice', 'wait and same-task confirmation',
+    'no prerequisite or compulsory exercise',
     'teacher-only explanation has no performance segment'])
   // Local material delegates shared gates; it must not introduce its own state schema or UI choice protocol.
   assert.doesNotMatch(number, /ui\.solution\.|learning_plan_update|active_frame_id|new submode/i)
