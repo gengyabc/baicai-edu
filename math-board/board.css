@@ -198,7 +198,6 @@
 .eb-geometry-tools .eb-tool{width:100%;min-height:44px;padding:6px}
 .eb-geometry-tools .eb-label{font-size:9px;line-height:1.1;white-space:nowrap}
 .eb-geometry-workspace{position:absolute;inset:56px 0 0}
-.eb-geometry-hint{position:absolute;left:88px;bottom:84px;margin:0;padding:4px 10px;border-radius:9px;background:#F6F9FA;color:#5B6C76;font-size:12px;pointer-events:none}
 .eb-artboard.eb-geometry,.eb-artboard.eb-grid{background-image:none}
 .eb-dock .eb-danger{color:#B74035}
 .eb-overlay-name input{width:100%;padding:9px 11px;border:1px solid #D6DFE2;border-radius:9px;font:inherit}

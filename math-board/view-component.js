@@ -940,7 +940,6 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
           h('div', { className: 'eb-overlay-actions' },
             button(t('cancel'), () => setOverlay(null)),
             button(t('confirmClear'), confirmClearBoard, { className: 'eb-primary eb-danger-solid' })))));
-    React.useEffect(() => { if (props.split) props.onReady?.(); }, [props.split]);
     const statusNode = status && h('div', { className: 'eb-status-toast', role: 'status', 'aria-live': 'polite' }, status);
     const editor = h(React.Fragment, null,
       h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: fileInput, onChange: importInput }),

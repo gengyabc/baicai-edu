@@ -122,10 +122,12 @@ test('a circle keeps its rim away from the centre', () => {
   assert.ok(Math.hypot(r.x - c.x, r.y - c.y) > 0.4);
   assert.ok(Math.hypot(r.x - c.x, r.y - c.y) <= 0.6);
   assert.equal(dragged.elements[0].type, 'circle');
-  // Dragging the centre carries the whole circle: the rim keeps its offset.
+  // Dragging the centre translates the whole circle: the radius is unchanged.
   const moved = G.reduce(b, { type: 'movePoint', id: 'p-1', x: 220, y: 240 });
   assert.deepEqual([at(moved, 'p-1').x, at(moved, 'p-1').y], [220, 240]);
-  assert.deepEqual([at(moved, 'p-2').x, at(moved, 'p-2').y], [300, 200]);
+  assert.deepEqual([at(moved, 'p-2').x, at(moved, 'p-2').y], [320, 240]);
+  assert.ok(near(Math.hypot(at(moved, 'p-2').x - 220, at(moved, 'p-2').y - 240), 100),
+    'the radius survives a centre drag');
 });
 
 test('midpoint construction stays the midpoint of its two inputs after dragging', () => {

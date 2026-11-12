@@ -175,6 +175,35 @@ export function createGeometryModel() {
   function allowed(canonical, id, patch) {
     try { withPoint(canonical, id, patch); return true; } catch { return false; }
   }
+  // A circle's centre is a handle for the whole circle: moving it carries the rim
+  // point by the same offset, so the radius never changes on a centre drag.
+  const circlesAt = (canonical, id) => canonical.elements.filter((e) => e.type === 'circle' && e.centerPointId === id);
+  function translateCircles(canonical, id, at) {
+    const rimIds = new Set(circlesAt(canonical, id).map((e) => e.radiusPointId));
+    if (!rimIds.size) return null;
+    const start = canonical.points.find((p) => p.id === id);
+    const dx = at.x - start.x, dy = at.y - start.y;
+    return validate({ ...canonical, points: canonical.points.map((p) => {
+      if (p.id === id) return { ...p, x: at.x, y: at.y };
+      return rimIds.has(p.id) ? { ...p, x: p.x + dx, y: p.y + dy } : p;
+    }) });
+  }
+  function moveWithCircles(canonical, id, at) {
+    if (!circlesAt(canonical, id).length) return withPoint(canonical, id, at);
+    try { return translateCircles(canonical, id, at); } catch {
+      // The rim would leave the board or break another shape: stop the drag short.
+      const start = canonical.points.find((p) => p.id === id);
+      let good = start, bad = at;
+      for (let step = 0; step < 40; step++) {
+        const probe = { x: (good.x + bad.x) / 2, y: (good.y + bad.y) / 2 };
+        let candidate = null;
+        try { candidate = translateCircles(canonical, id, probe); } catch { /* still illegal */ }
+        if (candidate) good = probe; else bad = probe;
+      }
+      if (good === start) fail('The circle cannot move there');
+      return translateCircles(canonical, id, good);
+    }
+  }
   // In a rectangle one corner carries the right angle and cannot move; the two
   // corners next to it may slide along their own leg only. A corner slides by
   // the projection of the request onto that leg, which keeps every angle exact.
@@ -370,7 +399,7 @@ export function createGeometryModel() {
         const at = axisMove(canonical, action.id, action);
         // The click landed outside the board: the point stays where it was.
         if (!finite(at.x) || !finite(at.y) || !inside(at)) fail('Invalid coordinate');
-        return withPoint(canonical, action.id, at);
+        return moveWithCircles(canonical, action.id, at);
       }
       case 'addMidpoint': {
         const [a, b] = [pointById(action.a), pointById(action.b)];
@@ -415,8 +444,14 @@ export function createGeometryModel() {
   const reduce = (board, action) => reduceWith(cloneBoard(board), action);
   /** Drag preview: the position the model will accept if the pointer is released here. */
   const constrainedMove = (board, id, x, y) => {
-    const at = axisMove(cloneBoard(board), id, { x, y });
-    return inside(at) ? at : null;
+    const canonical = cloneBoard(board);
+    const at = axisMove(canonical, id, { x, y });
+    if (!inside(at)) return null;
+    try {
+      const next = moveWithCircles(canonical, id, at);
+      const point = next.points.find((p) => p.id === id);
+      return { x: point.x, y: point.y };
+    } catch { return null; }
   };
   return { kind: KIND, coordinateSystem, elementTypes: [...elementTypes], roles: [...roles], operations: [...operations],
     bounds: { width: WIDTH, height: HEIGHT, margin: MARGIN, epsilon: EPSILON },

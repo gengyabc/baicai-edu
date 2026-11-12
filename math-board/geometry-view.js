@@ -51,18 +51,16 @@ export function createGeometryPage(React, G, ctx, t) {
     const svgRef = React.useRef(null);
     const fileInputRef = React.useRef(null);
     const noteRef = React.useRef(null), nameRef = React.useRef(null);
-    const revision = React.useRef(0);
     const phase = props.useInput((s) => s.phase);
     const width = G.bounds.width, height = G.bounds.height;
 
     React.useEffect(() => {
-      revision.current++;
       try {
         const saved = JSON.parse(localStorage.getItem(key) || 'null');
         if (saved !== null) { const next = G.validate(saved); boardRef.current = next; setBoard(next); }
       } catch { setStatus(t('geometryLoadError')); }
       setReady(true);
-      return () => { revision.current++; gesture.current = null; };
+      return () => { gesture.current = null; };
     }, [key]);
     React.useEffect(() => {
       if (!ready) return;
@@ -86,8 +84,7 @@ export function createGeometryPage(React, G, ctx, t) {
       try {
         const next = G.reduce(boardRef.current, a);
         if (JSON.stringify(next) !== JSON.stringify(boardRef.current)) {
-          revision.current++;
-          setHistory((old) => ({ past: [...old.past, boardRef.current].slice(-HISTORY_LIMIT), future: [] }));
+              setHistory((old) => ({ past: [...old.past, boardRef.current].slice(-HISTORY_LIMIT), future: [] }));
           publish(next);
         }
         return next;
@@ -172,8 +169,7 @@ export function createGeometryPage(React, G, ctx, t) {
       else if (tool === 'parallelogram' || tool === 'rectangle') next = G.reduce(before, { type: 'addElement', elementType: tool, points: ids, role: auxiliary ? 'auxiliary' : 'main' });
       else if (tool === 'midpoint') next = G.reduce(before, { type: 'addMidpoint', a: ids[0], b: ids[1] });
       if (JSON.stringify(next) !== JSON.stringify(before)) {
-        revision.current++;
-        setHistory((old) => ({ past: [...old.past, before].slice(-HISTORY_LIMIT), future: [] }));
+          setHistory((old) => ({ past: [...old.past, before].slice(-HISTORY_LIMIT), future: [] }));
         publish(next);
       }
       setPending([]);
