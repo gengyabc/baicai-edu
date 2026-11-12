@@ -186,3 +186,22 @@
   .eb-status-toast{bottom:122px}
 }
 @media(prefers-reduced-motion:reduce){.eb-workbench *{transition:none!important;animation:none!important}}
+
+/* Two tabs share one dialog: each tab keeps its own canvas, history and viewport. */
+.eb-tabs{display:flex;align-items:center;gap:2px;padding:3px;border:1px solid #DCE4E7;border-radius:11px;background:#F4F7F8}
+.eb-workbench .eb-tab{min-height:32px;padding:5px 14px;border-radius:8px;font-size:13px;font-weight:600;color:#5B6C76}
+.eb-workbench .eb-tab[aria-selected=true]{background:#FFFFFF;color:#1E293B;box-shadow:0 1px 3px #243B5322}
+.eb-tabpanel{position:absolute;inset:56px 0 0}
+.eb-tabpanel[hidden]{display:none}
+.eb-workbench .eb-tabs + .eb-grow{flex:1}
+.eb-tool[aria-pressed=true]{background:#EAF4DE;border-color:#B8D898;color:#375F21}
+.eb-geometry-tools .eb-tool{width:100%;min-height:44px;padding:6px}
+.eb-geometry-tools .eb-label{font-size:9px;line-height:1.1;white-space:nowrap}
+.eb-geometry-workspace{position:absolute;inset:56px 0 0}
+.eb-geometry-hint{position:absolute;left:88px;bottom:84px;margin:0;padding:4px 10px;border-radius:9px;background:#F6F9FA;color:#5B6C76;font-size:12px;pointer-events:none}
+.eb-artboard.eb-geometry,.eb-artboard.eb-grid{background-image:none}
+.eb-dock .eb-danger{color:#B74035}
+.eb-overlay-name input{width:100%;padding:9px 11px;border:1px solid #D6DFE2;border-radius:9px;font:inherit}
+@media(max-width:760px){
+  .eb-tabpanel,.eb-geometry-workspace{inset:48px 0 0}
+}

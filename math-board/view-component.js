@@ -311,6 +311,8 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
 
     React.useEffect(() => {
       const node = dialog.current;
+      // A split layout has no dialog of its own: the shell owns the only one.
+      if (!node) return;
       if (opened && !node.open) node.showModal();
       if (!opened && node.open) node.close();
     }, [opened]);
@@ -803,7 +805,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
     const noteTarget = noteTargetFor(selected, completeGroup);
     const noteHasText = Boolean(noteText(noteTarget));
     const topbar = h('header', { className: 'eb-topbar' }, brandMark(levels, 27), h('span', null, t('title')));
-    const question = h('aside', { className: 'eb-question', 'aria-label': t('questionTeacher') },
+    const question = props.question || h('aside', { className: 'eb-question', 'aria-label': t('questionTeacher') },
       reference ? h('div', { id: `eb-question-${props.sessionId}`, className: `eb-question-text${questionExpanded ? '' : ' eb-collapsed'}` },
         props.renderFactorySlot?.('conversation.chat.reasoning.content', { text: reference.text, running: false }) ?? reference.text)
         : h('p', { className: 'eb-question-empty' }, t('questionEmpty')),
@@ -938,10 +940,25 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
           h('div', { className: 'eb-overlay-actions' },
             button(t('cancel'), () => setOverlay(null)),
             button(t('confirmClear'), confirmClearBoard, { className: 'eb-primary eb-danger-solid' })))));
+    React.useEffect(() => { if (props.split) props.onReady?.(); }, [props.split]);
     const statusNode = status && h('div', { className: 'eb-status-toast', role: 'status', 'aria-live': 'polite' }, status);
     const editor = h(React.Fragment, null,
       h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: fileInput, onChange: importInput }),
       h('a', { hidden: true, ref: downloadAnchor, download: t('attachmentName') }));
+    // Two tabs share one dialog: the shell owns the launcher, the dialog and the tab
+    // bar, so this page contributes its workspace only. A single-tab board keeps the
+    // tree it always had, including its own launcher and dialog.
+    if (props.split) {
+      return h(React.Fragment, null,
+        h('div', { className: 'eb-workspace' },
+          palette,
+          stage,
+          dock,
+          moreMenuNode,
+          statusNode,
+          overlayNode),
+        editor);
+    }
     return h(React.Fragment, null,
       h('style', null, css),
       h('button', {

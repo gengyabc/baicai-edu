@@ -4,6 +4,9 @@ import { createBoardTrace } from './trace.js';
 import { applyHostConfig } from './config-bridge.js';
 import { boardQuestionReferences } from './question-reference.js';
 import { composerNote, createBoardView, createShapeArt, colorIndexForValue } from './view.js';
+import { createTabbedBoardView } from './board-shell.js';
+import { createGeometryPage } from './geometry-view.js';
+import { createGeometryModel } from './geometry/model.js';
 
 const stylesheet = await readFile(new URL('board.css', import.meta.url), 'utf8');
 
@@ -27,7 +30,11 @@ window.__ModuleLoader__.load({
     const applyHostConfig = ${applyHostConfig.toString()};
     const boardQuestionReferences = ${boardQuestionReferences.toString()};
     const createView = ${createBoardView.toString()};
+    const createTabs = ${createTabbedBoardView.toString()};
+    const createGeometry = ${createGeometryPage.toString()};
+    const createGeoModel = ${createGeometryModel.toString()};
     const art = createArt(React);
+    const G = createGeoModel();
     const dictionaries = ${JSON.stringify(dicts)};
     return {
       inject: ['slots', 'locale'],
@@ -35,7 +42,10 @@ window.__ModuleLoader__.load({
         ctx.effect(() => ctx.locale.register('edu-math-board', 'en', dictionaries.en));
         ctx.effect(() => ctx.locale.register('edu-math-board', 'zh', dictionaries.zh));
         const t = ctx.locale.bind('edu-math-board');
-        const Board = createView(React, M, ctx, t, ${JSON.stringify(stylesheet)}, art, applyHostConfig, T);
+        // One entry, two tabs: each page keeps its own draft, selection and history.
+        const Board = createTabs(React, t, ${JSON.stringify(stylesheet)},
+          () => createView(React, M, ctx, t, ${JSON.stringify(stylesheet)}, art, applyHostConfig, T),
+          () => createGeometry(React, G, t));
         function SessionBoard(props) { return React.createElement(Board, {...props, key: props.sessionId}); }
         ctx.slots.inject('conversation.input.right', () => ctx.slots.register({
           name: 'conversation.input.right', id: 'edu-math-board-launch-v3', order: 50,

@@ -174,6 +174,9 @@ window.__ModuleLoader__.load({
   }
   /** Return detached canonical v4 state; validated v1/v2/v3 states/exports migrate transparently. */
   function validate(input) {
+    // Only this board's own envelope may reach the v4 field list; another board is
+    // refused outright, with no confirmation prompt and no conversion.
+    if (record(input) && Object.hasOwn(input, 'kind') && input.kind !== 'math-board') fail('Another board kind');
     if (record(input) && input.schemaVersion === 1) return migrateV1(input);
     if (record(input) && (input.schemaVersion === 2 || input.schemaVersion === 3)) {
       keys(input, ['schemaVersion', 'settings', 'objects', 'groups', 'note'], ['kind', 'summary']);
@@ -1299,6 +1302,8 @@ window.__ModuleLoader__.load({
 
     React.useEffect(() => {
       const node = dialog.current;
+      // A split layout has no dialog of its own: the shell owns the only one.
+      if (!node) return;
       if (opened && !node.open) node.showModal();
       if (!opened && node.open) node.close();
     }, [opened]);
@@ -1791,7 +1796,7 @@ window.__ModuleLoader__.load({
     const noteTarget = noteTargetFor(selected, completeGroup);
     const noteHasText = Boolean(noteText(noteTarget));
     const topbar = h('header', { className: 'eb-topbar' }, brandMark(levels, 27), h('span', null, t('title')));
-    const question = h('aside', { className: 'eb-question', 'aria-label': t('questionTeacher') },
+    const question = props.question || h('aside', { className: 'eb-question', 'aria-label': t('questionTeacher') },
       reference ? h('div', { id: `eb-question-${props.sessionId}`, className: `eb-question-text${questionExpanded ? '' : ' eb-collapsed'}` },
         props.renderFactorySlot?.('conversation.chat.reasoning.content', { text: reference.text, running: false }) ?? reference.text)
         : h('p', { className: 'eb-question-empty' }, t('questionEmpty')),
@@ -1926,10 +1931,25 @@ window.__ModuleLoader__.load({
           h('div', { className: 'eb-overlay-actions' },
             button(t('cancel'), () => setOverlay(null)),
             button(t('confirmClear'), confirmClearBoard, { className: 'eb-primary eb-danger-solid' })))));
+    React.useEffect(() => { if (props.split) props.onReady?.(); }, [props.split]);
     const statusNode = status && h('div', { className: 'eb-status-toast', role: 'status', 'aria-live': 'polite' }, status);
     const editor = h(React.Fragment, null,
       h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: fileInput, onChange: importInput }),
       h('a', { hidden: true, ref: downloadAnchor, download: t('attachmentName') }));
+    // Two tabs share one dialog: the shell owns the launcher, the dialog and the tab
+    // bar, so this page contributes its workspace only. A single-tab board keeps the
+    // tree it always had, including its own launcher and dialog.
+    if (props.split) {
+      return h(React.Fragment, null,
+        h('div', { className: 'eb-workspace' },
+          palette,
+          stage,
+          dock,
+          moreMenuNode,
+          statusNode,
+          overlayNode),
+        editor);
+    }
     return h(React.Fragment, null,
       h('style', null, css),
       h('button', {
@@ -1961,15 +1981,939 @@ window.__ModuleLoader__.load({
         editor));
   };
 };
+    const createTabs = function createTabbedBoardView(React, t, css, quantityPage, geometryPage) {
+  const h = React.createElement;
+  const QuantityPage = quantityPage();
+  const GeometryPage = geometryPage ? geometryPage() : null;
+  return function TabbedBoard(props) {
+    const [tab, setTab] = React.useState('quantity');
+    const [opened, setOpened] = React.useState(false);
+    const dialog = React.useRef(null);
+    const referenceList = (() => {
+      if (!props.useChat) return [];
+      try {
+        const value = props.useChat((chat) => JSON.stringify(boardQuestionReferences(chat)));
+        const parsed = JSON.parse(typeof value === 'string' ? value : '[]');
+        return Array.isArray(parsed) ? parsed : [];
+      } catch { return []; }
+    })();
+    const [questionKey, setQuestionKey] = React.useState(null);
+    const [questionExpanded, setQuestionExpanded] = React.useState(false);
+    const reference = referenceList.find((item) => item.key === questionKey) || referenceList.at(-1);
+    React.useEffect(() => { setQuestionExpanded(false); }, [reference?.key]);
+    React.useEffect(() => {
+      const node = dialog.current;
+      if (opened && node && !node.open) node.showModal();
+      if (!opened && node && node.open) node.close();
+    }, [opened]);
+    React.useEffect(() => () => { if (dialog.current?.open) dialog.current.close(); }, []);
+
+    const question = h('aside', { className: 'eb-question', 'aria-label': t('questionTeacher') },
+      reference ? h('div', { id: `eb-question-${props.sessionId}`, className: `eb-question-text${questionExpanded ? '' : ' eb-collapsed'}` },
+        props.renderFactorySlot?.('conversation.chat.reasoning.content', { text: reference.text, running: false }) ?? reference.text)
+        : h('p', { className: 'eb-question-empty' }, t('questionEmpty')),
+      reference && h('div', { className: 'eb-question-controls' },
+        h('select', {
+          'aria-label': t('questionSource'), title: t('questionSource'), value: reference.key,
+          onChange: (event) => { setQuestionKey(event.target.value); setQuestionExpanded(false); },
+        }, [...referenceList].reverse().map((item) => h('option', { key: item.key, value: item.key },
+          item.text.replace(/\s+/g, ' ').slice(0, 48)))),
+        h('button', {
+          type: 'button', className: 'eb-question-toggle', 'aria-expanded': questionExpanded,
+          'aria-controls': `eb-question-${props.sessionId}`, onClick: () => setQuestionExpanded(!questionExpanded),
+        }, questionExpanded ? t('questionCollapse') : t('questionExpand'))));
+    const tabs = h('div', { className: 'eb-tabs', role: 'tablist', 'aria-label': t('tabs') },
+      [['quantity', 'tabQuantity'], ['geometry', 'tabGeometry']].map(([name, label]) => h('button', {
+        key: name, type: 'button', role: 'tab', id: `eb-tab-${name}`, className: 'eb-tab', 'data-tab': name,
+        'aria-selected': tab === name, 'aria-controls': `eb-tabpanel-${name}`,
+        onClick: () => setTab(name),
+      }, t(label))));
+    const panel = (name, node) => h('div', {
+      id: `eb-tabpanel-${name}`, role: 'tabpanel', 'aria-labelledby': `eb-tab-${name}`,
+      className: 'eb-tabpanel', hidden: tab !== name,
+    }, node);
+    return h(React.Fragment, null,
+      h('style', null, css),
+      h('button', {
+        type: 'button', className: 'edu-board-launch', title: t('title'),
+        'aria-label': t('title'), 'aria-haspopup': 'dialog', onClick: () => setOpened(true),
+      }, h('span', null, t('title'))),
+      h('dialog', {
+        ref: dialog, className: 'eb-dialog', 'aria-label': t('title'),
+        onClose: () => setOpened(false),
+        onCancel: (event) => { event.preventDefault(); setOpened(false); },
+      }, h('div', { className: 'eb-workbench' },
+        h('header', { className: 'eb-topbar' }, h('span', null, t('title')), tabs, h('span', { className: 'eb-grow' })),
+        panel('quantity', h(QuantityPage, { ...props, split: true, question, close: () => setOpened(false) })),
+        GeometryPage && panel('geometry', h(GeometryPage, { ...props, split: true, question, close: () => setOpened(false) })))));
+  };
+};
+    const createGeometry = function createGeometryPage(React, G, t) {
+  const h = React.createElement;
+  const STORAGE_PREFIX = 'dsh-edu-math-board:geometry:v1:';
+  const HISTORY_LIMIT = 40;
+  const SNAP_RADIUS = 12;
+  const TOOLS = ['select', 'point', 'segment', 'polygon', 'circle', 'parallelogram', 'rectangle', 'midpoint'];
+  const ICONS = {
+    select: 'M5 3l14 8-6 1.5L11 19z',
+    point: 'M12 8a4 4 0 1 1 0 8a4 4 0 1 1 0-8',
+    segment: 'M5 19 19 5',
+    polygon: 'M12 3 21 9.5 18 20H6L3 9.5z',
+    circle: 'M12 4a8 8 0 1 1 0 16a8 8 0 1 1 0-16',
+    parallelogram: 'M3 18 8 6h13l-5 12z',
+    rectangle: 'M4 6h16v12H4z',
+    midpoint: 'M3 12h18M8 8v8M16 8v8',
+    undo: 'M9 5 4 10l5 5M4 10h9a6 6 0 0 1 0 12',
+    redo: 'm15 5 5 5-5 5m5-5h-9a6 6 0 0 0 0 12',
+    note: 'M20 11a8 8 0 0 1-8 8H7l-5 3V11a9 9 0 0 1 18 0ZM7 10h8M7 14h5',
+    trash: 'M4 6h16M9 6V3h6v3M7 6l1 15h8l1-15',
+    clear: 'm18 3-7 9m-3-2 7 4-4 7H3l2-10 3-1Zm-1 6-2 5m6-3-2 3M2 21h13',
+  };
+  const icon = (name, size = 20) => h('svg', {
+    width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor',
+    strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true,
+  }, h('path', { d: ICONS[name] || ICONS.select }));
+
+  return function GeometryPage(props) {
+    const key = `${STORAGE_PREFIX}${props.sessionId}`;
+    const [ready, setReady] = React.useState(false);
+    const [board, setBoard] = React.useState(G.empty);
+    const boardRef = React.useRef(board);
+    const [history, setHistory] = React.useState({ past: [], future: [] });
+    const [tool, setTool] = React.useState('select');
+    const [auxiliary, setAuxiliary] = React.useState(false);
+    const [pending, setPending] = React.useState([]);
+    const [selection, setSelection] = React.useState([]);
+    const [append, setAppend] = React.useState(false);
+    const [hover, setHover] = React.useState(null);
+    const [preview, setPreview] = React.useState(null);
+    const [zoom, setZoom] = React.useState(1);
+    const [fit, setFit] = React.useState(true);
+    const [grid, setGrid] = React.useState(false);
+    const [snap, setSnap] = React.useState(true);
+    const [status, setStatus] = React.useState('');
+    const [overlay, setOverlay] = React.useState(null);
+    const [rename, setRename] = React.useState(null);
+    const gesture = React.useRef(null);
+    const svgRef = React.useRef(null);
+    const noteRef = React.useRef(null), nameRef = React.useRef(null);
+    const revision = React.useRef(0);
+    const phase = props.useInput((s) => s.phase);
+    const width = G.bounds.width, height = G.bounds.height;
+
+    React.useEffect(() => {
+      revision.current++;
+      try {
+        const saved = JSON.parse(localStorage.getItem(key) || 'null');
+        if (saved !== null) { const next = G.validate(saved); boardRef.current = next; setBoard(next); }
+      } catch { setStatus(t('geometryLoadError')); }
+      setReady(true);
+      return () => { revision.current++; gesture.current = null; };
+    }, [key]);
+    React.useEffect(() => {
+      if (!ready) return;
+      try { localStorage.setItem(key, JSON.stringify(board)); } catch { setStatus(t('storageError')); }
+    }, [board, ready, key]);
+    React.useEffect(() => {
+      if (!status) return undefined;
+      const timer = setTimeout(() => setStatus(''), 5200);
+      return () => clearTimeout(timer);
+    }, [status]);
+    React.useEffect(() => {
+      if (rename) { const node = nameRef.current; node?.focus(); node?.select?.(); }
+    }, [rename]);
+    React.useEffect(() => {
+      if (overlay?.kind === 'note') noteRef.current?.focus();
+    }, [overlay]);
+
+    function publish(next) { boardRef.current = next; setBoard(next); }
+    function action(a) {
+      if (!ready) return null;
+      try {
+        const next = G.reduce(boardRef.current, a);
+        if (JSON.stringify(next) !== JSON.stringify(boardRef.current)) {
+          revision.current++;
+          setHistory((old) => ({ past: [...old.past, boardRef.current].slice(-HISTORY_LIMIT), future: [] }));
+          publish(next);
+        }
+        return next;
+      } catch (error) { setStatus(`${t('failed')}: ${error.message}`); return null; }
+    }
+    function undo() {
+      const prev = history.past.at(-1); if (!prev) return;
+      setHistory({ past: history.past.slice(0, -1), future: [boardRef.current, ...history.future].slice(0, HISTORY_LIMIT) });
+      publish(prev); setSelection([]); setPending([]);
+    }
+    function redo() {
+      const next = history.future[0]; if (!next) return;
+      setHistory({ past: [...history.past, boardRef.current].slice(-HISTORY_LIMIT), future: history.future.slice(1) });
+      publish(next); setSelection([]); setPending([]);
+    }
+    const pointById = (id) => board.points.find((p) => p.id === id);
+    const selectedPoints = selection.map(pointById).filter(Boolean);
+    const selectedElements = selection.map((id) => board.elements.find((e) => e.id === id)).filter(Boolean);
+    const singlePoint = selection.length === 1 && selectedPoints.length === 1 ? selectedPoints[0] : null;
+    const singleElement = selection.length === 1 && selectedElements.length === 1 ? selectedElements[0] : null;
+    const noteTarget = singlePoint
+      ? { kind: 'point', id: singlePoint.id, label: singlePoint.label }
+      : singleElement ? { kind: 'element', id: singleElement.id, label: t(singleElement.type) } : null;
+    const noteValue = !noteTarget ? board.note
+      : noteTarget.kind === 'point' ? pointById(noteTarget.id)?.note || '' : board.elements.find((e) => e.id === noteTarget.id)?.note || '';
+
+    function localPoint(event) {
+      const svg = svgRef.current;
+      const p = svg.createSVGPoint(); p.x = event.clientX; p.y = event.clientY;
+      const matrix = svg.getScreenCTM();
+      const raw = matrix ? p.matrixTransform(matrix.inverse()) : { x: 0, y: 0 };
+      return {
+        x: Math.max(G.bounds.margin, Math.min(width - G.bounds.margin, raw.x)),
+        y: Math.max(G.bounds.margin, Math.min(height - G.bounds.margin, raw.y)),
+      };
+    }
+    // Grid and snap are local view state; neither reaches the snapshot.
+    function snapTo(p) {
+      if (!snap) return p;
+      let best = null;
+      for (const q of boardRef.current.points) {
+        const d = Math.hypot(q.x - p.x, q.y - p.y);
+        if (d <= SNAP_RADIUS && (!best || d < best.d)) best = { d, q };
+      }
+      return best ? { x: best.q.x, y: best.q.y, id: best.q.id } : p;
+    }
+    function hitTest(p) {
+      for (const q of boardRef.current.points) if (Math.hypot(q.x - p.x, q.y - p.y) <= 10) return { kind: 'point', id: q.id };
+      for (const e of [...boardRef.current.elements].reverse()) {
+        const ids = e.type === 'circle' ? [e.centerPointId, e.radiusPointId] : e.points;
+        const pts = ids.map(pointById).filter(Boolean);
+        if (e.type === 'circle') {
+          const [center, rim] = pts;
+          if (!center || !rim) continue;
+          const radius = Math.hypot(rim.x - center.x, rim.y - center.y);
+          if (Math.abs(Math.hypot(p.x - center.x, p.y - center.y) - radius) <= 6) return { kind: 'element', id: e.id };
+          continue;
+        }
+        for (let i = 0; i + 1 < pts.length; i++) {
+          if (segmentDistance(p, pts[i], pts[i + 1]) <= 6) return { kind: 'element', id: e.id };
+        }
+        if (pts.length > 2 && segmentDistance(p, pts.at(-1), pts[0]) <= 6) return { kind: 'element', id: e.id };
+      }
+      return null;
+    }
+    function segmentDistance(p, a, b) {
+      const dx = b.x - a.x, dy = b.y - a.y, length = dx * dx + dy * dy;
+      if (!length) return Math.hypot(p.x - a.x, p.y - a.y);
+      const at = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / length));
+      return Math.hypot(p.x - (a.x + at * dx), p.y - (a.y + at * dy));
+    }
+    function toggleSelection(id) {
+      setSelection((old) => old.includes(id) ? old.filter((x) => x !== id) : [...old, id]);
+    }
+    function chooseTool(name) { setTool(name); setPending([]); setSelection([]); }
+    function finish(ids) {
+      const before = boardRef.current;
+      let next = before;
+      if (tool === 'segment') next = G.reduce(before, { type: 'addElement', elementType: 'segment', points: ids, role: auxiliary ? 'auxiliary' : 'main' });
+      else if (tool === 'polygon') next = G.reduce(before, { type: 'addElement', elementType: 'polygon', points: ids, role: auxiliary ? 'auxiliary' : 'main' });
+      else if (tool === 'circle') next = G.reduce(before, { type: 'addElement', elementType: 'circle', centerPointId: ids[0], radiusPointId: ids[1], role: auxiliary ? 'auxiliary' : 'main' });
+      else if (tool === 'parallelogram' || tool === 'rectangle') next = G.reduce(before, { type: 'addElement', elementType: tool, points: ids, role: auxiliary ? 'auxiliary' : 'main' });
+      else if (tool === 'midpoint') next = G.reduce(before, { type: 'addMidpoint', a: ids[0], b: ids[1] });
+      if (JSON.stringify(next) !== JSON.stringify(before)) {
+        revision.current++;
+        setHistory((old) => ({ past: [...old.past, before].slice(-HISTORY_LIMIT), future: [] }));
+        publish(next);
+      }
+      setPending([]);
+      setTool('select');
+      const created = next.elements.find((e) => !before.elements.some((old) => old.id === e.id));
+      if (created) setSelection([created.id]);
+    }
+    function clickEmpty(p) {
+      const next = action({ type: 'addPoint', x: p.x, y: p.y });
+      return next ? next.points.at(-1) : null;
+    }
+    function usePoint(target, p) {
+      let chosen = target;
+      if (!chosen) {
+        const created = clickEmpty(p);
+        if (!created) return;
+        chosen = { kind: 'point', id: created.id };
+      }
+      const ids = [...pending, chosen.id];
+      if (tool === 'segment' && ids.length === 2) return finish(ids);
+      if (tool === 'circle' && ids.length === 2) return finish(ids);
+      if (tool === 'midpoint' && ids.length === 2) return finish(ids);
+      if (tool === 'parallelogram' && ids.length === 3) return finish(ids);
+      if (tool === 'rectangle' && ids.length === 3) return finish(ids);
+      if (tool === 'polygon') {
+        // Three points close a triangle; a larger ring closes on the first point again.
+        if (ids.length > 3 && ids.at(-1) === ids[0]) return finish(ids.slice(0, -1));
+        if (ids.length >= 3 && chosen.id === ids[0] && ids.length > 3) return finish(ids.slice(0, -1));
+        setPending(ids); return;
+      }
+      setPending(ids);
+    }
+    function pointerDown(event) {
+      if (event.button !== 0 || !ready) return;
+      const p = localPoint(event);
+      const target = hitTest(p);
+      const pointId = event.target.closest?.('[data-point]')?.getAttribute('data-point');
+      if (tool === 'select') {
+        const q = pointId ? pointById(pointId) : null;
+        if (q && q.kind === 'free') {
+          if (!selection.includes(q.id)) setSelection([q.id]);
+          gesture.current = { kind: 'drag', id: q.id, start: p, base: boardRef.current, pointer: event.pointerId, moved: false };
+          setPreview({ id: q.id, x: q.x, y: q.y });
+          event.preventDefault(); event.currentTarget.setPointerCapture?.(event.pointerId);
+          return;
+        }
+        if (target) {
+          if (append) toggleSelection(target.id);
+          else setSelection([target.id]);
+        } else if (!append) setSelection([]);
+        event.preventDefault();
+        return;
+      }
+      if (target?.kind === 'point') usePoint(target, p);
+      else if (target) usePoint(null, p);
+      else usePoint(null, snapTo(p));
+      event.preventDefault();
+    }
+    function pointerMove(event) {
+      const p = localPoint(event);
+      const g = gesture.current;
+      if (g && g.pointer === event.pointerId) {
+        if (Math.abs(p.x - g.start.x) + Math.abs(p.y - g.start.y) < 3 && !g.moved) return;
+        g.moved = true;
+        // The drag previews the position the model accepts; release is the only undo step.
+        const accepted = G.constrainedMove(g.base, g.id, p.x, p.y);
+        if (accepted) setPreview({ id: g.id, x: accepted.x, y: accepted.y });
+        return;
+      }
+      if (tool !== 'select') setHover(snapTo(p));
+    }
+    function pointerEnd(event, cancelled = false) {
+      const g = gesture.current;
+      if (!g || g.pointer !== event.pointerId) return;
+      gesture.current = null;
+      const shown = preview;
+      setPreview(null);
+      if (cancelled || !g.moved || !shown) return;
+      action({ type: 'movePoint', id: g.id, x: shown.x, y: shown.y });
+    }
+    function deleteSelection() {
+      if (!selection.length) return;
+      const ids = selection.slice();
+      action({ type: 'delete', ids });
+      setSelection([]);
+    }
+    function applyNote() {
+      const value = noteRef.current?.value ?? '';
+      if (noteTarget) action({ type: 'annotate', target: noteTarget.kind, id: noteTarget.id, value });
+      else action({ type: 'note', value });
+      setOverlay(null);
+    }
+    function applyRename() {
+      const value = nameRef.current?.value ?? '';
+      if (rename) action({ type: 'renamePoint', id: rename.id, label: value });
+      setRename(null);
+    }
+    function clearMode() {
+      // Clearing this mode resets the geometry canvas and its undo history only.
+      publish(G.empty());
+      setHistory({ past: [], future: [] });
+      setSelection([]); setPending([]); setOverlay(null);
+      setStatus(t('geometryClearDone'));
+    }
+
+    const at = (id) => {
+      const q = pointById(id);
+      if (!q) return null;
+      return preview && preview.id === id ? { x: preview.x, y: preview.y } : { x: q.x, y: q.y };
+    };
+    function renderElement(e) {
+      const picked = selection.includes(e.id);
+      const stroke = {
+        stroke: picked ? '#2563EB' : '#1E293B', strokeWidth: picked ? 3 : 1.8, fill: 'none',
+        strokeLinejoin: 'round', strokeLinecap: 'round',
+        strokeDasharray: e.role === 'auxiliary' ? '7 5' : undefined,
+      };
+      const label = `${t(e.type)}${e.role === 'auxiliary' ? ` · ${t('auxiliary')}` : ''}${e.note ? ` · ${t('hasNote')}` : ''}`;
+      const group = {
+        key: e.id, 'data-element': e.id, role: 'button', tabIndex: 0, 'aria-label': label, 'aria-pressed': picked,
+        onKeyDown: (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelection([e.id]); } },
+      };
+      if (e.type === 'circle') {
+        const center = at(e.centerPointId), rim = at(e.radiusPointId);
+        if (!center || !rim) return null;
+        return h('g', group, h('circle', { cx: center.x, cy: center.y, r: Math.hypot(rim.x - center.x, rim.y - center.y), ...stroke }));
+      }
+      const points = e.points.map(at).filter(Boolean);
+      if (points.length < 2) return null;
+      if (e.type === 'segment') {
+        return h('g', group, h('line', { x1: points[0].x, y1: points[0].y, x2: points[1].x, y2: points[1].y, ...stroke }));
+      }
+      return h('g', group, h('polygon', { points: points.map((p) => `${p.x},${p.y}`).join(' '), ...stroke }));
+    }
+    function renderPoint(q) {
+      const shown = preview && preview.id === q.id ? preview : q;
+      const picked = selection.includes(q.id), staged = pending.includes(q.id);
+      const label = `${q.label}${q.kind === 'derived' ? ` · ${t('derivedPoint')}` : ''}${q.note ? ` · ${t('hasNote')}` : ''}`;
+      return h('g', {
+        key: q.id, 'data-point': q.id, role: 'button', tabIndex: 0, 'aria-label': label, 'aria-pressed': picked,
+        onKeyDown: (event) => {
+          if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelection([q.id]); }
+          if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); action({ type: 'delete', ids: [q.id] }); setSelection([]); }
+        },
+      },
+      h('circle', { cx: shown.x, cy: shown.y, r: 11, fill: 'transparent' }),
+      h('circle', {
+        cx: shown.x, cy: shown.y, r: staged ? 6 : picked ? 5.5 : 4,
+        fill: picked || staged ? '#2563EB' : q.kind === 'derived' ? '#475569' : '#1E293B',
+        stroke: '#FFFFFF', strokeWidth: 1.5,
+      }),
+      h('text', {
+        x: shown.x + 9, y: shown.y - 9, fontSize: 13, fontWeight: 600,
+        fill: picked ? '#2563EB' : '#1E293B', stroke: '#FFFFFF', strokeWidth: 3.5, paintOrder: 'stroke', 'pointer-events': 'none',
+      }, q.label));
+    }
+    function hintShape() {
+      if (!pending.length) return null;
+      const points = pending.map(at).filter(Boolean);
+      if (!points.length || !hover) return null;
+      const last = points.at(-1);
+      if (tool === 'circle') return h('circle', { cx: last.x, cy: last.y, r: Math.hypot(hover.x - last.x, hover.y - last.y), ...previewStyle });
+      if (tool === 'segment' || tool === 'polygon' || tool === 'parallelogram' || tool === 'rectangle' || tool === 'midpoint') {
+        return h('polyline', { points: [...points, hover].map((p) => `${p.x},${p.y}`).join(' '), ...previewStyle });
+      }
+      return null;
+    }
+    const previewStyle = { fill: 'none', stroke: '#93C5FD', strokeWidth: 2, strokeDasharray: '5 4', 'pointer-events': 'none' };
+    const canvas = h('div', { className: 'eb-canvas-scroll' },
+      h('svg', {
+        ref: svgRef, className: `eb-artboard eb-geometry${grid ? ' eb-grid' : ''}`,
+        style: { width: fit ? '100%' : width * zoom, height: fit ? 'auto' : height * zoom },
+        viewBox: `0 0 ${width} ${height}`, preserveAspectRatio: 'xMidYMid meet', role: 'group', 'aria-label': t('geometryCanvas'),
+        onPointerDown: pointerDown, onPointerMove: pointerMove,
+        onPointerUp: (event) => pointerEnd(event), onPointerCancel: (event) => pointerEnd(event, true),
+        onMouseLeave: () => setHover(null),
+      },
+      h('rect', { width, height, fill: '#FFFFFF' }),
+      grid && h('g', { 'pointer-events': 'none' },
+        Array.from({ length: Math.floor(width / 40) + 1 }, (_, i) => h('line', { key: `v${i}`, x1: i * 40, y1: 0, x2: i * 40, y2: height, stroke: '#EEF2F4' })),
+        Array.from({ length: Math.floor(height / 40) + 1 }, (_, i) => h('line', { key: `h${i}`, x1: 0, y1: i * 40, x2: width, y2: i * 40, stroke: '#EEF2F4' }))),
+      board.elements.map(renderElement),
+      board.points.map(renderPoint),
+      hintShape(),
+      hover && !pending.length && tool !== 'select' && tool !== 'point'
+        && h('circle', { cx: hover.x, cy: hover.y, r: 6, fill: '#BFDBFE', stroke: '#2563EB', strokeWidth: 1.5, 'pointer-events': 'none' }),
+      !board.points.length && !board.elements.length && h('g', { 'pointer-events': 'none' },
+        h('text', { x: width / 2, y: height / 2 - 12, textAnchor: 'middle', fill: '#64748B', fontSize: 17 }, t('geometryEmpty')),
+        h('text', { x: width / 2, y: height / 2 + 14, textAnchor: 'middle', fill: '#64748B', fontSize: 12 }, t('geometryEmptyHint')))));
+
+    const toolButton = (name) => h('button', {
+      key: name, type: 'button', className: 'eb-tool', title: t(name), 'aria-label': t(name),
+      'aria-pressed': tool === name, onClick: () => chooseTool(name),
+    }, icon(name));
+    const tools = h('aside', { className: 'eb-palette eb-geometry-tools', 'aria-label': t('geometryTools') },
+      TOOLS.map(toolButton),
+      h('button', {
+        type: 'button', className: 'eb-tool', 'aria-pressed': auxiliary, onClick: () => setAuxiliary(!auxiliary),
+        title: t('auxiliary'), 'aria-label': t('auxiliary'),
+      }, icon('segment'), h('span', { className: 'eb-label' }, t('auxiliary'))));
+    const selectionBar = selection.length > 0 && h('div', { className: 'eb-floating', role: 'toolbar', 'aria-label': t('geometrySelectionActions') },
+      h('small', null, `${t('selectedCount')} ${selection.length}`),
+      singlePoint && h('button', { type: 'button', className: 'eb-context-action', onClick: () => setRename({ id: singlePoint.id, value: singlePoint.label }) }, t('renamePoint')),
+      h('button', { type: 'button', 'aria-pressed': append, onClick: () => setAppend(!append) }, append ? t('appendDone') : t('appendSelect')),
+      h('button', { type: 'button', className: 'eb-danger', onClick: deleteSelection }, icon('trash', 16), t('trash')));
+    const stage = h('section', { className: 'eb-stage-wrap', 'aria-label': t('geometryCanvas') },
+      props.question,
+      h('div', { className: 'eb-stage-frame' }, canvas, selectionBar));
+    const dock = h('nav', { className: 'eb-dock', 'aria-label': t('canvasTools') },
+      h('button', { type: 'button', className: 'eb-dock-return', onClick: props.close }, t('backToChat')),
+      h('span', { className: 'eb-divider' }),
+      h('button', { type: 'button', className: 'eb-icon-button', title: t('undo'), 'aria-label': t('undo'), disabled: !history.past.length, onClick: undo }, icon('undo', 18)),
+      h('button', { type: 'button', className: 'eb-icon-button', title: t('redo'), 'aria-label': t('redo'), disabled: !history.future.length, onClick: redo }, icon('redo', 18)),
+      h('span', { className: 'eb-divider' }),
+      h('button', { type: 'button', 'aria-pressed': grid, onClick: () => setGrid(!grid) }, grid ? t('gridOn') : t('gridOff')),
+      h('button', { type: 'button', 'aria-pressed': snap, onClick: () => setSnap(!snap) }, snap ? t('snapOn') : t('snapOff')),
+      h('span', { className: 'eb-divider' }),
+      h('button', { type: 'button', className: 'eb-zoom-button', 'aria-label': t('zoomOut'), onClick: () => { setFit(false); setZoom(Math.max(0.5, zoom - 0.25)); } }, '−'),
+      h('button', { type: 'button', className: 'eb-zoom-label', 'aria-pressed': fit, onClick: () => setFit(!fit) }, fit ? t('fitView') : `${Math.round(zoom * 100)}%`),
+      h('button', { type: 'button', className: 'eb-zoom-button', 'aria-label': t('zoomIn'), onClick: () => { setFit(false); setZoom(Math.min(2, zoom + 0.25)); } }, '＋'),
+      h('span', { className: 'eb-grow' }),
+      h('button', {
+        type: 'button', className: `eb-note-button${noteTarget ? ' eb-contextual' : ''}`,
+        title: noteTarget ? `${t('note')} · ${noteTarget.label}` : `${t('note')} · ${t('noteGeneral')}`,
+        'aria-label': t('note'), onClick: () => setOverlay({ kind: 'note' }),
+      }, icon('note', 18)),
+      h('button', {
+        type: 'button', className: 'eb-icon-button eb-danger', title: t('clearGeometry'), 'aria-label': t('clearGeometry'),
+        onClick: () => setOverlay({ kind: 'clear' }),
+      }, icon('clear', 18)),
+      h('button', {
+        type: 'button', className: 'eb-primary', title: t('insert'), disabled: phase !== 'plain' || (!board.points.length && !board.elements.length && !board.note),
+        onClick: () => props.insertGeometry?.(boardRef.current),
+      }, t('insert')));
+    const overlayNode = overlay && h('div', { className: 'eb-overlay', onPointerDown: (event) => { if (event.target === event.currentTarget) setOverlay(null); } },
+      h('div', { className: `eb-overlay-card eb-overlay-${overlay.kind}`, role: 'dialog', 'aria-modal': 'true' },
+        overlay.kind === 'note' && h(React.Fragment, null,
+          h('h2', null, t('note')),
+          h('p', { className: 'eb-overlay-context' }, noteTarget ? `${t('noteAbout')} ${noteTarget.label}` : t('noteGeneral')),
+          h('textarea', { ref: noteRef, maxLength: 500, defaultValue: noteValue, placeholder: t('noteHint') }),
+          h('div', { className: 'eb-overlay-actions' },
+            h('button', { type: 'button', onClick: () => setOverlay(null) }, t('cancel')),
+            h('button', { type: 'button', className: 'eb-primary', onClick: applyNote }, t('save')))),
+        overlay.kind === 'clear' && h(React.Fragment, null,
+          h('h2', null, t('clearGeometry')),
+          h('p', { className: 'eb-muted' }, t('geometryClearQuestion')),
+          h('div', { className: 'eb-overlay-actions' },
+            h('button', { type: 'button', onClick: () => setOverlay(null) }, t('cancel')),
+            h('button', { type: 'button', className: 'eb-primary eb-danger-solid', onClick: clearMode }, t('confirmClear'))))));
+    const renameNode = rename && h('div', { className: 'eb-overlay' },
+      h('div', { className: 'eb-overlay-card eb-overlay-name', role: 'dialog', 'aria-modal': 'true', 'aria-label': t('renamePoint') },
+        h('h2', null, t('renamePoint')),
+        h('input', { ref: nameRef, type: 'text', maxLength: 30, defaultValue: rename.value,
+          onKeyDown: (event) => { if (event.key === 'Enter') applyRename(); } }),
+        h('div', { className: 'eb-overlay-actions' },
+          h('button', { type: 'button', onClick: () => setRename(null) }, t('cancel')),
+          h('button', { type: 'button', className: 'eb-primary', onClick: applyRename }, t('apply')))));
+    const statusNode = status && h('div', { className: 'eb-status-toast', role: 'status', 'aria-live': 'polite' }, status);
+    return h(React.Fragment, null,
+      h('div', { className: 'eb-workspace eb-geometry-workspace' }, tools, stage, dock, statusNode, overlayNode, renameNode));
+  };
+};
+    const createGeoModel = function createGeometryModel() {
+  const KIND = 'geometry-board';
+  const coordinateSystem = Object.freeze({ type: 'cartesian-2d', units: 'board-unit' });
+  const WIDTH = 800;
+  const HEIGHT = 600;
+  // Every point keeps this distance from the border so its label and hit area stay on the board.
+  const MARGIN = 24;
+  // Corner drags stop just before a degenerate shape instead of refusing the whole drag.
+  const EPSILON = 0.5;
+  const elementTypes = ['segment', 'polygon', 'circle', 'parallelogram', 'rectangle'];
+  const roles = ['main', 'auxiliary'];
+  const operations = ['midpoint', 'parallelogram', 'rectangle'];
+  const fail = (message) => { throw new Error(message); };
+  const record = (v) => v !== null && typeof v === 'object' && !Array.isArray(v)
+    && (Object.getPrototypeOf(v) === Object.prototype || Object.getPrototypeOf(v) === null);
+  const keys = (v, required, optional = []) => {
+    if (!record(v) || required.some((k) => !Object.hasOwn(v, k))
+      || Object.keys(v).some((k) => !required.includes(k) && !optional.includes(k))) fail('Invalid fields');
+  };
+  const chars = (v) => [...v];
+  const text = (v, max) => typeof v === 'string' && chars(v).length <= max;
+  const idValid = (v) => text(v, 100) && v.trim().length > 0;
+  const finite = (v) => typeof v === 'number' && Number.isFinite(v);
+  const inside = (p) => p.x >= MARGIN && p.x <= WIDTH - MARGIN && p.y >= MARGIN && p.y <= HEIGHT - MARGIN;
+  const sameData = (a, b) => {
+    if (a === b) return true;
+    if (Array.isArray(a)) return Array.isArray(b) && a.length === b.length && a.every((v, i) => sameData(v, b[i]));
+    return record(a) && record(b) && Object.keys(a).length === Object.keys(b).length
+      && Object.keys(a).every((k) => Object.hasOwn(b, k) && sameData(a[k], b[k]));
+  };
+  const clone = (v) => JSON.parse(JSON.stringify(v));
+  const cross = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+  const distance = (a, b) => Math.hypot(b.x - a.x, b.y - a.y);
+  const midpoint = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+  // Every three-point construction uses P4 = P1 + P3 - P2. A rectangle is a parallelogram
+  // whose right angle sits at P2, so the interface pins that corner: dragging P1 or P3
+  // then changes only a side length and keeps all four corner right.
+  const fourthPoint = (a, b, c) => ({ x: a.x + c.x - b.x, y: a.y + c.y - b.y });
+  // The anchor B of a rectangle carries the right angle, so it is the one corner
+  // which never moves; its two neighbours slide along the perpendicular legs.
+  const fixedAnchor = (canonical, id) => {
+    const owner = canonical.elements.find((e) => e.type === 'rectangle' && e.points.includes(id));
+    if (!owner) return false;
+    return owner.points[1] === id;
+  };
+  // Input corners P1 P2 P3: P2 and P4 are the diagonal pair. A rectangle needs the
+  // right angle at P2, the corner every drag keeps.
+  const rectangleValid = ([a, b, c]) => {
+    const dot = (a.x - b.x) * (c.x - b.x) + (a.y - b.y) * (c.y - b.y);
+    const scale = Math.hypot(a.x - b.x, a.y - b.y) * Math.hypot(c.x - b.x, c.y - b.y);
+    // Tolerance belongs to the shape test, not to the visual snap; 0.01% keeps a sheet
+    // that a drag unscrolled visible as a rectangle.
+    return scale > EPSILON * EPSILON && Math.abs(dot) <= 1e-4 * scale + 1e-4;
+  };
+  // Input corners P1 P2 P3 must not lie on one line; P4 follows from them.
+  const parallelogramValid = ([a, b, c]) => Math.abs(cross(a, b, c)) > EPSILON;
+
+  // Deferred references: polygonDegenerate is defined below this table.
+  const degenerate = {
+    segment: (points) => distance(points[0], points[1]) <= EPSILON,
+    polygon: (points) => polygonDegenerate(points),
+    circle: (center, rim) => distance(center, rim) <= EPSILON,
+    parallelogram: parallelogramValid,
+    rectangle: rectangleValid,
+  };
+  // A polygon must be a simple ring: adjacent vertices apart, and no two edges crossing.
+  const polygonDegenerate = (points) => {
+    const ring = [...points, points[0]];
+    for (let i = 0; i < ring.length - 1; i++) if (distance(ring[i], ring[i + 1]) <= EPSILON) return true;
+    // Shoelace twice the signed area: positive and negative turns cancel when collinear.
+    const area2 = Math.abs(points.reduce((sum, p, i) => sum + (p.x * points[(i + 1) % points.length].y
+      - points[(i + 1) % points.length].x * p.y), 0));
+    if (area2 <= EPSILON * EPSILON * points.length) return true;
+    const edges = ring.slice(0, -1).map((p, i) => [p, ring[i + 1]]);
+    for (let i = 0; i < edges.length; i++) {
+      for (let j = i + 2; j < edges.length; j++) {
+        if (i === 0 && j === edges.length - 1) continue;
+        const [a, b] = edges[i], [c, d] = edges[j];
+        if (cross(a, b, c) * cross(a, b, d) <= 0 && cross(c, d, a) * cross(c, d, b) <= 0) return true;
+      }
+    }
+    return false;
+  };
+  function validateConstruction(construction, points, id) {
+    keys(construction, ['op', 'inputs']);
+    if (!operations.includes(construction.op) || !Array.isArray(construction.inputs)) fail('Invalid construction');
+    const arity = construction.op === 'midpoint' ? 2 : 3;
+    if (construction.inputs.length !== arity || new Set(construction.inputs).size !== arity) fail('Invalid construction');
+    for (const input of construction.inputs) {
+      if (!idValid(input) || input === id) fail('Invalid construction reference');
+      const point = points.get(input) || fail('Construction references an unknown point');
+      if (point.kind !== 'free' || point.construction !== null) fail('Construction inputs must be free points');
+    }
+    return { op: construction.op, inputs: [...construction.inputs] };
+  }
+  const empty = () => ({ schemaVersion: 1, points: [], elements: [], note: '' });
+  /** Return detached canonical state; a snapshot only carries its own kind. */
+  function validate(input) {
+    if (record(input) && Object.hasOwn(input, 'kind') && input.kind !== KIND) fail('Another board kind');
+    keys(input, ['schemaVersion', 'points', 'elements', 'note'], ['kind']);
+    // A canonical state always writes `construction`; the wire form writes it only for derived points.
+    // The board note is student text copied verbatim; it may be empty and is never rewritten.
+    if (input.schemaVersion !== 1 || !Array.isArray(input.points) || input.points.length > 300
+      || !Array.isArray(input.elements) || input.elements.length > 300 || typeof input.note !== 'string'
+      || !text(input.note, 500)) fail('Invalid geometry board');
+    const ids = new Set(); const labels = new Set(); const pointMap = new Map();
+    const raw = [];
+    for (const p of input.points) {
+      keys(p, ['id', 'label', 'kind', 'x', 'y'], ['construction', 'note']);
+      if (!idValid(p.id) || ids.has(p.id) || !text(p.label, 30) || !chars(p.label).length || labels.has(p.label)
+        || !['free', 'derived'].includes(p.kind) || !finite(p.x) || !inside(p) || !text(p.note ?? '', 500)) fail('Invalid point');
+      ids.add(p.id); labels.add(p.label); raw.push(p);
+      if (p.kind === 'free') {
+        if (p.construction != null) fail('A free point carries no construction');
+        pointMap.set(p.id, { id: p.id, label: p.label, kind: 'free', x: p.x, y: p.y, construction: null, note: p.note ?? '' });
+        continue;
+      }
+      const construction = validateConstruction(p.construction, pointMap, p.id);
+      const inputs = construction.inputs.map((ref) => pointMap.get(ref));
+      const at = construction.op === 'midpoint' ? midpoint(inputs[0], inputs[1]) : fourthPoint(...inputs);
+      pointMap.set(p.id, { id: p.id, label: p.label, kind: 'derived', ...at, construction, note: p.note ?? '' });
+    }
+    const elements = input.elements.map((e) => {
+      keys(e, ['id', 'type', 'role', 'note'], ['points', 'centerPointId', 'radiusPointId']);
+      if (!idValid(e.id) || ids.has(e.id) || !elementTypes.includes(e.type) || !roles.includes(e.role) || !text(e.note ?? '', 500)) fail('Invalid element');
+      ids.add(e.id);
+      const point = (ref) => pointMap.get(ref) || fail('Element references an unknown point');
+      if (e.type === 'circle') {
+        if (Object.hasOwn(e, 'points')) fail('A circle does not use a point list');
+        const center = point(e.centerPointId), rim = point(e.radiusPointId);
+        if (e.centerPointId === e.radiusPointId || distance(center, rim) <= EPSILON) fail('Zero-radius circle');
+        return { id: e.id, type: e.type, centerPointId: center.id, radiusPointId: rim.id, role: e.role, note: e.note ?? '' };
+      }
+      if (Object.hasOwn(e, 'centerPointId') || Object.hasOwn(e, 'radiusPointId')) fail('Only a circle has its own radius points');
+      if (!Array.isArray(e.points) || new Set(e.points).size !== e.points.length) fail('Repeated point reference');
+      if (e.type === 'segment' && e.points.length !== 2) fail('A segment has two points');
+      if (e.type === 'polygon' && (e.points.length < 3 || e.points.length > 60)) fail('A polygon has three to sixty points');
+      if (e.type !== 'segment' && e.type !== 'polygon' && e.points.length !== 4) fail('A quadrilateral has four points');
+      const ordered = e.points.map(point);
+      if (e.type === 'polygon' && ordered.length === 3 && Math.abs(cross(ordered[0], ordered[1], ordered[2])) <= EPSILON) {
+        fail('Degenerate polygon');
+      }
+      if (e.type === 'parallelogram' || e.type === 'rectangle') {
+        const ids = e.points;
+        const derived = pointMap.get(ids[ids.length - 1]);
+        if (!derived || derived.kind !== 'derived' || derived.construction?.op !== e.type || !sameData(derived.construction.inputs, ids.slice(0, 3))) {
+          fail('A quadrilateral names its derived fourth point last');
+        }
+        if (!degenerate[e.type](ordered.slice(0, 3))) fail('Degenerate element');
+      } else if (e.type === 'polygon' ? polygonDegenerate(ordered) : degenerate[e.type](ordered)) fail('Degenerate element');
+      return { id: e.id, type: e.type, points: ordered.map((p) => p.id), role: e.role, note: e.note ?? '' };
+    });
+    return { schemaVersion: 1, points: raw.map((p) => pointMap.get(p.id)), elements, note: input.note };
+  }
+  // Derived positions are computed from their construction and are not written as authority.
+  // A free point carries no construction key; derived positions are recomputed, not trusted.
+  const serialize = (board) => {
+    const canonical = validate(board);
+    return JSON.stringify({ kind: KIND, ...canonical,
+      points: canonical.points.map(({ construction, ...rest }) => construction ? { ...rest, construction } : rest) });
+  };
+  const cloneBoard = (board) => validate(clone(board));
+  function withPoint(canonical, id, patch) {
+    const point = canonical.points.find((p) => p.id === id) || fail('Unknown point');
+    if (point.kind !== 'free') fail('Only a free point can move');
+    const moved = { ...point, x: patch.x, y: patch.y };
+    if (!finite(moved.x) || !finite(moved.y) || !inside(moved)) fail('Invalid coordinate');
+    return validate({ ...canonical, points: canonical.points.map((p) => p.id === id ? moved : p) });
+  }
+  function allowed(canonical, id, patch) {
+    try { withPoint(canonical, id, patch); return true; } catch { return false; }
+  }
+  // In a rectangle one corner carries the right angle and cannot move; the two
+  // corners next to it may slide along their own leg only. A corner slides by
+  // the projection of the request onto that leg, which keeps every angle exact.
+  function legOf(canonical, id) {
+    const owner = canonical.elements.find((e) => e.type === 'rectangle' && e.points.includes(id));
+    if (!owner) return null;
+    const b = canonical.points.find((q) => q.id === owner.points[1]);
+    const a = canonical.points.find((q) => q.id === owner.points[0]);
+    const c = canonical.points.find((q) => q.id === owner.points[2]);
+    if (!b || !a || !c || owner.points[1] === id) return null;
+    // Each free end owns exactly one leg: A owns BA, C owns BC. The direction points
+    // away from the anchor and has the leg's own length.
+    const end = owner.points[0] === id ? a : c;
+    const vector = { x: end.x - b.x, y: end.y - b.y };
+    const length = Math.hypot(vector.x, vector.y);
+    if (length <= EPSILON) return null;
+    return { b, end, unit: { x: vector.x / length, y: vector.y / length } };
+  }
+  // A drag asks for a target; the model answers where the point may actually go.
+  function axisMove(canonical, id, patch) {
+    const point = canonical.points.find((p) => p.id === id) || fail('Unknown point');
+    const target = { x: patch.x, y: patch.y };
+    if (!finite(target.x) || !finite(target.y)) fail('Invalid coordinate');
+    const start = { x: point.x, y: point.y };
+    const clamped = { x: Math.max(MARGIN, Math.min(WIDTH - MARGIN, target.x)),
+      y: Math.max(MARGIN, Math.min(HEIGHT - MARGIN, target.y)) };
+    if (allowed(canonical, id, clamped)) return clamped;
+    const leg = legOf(canonical, id);
+    // Sliding along the leg by the requested amount is exact for a rectangle.
+    if (leg) {
+      const along = (clamped.x - start.x) * leg.unit.x + (clamped.y - start.y) * leg.unit.y;
+      const wanted = { x: start.x + leg.unit.x * along, y: start.y + leg.unit.y * along };
+      const goal = { x: Math.max(MARGIN, Math.min(WIDTH - MARGIN, wanted.x)), y: Math.max(MARGIN, Math.min(HEIGHT - MARGIN, wanted.y)) };
+      if (allowed(canonical, id, goal)) return goal;
+      let good = start, bad = goal;
+      for (let step = 0; step < 40; step++) {
+        const probe = { x: (good.x + bad.x) / 2, y: (good.y + bad.y) / 2 };
+        if (allowed(canonical, id, probe)) good = probe; else bad = probe;
+      }
+      return good;
+    }
+    // Any other shape: bisect the segment start -> target for the last legal point.
+    let good = start, bad = clamped;
+    for (let step = 0; step < 40; step++) {
+      const probe = { x: (good.x + bad.x) / 2, y: (good.y + bad.y) / 2 };
+      if (allowed(canonical, id, probe)) good = probe; else bad = probe;
+    }
+    return good;
+  }
+  function dependents(canonical, id) {
+    const result = [];
+    const queue = [id];
+    while (queue.length) {
+      const current = queue.shift();
+      for (const p of canonical.points) {
+        if (p.construction?.inputs.includes(current) && !result.includes(p.id)) { result.push(p.id); queue.push(p.id); }
+      }
+    }
+    return result;
+  }
+  const elementPoints = (e) => e.type === 'circle' ? [e.centerPointId, e.radiusPointId] : e.points;
+  /** Every point and element which disappears when `ids` are deleted, then all elements losing a point. */
+  function cascade(canonical, ids) {
+    const removed = new Set(ids);
+    const queue = [...ids];
+    while (queue.length) {
+      const current = queue.shift();
+      for (const p of canonical.points) {
+        if (p.construction?.inputs.includes(current) && !removed.has(p.id)) { removed.add(p.id); queue.push(p.id); }
+      }
+    }
+    let elements = canonical.elements;
+    for (;;) {
+      const keep = elements.filter((e) => !elementPoints(e).some((ref) => removed.has(ref)));
+      if (keep.length === elements.length) break;
+      const gone = new Set(elements.filter((e) => !keep.includes(e)).map((e) => e.id));
+      // A derived point exists only to make a shape; losing that shape would leave it unexplained.
+      // Dependents of a removed point lose their inputs; and a derived point whose
+      // inputs are still present stays as a legitimate isolated point.
+      for (const p of canonical.points) if (p.kind === 'derived' && !removed.has(p.id)
+        && !keep.some((e) => elementPoints(e).includes(p.id)) && p.construction.inputs.every((input) => removed.has(input))) {
+        removed.add(p.id); gone.add(p.id);
+      }
+      elements = keep;
+    }
+    return { points: canonical.points.filter((p) => !removed.has(p.id)), elements, removedPoints: removed };
+  }
+  function deleteIds(canonical, ids) {
+    const result = cascade(canonical, ids);
+    // Deleting a shape keeps the points it merely passed through.
+    return validate({ ...canonical, points: result.points, elements: result.elements });
+  }
+  function nextId(canonical, prefix) {
+    let max = 0;
+    const pattern = new RegExp(`^${prefix}-(\\d+)$`);
+    const inspect = (id) => {
+      const match = pattern.exec(id);
+      if (match) { const n = Number(match[1]); if (!Number.isSafeInteger(n)) fail('ID sequence exhausted'); max = Math.max(max, n); }
+    };
+    for (const p of canonical.points) inspect(p.id);
+    for (const e of canonical.elements) inspect(e.id);
+    if (!Number.isSafeInteger(max + 1)) fail('ID sequence exhausted');
+    return `${prefix}-${max + 1}`;
+  }
+  // Labels are display names only; a deleted label is never recycled, so A stays the same A.
+  function nextLabel(canonical) {
+    const used = new Set(canonical.points.map((p) => p.label));
+    const letters = (n) => {
+      let name = '';
+      for (let k = n; k > 0; k = Math.floor((k - 1) / 26)) name = String.fromCharCode(65 + ((k - 1) % 26)) + name;
+      return name;
+    };
+    for (let n = 1; n < 10000; n++) if (!used.has(letters(n))) return letters(n);
+    for (let n = 1; n < 10000; n++) if (!used.has(`P${n}`)) return `P${n}`;
+    fail('Label space exhausted');
+  }
+  const limited = (label) => {
+    if (!text(label, 30) || !chars(label).length) fail('Invalid label');
+  };
+  function reduceWith(canonical, action) {
+    if (!record(action) || typeof action.type !== 'string') fail('Invalid action');
+    if (action.type === 'batch') {
+      const pending = [action]; const steps = []; let count = -1;
+      while (pending.length) {
+        const step = pending.pop();
+        if (++count > 250 || !record(step) || typeof step.type !== 'string') fail('Invalid batch or action limit exceeded');
+        if (step.type === 'batch') {
+          if (!Array.isArray(step.actions) || step.actions.length > 250) fail('Invalid batch');
+          for (let i = step.actions.length - 1; i >= 0; i--) pending.push(step.actions[i]);
+          continue;
+        }
+        steps.push(step);
+      }
+      return steps.reduce((state, step) => reduceWith(state, step), canonical);
+    }
+    const pointById = (id) => canonical.points.find((p) => p.id === id) || fail('Unknown point');
+    const elementById = (id) => canonical.elements.find((e) => e.id === id) || fail('Unknown element');
+    const circle = (centerId, rimId) => {
+      const center = pointById(centerId), rim = pointById(rimId);
+      if (centerId === rimId || distance(center, rim) <= EPSILON) fail('A circle needs a centre and a different rim point');
+    };
+    switch (action.type) {
+      case 'addPoint': {
+        if (canonical.points.length >= 300) fail('Point limit exceeded');
+        const label = Object.hasOwn(action, 'label') ? action.label : nextLabel(canonical);
+        limited(label);
+        if (canonical.points.some((p) => p.label === label)) fail('Labels must be unique');
+        const target = { x: action.x, y: action.y };
+        if (!finite(target.x) || !finite(target.y) || !inside(target)) fail('Invalid coordinate');
+        return validate({ ...canonical, points: [...canonical.points,
+          { id: nextId(canonical, 'p'), label, kind: 'free', x: target.x, y: target.y, construction: null, note: '' }] });
+      }
+      case 'addElement': {
+        if (canonical.elements.length >= 300) fail('Element limit exceeded');
+        keys(action, ['type', 'elementType'], ['points', 'centerPointId', 'radiusPointId', 'role', 'note']);
+        const role = action.role ?? 'main';
+        if (!elementTypes.includes(action.elementType) || !roles.includes(role)) fail('Unknown element type');
+        const note = Object.hasOwn(action, 'note') ? action.note : '';
+        if (!text(note, 500)) fail('Note exceeds 500 characters');
+        const id = nextId(canonical, 'e');
+        if (action.elementType === 'circle') {
+          if (!action.centerPointId || !action.radiusPointId) fail('A circle needs its centre and rim points');
+          circle(action.centerPointId, action.radiusPointId);
+          return validate({ ...canonical, elements: [...canonical.elements,
+            { id, type: 'circle', centerPointId: action.centerPointId, radiusPointId: action.radiusPointId, role, note }] });
+        }
+        if (!Array.isArray(action.points)) fail('Invalid point list');
+        const orderedIds = [...action.points];
+        if (new Set(orderedIds).size !== orderedIds.length) fail('Repeated point reference');
+        if (action.elementType === 'polygon' && (orderedIds.length < 3 || orderedIds.length > 60)) fail('A polygon has three to sixty points');
+        if (action.elementType === 'segment' && orderedIds.length !== 2) fail('A segment has two points');
+        for (const ref of orderedIds) if (!ref) fail('A point reference is missing');
+        orderedIds.forEach(pointById);
+        if (action.elementType === 'parallelogram' || action.elementType === 'rectangle') {
+          if (orderedIds.length !== 3) fail('This shape starts from three points');
+          const at = fourthPoint(...orderedIds.map(pointById));
+          if (!inside(at)) fail('The fourth point would leave the board');
+          const derivedId = nextId(canonical, 'p');
+          const derived = { id: derivedId, label: nextLabel(canonical), kind: 'derived', ...at,
+            construction: { op: action.elementType, inputs: orderedIds }, note: '' };
+          const candidate = validate({ ...canonical, points: [...canonical.points, derived] });
+          const shape = { id, type: action.elementType, points: [...orderedIds, derivedId], role, note };
+          return validate({ ...candidate, elements: [...candidate.elements, shape] });
+        }
+        return validate({ ...canonical, elements: [...canonical.elements,
+          { id, type: action.elementType, points: orderedIds, role, note }] });
+      }
+      case 'movePoint': {
+        const point = pointById(action.id);
+        if (point.kind !== 'free') fail('Only a free point can move');
+        if (fixedAnchor(canonical, action.id)) fail('The right-angled corner stays in place');
+        if (!finite(action.x) || !finite(action.y)) fail('Invalid coordinate');
+        const at = axisMove(canonical, action.id, action);
+        // The click landed outside the board: the point stays where it was.
+        if (!finite(at.x) || !finite(at.y) || !inside(at)) fail('Invalid coordinate');
+        return withPoint(canonical, action.id, at);
+      }
+      case 'addMidpoint': {
+        const [a, b] = [pointById(action.a), pointById(action.b)];
+        if (action.a === action.b) fail('A midpoint needs two different points');
+        const at = midpoint(a, b);
+        if (!inside(at)) fail('The midpoint would leave the board');
+        const label = Object.hasOwn(action, 'label') ? action.label : nextLabel(canonical);
+        limited(label);
+        if (canonical.points.some((p) => p.label === label)) fail('Labels must be unique');
+        return validate({ ...canonical, points: [...canonical.points, { id: nextId(canonical, 'p'), label, kind: 'derived',
+          ...at, construction: { op: 'midpoint', inputs: [action.a, action.b] }, note: '' }] });
+      }
+      case 'renamePoint': {
+        pointById(action.id);
+        limited(action.label);
+        if (canonical.points.some((p) => p.id !== action.id && p.label === action.label)) fail('Labels must be unique');
+        return validate({ ...canonical, points: canonical.points.map((p) => p.id === action.id ? { ...p, label: action.label } : p) });
+      }
+      case 'annotate': {
+        if (!text(action.value, 500)) fail('Note exceeds 500 characters');
+        const value = action.value.trim() ? action.value : '';
+        if (action.target === 'point') return validate({ ...canonical, points: canonical.points.map((p) => p.id === action.id ? { ...p, note: value } : p) });
+        elementById(action.id);
+        return validate({ ...canonical, elements: canonical.elements.map((e) => e.id === action.id ? { ...e, note: value } : e) });
+      }
+      case 'note': if (!text(action.value, 500)) fail('Note exceeds 500 characters'); return validate({ ...canonical, note: action.value });
+      case 'delete': {
+        if (!Array.isArray(action.ids) || !action.ids.length || action.ids.length > 300 || new Set(action.ids).size !== action.ids.length) fail('Select distinct points or shapes');
+        for (const id of action.ids) { pointById(id); }
+        return deleteIds(canonical, action.ids);
+      }
+      case 'deleteElement': {
+        elementById(action.id);
+        // A derived point exists only to make this shape, so it goes with it.
+        const extra = elementPoints(elementById(action.id)).filter((id) => pointById(id).kind === 'derived');
+        return deleteIds(canonical, [action.id, ...extra]);
+      }
+      case 'clear': return validate({ ...empty(), note: canonical.note });
+      default: fail('Unknown action');
+    }
+  }
+  const reduce = (board, action) => reduceWith(cloneBoard(board), action);
+  /** Drag preview: the position the model will accept if the pointer is released here. */
+  const constrainedMove = (board, id, x, y) => {
+    const at = axisMove(cloneBoard(board), id, { x, y });
+    return inside(at) ? at : null;
+  };
+  return { kind: KIND, coordinateSystem, elementTypes: [...elementTypes], roles: [...roles], operations: [...operations],
+    bounds: { width: WIDTH, height: HEIGHT, margin: MARGIN, epsilon: EPSILON },
+    empty, validate, reduce, constrainedMove, dependents: (board, id) => dependents(cloneBoard(board), id), serialize };
+};
     const art = createArt(React);
-    const dictionaries = {"en":{"title":"Math board","workspaceSubtitle":"Place shapes · group them · name the amounts","toolbox":"Toolbox","tapToAdd":"Tap to place, or drag one in","shapes":"Patterns","circle":"Circle","square":"Square","rectangle":"Rectangle","triangle":"Triangle","star":"Star","hexagon":"Hexagon","diamond":"Diamond","heart":"Heart","oval":"Oval","cat":"Cat","dog":"Dog","car":"Car","person":"Person","apple":"Apple","fish":"Fish","rocket":"Rocket","flower":"Flower","butterfly":"Butterfly","house":"House","icecream":"Ice cream","settings":"Settings","settingsIntro":"You choose which patterns sit in the toolbox, what each stands for, and which colour marks which amount.","patterns":"Pattern library","patternsHint":"Tap a pattern to put it on the left rail; tap again to tuck it away. Shapes already on the canvas stay.","addPattern":"Add to toolbox","removePattern":"Tuck away","morePatterns":"More patterns","levelLadder":"Value ladder","level":"Level","colorName":"Colour","removeLevel":"Remove level","addLevel":"Add level","resetSettings":"Reset","shapeDefaults":"What these patterns stand for","applyFuture":"New shapes only","applyExisting":"Also change existing","settingsFutureDone":"Saved. New shapes use the new value.","settingsExistingDone":"Saved. Existing unmerged shapes also use the new value.","cancel":"Cancel","value":"Standing for","alias":"Name","aliasHint":"For example: apple","canvas":"Shape canvas","canvasEmpty":"Pick a shape on the left to begin","canvasEmptyHint":"Drag to arrange · box-select · Shift-click to add","gestureHint":"Drag to arrange · box-select · Shift-click to add","multiSelect":"Multi-select","focusMode":"Canvas only","zoomIn":"Zoom in","zoomOut":"Zoom out","fitView":"Fit width","selectionActions":"Selected shape actions","selectedCount":"Selected","makeGroup":"Group","ungroup":"Ungroup","merge":"Merge","split":"Split","copy":"Copy","crossOut":"Cross out","restore":"Restore","trash":"Delete selected","group":"Group","defaultGroup":"My group","groupAlias":"Group name","groupHint":"For example: Rabbit's share","groupedNoAlias":"Shapes in a group share its name instead of having their own.","duplicateGroup":"Duplicate group","mergedFrom":"Merged from","noSelection":"Select one shape or box-select several to name, group, or merge them.","mergeReason":"Merging needs the same shape, the same value, the same name, the same group, and a total that matches one of your levels.","hintGrouped":"A whole group is selected: renaming changes the group.","hintSelected":"Name, group or merge the selection.","hintEmpty":"Drag shapes to arrange; drag on empty space to select several.","myObjects":"My thinking","myGroup":"My group","inspectorHint":"Select shapes to name them here","note":"My explanation","noteHint":"What do these shapes mean? How did you think about it?","noteGeneral":"Whole board · not tied to particular shapes","noteAbout":"About","hasNote":"Has an explanation","creationColor":"Creation colour","questionSource":"Choose a teacher message","questionTeacher":"Teacher","questionExpand":"Expand","questionCollapse":"Collapse","questionEmpty":"No teacher messages yet.","files":"Files","moreActions":"More actions","canvasTools":"Board tools","appendSelect":"Add to selection","appendDone":"Finish selecting","appendHint":"Tap shapes to add or remove them; useful on touch screens","apply":"Apply","save":"Save","done":"Done","fileSaved":"Saved to the last location.","fileDownloaded":"Board file downloaded.","fileOpenFallback":"Using the standard file picker; the browser may not remember the last location.","undo":"Undo","redo":"Redo","group2":"Group","close":"Close","gear":"Settings","minus":"Remove","plus":"Add","cross":"Cross out","multi":"Multi-select","focus":"Focus","export":"Save JSON","import":"Open JSON","clear":"Clear canvas","clearQuestion":"Clear the canvas and this modification record? Files already added to an answer stay. This cannot be undone.","confirmClear":"Confirm clear","clearDone":"Canvas and modification record cleared.","autoClearDone":"Canvas and modifications cleared for the new task. Existing answer attachments remain.","autoClearSkipped":"A late clear was skipped to keep later edits. Clear manually before using the board.","autoClearError":"Automatic clear did not complete. Clear manually before using the board.","insert":"Add to answer","inserted":"The board file is attached. Review it and send it yourself.","insertedNote":"The board file is attached, and your own words are in the composer. Review them and send yourself.","insertFailed":"Cannot insert now. Wait until the composer is editable and try again.","attachmentName":"my-math-board.json","backToChat":"Back to chat","localDraft":"Your draft stays here until you send it.","failed":"Action not completed","fileTooLarge":"Choose a board JSON smaller than 256 KB.","imported":"Board opened.","storageError":"Cannot save this browser draft. Save JSON to keep your work.","loadError":"Cannot read the draft. Original data was not overwritten.","configApplied":"Your spoken values and colours are now applied.","configGap":"Settings history had a gap; retained changes were replayed with their original scopes.","configError":"A settings update could not be applied; earlier successful changes were kept.","removed":"Crossed out","active":"Kept","traceTitle":"Modification record","traceAttach":"Attach modification record (optional)","tracePreview":"View modifications","traceHide":"Hide modifications","traceNewAttempt":"Start a new attempt","traceClear":"Clear record","traceNotice":"Changes stay in this browser, without times or drag paths. Your teacher sees them only if attached and sent; sent files remain with the conversation.","traceScope":"Retained modifications to this draft so far, not necessarily one continuous sitting. These are observations, not correctness judgments; omitted details are marked.","tracePriorUnknown":"Earlier process unknown: the starting board may have content, or history has a gap.","traceTotals":"{count} changes recorded; {omitted} changes omitted in the middle.","traceEmpty":"No modifications recorded yet.","traceGap":"… Intermediate modifications omitted …","traceResetQuestion":"Keep the board and delete its local modification record to start anew? Existing draft/sent attachments remain. Undo history will also be cleared.","traceResetConfirm":"Confirm new attempt","traceResetDone":"New attempt started; board kept, earlier process marked unknown.","traceLoadError":"Earlier modifications could not be restored and are marked unknown. The board remains usable.","traceRecordError":"This change could not be added to the modification record; later process is marked unknown. The board itself is saved.","traceSkipped":"Modification record unavailable. The board file is attached; review and send yourself.","traceAttachmentName":"my-modifications.json","traceOrigin_student":"My action","traceOrigin_system":"Chat settings sync","traceType_add":"Add","traceType_batch":"Batch change","traceType_group":"Change groups","traceType_merge":"Merge","traceType_split":"Split","traceType_delete":"Delete","traceType_note":"Edit explanation","traceType_configure":"Change settings","traceType_move":"Move or arrange","traceType_undo":"Undo","traceType_redo":"Redo","traceType_clear":"Clear board","traceType_import":"Open board file","traceType_update":"Edit shape","traceType_duplicate":"Duplicate","traceField_count":"Shape count","traceField_activeCount":"Kept shapes","traceField_removedCount":"Crossed-out shapes","traceField_value":"Kept total value","traceField_removedValue":"Crossed-out value","traceField_groupCount":"Group count","traceField_groupedCount":"Grouped shapes","traceField_mergedCount":"Merged shapes","traceField_objects":"Composition (pattern:value ×count)","traceField_aliases":"Shape names","traceField_colors":"Level colour indices","traceField_groups":"Groups (name:count/value)","traceField_note":"My explanation (excerpt)","traceField_settings_levels":"Levels (value:colour index)","traceField_settings_defaults":"Default meanings (pattern:value:name)","traceField_settings_shapes":"Toolbox patterns","traceField_movedCount":"Shapes moved in this step","traceField_changedCount":"Other changes","traceField_detailsOmitted":"Details omitted in this step"},"zh":{"title":"数学画板","workspaceSubtitle":"摆图形 · 圈一组 · 自己说数量","toolbox":"工具箱","tapToAdd":"点一下放到画布；也可以拖进来","shapes":"图案","circle":"圆形","square":"方块","rectangle":"矩形","triangle":"三角形","star":"星形","hexagon":"六边形","diamond":"菱形","heart":"爱心","oval":"椭圆","cat":"小猫","dog":"小狗","car":"汽车","person":"人","apple":"苹果","fish":"小鱼","rocket":"火箭","flower":"小花","butterfly":"蝴蝶","house":"房子","icecream":"冰淇淋","settings":"设置","settingsIntro":"你来决定工具箱里有哪些图案、每个图案代表多少，以及哪个数值用哪种颜色。","patterns":"图案库","patternsHint":"点一下图案就放到左侧图案轨，再点一下收起来；已经摆好的图形不会消失。","addPattern":"添加到工具箱","removePattern":"从工具箱收起","morePatterns":"更多图案","levelLadder":"数值阶梯","level":"第几级","colorName":"颜色","removeLevel":"删除这一级","addLevel":"增加一级","resetSettings":"恢复默认","shapeDefaults":"这些图案默认代表多少","applyFuture":"只用于新图形","applyExisting":"也改已有图形","settingsFutureDone":"已保存设置，新添加的图形按新数值。","settingsExistingDone":"已保存设置，未合并的已有图形也改成新数值。","cancel":"取消","value":"代表","alias":"名字","aliasHint":"例如：苹果","canvas":"图形画布","canvasEmpty":"从左边选一个图形，开始摆一摆","canvasEmptyHint":"拖动摆放 · 空白处框选 · Shift 点击加选","gestureHint":"拖动摆放 · 空白处框选 · Shift 点击加选","multiSelect":"多选","focusMode":"只看画布","zoomIn":"放大画布","zoomOut":"缩小画布","fitView":"适应宽度","selectionActions":"所选图形操作","selectedCount":"已选","makeGroup":"圈为一组","ungroup":"解散组","merge":"合并","split":"拆开","copy":"复制","crossOut":"划去","restore":"恢复","trash":"删除所选","group":"组","defaultGroup":"我的一组","groupAlias":"这一组的名字","groupHint":"例如：小兔的一份","groupedNoAlias":"组里的图形不单独起名字；改名后整组一起变。","duplicateGroup":"复制这一组","mergedFrom":"由这些图形合并而来","noSelection":"点一个图形，或框选几个，就能起名字、圈组、合并。","mergeReason":"合并需要同一形状、同一数值、同一个名字、同属一组，而且总量正好是你设定的一级。","hintGrouped":"已选中一整组：改名只影响这一组。","hintSelected":"选中后可起名字、圈组或合并。","hintEmpty":"拖动摆放图形；空白处拖框可一次选中多个。","myObjects":"我的想法","myGroup":"我的一组","inspectorHint":"选中图形后在这里起名字","note":"我想说","noteHint":"这些图形代表什么？你是怎么想的？","noteGeneral":"整张画板 · 未关联特定图形","noteAbout":"针对","hasNote":"有说明","creationColor":"创建颜色","questionSource":"选择教师消息","questionTeacher":"老师","questionExpand":"展开","questionCollapse":"收起","questionEmpty":"暂无教师消息。","files":"文件","moreActions":"更多操作","canvasTools":"画板工具","appendSelect":"追加选择","appendDone":"完成选择","appendHint":"点按图形追加或移出选择，适合触屏","apply":"应用","save":"保存","done":"完成","fileSaved":"已保存到上次的位置。","fileDownloaded":"已下载画板文件。","fileOpenFallback":"将使用普通文件选择，浏览器可能无法记住上次的位置。","undo":"撤销","redo":"重做","group2":"圈组","close":"关闭","gear":"设置","minus":"减少","plus":"增加","cross":"划去","multi":"多选","focus":"专注","export":"保存 JSON","import":"打开 JSON","clear":"清空画布","clearQuestion":"要清空画布和这次的修改记录吗？已经放进回答的文件还在。清空后不能撤销。","confirmClear":"确认清空","clearDone":"已清空画布和修改记录。","autoClearDone":"新任务已清空画布和修改记录；已放入回答的文件仍保留。","autoClearSkipped":"为保留后续修改，已跳过迟到的清空请求。请先手动清空再用画板。","autoClearError":"自动清空未完成，请先手动清空再用画板。","insert":"放入回答","inserted":"已附上画板文件；请检查后自己发送。","insertedNote":"已附上画板文件，你写的话也放进输入框了；请检查后自己发送。","insertFailed":"暂时无法放入回答，请等输入框可编辑后重试。","attachmentName":"我的画板.json","backToChat":"返回对话","localDraft":"草稿还没发送，老师看不到；发送前随时可以改。","failed":"操作未完成","fileTooLarge":"文件太大，请选择小于 256 KB 的画板 JSON。","imported":"已打开画板。","storageError":"浏览器无法保存草稿，请保存 JSON 以免丢失。","loadError":"草稿无法读取，原数据未覆盖。","configApplied":"已按你刚才说的，更新了图形数值和颜色。","configGap":"设置历史有缺口；已按保留记录的作用范围回放。","configError":"有一条设置更新未能应用；更早成功的修改已保留。","removed":"已划去","active":"保留","traceTitle":"修改记录","traceAttach":"回答时附上修改记录（可取消）","tracePreview":"查看修改记录","traceHide":"收起修改记录","traceNewAttempt":"开始新的尝试","traceClear":"清除记录","traceNotice":"修改记录保存在这个浏览器，不记时间和拖动轨迹。附上并发送后，老师才能看到；会随对话保留。","traceScope":"这是这份草稿到目前为止保留的修改，不一定来自一次连续操作。数字与文字是修改事实，不是对错结论；省略的细节以省略标记说明。","tracePriorUnknown":"此前过程未知：起点可能已有内容，或记录有缺口。","traceTotals":"共记录 {count} 次变更，中间省略 {omitted} 次。","traceEmpty":"还没有记录到修改。","traceGap":"……中间修改已省略……","traceResetQuestion":"保留当前画板，删去本地修改记录并开始新的尝试？已放入回答或发送的附件不会删除，撤销历史也将清空。","traceResetConfirm":"确认重新开始","traceResetDone":"已开始新的尝试，画板保留，此前过程标为未知。","traceLoadError":"此前修改记录无法恢复，已标为未知；画板仍可使用。","traceRecordError":"这次修改没能记进修改记录，此后的过程标为未知；画板本身已保存。","traceSkipped":"修改记录不可用，已附上画板文件；请检查后自己发送。","traceAttachmentName":"我的修改记录.json","traceOrigin_student":"我的操作","traceOrigin_system":"对话设置同步","traceType_add":"添加","traceType_batch":"批量修改","traceType_group":"修改分组","traceType_merge":"合并","traceType_split":"拆开","traceType_delete":"删除","traceType_note":"修改说明","traceType_configure":"修改设置","traceType_move":"移动或整理","traceType_undo":"撤销","traceType_redo":"重做","traceType_clear":"清空画板","traceType_import":"打开画板文件","traceType_update":"修改图形","traceType_duplicate":"复制","traceField_count":"图形数","traceField_activeCount":"保留图形数","traceField_removedCount":"划去图形数","traceField_value":"保留图形代表的总量","traceField_removedValue":"划去图形代表的总量","traceField_groupCount":"组数","traceField_groupedCount":"已分组图形数","traceField_mergedCount":"合并图形数","traceField_objects":"图形组成（图案:代表值 ×个数）","traceField_aliases":"图形名字","traceField_colors":"量级颜色编号","traceField_groups":"各组（名字:个数/代表总量）","traceField_note":"我想说（节选）","traceField_settings_levels":"量级（数值:颜色编号）","traceField_settings_defaults":"默认含义（图案:数值:名字）","traceField_settings_shapes":"工具箱图案","traceField_movedCount":"本步移动的图形数","traceField_changedCount":"其他变更数","traceField_detailsOmitted":"本步省略细节数"}};
+    const G = createGeoModel();
+    const dictionaries = {"en":{"title":"Math board","workspaceSubtitle":"Place shapes · group them · name the amounts","toolbox":"Toolbox","tapToAdd":"Tap to place, or drag one in","shapes":"Patterns","circle":"Circle","square":"Square","rectangle":"Rectangle","triangle":"Triangle","star":"Star","hexagon":"Hexagon","diamond":"Diamond","heart":"Heart","oval":"Oval","cat":"Cat","dog":"Dog","car":"Car","person":"Person","apple":"Apple","fish":"Fish","rocket":"Rocket","flower":"Flower","butterfly":"Butterfly","house":"House","icecream":"Ice cream","settings":"Settings","settingsIntro":"You choose which patterns sit in the toolbox, what each stands for, and which colour marks which amount.","patterns":"Pattern library","patternsHint":"Tap a pattern to put it on the left rail; tap again to tuck it away. Shapes already on the canvas stay.","addPattern":"Add to toolbox","removePattern":"Tuck away","morePatterns":"More patterns","levelLadder":"Value ladder","level":"Level","colorName":"Colour","removeLevel":"Remove level","addLevel":"Add level","resetSettings":"Reset","shapeDefaults":"What these patterns stand for","applyFuture":"New shapes only","applyExisting":"Also change existing","settingsFutureDone":"Saved. New shapes use the new value.","settingsExistingDone":"Saved. Existing unmerged shapes also use the new value.","cancel":"Cancel","value":"Standing for","alias":"Name","aliasHint":"For example: apple","canvas":"Shape canvas","canvasEmpty":"Pick a shape on the left to begin","canvasEmptyHint":"Drag to arrange · box-select · Shift-click to add","gestureHint":"Drag to arrange · box-select · Shift-click to add","multiSelect":"Multi-select","focusMode":"Canvas only","zoomIn":"Zoom in","zoomOut":"Zoom out","fitView":"Fit width","selectionActions":"Selected shape actions","selectedCount":"Selected","makeGroup":"Group","ungroup":"Ungroup","merge":"Merge","split":"Split","copy":"Copy","crossOut":"Cross out","restore":"Restore","trash":"Delete selected","group":"Group","defaultGroup":"My group","groupAlias":"Group name","groupHint":"For example: Rabbit's share","groupedNoAlias":"Shapes in a group share its name instead of having their own.","duplicateGroup":"Duplicate group","mergedFrom":"Merged from","noSelection":"Select one shape or box-select several to name, group, or merge them.","mergeReason":"Merging needs the same shape, the same value, the same name, the same group, and a total that matches one of your levels.","hintGrouped":"A whole group is selected: renaming changes the group.","hintSelected":"Name, group or merge the selection.","hintEmpty":"Drag shapes to arrange; drag on empty space to select several.","myObjects":"My thinking","myGroup":"My group","inspectorHint":"Select shapes to name them here","note":"My explanation","noteHint":"What do these shapes mean? How did you think about it?","noteGeneral":"Whole board · not tied to particular shapes","noteAbout":"About","hasNote":"Has an explanation","creationColor":"Creation colour","questionSource":"Choose a teacher message","questionTeacher":"Teacher","questionExpand":"Expand","questionCollapse":"Collapse","questionEmpty":"No teacher messages yet.","files":"Files","moreActions":"More actions","canvasTools":"Board tools","appendSelect":"Add to selection","appendDone":"Finish selecting","appendHint":"Tap shapes to add or remove them; useful on touch screens","apply":"Apply","save":"Save","done":"Done","fileSaved":"Saved to the last location.","fileDownloaded":"Board file downloaded.","fileOpenFallback":"Using the standard file picker; the browser may not remember the last location.","undo":"Undo","redo":"Redo","group2":"Group","close":"Close","gear":"Settings","minus":"Remove","plus":"Add","cross":"Cross out","multi":"Multi-select","focus":"Focus","export":"Save JSON","import":"Open JSON","clear":"Clear canvas","clearQuestion":"Clear the canvas and this modification record? Files already added to an answer stay. This cannot be undone.","confirmClear":"Confirm clear","clearDone":"Canvas and modification record cleared.","autoClearDone":"Canvas and modifications cleared for the new task. Existing answer attachments remain.","autoClearSkipped":"A late clear was skipped to keep later edits. Clear manually before using the board.","autoClearError":"Automatic clear did not complete. Clear manually before using the board.","insert":"Add to answer","inserted":"The board file is attached. Review it and send it yourself.","insertedNote":"The board file is attached, and your own words are in the composer. Review them and send yourself.","insertFailed":"Cannot insert now. Wait until the composer is editable and try again.","attachmentName":"my-math-board.json","backToChat":"Back to chat","localDraft":"Your draft stays here until you send it.","failed":"Action not completed","fileTooLarge":"Choose a board JSON smaller than 256 KB.","imported":"Board opened.","storageError":"Cannot save this browser draft. Save JSON to keep your work.","loadError":"Cannot read the draft. Original data was not overwritten.","configApplied":"Your spoken values and colours are now applied.","configGap":"Settings history had a gap; retained changes were replayed with their original scopes.","configError":"A settings update could not be applied; earlier successful changes were kept.","removed":"Crossed out","active":"Kept","traceTitle":"Modification record","traceAttach":"Attach modification record (optional)","tracePreview":"View modifications","traceHide":"Hide modifications","traceNewAttempt":"Start a new attempt","traceClear":"Clear record","traceNotice":"Changes stay in this browser, without times or drag paths. Your teacher sees them only if attached and sent; sent files remain with the conversation.","traceScope":"Retained modifications to this draft so far, not necessarily one continuous sitting. These are observations, not correctness judgments; omitted details are marked.","tracePriorUnknown":"Earlier process unknown: the starting board may have content, or history has a gap.","traceTotals":"{count} changes recorded; {omitted} changes omitted in the middle.","traceEmpty":"No modifications recorded yet.","traceGap":"… Intermediate modifications omitted …","traceResetQuestion":"Keep the board and delete its local modification record to start anew? Existing draft/sent attachments remain. Undo history will also be cleared.","traceResetConfirm":"Confirm new attempt","traceResetDone":"New attempt started; board kept, earlier process marked unknown.","traceLoadError":"Earlier modifications could not be restored and are marked unknown. The board remains usable.","traceRecordError":"This change could not be added to the modification record; later process is marked unknown. The board itself is saved.","traceSkipped":"Modification record unavailable. The board file is attached; review and send yourself.","traceAttachmentName":"my-modifications.json","traceOrigin_student":"My action","traceOrigin_system":"Chat settings sync","traceType_add":"Add","traceType_batch":"Batch change","traceType_group":"Change groups","traceType_merge":"Merge","traceType_split":"Split","traceType_delete":"Delete","traceType_note":"Edit explanation","traceType_configure":"Change settings","traceType_move":"Move or arrange","traceType_undo":"Undo","traceType_redo":"Redo","traceType_clear":"Clear board","traceType_import":"Open board file","traceType_update":"Edit shape","traceType_duplicate":"Duplicate","traceField_count":"Shape count","traceField_activeCount":"Kept shapes","traceField_removedCount":"Crossed-out shapes","traceField_value":"Kept total value","traceField_removedValue":"Crossed-out value","traceField_groupCount":"Group count","traceField_groupedCount":"Grouped shapes","traceField_mergedCount":"Merged shapes","traceField_objects":"Composition (pattern:value ×count)","traceField_aliases":"Shape names","traceField_colors":"Level colour indices","traceField_groups":"Groups (name:count/value)","traceField_note":"My explanation (excerpt)","traceField_settings_levels":"Levels (value:colour index)","traceField_settings_defaults":"Default meanings (pattern:value:name)","traceField_settings_shapes":"Toolbox patterns","traceField_movedCount":"Shapes moved in this step","traceField_changedCount":"Other changes","traceField_detailsOmitted":"Details omitted in this step","tabs":"Mode","tabQuantity":"Quantity","tabGeometry":"Geometry","geometryTab":"Geometry board","geometryCanvas":"Geometry canvas","geometryEmpty":"Pick a tool, then click on the canvas to start drawing","geometryEmptyHint":"Point · segment · polygon · circle · parallelogram · rectangle","geometryTools":"Geometry tools","geometryHintSelect":"Click a shape to select it; drag a free point to move it.","geometrySteps":"{n} points chosen — keep clicking.","point":"Point","segment":"Segment","polygon":"Polygon","parallelogram":"Parallelogram","midpoint":"Midpoint","auxiliary":"Auxiliary line","derivedPoint":"Constructed point","geometrySelectionActions":"Selected shape actions","renamePoint":"Rename point","geometryClearDone":"Geometry canvas and undo history cleared.","geometryLoadError":"Cannot read the geometry draft. Original data was not overwritten.","otherBoardFile":"That is the other board's file; the geometry board cannot open it.","gridOn":"Grid: on","gridOff":"Grid: off","snapOn":"Snap: on","snapOff":"Snap: off","geometryAttachmentName":"my-geometry-board.json","clearGeometry":"Clear geometry canvas","geometryClearQuestion":"Clear the geometry canvas and its undo history? Files already added to an answer stay. This cannot be undone.","geometryInsertPrompt":"Geometry board: after Add to answer, the message carries only a read-only geometry snapshot (kind: \"geometry-board\", schemaVersion: 1) and the board note.","select":"Select"},"zh":{"title":"数学画板","workspaceSubtitle":"摆图形 · 圈一组 · 自己说数量","toolbox":"工具箱","tapToAdd":"点一下放到画布；也可以拖进来","shapes":"图案","circle":"圆形","square":"方块","rectangle":"矩形","triangle":"三角形","star":"星形","hexagon":"六边形","diamond":"菱形","heart":"爱心","oval":"椭圆","cat":"小猫","dog":"小狗","car":"汽车","person":"人","apple":"苹果","fish":"小鱼","rocket":"火箭","flower":"小花","butterfly":"蝴蝶","house":"房子","icecream":"冰淇淋","settings":"设置","settingsIntro":"你来决定工具箱里有哪些图案、每个图案代表多少，以及哪个数值用哪种颜色。","patterns":"图案库","patternsHint":"点一下图案就放到左侧图案轨，再点一下收起来；已经摆好的图形不会消失。","addPattern":"添加到工具箱","removePattern":"从工具箱收起","morePatterns":"更多图案","levelLadder":"数值阶梯","level":"第几级","colorName":"颜色","removeLevel":"删除这一级","addLevel":"增加一级","resetSettings":"恢复默认","shapeDefaults":"这些图案默认代表多少","applyFuture":"只用于新图形","applyExisting":"也改已有图形","settingsFutureDone":"已保存设置，新添加的图形按新数值。","settingsExistingDone":"已保存设置，未合并的已有图形也改成新数值。","cancel":"取消","value":"代表","alias":"名字","aliasHint":"例如：苹果","canvas":"图形画布","canvasEmpty":"从左边选一个图形，开始摆一摆","canvasEmptyHint":"拖动摆放 · 空白处框选 · Shift 点击加选","gestureHint":"拖动摆放 · 空白处框选 · Shift 点击加选","multiSelect":"多选","focusMode":"只看画布","zoomIn":"放大画布","zoomOut":"缩小画布","fitView":"适应宽度","selectionActions":"所选图形操作","selectedCount":"已选","makeGroup":"圈为一组","ungroup":"解散组","merge":"合并","split":"拆开","copy":"复制","crossOut":"划去","restore":"恢复","trash":"删除所选","group":"组","defaultGroup":"我的一组","groupAlias":"这一组的名字","groupHint":"例如：小兔的一份","groupedNoAlias":"组里的图形不单独起名字；改名后整组一起变。","duplicateGroup":"复制这一组","mergedFrom":"由这些图形合并而来","noSelection":"点一个图形，或框选几个，就能起名字、圈组、合并。","mergeReason":"合并需要同一形状、同一数值、同一个名字、同属一组，而且总量正好是你设定的一级。","hintGrouped":"已选中一整组：改名只影响这一组。","hintSelected":"选中后可起名字、圈组或合并。","hintEmpty":"拖动摆放图形；空白处拖框可一次选中多个。","myObjects":"我的想法","myGroup":"我的一组","inspectorHint":"选中图形后在这里起名字","note":"我想说","noteHint":"这些图形代表什么？你是怎么想的？","noteGeneral":"整张画板 · 未关联特定图形","noteAbout":"针对","hasNote":"有说明","creationColor":"创建颜色","questionSource":"选择教师消息","questionTeacher":"老师","questionExpand":"展开","questionCollapse":"收起","questionEmpty":"暂无教师消息。","files":"文件","moreActions":"更多操作","canvasTools":"画板工具","appendSelect":"追加选择","appendDone":"完成选择","appendHint":"点按图形追加或移出选择，适合触屏","apply":"应用","save":"保存","done":"完成","fileSaved":"已保存到上次的位置。","fileDownloaded":"已下载画板文件。","fileOpenFallback":"将使用普通文件选择，浏览器可能无法记住上次的位置。","undo":"撤销","redo":"重做","group2":"圈组","close":"关闭","gear":"设置","minus":"减少","plus":"增加","cross":"划去","multi":"多选","focus":"专注","export":"保存 JSON","import":"打开 JSON","clear":"清空画布","clearQuestion":"要清空画布和这次的修改记录吗？已经放进回答的文件还在。清空后不能撤销。","confirmClear":"确认清空","clearDone":"已清空画布和修改记录。","autoClearDone":"新任务已清空画布和修改记录；已放入回答的文件仍保留。","autoClearSkipped":"为保留后续修改，已跳过迟到的清空请求。请先手动清空再用画板。","autoClearError":"自动清空未完成，请先手动清空再用画板。","insert":"放入回答","inserted":"已附上画板文件；请检查后自己发送。","insertedNote":"已附上画板文件，你写的话也放进输入框了；请检查后自己发送。","insertFailed":"暂时无法放入回答，请等输入框可编辑后重试。","attachmentName":"我的画板.json","backToChat":"返回对话","localDraft":"草稿还没发送，老师看不到；发送前随时可以改。","failed":"操作未完成","fileTooLarge":"文件太大，请选择小于 256 KB 的画板 JSON。","imported":"已打开画板。","storageError":"浏览器无法保存草稿，请保存 JSON 以免丢失。","loadError":"草稿无法读取，原数据未覆盖。","configApplied":"已按你刚才说的，更新了图形数值和颜色。","configGap":"设置历史有缺口；已按保留记录的作用范围回放。","configError":"有一条设置更新未能应用；更早成功的修改已保留。","removed":"已划去","active":"保留","traceTitle":"修改记录","traceAttach":"回答时附上修改记录（可取消）","tracePreview":"查看修改记录","traceHide":"收起修改记录","traceNewAttempt":"开始新的尝试","traceClear":"清除记录","traceNotice":"修改记录保存在这个浏览器，不记时间和拖动轨迹。附上并发送后，老师才能看到；会随对话保留。","traceScope":"这是这份草稿到目前为止保留的修改，不一定来自一次连续操作。数字与文字是修改事实，不是对错结论；省略的细节以省略标记说明。","tracePriorUnknown":"此前过程未知：起点可能已有内容，或记录有缺口。","traceTotals":"共记录 {count} 次变更，中间省略 {omitted} 次。","traceEmpty":"还没有记录到修改。","traceGap":"……中间修改已省略……","traceResetQuestion":"保留当前画板，删去本地修改记录并开始新的尝试？已放入回答或发送的附件不会删除，撤销历史也将清空。","traceResetConfirm":"确认重新开始","traceResetDone":"已开始新的尝试，画板保留，此前过程标为未知。","traceLoadError":"此前修改记录无法恢复，已标为未知；画板仍可使用。","traceRecordError":"这次修改没能记进修改记录，此后的过程标为未知；画板本身已保存。","traceSkipped":"修改记录不可用，已附上画板文件；请检查后自己发送。","traceAttachmentName":"我的修改记录.json","traceOrigin_student":"我的操作","traceOrigin_system":"对话设置同步","traceType_add":"添加","traceType_batch":"批量修改","traceType_group":"修改分组","traceType_merge":"合并","traceType_split":"拆开","traceType_delete":"删除","traceType_note":"修改说明","traceType_configure":"修改设置","traceType_move":"移动或整理","traceType_undo":"撤销","traceType_redo":"重做","traceType_clear":"清空画板","traceType_import":"打开画板文件","traceType_update":"修改图形","traceType_duplicate":"复制","traceField_count":"图形数","traceField_activeCount":"保留图形数","traceField_removedCount":"划去图形数","traceField_value":"保留图形代表的总量","traceField_removedValue":"划去图形代表的总量","traceField_groupCount":"组数","traceField_groupedCount":"已分组图形数","traceField_mergedCount":"合并图形数","traceField_objects":"图形组成（图案:代表值 ×个数）","traceField_aliases":"图形名字","traceField_colors":"量级颜色编号","traceField_groups":"各组（名字:个数/代表总量）","traceField_note":"我想说（节选）","traceField_settings_levels":"量级（数值:颜色编号）","traceField_settings_defaults":"默认含义（图案:数值:名字）","traceField_settings_shapes":"工具箱图案","traceField_movedCount":"本步移动的图形数","traceField_changedCount":"其他变更数","traceField_detailsOmitted":"本步省略细节数","tabs":"模式","tabQuantity":"数量","tabGeometry":"几何","geometryTab":"几何画板","geometryCanvas":"几何画布","geometryEmpty":"选一个工具，在画布上点一下开始画","geometryEmptyHint":"点 · 线段 · 多边形 · 圆 · 平行四边形 · 矩形","geometryTools":"几何工具","geometryHintSelect":"点一下图形选中它；拖自由点可移动。","geometrySteps":"已经点了 {n} 个点，继续点下去。","point":"点","segment":"线段","polygon":"多边形","parallelogram":"平行四边形","midpoint":"取中点","auxiliary":"辅助线","derivedPoint":"算出来的点","geometrySelectionActions":"所选图形操作","renamePoint":"重命名的点","geometryClearDone":"已清空几何画布和撤销历史。","geometryLoadError":"几何草稿无法读取，原数据未覆盖。","otherBoardFile":"这是另一个画板的文件，几何画板打不开。","gridOn":"网格：开","gridOff":"网格：关","snapOn":"吸附：开","snapOff":"吸附：关","geometryAttachmentName":"我的几何画板.json","clearGeometry":"清空几何画布","geometryClearQuestion":"要清空几何画布和它的撤销历史吗？已经放进回答的文件还在。清空后不能撤销。","geometryInsertPrompt":"几何画板：学生点「放入回答」后，消息只附带只读的几何快照（kind: \"geometry-board\", schemaVersion: 1）和整板说明。先读取附件再回应。","select":"选择"}};
     return {
       inject: ['slots', 'locale'],
       apply(ctx) {
         ctx.effect(() => ctx.locale.register('edu-math-board', 'en', dictionaries.en));
         ctx.effect(() => ctx.locale.register('edu-math-board', 'zh', dictionaries.zh));
         const t = ctx.locale.bind('edu-math-board');
-        const Board = createView(React, M, ctx, t, "/* Workbench UI: one compact palette rail, one canvas, one bottom dock. */\n.edu-board-launch{display:inline-flex;align-items:center;gap:6px;flex:none;height:28px;padding:0 8px;border:0;border-radius:var(--dsw-radius-sm);background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:13px;font-weight:500;line-height:20px;white-space:nowrap;cursor:pointer}\n.edu-board-launch svg{flex:none;display:block}\n.edu-board-launch:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}\n.edu-board-launch:disabled{opacity:.5;cursor:default}\n@container (width<=560px){.edu-board-launch span{display:none}}\n\n.eb-dialog{box-sizing:border-box;width:min(1500px,96vw);height:min(940px,94dvh);max-width:96vw;max-height:94dvh;padding:0;border:1px solid var(--dsw-alias-border-l1);border-radius:22px;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-base);box-shadow:0 24px 80px #0f172a33;overflow:hidden}\n.eb-dialog::backdrop{background:#0f172a66;backdrop-filter:blur(5px)}\n.eb-workbench{box-sizing:border-box;height:100%;position:relative;font-family:inherit;font-size:14px;background:var(--dsw-alias-bg-layer-1)}\n.eb-workbench *{box-sizing:border-box}\n.eb-workbench button,.eb-workbench input,.eb-workbench select,.eb-workbench textarea{font:inherit;color:inherit}\n.eb-workbench button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:8px 12px;border:1px solid transparent;border-radius:10px;background:transparent;cursor:pointer;white-space:nowrap;transition:background .14s,border-color .14s,box-shadow .14s,transform .08s}\n.eb-workbench button:hover:not(:disabled){background:var(--dsw-alias-bg-layer-2)}\n.eb-workbench button:active:not(:disabled){transform:translateY(1px)}\n.eb-workbench button:disabled{opacity:.34;cursor:default}\n.eb-workbench button[aria-pressed=true]{background:#eaf4de;border-color:#b8d898;color:#375f21}\n.eb-workbench .eb-icon-button{width:42px;min-height:40px;padding:7px}\n.eb-workbench :is(button,input,select,textarea,a):focus-visible,.edu-board-launch:focus-visible{outline:3px solid #489AD4;outline-offset:2px}\n.eb-primary{background:linear-gradient(#88C94C,#70B337)!important;border:1px solid #669B36!important;box-shadow:0 2px 0 #537E2E;color:#203D0E!important;font-weight:700}\n.eb-primary:hover:not(:disabled){background:#83C547!important;filter:saturate(1.04)}\n.eb-danger{color:#B74035}\n.eb-danger-solid{background:#C14B40!important;border-color:#A83C32!important;color:#FFF!important;box-shadow:0 2px 0 #8E3027}\n\n/* The title bar is the only new chrome; the original workspace stays below it. */\n.eb-topbar{height:56px;display:flex;align-items:center;gap:9px;padding:0 18px;border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-base);font-weight:700}\n.eb-topbar svg{flex:none}\n.eb-workspace{position:absolute;inset:56px 0 0}\n\n/* The palette is a narrow rail; the canvas owns everything else. */\n.eb-brand{position:absolute;z-index:4;top:12px;left:14px;display:flex;align-items:center;justify-content:center;width:44px;height:44px;pointer-events:none}\n.eb-palette{position:absolute;z-index:3;left:8px;top:62px;bottom:78px;width:62px;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:2px 0}\n.eb-palette::-webkit-scrollbar{display:none}\n.eb-workbench .eb-shape-tool{width:54px;min-height:52px;padding:6px;border-radius:13px;flex:none;border:1px solid transparent}\n.eb-workbench .eb-shape-tool:hover:not(:disabled){background:#EAF4DE;border-color:#C8DDB6}\n.eb-workbench .eb-shape-tool:active:not(:disabled){transform:scale(.96)}\n.eb-workbench .eb-shape-more{border:1px dashed #C9D4D8!important;color:#72808A;min-height:46px}\n.eb-stage-wrap{position:absolute;inset:0 0 74px 78px;min-width:0;min-height:0;padding:10px 10px 0;display:flex;flex-direction:column;gap:10px}\n.eb-question{display:flex;align-items:flex-start;gap:16px;flex:none;padding:10px 16px;border:1px solid #E8DFC6;border-radius:13px;background:#FFFDF5;color:#493F2B;overflow:hidden}\n.eb-question-controls{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:0 0 132px;min-width:0;color:#887747}\n.eb-question-controls select{width:100%;min-width:0;padding:3px 6px;border:1px solid #E8DFC6;border-radius:6px;background:#FFFDF5;color:inherit;font-size:12px}\n.eb-workbench .eb-question-toggle{min-height:26px;padding:3px 8px;font-size:12px}\n.eb-question-text{flex:1;min-width:0;min-height:0;max-height:8.25em;margin:0;font-size:16px;line-height:1.65;white-space:pre-line;overflow-wrap:anywhere;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}\n.eb-question-text.eb-collapsed{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;max-height:4.95em;overflow:hidden}\n/* Remove paragraph spacing, not authored line breaks or Markdown structure. */\n.eb-question-text :is(p,h1,h2,h3,h4,h5,h6,ul,ol,li,blockquote,pre){margin:0;font-size:inherit;line-height:inherit}\n.eb-question-empty{margin:6px 0;font-size:12px;line-height:1.6;color:#887747}\n.eb-stage-frame{position:relative;flex:1;width:100%;min-height:0;border:1px solid #DCE4E7;border-radius:18px;background:#FFFFFF;overflow:hidden;box-shadow:0 3px 18px #243B5308}\n.eb-canvas-scroll{width:100%;height:100%;overflow:auto;overscroll-behavior:contain;border-radius:17px;background:#FFFFFF;background-image:radial-gradient(#DFE7EA .8px,transparent .8px);background-size:22px 22px}\n.eb-artboard{display:block;max-width:none;flex:none;touch-action:none;user-select:none}\n.eb-artboard [data-object]{cursor:grab}\n.eb-artboard [data-object]:active{cursor:grabbing}\n.eb-artboard [data-object]:focus-visible{outline:none}\n.eb-artboard [data-object]:focus-visible .eb-focus-ring{stroke:#2563EB;stroke-width:3}\n\n/* Selection actions hover above the dock, next to the selection they affect. */\n.eb-floating{position:absolute;z-index:5;left:50%;bottom:12px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:2px;max-width:calc(100% - 24px);padding:4px 6px;border:1px solid #D7E0E3;background:var(--dsw-alias-bg-overlay);border-radius:14px;box-shadow:0 8px 26px #243B5324;overflow-x:auto;scrollbar-width:none}\n.eb-floating small{padding:0 8px;white-space:nowrap;color:#6E7D87;font-size:12px}\n.eb-workbench .eb-floating button{padding:7px 9px;min-height:42px;font-size:12px}\n.eb-workbench .eb-floating .eb-context-action{gap:5px}\n.eb-workbench .eb-floating .eb-selected-mode{background:#EAF4DE;color:#416A28;border-color:#B8D898}\n\n/* One bottom row. */\n.eb-dock{position:absolute;z-index:6;left:10px;right:10px;bottom:8px;height:56px;padding:4px 6px;display:flex;align-items:center;gap:1px;border:1px solid #D8E1E4;border-radius:15px;background:#FFFFFF;box-shadow:0 6px 28px #243B5314,0 1px 3px #243B5308}\n.eb-dock .eb-grow{flex:1}\n.eb-dock .eb-divider{width:1px;height:22px;background:#E5EBED;margin:0 4px;flex:none}\n.eb-dock .eb-label{font-weight:550}\n.eb-dock .eb-zoom-label{min-width:46px;font-size:12px;color:#6E7C86;padding:7px 6px}\n.eb-dock .eb-zoom-button{width:36px;min-width:36px;padding:6px;font-size:16px;color:#65747E}\n.eb-dock .eb-color-button{min-width:82px;padding:6px 9px;gap:7px;border:1px solid #DCE4DF;background:#F9FCF7;border-radius:9px}\n.eb-color-dot{display:inline-block;flex:none;width:19px;height:19px;border-radius:999px;border:1px solid #233A2626;box-shadow:inset 0 1px 1px #FFF6}\n.eb-color-value{font-size:12px;font-weight:650;min-width:24px;text-align:left}\n.eb-chevron{font-size:11px;color:#7C8C80;line-height:1}\n.eb-dock .eb-note-button{width:42px;min-height:40px;padding:7px;position:relative;color:#5E7B44}\n.eb-dock .eb-note-button.eb-contextual{background:#F0F7E9}\n.eb-note-dot{position:absolute;top:7px;right:8px;width:6px;height:6px;border-radius:50%;background:#4CAF50;border:1px solid #FFF}\n.eb-dock .eb-primary{padding:8px 18px;margin-left:4px}\n.eb-dock .eb-primary .eb-label{font-weight:700}\n\n/* Menus, toast and modal editors. */\n.eb-menu{position:absolute;z-index:12;min-width:236px;max-width:calc(100% - 24px);padding:7px;border:1px solid #D5DFE3;border-radius:15px;background:var(--dsw-alias-bg-base);box-shadow:0 14px 44px #243B5326}\n.eb-more-menu{right:68px;bottom:70px}\n.eb-color-menu{left:112px;bottom:70px;min-width:190px}\n.eb-menu-head{padding:7px 10px;font-size:11px;color:#80909B}\n.eb-menu button{width:100%;justify-content:flex-start;text-align:left;padding:9px 10px;border-radius:9px}\n.eb-menu-value{flex:1;font-size:13px;font-weight:600}\n.eb-color-option{min-height:42px}\n.eb-color-option .icon{margin-left:auto;width:16px;height:16px}\n.eb-menu-note{margin:4px 10px 6px;font-size:11px;color:#71817A;overflow-wrap:anywhere}\n.eb-menu-line{height:1px;background:#E9EDEF;margin:6px 3px}\n.eb-menu-check{display:flex;align-items:center;gap:9px;padding:9px 10px;min-height:42px;font-size:12px;line-height:1.4}\n.eb-menu-check input{width:18px;height:18px;min-height:0;accent-color:#4CAF50}\n.eb-status-toast{position:absolute;z-index:20;left:50%;bottom:80px;transform:translateX(-50%);max-width:calc(100% - 40px);padding:9px 16px;border-radius:10px;background:#253A3E;color:#FFF;font-size:12px;line-height:1.5;box-shadow:0 6px 24px #0002;pointer-events:none}\n.eb-overlay{position:absolute;z-index:30;inset:0;display:grid;place-items:center;padding:20px;background:#20333F45;backdrop-filter:blur(2px)}\n.eb-overlay-card{width:min(470px,100%);max-height:calc(100% - 40px);overflow:auto;padding:20px;border:1px solid #D5DFE2;border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:0 20px 70px #1832472E}\n.eb-overlay-card h2{font-size:16px;margin:0 0 12px}\n.eb-overlay-card input:not([type=checkbox]),.eb-overlay-card textarea{width:100%;padding:11px;border:1px solid #CAD6DB;border-radius:10px;background:#FBFDFC;min-height:44px;font:inherit;font-size:13px}\n.eb-overlay-card textarea{min-height:128px;resize:vertical;line-height:1.65}\n.eb-overlay-context{margin:0 0 12px;padding:8px 11px;border:1px dashed #D7E3D0;border-radius:9px;background:#F7FBF3;color:#5D754C;font-size:12px}\n.eb-overlay-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:16px}\n.eb-overlay-actions button{min-height:40px;padding:8px 14px;border:1px solid #D8E1E4}\n.eb-overlay-actions .eb-primary{border:1px solid #669B36}\n.eb-muted{color:var(--dsw-alias-label-secondary);font-size:12px;line-height:1.6;margin:0 0 10px}\n.eb-library-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:8px}\n.eb-workbench .eb-library-tile{flex-direction:column;gap:2px;min-height:64px;padding:5px 2px;font-size:10px;border:1px solid #E3E9EB;border-radius:10px}\n.eb-library-tile span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}\n.eb-library-tile[aria-pressed=true]{background:#EAF4DE;border-color:#B8D898}\n\n@media(max-width:980px){\n  .eb-dock .eb-label{display:none}\n  .eb-dock .eb-dock-return{width:42px;min-width:42px;padding:7px}\n  .eb-dock .eb-primary{padding:8px 13px}\n  .eb-dock .eb-primary .eb-label{display:none}\n  .eb-dock .eb-primary{width:44px;min-width:44px}\n  .eb-floating .eb-label{display:none}\n  .eb-workbench .eb-floating button{width:40px;min-width:40px;padding:7px}\n  .eb-floating small{padding:0 5px}\n}\n@media(max-width:760px){\n  .eb-dialog{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0;border:0}\n  .eb-stage-wrap{left:66px;bottom:70px;padding:6px 6px 0}\n  .eb-palette{left:4px;top:56px;bottom:72px;width:56px}\n  .eb-workbench .eb-shape-tool{width:50px;min-height:48px;padding:5px}\n  .eb-brand{top:8px;left:9px;width:38px;height:38px}\n  .eb-dock{left:6px;right:6px;bottom:5px;height:54px}\n  .eb-dock .eb-divider{margin:0 2px}\n  .eb-dock .eb-zoom-out,.eb-dock .eb-zoom-in{display:none}\n  .eb-dock .eb-zoom-label{min-width:40px;font-size:11px;padding:6px 4px}\n  .eb-dock .eb-color-button{min-width:68px;padding:6px 7px}\n  .eb-dock .eb-color-value{font-size:11px;min-width:20px}\n  .eb-dock .eb-note-button,.eb-dock .eb-icon-button{width:38px;min-width:38px;padding:6px}\n  .eb-dock .eb-primary{width:40px;min-width:40px;padding:6px}\n  .eb-floating{bottom:9px;max-width:calc(100% - 12px);padding:3px}\n  .eb-workbench .eb-floating button{min-width:38px;width:38px;min-height:40px;padding:6px}\n  .eb-floating small{display:none}\n  .eb-status-toast{bottom:74px;font-size:11px}\n  .eb-overlay{padding:12px}\n  .eb-overlay-card{padding:16px;border-radius:15px}\n  .eb-more-menu{right:6px}\n  .eb-color-menu{left:6px}\n}\n@media(max-width:430px){\n  .eb-dock .eb-redo{display:none}\n  .eb-dock .eb-zoom-label{display:none}\n  .eb-dock .eb-color-button{min-width:58px}\n  .eb-dock .eb-note-button,.eb-dock .eb-icon-button{width:36px;min-width:36px}\n  .eb-library-grid{grid-template-columns:repeat(3,minmax(0,1fr))}\n}\n@media(max-height:620px){\n  .eb-stage-wrap{bottom:66px}\n  .eb-palette{bottom:68px}\n  .eb-dock{height:50px;bottom:5px}\n  .eb-floating{bottom:7px}\n  .eb-status-toast{bottom:68px}\n  .eb-more-menu,.eb-color-menu{bottom:62px}\n}\n/* Flat creation colours use the dock's former empty space. Other tools keep\n   their order and existing appearance; narrow screens give colours their own row. */\n.eb-color-choices{display:flex;align-items:center;gap:6px;min-width:0;flex:1;overflow-x:auto;padding:3px}\n.eb-dock .eb-color-choices .eb-color-button{flex:none;min-width:62px;padding:6px 8px}\n.eb-dock .eb-color-choices .eb-color-button[aria-pressed=true]{background:#EAF4DE;border-color:#A4C886;box-shadow:0 0 0 2px #EAF4DE}\n.eb-question-text :first-child{margin-top:0}\n.eb-question-text :last-child{margin-bottom:0}\n@media(max-width:1100px){\n  .eb-dock{height:104px;flex-wrap:wrap;align-content:space-between}\n  .eb-dock .eb-color-choices{order:-1;flex:0 0 100%;justify-content:flex-start}\n  .eb-stage-wrap{bottom:122px}\n  .eb-palette{bottom:126px}\n  .eb-more-menu{bottom:118px}\n  .eb-status-toast{bottom:128px}\n}\n@media(max-width:760px){\n  .eb-topbar{height:48px;padding:0 14px;font-size:14px}\n  .eb-workspace{top:48px}\n  .eb-question{padding:8px 11px;gap:8px}\n  .eb-question-controls{flex-basis:88px}\n  .eb-question-controls select{font-size:11px}\n  .eb-question-text{font-size:14px}\n  .eb-stage-wrap{bottom:116px}\n  .eb-palette{top:6px;bottom:120px}\n  .eb-dock{height:104px}\n  .eb-color-choices{gap:4px}\n  .eb-dock .eb-color-choices .eb-color-button{min-width:54px;padding:5px 7px;gap:5px}\n  .eb-dock .eb-color-choices .eb-color-value{min-width:0}\n  .eb-more-menu{bottom:114px}\n  .eb-status-toast{bottom:122px}\n}\n@media(prefers-reduced-motion:reduce){.eb-workbench *{transition:none!important;animation:none!important}}\n", art, applyHostConfig, T);
+        // One entry, two tabs: each page keeps its own draft, selection and history.
+        const Board = createTabs(React, t, "/* Workbench UI: one compact palette rail, one canvas, one bottom dock. */\n.edu-board-launch{display:inline-flex;align-items:center;gap:6px;flex:none;height:28px;padding:0 8px;border:0;border-radius:var(--dsw-radius-sm);background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:13px;font-weight:500;line-height:20px;white-space:nowrap;cursor:pointer}\n.edu-board-launch svg{flex:none;display:block}\n.edu-board-launch:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}\n.edu-board-launch:disabled{opacity:.5;cursor:default}\n@container (width<=560px){.edu-board-launch span{display:none}}\n\n.eb-dialog{box-sizing:border-box;width:min(1500px,96vw);height:min(940px,94dvh);max-width:96vw;max-height:94dvh;padding:0;border:1px solid var(--dsw-alias-border-l1);border-radius:22px;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-base);box-shadow:0 24px 80px #0f172a33;overflow:hidden}\n.eb-dialog::backdrop{background:#0f172a66;backdrop-filter:blur(5px)}\n.eb-workbench{box-sizing:border-box;height:100%;position:relative;font-family:inherit;font-size:14px;background:var(--dsw-alias-bg-layer-1)}\n.eb-workbench *{box-sizing:border-box}\n.eb-workbench button,.eb-workbench input,.eb-workbench select,.eb-workbench textarea{font:inherit;color:inherit}\n.eb-workbench button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:8px 12px;border:1px solid transparent;border-radius:10px;background:transparent;cursor:pointer;white-space:nowrap;transition:background .14s,border-color .14s,box-shadow .14s,transform .08s}\n.eb-workbench button:hover:not(:disabled){background:var(--dsw-alias-bg-layer-2)}\n.eb-workbench button:active:not(:disabled){transform:translateY(1px)}\n.eb-workbench button:disabled{opacity:.34;cursor:default}\n.eb-workbench button[aria-pressed=true]{background:#eaf4de;border-color:#b8d898;color:#375f21}\n.eb-workbench .eb-icon-button{width:42px;min-height:40px;padding:7px}\n.eb-workbench :is(button,input,select,textarea,a):focus-visible,.edu-board-launch:focus-visible{outline:3px solid #489AD4;outline-offset:2px}\n.eb-primary{background:linear-gradient(#88C94C,#70B337)!important;border:1px solid #669B36!important;box-shadow:0 2px 0 #537E2E;color:#203D0E!important;font-weight:700}\n.eb-primary:hover:not(:disabled){background:#83C547!important;filter:saturate(1.04)}\n.eb-danger{color:#B74035}\n.eb-danger-solid{background:#C14B40!important;border-color:#A83C32!important;color:#FFF!important;box-shadow:0 2px 0 #8E3027}\n\n/* The title bar is the only new chrome; the original workspace stays below it. */\n.eb-topbar{height:56px;display:flex;align-items:center;gap:9px;padding:0 18px;border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-base);font-weight:700}\n.eb-topbar svg{flex:none}\n.eb-workspace{position:absolute;inset:56px 0 0}\n\n/* The palette is a narrow rail; the canvas owns everything else. */\n.eb-brand{position:absolute;z-index:4;top:12px;left:14px;display:flex;align-items:center;justify-content:center;width:44px;height:44px;pointer-events:none}\n.eb-palette{position:absolute;z-index:3;left:8px;top:62px;bottom:78px;width:62px;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:2px 0}\n.eb-palette::-webkit-scrollbar{display:none}\n.eb-workbench .eb-shape-tool{width:54px;min-height:52px;padding:6px;border-radius:13px;flex:none;border:1px solid transparent}\n.eb-workbench .eb-shape-tool:hover:not(:disabled){background:#EAF4DE;border-color:#C8DDB6}\n.eb-workbench .eb-shape-tool:active:not(:disabled){transform:scale(.96)}\n.eb-workbench .eb-shape-more{border:1px dashed #C9D4D8!important;color:#72808A;min-height:46px}\n.eb-stage-wrap{position:absolute;inset:0 0 74px 78px;min-width:0;min-height:0;padding:10px 10px 0;display:flex;flex-direction:column;gap:10px}\n.eb-question{display:flex;align-items:flex-start;gap:16px;flex:none;padding:10px 16px;border:1px solid #E8DFC6;border-radius:13px;background:#FFFDF5;color:#493F2B;overflow:hidden}\n.eb-question-controls{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:0 0 132px;min-width:0;color:#887747}\n.eb-question-controls select{width:100%;min-width:0;padding:3px 6px;border:1px solid #E8DFC6;border-radius:6px;background:#FFFDF5;color:inherit;font-size:12px}\n.eb-workbench .eb-question-toggle{min-height:26px;padding:3px 8px;font-size:12px}\n.eb-question-text{flex:1;min-width:0;min-height:0;max-height:8.25em;margin:0;font-size:16px;line-height:1.65;white-space:pre-line;overflow-wrap:anywhere;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}\n.eb-question-text.eb-collapsed{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;max-height:4.95em;overflow:hidden}\n/* Remove paragraph spacing, not authored line breaks or Markdown structure. */\n.eb-question-text :is(p,h1,h2,h3,h4,h5,h6,ul,ol,li,blockquote,pre){margin:0;font-size:inherit;line-height:inherit}\n.eb-question-empty{margin:6px 0;font-size:12px;line-height:1.6;color:#887747}\n.eb-stage-frame{position:relative;flex:1;width:100%;min-height:0;border:1px solid #DCE4E7;border-radius:18px;background:#FFFFFF;overflow:hidden;box-shadow:0 3px 18px #243B5308}\n.eb-canvas-scroll{width:100%;height:100%;overflow:auto;overscroll-behavior:contain;border-radius:17px;background:#FFFFFF;background-image:radial-gradient(#DFE7EA .8px,transparent .8px);background-size:22px 22px}\n.eb-artboard{display:block;max-width:none;flex:none;touch-action:none;user-select:none}\n.eb-artboard [data-object]{cursor:grab}\n.eb-artboard [data-object]:active{cursor:grabbing}\n.eb-artboard [data-object]:focus-visible{outline:none}\n.eb-artboard [data-object]:focus-visible .eb-focus-ring{stroke:#2563EB;stroke-width:3}\n\n/* Selection actions hover above the dock, next to the selection they affect. */\n.eb-floating{position:absolute;z-index:5;left:50%;bottom:12px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:2px;max-width:calc(100% - 24px);padding:4px 6px;border:1px solid #D7E0E3;background:var(--dsw-alias-bg-overlay);border-radius:14px;box-shadow:0 8px 26px #243B5324;overflow-x:auto;scrollbar-width:none}\n.eb-floating small{padding:0 8px;white-space:nowrap;color:#6E7D87;font-size:12px}\n.eb-workbench .eb-floating button{padding:7px 9px;min-height:42px;font-size:12px}\n.eb-workbench .eb-floating .eb-context-action{gap:5px}\n.eb-workbench .eb-floating .eb-selected-mode{background:#EAF4DE;color:#416A28;border-color:#B8D898}\n\n/* One bottom row. */\n.eb-dock{position:absolute;z-index:6;left:10px;right:10px;bottom:8px;height:56px;padding:4px 6px;display:flex;align-items:center;gap:1px;border:1px solid #D8E1E4;border-radius:15px;background:#FFFFFF;box-shadow:0 6px 28px #243B5314,0 1px 3px #243B5308}\n.eb-dock .eb-grow{flex:1}\n.eb-dock .eb-divider{width:1px;height:22px;background:#E5EBED;margin:0 4px;flex:none}\n.eb-dock .eb-label{font-weight:550}\n.eb-dock .eb-zoom-label{min-width:46px;font-size:12px;color:#6E7C86;padding:7px 6px}\n.eb-dock .eb-zoom-button{width:36px;min-width:36px;padding:6px;font-size:16px;color:#65747E}\n.eb-dock .eb-color-button{min-width:82px;padding:6px 9px;gap:7px;border:1px solid #DCE4DF;background:#F9FCF7;border-radius:9px}\n.eb-color-dot{display:inline-block;flex:none;width:19px;height:19px;border-radius:999px;border:1px solid #233A2626;box-shadow:inset 0 1px 1px #FFF6}\n.eb-color-value{font-size:12px;font-weight:650;min-width:24px;text-align:left}\n.eb-chevron{font-size:11px;color:#7C8C80;line-height:1}\n.eb-dock .eb-note-button{width:42px;min-height:40px;padding:7px;position:relative;color:#5E7B44}\n.eb-dock .eb-note-button.eb-contextual{background:#F0F7E9}\n.eb-note-dot{position:absolute;top:7px;right:8px;width:6px;height:6px;border-radius:50%;background:#4CAF50;border:1px solid #FFF}\n.eb-dock .eb-primary{padding:8px 18px;margin-left:4px}\n.eb-dock .eb-primary .eb-label{font-weight:700}\n\n/* Menus, toast and modal editors. */\n.eb-menu{position:absolute;z-index:12;min-width:236px;max-width:calc(100% - 24px);padding:7px;border:1px solid #D5DFE3;border-radius:15px;background:var(--dsw-alias-bg-base);box-shadow:0 14px 44px #243B5326}\n.eb-more-menu{right:68px;bottom:70px}\n.eb-color-menu{left:112px;bottom:70px;min-width:190px}\n.eb-menu-head{padding:7px 10px;font-size:11px;color:#80909B}\n.eb-menu button{width:100%;justify-content:flex-start;text-align:left;padding:9px 10px;border-radius:9px}\n.eb-menu-value{flex:1;font-size:13px;font-weight:600}\n.eb-color-option{min-height:42px}\n.eb-color-option .icon{margin-left:auto;width:16px;height:16px}\n.eb-menu-note{margin:4px 10px 6px;font-size:11px;color:#71817A;overflow-wrap:anywhere}\n.eb-menu-line{height:1px;background:#E9EDEF;margin:6px 3px}\n.eb-menu-check{display:flex;align-items:center;gap:9px;padding:9px 10px;min-height:42px;font-size:12px;line-height:1.4}\n.eb-menu-check input{width:18px;height:18px;min-height:0;accent-color:#4CAF50}\n.eb-status-toast{position:absolute;z-index:20;left:50%;bottom:80px;transform:translateX(-50%);max-width:calc(100% - 40px);padding:9px 16px;border-radius:10px;background:#253A3E;color:#FFF;font-size:12px;line-height:1.5;box-shadow:0 6px 24px #0002;pointer-events:none}\n.eb-overlay{position:absolute;z-index:30;inset:0;display:grid;place-items:center;padding:20px;background:#20333F45;backdrop-filter:blur(2px)}\n.eb-overlay-card{width:min(470px,100%);max-height:calc(100% - 40px);overflow:auto;padding:20px;border:1px solid #D5DFE2;border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:0 20px 70px #1832472E}\n.eb-overlay-card h2{font-size:16px;margin:0 0 12px}\n.eb-overlay-card input:not([type=checkbox]),.eb-overlay-card textarea{width:100%;padding:11px;border:1px solid #CAD6DB;border-radius:10px;background:#FBFDFC;min-height:44px;font:inherit;font-size:13px}\n.eb-overlay-card textarea{min-height:128px;resize:vertical;line-height:1.65}\n.eb-overlay-context{margin:0 0 12px;padding:8px 11px;border:1px dashed #D7E3D0;border-radius:9px;background:#F7FBF3;color:#5D754C;font-size:12px}\n.eb-overlay-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:16px}\n.eb-overlay-actions button{min-height:40px;padding:8px 14px;border:1px solid #D8E1E4}\n.eb-overlay-actions .eb-primary{border:1px solid #669B36}\n.eb-muted{color:var(--dsw-alias-label-secondary);font-size:12px;line-height:1.6;margin:0 0 10px}\n.eb-library-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:8px}\n.eb-workbench .eb-library-tile{flex-direction:column;gap:2px;min-height:64px;padding:5px 2px;font-size:10px;border:1px solid #E3E9EB;border-radius:10px}\n.eb-library-tile span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}\n.eb-library-tile[aria-pressed=true]{background:#EAF4DE;border-color:#B8D898}\n\n@media(max-width:980px){\n  .eb-dock .eb-label{display:none}\n  .eb-dock .eb-dock-return{width:42px;min-width:42px;padding:7px}\n  .eb-dock .eb-primary{padding:8px 13px}\n  .eb-dock .eb-primary .eb-label{display:none}\n  .eb-dock .eb-primary{width:44px;min-width:44px}\n  .eb-floating .eb-label{display:none}\n  .eb-workbench .eb-floating button{width:40px;min-width:40px;padding:7px}\n  .eb-floating small{padding:0 5px}\n}\n@media(max-width:760px){\n  .eb-dialog{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0;border:0}\n  .eb-stage-wrap{left:66px;bottom:70px;padding:6px 6px 0}\n  .eb-palette{left:4px;top:56px;bottom:72px;width:56px}\n  .eb-workbench .eb-shape-tool{width:50px;min-height:48px;padding:5px}\n  .eb-brand{top:8px;left:9px;width:38px;height:38px}\n  .eb-dock{left:6px;right:6px;bottom:5px;height:54px}\n  .eb-dock .eb-divider{margin:0 2px}\n  .eb-dock .eb-zoom-out,.eb-dock .eb-zoom-in{display:none}\n  .eb-dock .eb-zoom-label{min-width:40px;font-size:11px;padding:6px 4px}\n  .eb-dock .eb-color-button{min-width:68px;padding:6px 7px}\n  .eb-dock .eb-color-value{font-size:11px;min-width:20px}\n  .eb-dock .eb-note-button,.eb-dock .eb-icon-button{width:38px;min-width:38px;padding:6px}\n  .eb-dock .eb-primary{width:40px;min-width:40px;padding:6px}\n  .eb-floating{bottom:9px;max-width:calc(100% - 12px);padding:3px}\n  .eb-workbench .eb-floating button{min-width:38px;width:38px;min-height:40px;padding:6px}\n  .eb-floating small{display:none}\n  .eb-status-toast{bottom:74px;font-size:11px}\n  .eb-overlay{padding:12px}\n  .eb-overlay-card{padding:16px;border-radius:15px}\n  .eb-more-menu{right:6px}\n  .eb-color-menu{left:6px}\n}\n@media(max-width:430px){\n  .eb-dock .eb-redo{display:none}\n  .eb-dock .eb-zoom-label{display:none}\n  .eb-dock .eb-color-button{min-width:58px}\n  .eb-dock .eb-note-button,.eb-dock .eb-icon-button{width:36px;min-width:36px}\n  .eb-library-grid{grid-template-columns:repeat(3,minmax(0,1fr))}\n}\n@media(max-height:620px){\n  .eb-stage-wrap{bottom:66px}\n  .eb-palette{bottom:68px}\n  .eb-dock{height:50px;bottom:5px}\n  .eb-floating{bottom:7px}\n  .eb-status-toast{bottom:68px}\n  .eb-more-menu,.eb-color-menu{bottom:62px}\n}\n/* Flat creation colours use the dock's former empty space. Other tools keep\n   their order and existing appearance; narrow screens give colours their own row. */\n.eb-color-choices{display:flex;align-items:center;gap:6px;min-width:0;flex:1;overflow-x:auto;padding:3px}\n.eb-dock .eb-color-choices .eb-color-button{flex:none;min-width:62px;padding:6px 8px}\n.eb-dock .eb-color-choices .eb-color-button[aria-pressed=true]{background:#EAF4DE;border-color:#A4C886;box-shadow:0 0 0 2px #EAF4DE}\n.eb-question-text :first-child{margin-top:0}\n.eb-question-text :last-child{margin-bottom:0}\n@media(max-width:1100px){\n  .eb-dock{height:104px;flex-wrap:wrap;align-content:space-between}\n  .eb-dock .eb-color-choices{order:-1;flex:0 0 100%;justify-content:flex-start}\n  .eb-stage-wrap{bottom:122px}\n  .eb-palette{bottom:126px}\n  .eb-more-menu{bottom:118px}\n  .eb-status-toast{bottom:128px}\n}\n@media(max-width:760px){\n  .eb-topbar{height:48px;padding:0 14px;font-size:14px}\n  .eb-workspace{top:48px}\n  .eb-question{padding:8px 11px;gap:8px}\n  .eb-question-controls{flex-basis:88px}\n  .eb-question-controls select{font-size:11px}\n  .eb-question-text{font-size:14px}\n  .eb-stage-wrap{bottom:116px}\n  .eb-palette{top:6px;bottom:120px}\n  .eb-dock{height:104px}\n  .eb-color-choices{gap:4px}\n  .eb-dock .eb-color-choices .eb-color-button{min-width:54px;padding:5px 7px;gap:5px}\n  .eb-dock .eb-color-choices .eb-color-value{min-width:0}\n  .eb-more-menu{bottom:114px}\n  .eb-status-toast{bottom:122px}\n}\n@media(prefers-reduced-motion:reduce){.eb-workbench *{transition:none!important;animation:none!important}}\n\n/* Two tabs share one dialog: each tab keeps its own canvas, history and viewport. */\n.eb-tabs{display:flex;align-items:center;gap:2px;padding:3px;border:1px solid #DCE4E7;border-radius:11px;background:#F4F7F8}\n.eb-workbench .eb-tab{min-height:32px;padding:5px 14px;border-radius:8px;font-size:13px;font-weight:600;color:#5B6C76}\n.eb-workbench .eb-tab[aria-selected=true]{background:#FFFFFF;color:#1E293B;box-shadow:0 1px 3px #243B5322}\n.eb-tabpanel{position:absolute;inset:56px 0 0}\n.eb-tabpanel[hidden]{display:none}\n.eb-workbench .eb-tabs + .eb-grow{flex:1}\n.eb-tool[aria-pressed=true]{background:#EAF4DE;border-color:#B8D898;color:#375F21}\n.eb-geometry-tools .eb-tool{width:100%;min-height:44px;padding:6px}\n.eb-geometry-tools .eb-label{font-size:9px;line-height:1.1;white-space:nowrap}\n.eb-geometry-workspace{position:absolute;inset:56px 0 0}\n.eb-geometry-hint{position:absolute;left:88px;bottom:84px;margin:0;padding:4px 10px;border-radius:9px;background:#F6F9FA;color:#5B6C76;font-size:12px;pointer-events:none}\n.eb-artboard.eb-geometry,.eb-artboard.eb-grid{background-image:none}\n.eb-dock .eb-danger{color:#B74035}\n.eb-overlay-name input{width:100%;padding:9px 11px;border:1px solid #D6DFE2;border-radius:9px;font:inherit}\n@media(max-width:760px){\n  .eb-tabpanel,.eb-geometry-workspace{inset:48px 0 0}\n}\n",
+          () => createView(React, M, ctx, t, "/* Workbench UI: one compact palette rail, one canvas, one bottom dock. */\n.edu-board-launch{display:inline-flex;align-items:center;gap:6px;flex:none;height:28px;padding:0 8px;border:0;border-radius:var(--dsw-radius-sm);background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:13px;font-weight:500;line-height:20px;white-space:nowrap;cursor:pointer}\n.edu-board-launch svg{flex:none;display:block}\n.edu-board-launch:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}\n.edu-board-launch:disabled{opacity:.5;cursor:default}\n@container (width<=560px){.edu-board-launch span{display:none}}\n\n.eb-dialog{box-sizing:border-box;width:min(1500px,96vw);height:min(940px,94dvh);max-width:96vw;max-height:94dvh;padding:0;border:1px solid var(--dsw-alias-border-l1);border-radius:22px;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-base);box-shadow:0 24px 80px #0f172a33;overflow:hidden}\n.eb-dialog::backdrop{background:#0f172a66;backdrop-filter:blur(5px)}\n.eb-workbench{box-sizing:border-box;height:100%;position:relative;font-family:inherit;font-size:14px;background:var(--dsw-alias-bg-layer-1)}\n.eb-workbench *{box-sizing:border-box}\n.eb-workbench button,.eb-workbench input,.eb-workbench select,.eb-workbench textarea{font:inherit;color:inherit}\n.eb-workbench button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:8px 12px;border:1px solid transparent;border-radius:10px;background:transparent;cursor:pointer;white-space:nowrap;transition:background .14s,border-color .14s,box-shadow .14s,transform .08s}\n.eb-workbench button:hover:not(:disabled){background:var(--dsw-alias-bg-layer-2)}\n.eb-workbench button:active:not(:disabled){transform:translateY(1px)}\n.eb-workbench button:disabled{opacity:.34;cursor:default}\n.eb-workbench button[aria-pressed=true]{background:#eaf4de;border-color:#b8d898;color:#375f21}\n.eb-workbench .eb-icon-button{width:42px;min-height:40px;padding:7px}\n.eb-workbench :is(button,input,select,textarea,a):focus-visible,.edu-board-launch:focus-visible{outline:3px solid #489AD4;outline-offset:2px}\n.eb-primary{background:linear-gradient(#88C94C,#70B337)!important;border:1px solid #669B36!important;box-shadow:0 2px 0 #537E2E;color:#203D0E!important;font-weight:700}\n.eb-primary:hover:not(:disabled){background:#83C547!important;filter:saturate(1.04)}\n.eb-danger{color:#B74035}\n.eb-danger-solid{background:#C14B40!important;border-color:#A83C32!important;color:#FFF!important;box-shadow:0 2px 0 #8E3027}\n\n/* The title bar is the only new chrome; the original workspace stays below it. */\n.eb-topbar{height:56px;display:flex;align-items:center;gap:9px;padding:0 18px;border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-base);font-weight:700}\n.eb-topbar svg{flex:none}\n.eb-workspace{position:absolute;inset:56px 0 0}\n\n/* The palette is a narrow rail; the canvas owns everything else. */\n.eb-brand{position:absolute;z-index:4;top:12px;left:14px;display:flex;align-items:center;justify-content:center;width:44px;height:44px;pointer-events:none}\n.eb-palette{position:absolute;z-index:3;left:8px;top:62px;bottom:78px;width:62px;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:2px 0}\n.eb-palette::-webkit-scrollbar{display:none}\n.eb-workbench .eb-shape-tool{width:54px;min-height:52px;padding:6px;border-radius:13px;flex:none;border:1px solid transparent}\n.eb-workbench .eb-shape-tool:hover:not(:disabled){background:#EAF4DE;border-color:#C8DDB6}\n.eb-workbench .eb-shape-tool:active:not(:disabled){transform:scale(.96)}\n.eb-workbench .eb-shape-more{border:1px dashed #C9D4D8!important;color:#72808A;min-height:46px}\n.eb-stage-wrap{position:absolute;inset:0 0 74px 78px;min-width:0;min-height:0;padding:10px 10px 0;display:flex;flex-direction:column;gap:10px}\n.eb-question{display:flex;align-items:flex-start;gap:16px;flex:none;padding:10px 16px;border:1px solid #E8DFC6;border-radius:13px;background:#FFFDF5;color:#493F2B;overflow:hidden}\n.eb-question-controls{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:0 0 132px;min-width:0;color:#887747}\n.eb-question-controls select{width:100%;min-width:0;padding:3px 6px;border:1px solid #E8DFC6;border-radius:6px;background:#FFFDF5;color:inherit;font-size:12px}\n.eb-workbench .eb-question-toggle{min-height:26px;padding:3px 8px;font-size:12px}\n.eb-question-text{flex:1;min-width:0;min-height:0;max-height:8.25em;margin:0;font-size:16px;line-height:1.65;white-space:pre-line;overflow-wrap:anywhere;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}\n.eb-question-text.eb-collapsed{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;max-height:4.95em;overflow:hidden}\n/* Remove paragraph spacing, not authored line breaks or Markdown structure. */\n.eb-question-text :is(p,h1,h2,h3,h4,h5,h6,ul,ol,li,blockquote,pre){margin:0;font-size:inherit;line-height:inherit}\n.eb-question-empty{margin:6px 0;font-size:12px;line-height:1.6;color:#887747}\n.eb-stage-frame{position:relative;flex:1;width:100%;min-height:0;border:1px solid #DCE4E7;border-radius:18px;background:#FFFFFF;overflow:hidden;box-shadow:0 3px 18px #243B5308}\n.eb-canvas-scroll{width:100%;height:100%;overflow:auto;overscroll-behavior:contain;border-radius:17px;background:#FFFFFF;background-image:radial-gradient(#DFE7EA .8px,transparent .8px);background-size:22px 22px}\n.eb-artboard{display:block;max-width:none;flex:none;touch-action:none;user-select:none}\n.eb-artboard [data-object]{cursor:grab}\n.eb-artboard [data-object]:active{cursor:grabbing}\n.eb-artboard [data-object]:focus-visible{outline:none}\n.eb-artboard [data-object]:focus-visible .eb-focus-ring{stroke:#2563EB;stroke-width:3}\n\n/* Selection actions hover above the dock, next to the selection they affect. */\n.eb-floating{position:absolute;z-index:5;left:50%;bottom:12px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:2px;max-width:calc(100% - 24px);padding:4px 6px;border:1px solid #D7E0E3;background:var(--dsw-alias-bg-overlay);border-radius:14px;box-shadow:0 8px 26px #243B5324;overflow-x:auto;scrollbar-width:none}\n.eb-floating small{padding:0 8px;white-space:nowrap;color:#6E7D87;font-size:12px}\n.eb-workbench .eb-floating button{padding:7px 9px;min-height:42px;font-size:12px}\n.eb-workbench .eb-floating .eb-context-action{gap:5px}\n.eb-workbench .eb-floating .eb-selected-mode{background:#EAF4DE;color:#416A28;border-color:#B8D898}\n\n/* One bottom row. */\n.eb-dock{position:absolute;z-index:6;left:10px;right:10px;bottom:8px;height:56px;padding:4px 6px;display:flex;align-items:center;gap:1px;border:1px solid #D8E1E4;border-radius:15px;background:#FFFFFF;box-shadow:0 6px 28px #243B5314,0 1px 3px #243B5308}\n.eb-dock .eb-grow{flex:1}\n.eb-dock .eb-divider{width:1px;height:22px;background:#E5EBED;margin:0 4px;flex:none}\n.eb-dock .eb-label{font-weight:550}\n.eb-dock .eb-zoom-label{min-width:46px;font-size:12px;color:#6E7C86;padding:7px 6px}\n.eb-dock .eb-zoom-button{width:36px;min-width:36px;padding:6px;font-size:16px;color:#65747E}\n.eb-dock .eb-color-button{min-width:82px;padding:6px 9px;gap:7px;border:1px solid #DCE4DF;background:#F9FCF7;border-radius:9px}\n.eb-color-dot{display:inline-block;flex:none;width:19px;height:19px;border-radius:999px;border:1px solid #233A2626;box-shadow:inset 0 1px 1px #FFF6}\n.eb-color-value{font-size:12px;font-weight:650;min-width:24px;text-align:left}\n.eb-chevron{font-size:11px;color:#7C8C80;line-height:1}\n.eb-dock .eb-note-button{width:42px;min-height:40px;padding:7px;position:relative;color:#5E7B44}\n.eb-dock .eb-note-button.eb-contextual{background:#F0F7E9}\n.eb-note-dot{position:absolute;top:7px;right:8px;width:6px;height:6px;border-radius:50%;background:#4CAF50;border:1px solid #FFF}\n.eb-dock .eb-primary{padding:8px 18px;margin-left:4px}\n.eb-dock .eb-primary .eb-label{font-weight:700}\n\n/* Menus, toast and modal editors. */\n.eb-menu{position:absolute;z-index:12;min-width:236px;max-width:calc(100% - 24px);padding:7px;border:1px solid #D5DFE3;border-radius:15px;background:var(--dsw-alias-bg-base);box-shadow:0 14px 44px #243B5326}\n.eb-more-menu{right:68px;bottom:70px}\n.eb-color-menu{left:112px;bottom:70px;min-width:190px}\n.eb-menu-head{padding:7px 10px;font-size:11px;color:#80909B}\n.eb-menu button{width:100%;justify-content:flex-start;text-align:left;padding:9px 10px;border-radius:9px}\n.eb-menu-value{flex:1;font-size:13px;font-weight:600}\n.eb-color-option{min-height:42px}\n.eb-color-option .icon{margin-left:auto;width:16px;height:16px}\n.eb-menu-note{margin:4px 10px 6px;font-size:11px;color:#71817A;overflow-wrap:anywhere}\n.eb-menu-line{height:1px;background:#E9EDEF;margin:6px 3px}\n.eb-menu-check{display:flex;align-items:center;gap:9px;padding:9px 10px;min-height:42px;font-size:12px;line-height:1.4}\n.eb-menu-check input{width:18px;height:18px;min-height:0;accent-color:#4CAF50}\n.eb-status-toast{position:absolute;z-index:20;left:50%;bottom:80px;transform:translateX(-50%);max-width:calc(100% - 40px);padding:9px 16px;border-radius:10px;background:#253A3E;color:#FFF;font-size:12px;line-height:1.5;box-shadow:0 6px 24px #0002;pointer-events:none}\n.eb-overlay{position:absolute;z-index:30;inset:0;display:grid;place-items:center;padding:20px;background:#20333F45;backdrop-filter:blur(2px)}\n.eb-overlay-card{width:min(470px,100%);max-height:calc(100% - 40px);overflow:auto;padding:20px;border:1px solid #D5DFE2;border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:0 20px 70px #1832472E}\n.eb-overlay-card h2{font-size:16px;margin:0 0 12px}\n.eb-overlay-card input:not([type=checkbox]),.eb-overlay-card textarea{width:100%;padding:11px;border:1px solid #CAD6DB;border-radius:10px;background:#FBFDFC;min-height:44px;font:inherit;font-size:13px}\n.eb-overlay-card textarea{min-height:128px;resize:vertical;line-height:1.65}\n.eb-overlay-context{margin:0 0 12px;padding:8px 11px;border:1px dashed #D7E3D0;border-radius:9px;background:#F7FBF3;color:#5D754C;font-size:12px}\n.eb-overlay-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:16px}\n.eb-overlay-actions button{min-height:40px;padding:8px 14px;border:1px solid #D8E1E4}\n.eb-overlay-actions .eb-primary{border:1px solid #669B36}\n.eb-muted{color:var(--dsw-alias-label-secondary);font-size:12px;line-height:1.6;margin:0 0 10px}\n.eb-library-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:8px}\n.eb-workbench .eb-library-tile{flex-direction:column;gap:2px;min-height:64px;padding:5px 2px;font-size:10px;border:1px solid #E3E9EB;border-radius:10px}\n.eb-library-tile span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}\n.eb-library-tile[aria-pressed=true]{background:#EAF4DE;border-color:#B8D898}\n\n@media(max-width:980px){\n  .eb-dock .eb-label{display:none}\n  .eb-dock .eb-dock-return{width:42px;min-width:42px;padding:7px}\n  .eb-dock .eb-primary{padding:8px 13px}\n  .eb-dock .eb-primary .eb-label{display:none}\n  .eb-dock .eb-primary{width:44px;min-width:44px}\n  .eb-floating .eb-label{display:none}\n  .eb-workbench .eb-floating button{width:40px;min-width:40px;padding:7px}\n  .eb-floating small{padding:0 5px}\n}\n@media(max-width:760px){\n  .eb-dialog{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0;border:0}\n  .eb-stage-wrap{left:66px;bottom:70px;padding:6px 6px 0}\n  .eb-palette{left:4px;top:56px;bottom:72px;width:56px}\n  .eb-workbench .eb-shape-tool{width:50px;min-height:48px;padding:5px}\n  .eb-brand{top:8px;left:9px;width:38px;height:38px}\n  .eb-dock{left:6px;right:6px;bottom:5px;height:54px}\n  .eb-dock .eb-divider{margin:0 2px}\n  .eb-dock .eb-zoom-out,.eb-dock .eb-zoom-in{display:none}\n  .eb-dock .eb-zoom-label{min-width:40px;font-size:11px;padding:6px 4px}\n  .eb-dock .eb-color-button{min-width:68px;padding:6px 7px}\n  .eb-dock .eb-color-value{font-size:11px;min-width:20px}\n  .eb-dock .eb-note-button,.eb-dock .eb-icon-button{width:38px;min-width:38px;padding:6px}\n  .eb-dock .eb-primary{width:40px;min-width:40px;padding:6px}\n  .eb-floating{bottom:9px;max-width:calc(100% - 12px);padding:3px}\n  .eb-workbench .eb-floating button{min-width:38px;width:38px;min-height:40px;padding:6px}\n  .eb-floating small{display:none}\n  .eb-status-toast{bottom:74px;font-size:11px}\n  .eb-overlay{padding:12px}\n  .eb-overlay-card{padding:16px;border-radius:15px}\n  .eb-more-menu{right:6px}\n  .eb-color-menu{left:6px}\n}\n@media(max-width:430px){\n  .eb-dock .eb-redo{display:none}\n  .eb-dock .eb-zoom-label{display:none}\n  .eb-dock .eb-color-button{min-width:58px}\n  .eb-dock .eb-note-button,.eb-dock .eb-icon-button{width:36px;min-width:36px}\n  .eb-library-grid{grid-template-columns:repeat(3,minmax(0,1fr))}\n}\n@media(max-height:620px){\n  .eb-stage-wrap{bottom:66px}\n  .eb-palette{bottom:68px}\n  .eb-dock{height:50px;bottom:5px}\n  .eb-floating{bottom:7px}\n  .eb-status-toast{bottom:68px}\n  .eb-more-menu,.eb-color-menu{bottom:62px}\n}\n/* Flat creation colours use the dock's former empty space. Other tools keep\n   their order and existing appearance; narrow screens give colours their own row. */\n.eb-color-choices{display:flex;align-items:center;gap:6px;min-width:0;flex:1;overflow-x:auto;padding:3px}\n.eb-dock .eb-color-choices .eb-color-button{flex:none;min-width:62px;padding:6px 8px}\n.eb-dock .eb-color-choices .eb-color-button[aria-pressed=true]{background:#EAF4DE;border-color:#A4C886;box-shadow:0 0 0 2px #EAF4DE}\n.eb-question-text :first-child{margin-top:0}\n.eb-question-text :last-child{margin-bottom:0}\n@media(max-width:1100px){\n  .eb-dock{height:104px;flex-wrap:wrap;align-content:space-between}\n  .eb-dock .eb-color-choices{order:-1;flex:0 0 100%;justify-content:flex-start}\n  .eb-stage-wrap{bottom:122px}\n  .eb-palette{bottom:126px}\n  .eb-more-menu{bottom:118px}\n  .eb-status-toast{bottom:128px}\n}\n@media(max-width:760px){\n  .eb-topbar{height:48px;padding:0 14px;font-size:14px}\n  .eb-workspace{top:48px}\n  .eb-question{padding:8px 11px;gap:8px}\n  .eb-question-controls{flex-basis:88px}\n  .eb-question-controls select{font-size:11px}\n  .eb-question-text{font-size:14px}\n  .eb-stage-wrap{bottom:116px}\n  .eb-palette{top:6px;bottom:120px}\n  .eb-dock{height:104px}\n  .eb-color-choices{gap:4px}\n  .eb-dock .eb-color-choices .eb-color-button{min-width:54px;padding:5px 7px;gap:5px}\n  .eb-dock .eb-color-choices .eb-color-value{min-width:0}\n  .eb-more-menu{bottom:114px}\n  .eb-status-toast{bottom:122px}\n}\n@media(prefers-reduced-motion:reduce){.eb-workbench *{transition:none!important;animation:none!important}}\n\n/* Two tabs share one dialog: each tab keeps its own canvas, history and viewport. */\n.eb-tabs{display:flex;align-items:center;gap:2px;padding:3px;border:1px solid #DCE4E7;border-radius:11px;background:#F4F7F8}\n.eb-workbench .eb-tab{min-height:32px;padding:5px 14px;border-radius:8px;font-size:13px;font-weight:600;color:#5B6C76}\n.eb-workbench .eb-tab[aria-selected=true]{background:#FFFFFF;color:#1E293B;box-shadow:0 1px 3px #243B5322}\n.eb-tabpanel{position:absolute;inset:56px 0 0}\n.eb-tabpanel[hidden]{display:none}\n.eb-workbench .eb-tabs + .eb-grow{flex:1}\n.eb-tool[aria-pressed=true]{background:#EAF4DE;border-color:#B8D898;color:#375F21}\n.eb-geometry-tools .eb-tool{width:100%;min-height:44px;padding:6px}\n.eb-geometry-tools .eb-label{font-size:9px;line-height:1.1;white-space:nowrap}\n.eb-geometry-workspace{position:absolute;inset:56px 0 0}\n.eb-geometry-hint{position:absolute;left:88px;bottom:84px;margin:0;padding:4px 10px;border-radius:9px;background:#F6F9FA;color:#5B6C76;font-size:12px;pointer-events:none}\n.eb-artboard.eb-geometry,.eb-artboard.eb-grid{background-image:none}\n.eb-dock .eb-danger{color:#B74035}\n.eb-overlay-name input{width:100%;padding:9px 11px;border:1px solid #D6DFE2;border-radius:9px;font:inherit}\n@media(max-width:760px){\n  .eb-tabpanel,.eb-geometry-workspace{inset:48px 0 0}\n}\n", art, applyHostConfig, T),
+          () => createGeometry(React, G, t));
         function SessionBoard(props) { return React.createElement(Board, {...props, key: props.sessionId}); }
         ctx.slots.inject('conversation.input.right', () => ctx.slots.register({
           name: 'conversation.input.right', id: 'edu-math-board-launch-v3', order: 50,
