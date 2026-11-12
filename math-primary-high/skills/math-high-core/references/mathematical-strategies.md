@@ -8,6 +8,8 @@ For area splitting/completion, rearrangement, equal-area conditions or choosing 
 
 For all-divisor counts, least factors completing a square/cube, or parity/prime claims, read `references/number-theory-reasoning.md`. It links factor tools to completeness, minimality and general reasons; remainders/cycles stay here as their single rule source.
 
+For a maximum/minimum among feasible objects, or when a proposed best value needs a global bound and an attaining construction, read `references/extremal-optimization.md`. Reuse Ordered enumeration below for finite candidates; an improvement or a successful example alone does not establish optimality.
+
 ## Student monitoring and local obstacles
 
 At a meaningful decision or actual stall, help the student judge what this attempt established, what remains uncertain, and why continuing or changing the organization may help. Use their actual work; do not ask for a monitoring report after every step. A failed attempt may rule out a case or expose a duplicate without solving the problem. Teacher replanning alone is not student monitoring.
