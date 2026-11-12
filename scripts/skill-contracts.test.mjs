@@ -1922,6 +1922,12 @@ test('counterexample checks reach the existing proof entry without a second logi
   const ref = 'references/counterexamples-and-proposition-direction.md'
   const proof = highRef('proof-teaching')
   assert.match(proof, new RegExp(ref))
+  // The pointer names every branch the supplement claims to fire on.
+  const pointer = proof.split(ref)[0].split('\n\n').pop()
+  for (const trigger of ['proposed counterexample', 'necessary condition',
+    'refute a universal claim', 'supplied example or construction']) {
+    assert.ok(pointer.includes(trigger), `proof pointer names the ${trigger} branch`)
+  }
   assert.match(highRef('problem-design'), /A claim to test[^\n]*references\/counterexamples-and-proposition-direction\.md/)
   assert.match(highRef('mathematical-strategies'), /references\/proof-teaching\.md/)
   assert.doesNotMatch(highRef('mathematical-strategies'), new RegExp(ref.replaceAll('.', '\\.')))
