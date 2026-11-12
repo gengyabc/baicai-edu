@@ -42,6 +42,20 @@ test('number structure keeps checked cases hidden and inherits guidance and evid
   assert.doesNotMatch(number, /ui\.solution\.|learning_plan_update|active_frame_id|new submode/i)
 })
 
+test('logical constraints are conditionally reachable and reuse band-local reasoning contracts', () => {
+  const core = text(skillPath('math-primary-high', 'math-high-core'))
+  const row = core.split('\n').find((line) => /candidate assignments/.test(line)) ?? ''
+  assert.match(row, /references\/mathematical-strategies\.md/)
+  const index = text('math-primary-high/skills/math-high-core/references/mathematical-strategies.md')
+  assert.match(index, /references\/logical-constraints\.md/)
+  const logical = text('math-primary-high/skills/math-high-core/references/logical-constraints.md')
+  hasAll(logical, ['references/mathematical-strategies.md', 'references/proof-teaching.md',
+    'references/prerequisite-learning.md', 'references/math-segment-fields.md'])
+  assert.doesNotMatch(logical, /^name:|^supported_stages:|learning_plan_update|active_frame_id|ui\.solution\./m)
+  assert.doesNotMatch(text(skillPath('math-primary-low', 'math-low-core')), /logical-constraints/)
+  assert.doesNotMatch(text(skillPath('math-common', 'math-common')), /logical-constraints/)
+})
+
 // Subject contract roles (English role names; singular/plural of the last role is accepted).
 const contractRoles = ['Target classification', 'Grade defaults', 'Profile fields', 'Diagnosis rules', 'Learning recommendation']
 const subjectContractSection = (content) => content.split(/^## Subject contract\s*$/im)[1]?.split(/\n## /)[0] ?? ''

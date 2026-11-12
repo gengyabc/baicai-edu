@@ -8,6 +8,8 @@ For area splitting/completion, rearrangement, equal-area conditions or choosing 
 
 For all-divisor counts, least factors completing a square/cube, or parity/prime claims, read `references/number-theory-reasoning.md`. It links factor tools to completeness, minimality and general reasons; remainders/cycles stay here as their single rule source.
 
+For interacting conditions on candidate assignments, elimination/propagation, or checking whether solutions are unique, multiple or absent, read `references/logical-constraints.md`. It specializes Ordered enumeration below and the existing proof checks; do not load it for every story with several conditions.
+
 ## Student monitoring and local obstacles
 
 At a meaningful decision or actual stall, help the student judge what this attempt established, what remains uncertain, and why continuing or changing the organization may help. Use their actual work; do not ask for a monitoring report after every step. A failed attempt may rule out a case or expose a duplicate without solving the problem. Teacher replanning alone is not student monitoring.
