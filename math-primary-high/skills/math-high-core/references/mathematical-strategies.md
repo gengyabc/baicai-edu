@@ -18,6 +18,8 @@ For repeated legal operations that may preserve a state quantity, or coverage re
 
 For a maximum/minimum among feasible objects, or when a proposed best value needs a global bound and an attaining construction, read `references/extremal-optimization.md`. Reuse Ordered enumeration below for finite candidates; an improvement or a successful example alone does not establish optimality.
 
+For finite terminating deterministic perfect-information two-player alternating games, where a strategy must cover every legal opponent response, read `references/elementary-games.md`. It owns rule clarification, small-state backward reasoning and winning guarantees; a game-themed arithmetic story alone is not a trigger.
+
 For an agreed contrast that changes one load-bearing condition of the student's own method, or when they reuse an old reason after a condition changed, read `references/boundary-variation.md`. This file still owns the method families and student monitoring; the new file adds only the one-condition change, the outcomes and the survival statement.
 
 ## Student monitoring and local obstacles
