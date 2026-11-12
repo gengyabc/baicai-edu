@@ -44,7 +44,7 @@ test('deep or stalled dependencies preserve choice and do not fabricate parent s
   assert.match(ref('math-segment-fields'), /active_frame_id/)
   assert.match(ref('adaptive-thresholds'), /not a global recursion depth/)
   const scenarios = read('math-primary-high/tests/teaching-scenarios.md')
-  for (const id of ['A1', 'A2', 'A3', 'B1', 'B2', 'B3', 'C1', 'C2', 'C3', 'R1', 'R12', 'P1', 'P9']) {
+  for (const id of ['A1', 'A2', 'A3', 'B1', 'B2', 'B3', 'C1', 'C2', 'C3', 'R1', 'R12', 'P1', 'P9', 'T1', 'T2']) {
     assert.ok(scenarios.includes(`| ${id} |`), id)
   }
 })

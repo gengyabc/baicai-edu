@@ -2129,3 +2129,35 @@ test('counterexample rules separate necessity from sufficiency and keep teacher 
     assert.ok(label.length <= 260, `core condition label stays short: ${label}`)
   }
 })
+
+test('cross-topic method links stay conditional and delegate to the single shared owners', () => {
+  // Architecture contract only. It verifies reachability and delegation, not teaching behavior.
+  const core = text(skillPath('math-primary-high', 'math-high-core'))
+  const index = 'math-primary-high/skills/math-high-core/references/mathematical-strategies.md'
+  const references = ['logical-constraints', 'pigeonhole-existence', 'path-network-construction',
+    'invariants-coloring', 'extremal-optimization', 'elementary-games']
+  for (const name of references) {
+    assert.match(core, new RegExp(name), `${name}: core trigger`)
+    assert.match(text(index), new RegExp(name), `${name}: index pointer`)
+    const content = text(`math-primary-high/skills/math-high-core/references/${name}.md`)
+    for (const owner of ['references/prerequisite-learning.md', 'references/proof-teaching.md',
+      'references/topic-map.md', 'math-high-session']) {
+      assert.ok(content.includes(owner), `${name}: delegates to ${owner}`)
+    }
+    // No new plan/segment/UI protocol and no external runtime dependency.
+    assert.doesNotMatch(content, /learning_plan_update|active_frame_id|ui\.solution\.|https?:\/\//)
+    for (const bundle of [['math-primary-low', 'math-low-core'], ['math-common', 'math-common']]) {
+      assert.doesNotMatch(text(skillPath(bundle[0], bundle[1])), new RegExp(name),
+        `${bundle[0]} stays out of the upper-primary supplement`)
+    }
+  }
+  // The existing three methods keep their single rule source.
+  const methods = text(index)
+  for (const pilot of ['Assume and adjust', 'Ordered enumeration', 'Remainders and cycles']) {
+    assert.ok(methods.includes(pilot), `pilot method stays: ${pilot}`)
+  }
+  const scenarios = text('math-primary-high/tests/teaching-scenarios.md')
+  for (const id of ['M1', 'M2', 'M3', 'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']) {
+    assert.ok(scenarios.includes(`| ${id} |`), `cross-topic scenario: ${id}`)
+  }
+})

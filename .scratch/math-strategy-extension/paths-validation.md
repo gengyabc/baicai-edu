@@ -72,3 +72,7 @@
 - **父层复验：** `node scripts/check-skills.mjs` 为43 skills、0 errors、0 warnings；`node --test scripts/*.test.mjs` 为163通过、1跳过、0失败。此为父层实际运行后回传的结果，非本代理新增一次运行。
 
 最终状态仍为ready-for-human：实现、数学核验、静态/契约回归和独立代码审查完成；实际模型多轮对照、路径场景保存恢复/交互、真实DSH安装集成及真实学习效果仍未测试。
+
+## 整合合入（票 13）
+
+2026-11-12：本分支已由主会话按批次合入 `main`（合并提交 `44a6e61`；后端 `check-skills` 43 skills、0 错误，脚本测试见[整合验收](../integration-acceptance.md) §1）。以上是该 worktree 的局部结果与规则快照；合入后源码在公共入口生效，但行为多轮、保存恢复与真实学习效果仍未测试。
