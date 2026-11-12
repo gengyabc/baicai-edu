@@ -18,6 +18,30 @@ const skills = bundles.flatMap((bundle) =>
 const dataRef = (name) => text(`learn/skills/learn-data/references/${name}.md`)
 const supportRef = (name) => text(`learn/skills/learn-support/references/${name}.md`)
 
+test('upper-primary number structure is conditionally reachable without a new teaching owner', () => {
+  const core = text(skillPath('math-primary-high', 'math-high-core'))
+  const index = text('math-primary-high/skills/math-high-core/references/mathematical-strategies.md')
+  assert.match(core, /divisors[\s\S]*?references\/number-theory-reasoning\.md/i)
+  assert.match(index, /references\/number-theory-reasoning\.md/)
+  const number = text('math-primary-high/skills/math-high-core/references/number-theory-reasoning.md')
+  hasAll(number, ['factors-multiples', 'multiplicative-thinking', 'whole-number-division',
+    'references/prerequisite-learning.md', 'references/mathematical-strategies.md',
+    'references/proof-teaching.md', 'math-high-session'])
+  assert.doesNotMatch(number, /^name:|^supported_stages:|context\.learning_plan\s*=/m)
+})
+
+test('number structure keeps checked cases hidden and inherits guidance and evidence boundaries', () => {
+  const number = text('math-primary-high/skills/math-high-core/references/number-theory-reasoning.md')
+  const [, checked] = number.split('## Teacher-only checked cases')
+  assert.ok(checked, 'checked cases have a teacher-only boundary')
+  hasAll(checked, ['not to supply answers/routes in an independent opening',
+    'informed full-solution choice', 'wait and same-task confirmation',
+    'no prerequisite or compulsory exercise',
+    'teacher-only explanation has no performance segment'])
+  // Local material delegates shared gates; it must not introduce its own state schema or UI choice protocol.
+  assert.doesNotMatch(number, /ui\.solution\.|learning_plan_update|active_frame_id|new submode/i)
+})
+
 // Subject contract roles (English role names; singular/plural of the last role is accepted).
 const contractRoles = ['Target classification', 'Grade defaults', 'Profile fields', 'Diagnosis rules', 'Learning recommendation']
 const subjectContractSection = (content) => content.split(/^## Subject contract\s*$/im)[1]?.split(/\n## /)[0] ?? ''
