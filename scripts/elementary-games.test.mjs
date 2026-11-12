@@ -18,7 +18,7 @@ function outcomes(lastWins, limit) {
 
 // The prescribed player follows a policy; the opponent explores EVERY legal response.
 // Every path must terminate with the prescribed player winning, including the last move.
-function checkPolicy(pile, turn, lastWins, policy, history = []) {
+function countWinningLeaves(pile, turn, lastWins, policy, history = []) {
   const actions = turn === 0 ? [policy(pile, history)] : legalMoves(pile)
   let leaves = 0
   for (const take of actions) {
@@ -29,7 +29,7 @@ function checkPolicy(pile, turn, lastWins, policy, history = []) {
       assert.equal(winner, 0, JSON.stringify(path))
       leaves++
     } else {
-      leaves += checkPolicy(pile - take, 1 - turn, lastWins, policy, path)
+      leaves += countWinningLeaves(pile - take, 1 - turn, lastWins, policy, path)
     }
   }
   return leaves
@@ -48,23 +48,23 @@ test('last-wins and last-loses checked tables match exhaustive legal-move backwa
 test('7 take 1 and 8 take 2 win against all four opponent continuations, not one cooperative play', () => {
   const seven = (pile, history) => history.length === 0 ? 1 : 3 - history.at(-1).take
   const eight = (pile, history) => history.length === 0 ? 2 : 3 - history.at(-1).take
-  assert.equal(checkPolicy(7, 0, true, seven), 4)
-  assert.equal(checkPolicy(8, 0, true, eight), 4)
+  assert.equal(countWinningLeaves(7, 0, true, seven), 4)
+  assert.equal(countWinningLeaves(8, 0, true, eight), 4)
   // Ensure the all-branch checker really rejects a cooperative-only policy.
-  assert.throws(() => checkPolicy(7, 0, true, () => 1), /AssertionError/)
+  assert.throws(() => countWinningLeaves(7, 0, true, () => 1), /AssertionError/)
 })
 
 test('6 last-wins has no first-player guarantee and a second-player reply defeats both starts', () => {
   assert.equal(outcomes(true, 6).at(-1), 'L')
   const reply = (pile, history) => 3 - history.at(-1).take
-  assert.equal(checkPolicy(6, 1, true, reply), 4)
+  assert.equal(countWinningLeaves(6, 1, true, reply), 4)
 })
 
 test('7 last-loses is losing and the second player legally leaves 1 against every response', () => {
   assert.equal(outcomes(false, 7).at(-1), 'L')
   const reply = (pile, history) => 3 - history.at(-1).take
-  assert.equal(checkPolicy(7, 1, false, reply), 4)
-  assert.throws(() => checkPolicy(7, 0, false, (pile, history) =>
+  assert.equal(countWinningLeaves(7, 1, false, reply), 4)
+  assert.throws(() => countWinningLeaves(7, 0, false, (pile, history) =>
     history.length === 0 ? 1 : 3 - history.at(-1).take), /AssertionError/)
 })
 

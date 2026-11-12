@@ -1,7 +1,7 @@
 # 08：初级博弈与必胜策略 — 实施与核验记录
 
 - 日期：2026-11-12；分支：`implement/math-games`。
-- 工作树：`/Users/yugeng/programming/dsh-edu/.scratch/math-strategy-extension/worktrees/games`；开始时 `pwd` / `git status --short` / `git branch --show-current` 确认该目录、干净状态和分支。仅修改本 worktree，没有安装、合并或修改共享主仓票源。
+- 工作树：`.scratch/math-strategy-extension/worktrees/games`；开始时 `pwd` / `git status --short` / `git branch --show-current` 确认该目录、干净状态和分支。仅修改本 worktree，没有安装、合并或修改共享主仓票源。
 - 固定基线：`1da1226828adc3b0347a8689287a37832b7e97e7`。提交 ID 由本记录所属提交确定（避免自引用提交哈希）。
 - 票源已从绝对路径读取：主仓 `.scratch/math-strategy-extension/issues/08-elementary-games.md`，标题“08: 初级博弈与必胜策略”；总规格及 stage-3-spec / stage-3-acceptance 同样从主仓绝对路径读取，不依赖 worktree 中不存在的副本。
 - 预先约定 seams：父代理明确确认既有 skill-contracts 静态入口/所有权契约与独立有限状态数学核验，不新增运行时接口。它们都是辅助边界，不是教学行为验收。
