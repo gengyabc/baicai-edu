@@ -453,7 +453,9 @@ export function createGeometryModel() {
       return { x: point.x, y: point.y };
     } catch { return null; }
   };
-  return { kind: KIND, coordinateSystem, elementTypes: [...elementTypes], roles: [...roles], operations: [...operations],
+  // The drawable library, in toolbox order. A point is a point; the rest are elements.
+  const shapeLibrary = ['point', ...elementTypes];
+  return { kind: KIND, coordinateSystem, shapeLibrary, elementTypes: [...elementTypes], roles: [...roles], operations: [...operations],
     bounds: { width: WIDTH, height: HEIGHT, margin: MARGIN, epsilon: EPSILON },
     empty, validate, reduce, constrainedMove, dependents: (board, id) => dependents(cloneBoard(board), id), serialize };
 }

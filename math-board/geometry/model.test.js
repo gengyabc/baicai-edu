@@ -22,6 +22,7 @@ const serialized = (board) => JSON.parse(G.serialize(board));
 test('a snapshot carries only its own kind, v1 shape and no quantity fields', () => {
   assert.equal(G.kind, 'geometry-board');
   assert.deepEqual(G.coordinateSystem, { type: 'cartesian-2d', units: 'board-unit' });
+  assert.deepEqual(G.shapeLibrary, ['point', 'segment', 'polygon', 'circle', 'parallelogram', 'rectangle']);
   assert.deepEqual(clone(G.empty()), { schemaVersion: 1, points: [], elements: [], note: '' });
   const wire = serialized(rectangle());
   assert.deepEqual(Object.keys(wire).sort(), ['elements', 'kind', 'note', 'points', 'schemaVersion']);
