@@ -86,6 +86,21 @@ test('logical constraints are conditionally reachable and reuse band-local reaso
   assert.doesNotMatch(text(skillPath('math-common', 'math-common')), /logical-constraints/)
 })
 
+test('pigeonhole existence is conditionally reachable through the existing method index', () => {
+  const core = text(skillPath('math-primary-high', 'math-high-core'))
+  const row = core.split('\n').find((line) => line.includes('finite objects assigned to categories'))
+  assert.ok(row?.includes('references/mathematical-strategies.md'))
+  const index = text('math-primary-high/skills/math-high-core/references/mathematical-strategies.md')
+  assert.match(index, /references\/pigeonhole-existence\.md/)
+  const existence = text('math-primary-high/skills/math-high-core/references/pigeonhole-existence.md')
+  hasAll(existence, ['references/proof-teaching.md', 'references/prerequisite-learning.md',
+    'references/topic-map.md', 'math-high-session', 'Teacher-only checked cases'])
+  assert.doesNotMatch(existence, /^name:|^supported_stages:|ui\.solution\.|learning_plan_update|active_frame_id/m)
+  for (const bundle of ['math-common', 'math-primary-low']) {
+    assert.doesNotMatch(text(skillPath(bundle, bundle === 'math-common' ? 'math-common' : 'math-low-core')), /pigeonhole-existence/)
+  }
+})
+
 // Subject contract roles (English role names; singular/plural of the last role is accepted).
 const contractRoles = ['Target classification', 'Grade defaults', 'Profile fields', 'Diagnosis rules', 'Learning recommendation']
 const subjectContractSection = (content) => content.split(/^## Subject contract\s*$/im)[1]?.split(/\n## /)[0] ?? ''

@@ -10,6 +10,8 @@ For all-divisor counts, least factors completing a square/cube, or parity/prime 
 
 For interacting conditions on candidate assignments, elimination/propagation, or checking whether solutions are unique, multiple or absent, read `references/logical-constraints.md`. It specializes Ordered enumeration below and the existing proof checks; do not load it for every story with several conditions.
 
+For finite objects assigned to categories with an at-least/must-exist goal, read `references/pigeonhole-existence.md`. Check why every object belongs to a category and compare total capacity; an existence claim alone or a story keyword does not select division. Distinguish a guaranteed lower bound from an actual count or identification of particular objects.
+
 For an agreed contrast that changes one load-bearing condition of the student's own method, or when they reuse an old reason after a condition changed, read `references/boundary-variation.md`. This file still owns the method families and student monitoring; the new file adds only the one-condition change, the outcomes and the survival statement.
 
 ## Student monitoring and local obstacles
