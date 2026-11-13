@@ -9,6 +9,11 @@ import { createGeometryModel } from './geometry/model.js';
 import { createBoardModel } from './model.js';
 import { createBoardTrace } from './trace.js';
 import { applyHostConfig } from './config-bridge.js';
+import {
+  advanceTutorial, createTutorialOverlay, geometryTutorialSteps, isTutorialSeen,
+  markTutorialSeen, measureTourTarget, quantityTutorialSteps, tourHoldsNotePanel,
+  tourInsertMode, tutorialStorageKey,
+} from './tutorial.js';
 
 const M = createBoardModel();
 const G = createGeometryModel();
@@ -31,8 +36,22 @@ function mount(options = {}) {
   const storage = options.storage || new Map();
   const old = { window: globalThis.window, navigator: Object.getOwnPropertyDescriptor(globalThis, 'navigator'),
     localStorage: globalThis.localStorage, document: globalThis.document };
-  globalThis.window = { matchMedia: () => ({ matches: true }), location: { hostname: '127.0.0.1' } };
-  globalThis.document = { addEventListener() {}, removeEventListener() {} };
+  globalThis.window = {
+    matchMedia: () => ({ matches: true }), location: { hostname: '127.0.0.1' },
+    addEventListener() {}, removeEventListener() {},
+  };
+  const documentListeners = new Map();
+  globalThis.document = {
+    addEventListener(type, handler) {
+      const list = documentListeners.get(type) || [];
+      list.push(handler);
+      documentListeners.set(type, list);
+    },
+    removeEventListener(type, handler) {
+      const list = documentListeners.get(type) || [];
+      documentListeners.set(type, list.filter((item) => item !== handler));
+    },
+  };
   Object.defineProperty(globalThis, 'navigator', { configurable: true, value: {
     locks: { request(_key, _options, task) { task(); return Promise.resolve(); } },
   } });
@@ -85,7 +104,14 @@ function mount(options = {}) {
     releaseDraftAttachment() {},
   };
   const ctx = { locale: { subscribe: () => () => {}, getSnapshot: () => 'zh' }, get: () => conversation };
-  const shared = { createBoardFilePicker, createBoardIcons };
+  // Mark both tutorials seen so first-open autoplay does not alter existing UI assertions.
+  storage.set(tutorialStorageKey('quantity'), '1');
+  storage.set(tutorialStorageKey('geometry'), '1');
+  const shared = {
+    createBoardFilePicker, createBoardIcons, createTutorialOverlay,
+    isTutorialSeen, markTutorialSeen, advanceTutorial, measureTourTarget,
+    tourHoldsNotePanel, tourInsertMode, quantityTutorialSteps, geometryTutorialSteps,
+  };
   const quantityPage = () => createBoardView(React, M, ctx, t, '', createShapeArt(React), applyHostConfig, T, shared);
   const geometryPage = () => createGeometryPage(React, G, ctx, t, shared);
   // The shell draws the shared brand mark, so the quantity page hands it in.
@@ -201,6 +227,30 @@ function mount(options = {}) {
     quantityBoard() { return M.validate(JSON.parse(storage.get(QUANTITY_KEY))); },
     raw(key) { return storage.get(key); },
     set(key, value) { storage.set(key, value); },
+    openMore() {
+      const menu = () => visibleNodes().filter((node) => String(node.props.className || '').includes('eb-more-menu'));
+      if (menu().length === 1) return;
+      button(t('moreActions')).props.onClick();
+      refresh();
+      assert.equal(menu().length, 1, 'More menu should open');
+    },
+    startTour() {
+      this.openMore();
+      find((node) => node.type === 'button' && text(node) === t('tutorialReplay')).props.onClick();
+      refresh();
+    },
+    tourTitle() {
+      const tip = find((node) => node.props?.className === 'eb-tour-tip');
+      return text(walk(tip).find((node) => node.type === 'h2'));
+    },
+    notePanel() {
+      return visibleNodes().find((node) => String(node.props?.['data-tour-id'] || '').endsWith('-note-panel'));
+    },
+    keydown(key) {
+      const event = { key, preventDefault() {} };
+      for (const handler of documentListeners.get('keydown') || []) handler(event);
+      refresh();
+    },
     unmount() {
       for (const store of stores.values()) for (const slot of store.slots) slot?.cleanup?.();
       globalThis.window = old.window; globalThis.localStorage = old.localStorage;
@@ -711,3 +761,116 @@ test('undo shortcuts and Delete stay off the canvas while an overlay is open', (
     assert.equal(h.board().points.length, 1, 'nothing is deleted under the overlay');
   });
 });
+
+test('quantity tour advances on signals, blocks early insert, and keeps the note panel on Cancel', () => {
+  withMount((h) => {
+    const addCircle = () => {
+      h.find((node) => node.type === 'button'
+        && String(node.props['aria-label'] || '').startsWith(`${t('circle')} ·`)).props.onClick();
+      h.render();
+    };
+    h.startTour();
+    assert.equal(h.tourTitle(), t('tutorialQAddTitle'));
+    assert.equal(h.button(t('insert')).props.disabled, true, 'Insert stays off until the insert step');
+
+    addCircle();
+    assert.equal(h.tourTitle(), t('tutorialQColorTitle'));
+
+    h.find((node) => node.type === 'button' && node.props['aria-label'] === `${t('creationColor')} · 10`).props.onClick();
+    h.render();
+    assert.equal(h.tourTitle(), t('tutorialQAddMoreTitle'));
+
+    addCircle();
+    assert.equal(h.tourTitle(), t('tutorialQNoteTitle'));
+    assert.equal(h.drafts.length, 0);
+
+    h.find((node) => node.type === 'button' && String(node.props.className || '').includes('eb-note-button')).props.onClick();
+    h.render();
+    assert.equal(h.tourTitle(), t('tutorialQNoteSaveTitle'));
+    assert.ok(h.notePanel(), 'note-save keeps the panel as the tour target');
+
+    h.click(t('cancel'));
+    assert.ok(h.notePanel(), 'Cancel must not dismiss the note panel on note-save');
+    assert.equal(h.tourTitle(), t('tutorialQNoteSaveTitle'));
+
+    h.keydown('Escape');
+    assert.ok(h.notePanel(), 'Escape must not dismiss the note panel on note-save');
+    assert.equal(h.tourTitle(), t('tutorialQNoteSaveTitle'));
+
+    h.click(t('clear'));
+    assert.ok(h.notePanel(), 'Clear must not replace the note panel on note-save');
+    assert.equal(h.tourTitle(), t('tutorialQNoteSaveTitle'));
+    assert.equal(
+      walk(h.tree).some((node) => node.props?.className === 'eb-overlay-card eb-overlay-clear'),
+      false,
+      'Clear must not open the clear card during note-save',
+    );
+
+    h.click(t('save'));
+    assert.equal(h.tourTitle(), t('tutorialQInsertTitle'));
+    assert.equal(h.button(t('insert')).props.disabled, false);
+
+    h.click(t('insert'));
+    assert.equal(h.drafts.length, 0, 'insert practice must not createDrafts');
+    assert.equal(h.find((node) => node.props.role === 'status').children.flat().join(''), t('tutorialInsertPractice'));
+    assert.equal(visibleTour(h), false, 'the last practice step closes the coach');
+  });
+});
+
+test('geometry tour advances on signals, blocks early insert, and keeps the note panel on Cancel', () => {
+  withMount((h) => {
+    h.tab('geometry');
+    h.startTour();
+    assert.equal(h.tourTitle(), t('tutorialGPointToolTitle'));
+    assert.equal(h.button(t('insert')).props.disabled, true, 'Insert stays off until the insert step');
+
+    h.tool('point');
+    assert.equal(h.tourTitle(), t('tutorialGPlacePointTitle'));
+
+    h.clickAt(140, 120);
+    assert.equal(h.tourTitle(), t('tutorialGSegmentToolTitle'));
+
+    h.tool('segment');
+    assert.equal(h.tourTitle(), t('tutorialGDrawSegmentTitle'));
+
+    h.clickAt(140, 120);
+    h.clickAt(280, 200);
+    assert.equal(h.tourTitle(), t('tutorialGNoteTitle'));
+    assert.equal(h.drafts.length, 0);
+
+    h.find((node) => node.type === 'button' && String(node.props.className || '').includes('eb-note-button')).props.onClick();
+    h.render();
+    assert.equal(h.tourTitle(), t('tutorialGNoteSaveTitle'));
+    assert.ok(h.notePanel(), 'note-save keeps the panel as the tour target');
+
+    h.click(t('cancel'));
+    assert.ok(h.notePanel(), 'Cancel must not dismiss the note panel on note-save');
+    assert.equal(h.tourTitle(), t('tutorialGNoteSaveTitle'));
+
+    h.keydown('Escape');
+    assert.ok(h.notePanel(), 'Escape must not dismiss the note panel on note-save');
+    assert.equal(h.tourTitle(), t('tutorialGNoteSaveTitle'));
+
+    h.click(t('clearGeometry'));
+    assert.ok(h.notePanel(), 'Clear must not replace the note panel on note-save');
+    assert.equal(h.tourTitle(), t('tutorialGNoteSaveTitle'));
+    assert.equal(
+      walk(h.tree).some((node) => node.props?.className === 'eb-overlay-card eb-overlay-clear'),
+      false,
+      'Clear must not open the clear card during note-save',
+    );
+
+    h.click(t('save'));
+    assert.equal(h.tourTitle(), t('tutorialGInsertTitle'));
+    assert.equal(h.button(t('insert')).props.disabled, false);
+
+    h.click(t('insert'));
+    assert.equal(h.drafts.length, 0, 'insert practice must not createDrafts');
+    assert.equal(h.find((node) => node.props.role === 'status').children.flat().join(''), t('tutorialInsertPractice'));
+    assert.equal(visibleTour(h), false, 'the last practice step closes the coach');
+  });
+});
+
+function visibleTour(h) {
+  return walk(h.tree).some((node) => node.props?.className === 'eb-tour-tip');
+}

@@ -51,6 +51,33 @@ function makeHost(React) {
 
 const react = { createElement: (type, props, ...children) => ({ type, props: props || {}, children }) };
 
+test('bundled tutorial seen flags persist across calls', () => {
+  // Storage helpers share TUTORIAL_VERSION / tutorialStorageKey in the factory scope
+  // after toString() inlining; evaluate them together the way build.mjs places them.
+  assert.match(bundle, /const TUTORIAL_VERSION =/);
+  assert.match(bundle, /const isTutorialSeen = function/);
+  assert.match(bundle, /const markTutorialSeen = function/);
+  assert.match(bundle, /const tutorialStorageKey = function/);
+  const version = bundle.match(/const TUTORIAL_VERSION = ("[^"]+");/)[1];
+  const storage = new Map();
+  const api = {
+    getItem: (name) => storage.get(name) ?? null,
+    setItem: (name, value) => storage.set(name, String(value)),
+  };
+  const helpers = new Function('storageApi', `
+    const TUTORIAL_VERSION = ${version};
+    const tutorialStorageKey = ${extractFactorySource(bundle, 'tutorialStorageKey')};
+    const isTutorialSeen = ${extractFactorySource(bundle, 'isTutorialSeen')};
+    const markTutorialSeen = ${extractFactorySource(bundle, 'markTutorialSeen')};
+    return { tutorialStorageKey, isTutorialSeen, markTutorialSeen };
+  `)(api);
+  assert.equal(helpers.isTutorialSeen('quantity', api), false);
+  helpers.markTutorialSeen('quantity', api);
+  assert.equal(api.getItem(helpers.tutorialStorageKey('quantity')), '1');
+  assert.equal(helpers.isTutorialSeen('quantity', api), true);
+  assert.equal(helpers.isTutorialSeen('geometry', api), false);
+});
+
 test('the generated bundle registers and its pages construct without a missing binding', () => {
   const mod = loadBundle();
   assert.equal(mod.id, 'dsh-edu-math-board');
@@ -108,8 +135,8 @@ test('the inlined picker and icons run real save and import paths', async () => 
   assert.equal(typeof result, 'object');
 });
 
-/** Pull one of the bundle's `const name = function ...` factories out for direct use. */
-function extractFactory(source, name) {
+/** Source text of one `const name = function ...` factory from the bundle. */
+function extractFactorySource(source, name) {
   const start = source.indexOf(`const ${name} = function`);
   assert.ok(start >= 0, `${name} must be inlined in client.js`);
   // Walk braces from the first `{` after the assignment to its matching close.
@@ -117,9 +144,17 @@ function extractFactory(source, name) {
   let depth = 0;
   for (let i = bodyStart; i < source.length; i++) {
     if (source[i] === '{') depth++;
-    else if (source[i] === '}') { depth--; if (depth === 0) return new Function(`return (${source.slice(source.indexOf('function', start), i + 1)});`)(); }
+    else if (source[i] === '}') {
+      depth--;
+      if (depth === 0) return source.slice(source.indexOf('function', start), i + 1);
+    }
   }
   throw new Error(`unterminated ${name}`);
+}
+
+/** Pull one of the bundle's `const name = function ...` factories out for direct use. */
+function extractFactory(source, name) {
+  return new Function(`return (${extractFactorySource(source, name)});`)();
 }
 
 test('no inlined factory reads a name it does not declare itself', () => {
@@ -150,7 +185,18 @@ test('no inlined factory reads a name it does not declare itself', () => {
     createView: 'createBoardView', createTabs: 'createTabbedBoardView',
     createGeometry: 'createGeometryPage', createGeoModel: 'createGeometryModel',
     createFilePicker: 'createBoardFilePicker', createIcons: 'createBoardIcons',
+    tutorialStorageKey: 'tutorialStorageKey', isTutorialSeen: 'isTutorialSeen',
+    markTutorialSeen: 'markTutorialSeen', createTutorialOverlay: 'createTutorialOverlay',
+    tourMaskPads: 'tourMaskPads',
+    advanceTutorial: 'advanceTutorial', measureTourTarget: 'measureTourTarget',
+    tourHoldsNotePanel: 'tourHoldsNotePanel', tourInsertMode: 'tourInsertMode',
+    quantityTutorialSteps: 'quantityTutorialSteps', geometryTutorialSteps: 'geometryTutorialSteps',
   };
+  // Tutorial helpers that call tutorialStorageKey need that binding in the host set,
+  // matching how build.mjs places both in the factory scope.
+  hostGlobals.add('tutorialStorageKey');
+  hostGlobals.add('TUTORIAL_VERSION');
+  hostGlobals.add('tourMaskPads');
   // Names the factories are bound to in client.js; each maps to its source function name.
   for (const name of Object.keys(INLINED)) {
     const hits = new Set();

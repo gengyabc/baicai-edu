@@ -44,6 +44,11 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     const [status, setStatus] = React.useState('');
     const [overlay, setOverlay] = React.useState(null);
     const [rename, setRename] = React.useState(null);
+    const [tour, setTour] = React.useState(null);
+    const [tourHole, setTourHole] = React.useState(null);
+    const workspaceRef = React.useRef(null);
+    const tourSpotlightRef = React.useRef(null);
+    const TutorialOverlay = shared.createTutorialOverlay?.(React);
     const gesture = React.useRef(null);
     const svgRef = React.useRef(null);
     const noteRef = React.useRef(null), nameRef = React.useRef(null);
@@ -83,6 +88,71 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       document.addEventListener('pointerdown', closeMenus);
       return () => document.removeEventListener('pointerdown', closeMenus);
     }, [moreOpen]);
+
+    function startGeometryTour() {
+      if (!shared.geometryTutorialSteps || !TutorialOverlay) return;
+      setMoreOpen(false);
+      setOverlay(null);
+      setRename(null);
+      setTour({ mode: 'geometry', index: 0, steps: shared.geometryTutorialSteps() });
+    }
+    function finishGeometryTour() {
+      shared.markTutorialSeen?.('geometry');
+      if (tourSpotlightRef.current) {
+        tourSpotlightRef.current.classList.remove('eb-tour-spotlight');
+        tourSpotlightRef.current = null;
+      }
+      setTour(null);
+      setTourHole(null);
+      setStatus(t('tutorialDone'));
+    }
+    function signalTour(signal) {
+      if (!tour || !shared.advanceTutorial) return;
+      const next = shared.advanceTutorial(tour, signal);
+      if (next === tour) return;
+      if (next.index >= next.steps.length) finishGeometryTour();
+      else setTour(next);
+    }
+    const tabActive = props.tabActive === true;
+    React.useEffect(() => {
+      if (!tabActive || !ready || tour || !shared.isTutorialSeen || !shared.geometryTutorialSteps) return;
+      // Mark seen as soon as first autoplay starts, so closing the board mid-tour
+      // does not keep reopening the coach; replay stays in「更多操作」.
+      if (!shared.isTutorialSeen('geometry')) {
+        shared.markTutorialSeen?.('geometry');
+        startGeometryTour();
+      }
+    }, [tabActive, ready]);
+    const useTourLayout = React.useLayoutEffect || React.useEffect;
+    useTourLayout(() => {
+      if (!tour || !workspaceRef.current || !shared.measureTourTarget) {
+        setTourHole(null);
+        return undefined;
+      }
+      const step = tour.steps[tour.index];
+      const measure = () => {
+        if (tourSpotlightRef.current) {
+          tourSpotlightRef.current.classList.remove('eb-tour-spotlight');
+          tourSpotlightRef.current = null;
+        }
+        const hit = shared.measureTourTarget(workspaceRef.current, step?.target);
+        if (hit?.node) {
+          hit.node.classList.add('eb-tour-spotlight');
+          tourSpotlightRef.current = hit.node;
+        }
+        setTourHole(hit);
+      };
+      measure();
+      const onResize = () => measure();
+      window.addEventListener('resize', onResize);
+      return () => {
+        window.removeEventListener('resize', onResize);
+        if (tourSpotlightRef.current) {
+          tourSpotlightRef.current.classList.remove('eb-tour-spotlight');
+          tourSpotlightRef.current = null;
+        }
+      };
+    }, [tour, overlay, board.points.length, board.elements.length, tool]);
 
     function publish(next) { boardRef.current = next; setBoard(next); }
     function action(a) {
@@ -171,10 +241,15 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     function toggleSelection(id) {
       setSelection((old) => old.includes(id) ? old.filter((x) => x !== id) : [...old, id]);
     }
-    function chooseTool(name) { setTool(name); setPending([]); setSelection([]); }
+    function chooseTool(name) {
+      setTool(name); setPending([]); setSelection([]);
+      if (name === 'point') signalTour('geometry-tool-point');
+      if (name === 'segment') signalTour('geometry-tool-segment');
+    }
     function finish(ids) {
       const before = boardRef.current;
       const role = auxiliary ? 'auxiliary' : 'main';
+      const drawing = tool;
       const spec = tool === 'segment' ? { type: 'addElement', elementType: 'segment', points: ids, role }
         : tool === 'triangle' || tool === 'polygon' ? { type: 'addElement', elementType: 'polygon', points: ids, role }
         : tool === 'circle' ? { type: 'addElement', elementType: 'circle', centerPointId: ids[0], radiusPointId: ids[1], role }
@@ -188,9 +263,13 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       setTool('select');
       const created = next.elements.find((e) => !before.elements.some((old) => old.id === e.id));
       if (created) setSelection([created.id]);
+      if (drawing === 'segment') signalTour('geometry-add-segment');
     }
     function clickEmpty(p) {
       const next = action({ type: 'addPoint', x: p.x, y: p.y });
+      // Only the point tool counts for the place-point tour step; other tools also
+      // drop free points as construction inputs and must not advance that step.
+      if (next && tool === 'point') signalTour('geometry-add-point');
       return next ? next.points.at(-1) : null;
     }
     function usePoint(target, p) {
@@ -289,11 +368,36 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       action({ type: 'delete', ids });
       setSelection([]);
     }
+    function requestOverlay(next) {
+      // While note-save spotlights the note panel, refuse replace/clear so the tour
+      // does not fall back to a full-screen mask with only Skip.
+      if (overlay?.kind === 'note' && shared.tourHoldsNotePanel?.(tour)
+          && (!next || next.kind !== 'note')) {
+        return;
+      }
+      setOverlay(next);
+    }
+    function dismissOverlay() {
+      requestOverlay(null);
+    }
+    React.useEffect(() => {
+      if (!tabActive) return undefined;
+      const onKey = (event) => {
+        if (event.key !== 'Escape') return;
+        if (overlay) { event.preventDefault(); dismissOverlay(); }
+        if (rename) setRename(null);
+        if (moreOpen) setMoreOpen(false);
+        if (append) setAppend(false);
+      };
+      document.addEventListener('keydown', onKey);
+      return () => document.removeEventListener('keydown', onKey);
+    }, [tabActive, overlay, rename, moreOpen, append, tour]);
     function applyNote() {
       const value = noteRef.current?.value ?? '';
       if (noteTarget) action({ type: 'annotate', target: noteTarget.kind, id: noteTarget.id, value });
       else action({ type: 'note', value });
       setOverlay(null);
+      signalTour('geometry-note-save');
     }
     function applyRename() {
       const value = nameRef.current?.value ?? '';
@@ -304,6 +408,14 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     // The composer keeps whatever it already held, and a failed insert leaves nothing behind.
     function insertGeometry() {
       if (!ready) return;
+      // Whole-tour practice: only the insert step advances; earlier steps never attach.
+      const insertMode = shared.tourInsertMode?.(tour);
+      if (insertMode === 'practice') {
+        signalTour('geometry-insert');
+        setStatus(t('tutorialInsertPractice'));
+        return;
+      }
+      if (insertMode === 'block') return;
       const conversation = ctx.get('conversation');
       let drafts = [];
       const discard = () => {
@@ -421,8 +533,12 @@ export function createGeometryPage(React, G, ctx, t, shared) {
         key: q.id, 'data-point': q.id, role: 'button', tabIndex: 0, 'aria-label': label, 'aria-pressed': picked,
         onKeyDown: (event) => {
           if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelection([q.id]); }
-          // An open overlay claims the keyboard: Delete and Backspace must not reach the canvas.
-          if (picker.overlayBlocksKey(overlay, event)) return;
+          // An open overlay or active tour claims the keyboard: Delete must not reach the canvas.
+          if (picker.overlayBlocksKey(overlay, event)
+              || (tour && (event.key === 'Delete' || event.key === 'Backspace'))) {
+            event.preventDefault();
+            return;
+          }
           if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); action({ type: 'delete', ids: [q.id] }); setSelection([]); }
         },
       },
@@ -465,7 +581,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     // its artwork.
     const span = { width: width / (fit ? 1 : zoom), height: height / (fit ? 1 : zoom) };
     const origin = { x: (width - span.width) / 2, y: (height - span.height) / 2 };
-    const canvas = h('div', { className: 'eb-canvas-scroll' },
+    const canvas = h('div', { className: 'eb-canvas-scroll', 'data-tour-id': 'geometry-canvas' },
       h('svg', {
         ref: svgRef, className: `eb-artboard eb-geometry${grid ? ' eb-grid' : ''}`,
         style: { width: '100%', height: fit ? 'auto' : '100%', aspectRatio: `${width} / ${height}` },
@@ -518,6 +634,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     const toolButton = (name) => h('button', {
       key: name, type: 'button', className: 'eb-tool', title: t(name), 'aria-label': t(name),
       'aria-pressed': tool === name, onClick: () => chooseTool(name),
+      'data-tour-id': name === 'point' || name === 'segment' ? `geometry-tool-${name}` : undefined,
     }, icon(name));
     const tools = h('aside', { className: 'eb-palette eb-geometry-tools', 'aria-label': t('geometryTools') },
       DRAW_TOOLS.map(toolButton),
@@ -559,7 +676,10 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       h('div', { className: 'eb-menu-head' }, t('files')),
       button(h(React.Fragment, null, icon('open', 16), h('span', null, t('import'))), openFile, { role: 'menuitem' }),
       button(h(React.Fragment, null, icon('save', 16), h('span', null, t('export'))), saveFile, { role: 'menuitem' }),
-      picker.fileNameState && h('p', { className: 'eb-menu-note' }, picker.fileNameState));
+      picker.fileNameState && h('p', { className: 'eb-menu-note' }, picker.fileNameState),
+      TutorialOverlay && h(React.Fragment, null,
+        h('div', { className: 'eb-menu-line' }),
+        button(h('span', null, t('tutorialReplay')), () => startGeometryTour(), { role: 'menuitem' })));
     const dock = h('nav', { className: 'eb-dock', 'aria-label': t('canvasTools') },
       labelled('back', t('backToChat'), () => props.close?.(), { className: 'eb-dock-return' }),
       h('span', { className: 'eb-divider' }),
@@ -573,30 +693,39 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       button(fit ? t('fitView') : `${Math.round(zoom * 100)}%`, () => setFit(!fit), { className: 'eb-zoom-label', 'aria-label': t('fitView'), 'aria-pressed': fit, title: t('fitView') }),
       button('＋', () => { setFit(false); setZoom(Math.min(2, zoom + 0.25)); }, { className: 'eb-zoom-button eb-zoom-in', 'aria-label': t('zoomIn'), title: t('zoomIn') }),
       h('span', { className: 'eb-grow' }),
-      button(h(React.Fragment, null, icon('note', 19), noteHasText ? h('span', { className: 'eb-note-dot' }) : null), () => setOverlay({ kind: 'note' }), {
+      button(h(React.Fragment, null, icon('note', 19), noteHasText ? h('span', { className: 'eb-note-dot' }) : null), () => {
+        requestOverlay({ kind: 'note' });
+        signalTour('geometry-note-open');
+      }, {
         className: `eb-note-button${noteTarget ? ' eb-contextual' : ''}`,
         title: noteTarget ? `${t('note')} · ${noteTarget.label}` : `${t('note')} · ${t('noteGeneral')}`,
-        'aria-label': t('note'),
+        'aria-label': t('note'), 'data-tour-id': 'geometry-note',
       }),
-      button(icon('clear', 19), () => setOverlay({ kind: 'clear' }), { className: 'eb-icon-button eb-danger', title: t('clearGeometry'), 'aria-label': t('clearGeometry') }),
+      button(icon('clear', 19), () => requestOverlay({ kind: 'clear' }), { className: 'eb-icon-button eb-danger', title: t('clearGeometry'), 'aria-label': t('clearGeometry') }),
       button(icon('more', 19), () => setMoreOpen(!moreOpen), { className: 'eb-icon-button eb-menu-trigger', title: t('moreActions'), 'aria-label': t('moreActions'), 'aria-expanded': moreOpen }),
       button(h(React.Fragment, null, icon('insert', 17), h('span', null, t('insert'))), () => insertGeometry(), {
-        className: 'eb-primary', title: t('insert'), disabled: phase !== 'plain' || (!board.points.length && !board.elements.length && !board.note),
+        className: 'eb-primary', title: t('insert'), 'data-tour-id': 'geometry-insert',
+        disabled: phase !== 'plain'
+          || shared.tourInsertMode?.(tour) === 'block'
+          || (!tour && !board.points.length && !board.elements.length && !board.note),
       }));
-    const overlayNode = overlay && h('div', { className: 'eb-overlay', onPointerDown: (event) => { if (event.target === event.currentTarget) setOverlay(null); } },
-      h('div', { className: `eb-overlay-card eb-overlay-${overlay.kind}`, role: 'dialog', 'aria-modal': 'true' },
+    const overlayNode = overlay && h('div', { className: 'eb-overlay', onPointerDown: (event) => { if (event.target === event.currentTarget) dismissOverlay(); } },
+      h('div', {
+        className: `eb-overlay-card eb-overlay-${overlay.kind}`, role: 'dialog', 'aria-modal': 'true',
+        'data-tour-id': overlay.kind === 'note' ? 'geometry-note-panel' : undefined,
+      },
         overlay.kind === 'note' && h(React.Fragment, null,
           h('h2', null, t('note')),
           h('p', { className: 'eb-overlay-context' }, noteTarget ? `${t('noteAbout')} ${noteTarget.label}` : t('noteGeneral')),
           h('textarea', { ref: noteRef, maxLength: 500, defaultValue: noteValue, placeholder: t('noteHint') }),
           h('div', { className: 'eb-overlay-actions' },
-            h('button', { type: 'button', onClick: () => setOverlay(null) }, t('cancel')),
+            h('button', { type: 'button', onClick: dismissOverlay }, t('cancel')),
             h('button', { type: 'button', className: 'eb-primary', onClick: applyNote }, t('save')))),
         overlay.kind === 'clear' && h(React.Fragment, null,
           h('h2', null, t('clearGeometry')),
           h('p', { className: 'eb-muted' }, t('geometryClearQuestion')),
           h('div', { className: 'eb-overlay-actions' },
-            h('button', { type: 'button', onClick: () => setOverlay(null) }, t('cancel')),
+            h('button', { type: 'button', onClick: dismissOverlay }, t('cancel')),
             h('button', { type: 'button', className: 'eb-primary eb-danger-solid', onClick: clearMode }, t('confirmClear'))))));
     const renameNode = rename && h('div', { className: 'eb-overlay' },
       h('div', { className: 'eb-overlay-card eb-overlay-name', role: 'dialog', 'aria-modal': 'true', 'aria-label': t('renamePoint') },
@@ -607,15 +736,22 @@ export function createGeometryPage(React, G, ctx, t, shared) {
           h('button', { type: 'button', onClick: () => setRename(null) }, t('cancel')),
           h('button', { type: 'button', className: 'eb-primary', onClick: applyRename }, t('apply')))));
     const statusNode = status && h('div', { className: 'eb-status-toast', role: 'status', 'aria-live': 'polite' }, status);
+    const tourNode = tour && TutorialOverlay && h(TutorialOverlay, {
+      step: tour.steps[tour.index], stepIndex: tour.index, stepCount: tour.steps.length,
+      t, hole: tourHole, onSkip: finishGeometryTour,
+    });
     return h(React.Fragment, null,
-      h('div', { className: 'eb-workspace eb-geometry-workspace', onKeyDown: (event) => {
-        // An open overlay owns the keyboard, so the shortcuts below never fire under it.
-        if (overlay) return;
-        // Undo/redo shortcuts work from anywhere inside the geometry tab.
-        if (!(event.metaKey || event.ctrlKey)) return;
-        if (event.key === 'z' || event.key === 'Z') { event.preventDefault(); if (event.shiftKey) redo(); else undo(); }
-        if (event.key === 'y' || event.key === 'Y') { event.preventDefault(); redo(); }
-      } }, tools, stage, dock, moreMenuNode, statusNode, overlayNode, renameNode),
+      h('div', {
+        className: 'eb-workspace eb-geometry-workspace', ref: workspaceRef,
+        onKeyDown: (event) => {
+          // An open overlay owns the keyboard, so the shortcuts below never fire under it.
+          if (overlay || tour) return;
+          // Undo/redo shortcuts work from anywhere inside the geometry tab.
+          if (!(event.metaKey || event.ctrlKey)) return;
+          if (event.key === 'z' || event.key === 'Z') { event.preventDefault(); if (event.shiftKey) redo(); else undo(); }
+          if (event.key === 'y' || event.key === 'Y') { event.preventDefault(); redo(); }
+        },
+      }, tools, stage, dock, moreMenuNode, statusNode, overlayNode, renameNode, tourNode),
       h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: fileInputRef, onChange: importInput }));
   };
 }

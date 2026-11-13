@@ -81,7 +81,13 @@ export function createTabbedBoardView(React, t, css, quantityPage, geometryPage,
         // The pages below were built for a top bar already at the top of the workbench,
         // so the shell's bar keeps that one and hides the page's own copy.
         h('header', { className: 'eb-topbar' }, brand(27), h('span', null, t('title')), tabs, h('span', { className: 'eb-grow' })),
-        panel('quantity', h(QuantityPage, { ...props, split: true, question, close: () => setOpened(false) })),
-        GeometryPage && panel('geometry', h(GeometryPage, { ...props, split: true, question, close: () => setOpened(false) })))));
+        panel('quantity', h(QuantityPage, {
+          ...props, split: true, question, close: () => setOpened(false),
+          tabActive: opened && tab === 'quantity',
+        })),
+        GeometryPage && panel('geometry', h(GeometryPage, {
+          ...props, split: true, question, close: () => setOpened(false),
+          tabActive: opened && tab === 'geometry',
+        })))));
   };
 }

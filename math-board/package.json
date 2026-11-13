@@ -22,6 +22,7 @@
     "file-picker.js",
     "geometry/model.js",
     "geometry-view.js",
+    "tutorial.js",
     "board-shell.js",
     "board.css",
     "build.mjs",

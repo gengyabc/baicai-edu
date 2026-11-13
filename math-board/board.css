@@ -216,6 +216,21 @@
 .eb-artboard.eb-geometry,.eb-artboard.eb-grid{background-image:none}
 .eb-dock .eb-danger{color:#B74035}
 .eb-overlay-name input{width:100%;padding:9px 11px;border:1px solid #D6DFE2;border-radius:9px;font:inherit}
+
+/* First-run / replay coach: four pads leave a click-through hole over the live control.
+   Fixed so spotlight maths can use getBoundingClientRect viewport coordinates. */
+.eb-tour{position:fixed;inset:0;z-index:50;pointer-events:none}
+.eb-tour-mask{position:absolute;background:#0f172a66;pointer-events:auto}
+.eb-tour-hole{position:absolute;border-radius:14px;pointer-events:none;box-shadow:0 0 0 2px #88C94C,0 0 0 6px #88C94C33;background:transparent}
+.eb-tour-tip{position:absolute;z-index:2;width:min(300px,calc(100% - 24px));padding:14px 16px;border:1px solid #D5DFE2;border-radius:14px;background:var(--dsw-alias-bg-base);box-shadow:0 14px 40px #243B5330;pointer-events:auto}
+.eb-tour-tip h2{margin:0 0 6px;font-size:15px}
+.eb-tour-tip p{margin:0;font-size:13px;line-height:1.55;color:var(--dsw-alias-label-secondary)}
+.eb-tour-progress{margin:0 0 8px!important;font-size:11px!important;color:#6E7D87!important}
+.eb-tour-actions{display:flex;justify-content:flex-end;margin-top:12px}
+.eb-workbench .eb-tour-skip{min-height:36px;padding:6px 12px;border:1px solid #D8E1E4;border-radius:9px;font-size:12px}
+.eb-tour-spotlight{border-radius:12px;box-shadow:0 0 0 2px #88C94C,0 8px 24px #243B5328;background:var(--dsw-alias-bg-base)}
+.eb-overlay-card.eb-tour-spotlight{box-shadow:0 0 0 2px #88C94C,0 20px 70px #1832472E}
+
 @media(max-width:760px){
   .eb-tabpanel{inset:48px 0 0}
 }

@@ -63,6 +63,11 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     const [moreOpen, setMoreOpen] = React.useState(false);
     const [append, setAppend] = React.useState(false);
     const [dragShape, setDragShape] = React.useState(null);
+    const [tour, setTour] = React.useState(null);
+    const [tourHole, setTourHole] = React.useState(null);
+    const workspaceRef = React.useRef(null);
+    const tourSpotlightRef = React.useRef(null);
+    const TutorialOverlay = shared.createTutorialOverlay?.(React);
     const toolLevel = board.settings.levels.find((level) => level.value === toolValue)
       || board.settings.levels.find((level) => level.value === 1) || board.settings.levels[0];
     const config = props.useProjection('eduBoardConfig');
@@ -118,6 +123,70 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     const [questionKey, setQuestionKey] = React.useState(null);
     const reference = references.find((item) => item.key === questionKey) || references.at(-1);
     React.useEffect(() => { setQuestionExpanded(false); }, [reference?.key]);
+
+    function startQuantityTour() {
+      if (!shared.quantityTutorialSteps || !TutorialOverlay) return;
+      setMoreOpen(false);
+      setOverlay(null);
+      setTour({ mode: 'quantity', index: 0, steps: shared.quantityTutorialSteps() });
+    }
+    function finishQuantityTour() {
+      shared.markTutorialSeen?.('quantity');
+      if (tourSpotlightRef.current) {
+        tourSpotlightRef.current.classList.remove('eb-tour-spotlight');
+        tourSpotlightRef.current = null;
+      }
+      setTour(null);
+      setTourHole(null);
+      setStatus(t('tutorialDone'));
+    }
+    function signalTour(signal) {
+      if (!tour || !shared.advanceTutorial) return;
+      const next = shared.advanceTutorial(tour, signal);
+      if (next === tour) return;
+      if (next.index >= next.steps.length) finishQuantityTour();
+      else setTour(next);
+    }
+    const tabActive = props.split ? props.tabActive === true : opened;
+    React.useEffect(() => {
+      if (!tabActive || !ready || tour || !shared.isTutorialSeen || !shared.quantityTutorialSteps) return;
+      // Mark seen as soon as first autoplay starts, so closing the board mid-tour
+      // does not keep reopening the coach; replay stays in「更多操作」.
+      if (!shared.isTutorialSeen('quantity')) {
+        shared.markTutorialSeen?.('quantity');
+        startQuantityTour();
+      }
+    }, [tabActive, ready]);
+    const useTourLayout = React.useLayoutEffect || React.useEffect;
+    useTourLayout(() => {
+      if (!tour || !workspaceRef.current || !shared.measureTourTarget) {
+        setTourHole(null);
+        return undefined;
+      }
+      const step = tour.steps[tour.index];
+      const measure = () => {
+        if (tourSpotlightRef.current) {
+          tourSpotlightRef.current.classList.remove('eb-tour-spotlight');
+          tourSpotlightRef.current = null;
+        }
+        const hit = shared.measureTourTarget(workspaceRef.current, step?.target);
+        if (hit?.node) {
+          hit.node.classList.add('eb-tour-spotlight');
+          tourSpotlightRef.current = hit.node;
+        }
+        setTourHole(hit);
+      };
+      measure();
+      const onResize = () => measure();
+      window.addEventListener('resize', onResize);
+      return () => {
+        window.removeEventListener('resize', onResize);
+        if (tourSpotlightRef.current) {
+          tourSpotlightRef.current.classList.remove('eb-tour-spotlight');
+          tourSpotlightRef.current = null;
+        }
+      };
+    }, [tour, overlay, board.objects.length, selection.length]);
 
     React.useEffect(() => {
       revision.current++;
@@ -290,17 +359,29 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       const node = overlay.kind === 'note' ? noteRef.current : nameRef.current;
       if (node) { node.focus(); if (node.select) node.select(); }
     }, [overlay]);
+    function requestOverlay(next) {
+      // While note-save spotlights the note panel, refuse replace/clear so the tour
+      // does not fall back to a full-screen mask with only Skip.
+      if (overlay?.kind === 'note' && shared.tourHoldsNotePanel?.(tour)
+          && (!next || next.kind !== 'note')) {
+        return;
+      }
+      setOverlay(next);
+    }
+    function dismissOverlay() {
+      requestOverlay(null);
+    }
     React.useEffect(() => {
       if (!shown) return;
       const onKey = (event) => {
         if (event.key !== 'Escape') return;
-        if (overlay) { event.preventDefault(); setOverlay(null); }
+        if (overlay) { event.preventDefault(); dismissOverlay(); }
         if (moreOpen) { setMoreOpen(false); }
         if (append) setAppend(false);
       };
       document.addEventListener('keydown', onKey);
       return () => document.removeEventListener('keydown', onKey);
-    }, [shown, overlay, moreOpen]);
+    }, [shown, overlay, moreOpen, tour]);
 
     function flushEditor() {
       const active = dialog.current?.ownerDocument.activeElement;
@@ -420,6 +501,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     function add(shape, point) {
       const extra = point ? { x: point.x, y: point.y } : {};
       createAndReveal({ type: 'add', shape, value: creationLevel(shape).value, ...extra });
+      signalTour('quantity-add');
     }
     function updateSelected(patch) { batch(selected.map((o) => ({ type: 'update', id: o.id, patch }))); }
     function groupSelection() {
@@ -499,8 +581,12 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       }
     }
     function objectKey(e, o) {
-      // An open overlay claims `aria-modal`; the keyboard must not edit the canvas under it.
-      if (picker.overlayBlocksKey(overlay, e)) { e.preventDefault(); return; }
+      // An open overlay or active tour claims the keyboard; Delete must not edit under them.
+      if (picker.overlayBlocksKey(overlay, e)
+          || (tour && (e.key === 'Delete' || e.key === 'Backspace'))) {
+        e.preventDefault();
+        return;
+      }
       const arrows = { ArrowLeft: [-10, 0], ArrowRight: [10, 0], ArrowUp: [0, -10], ArrowDown: [0, 10] };
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
@@ -545,6 +631,14 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     }
     function insert() {
       if (!canEdit()) return;
+      // Whole-tour practice: only the insert step advances; earlier steps never attach.
+      const insertMode = shared.tourInsertMode?.(tour);
+      if (insertMode === 'practice') {
+        signalTour('quantity-insert');
+        setStatus(t('tutorialInsertPractice'));
+        return;
+      }
+      if (insertMode === 'block') return;
       flushEditor();
       const conversation = ctx.get('conversation');
       let drafts = [];
@@ -628,11 +722,12 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     }
     function openNote() {
       const target = noteTargetFor(selected, completeGroup);
-      setOverlay({ kind: 'note', target, value: noteText(target), label: target ? target.label : t('noteGeneral') });
+      requestOverlay({ kind: 'note', target, value: noteText(target), label: target ? target.label : t('noteGeneral') });
+      signalTour('quantity-note-open');
     }
     function openName() {
-      if (completeGroup) setOverlay({ kind: 'name', group: completeGroup, value: completeGroup.alias });
-      else if (single && !single.groupId) setOverlay({ kind: 'name', object: single, value: single.alias });
+      if (completeGroup) requestOverlay({ kind: 'name', group: completeGroup, value: completeGroup.alias });
+      else if (single && !single.groupId) requestOverlay({ kind: 'name', object: single, value: single.alias });
     }
     function applyName() {
       const value = nameRef.current?.value ?? '';
@@ -647,6 +742,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       else if (target.kind === 'selection') action({ type: 'annotate', target: 'selection', ids: target.ids, value });
       else action({ type: 'annotate', target: target.kind, id: target.id, value });
       setOverlay(null);
+      signalTour('quantity-note-save');
     }
     function togglePattern(shape) {
       const current = boardRef.current.settings;
@@ -733,13 +829,15 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
         button(questionExpanded ? t('questionCollapse') : t('questionExpand'), () => setQuestionExpanded(!questionExpanded), {
           className: 'eb-question-toggle', 'aria-expanded': questionExpanded, 'aria-controls': `eb-question-${props.sessionId}`,
         })));
-    const palette = h('aside', { className: 'eb-palette', 'aria-label': t('toolbox') },
+    const palette = h('aside', {
+      className: 'eb-palette', 'aria-label': t('toolbox'), 'data-tour-id': 'quantity-palette',
+    },
       visibleShapes.map((shape) => button(swatch(shape, creationLevel(shape).color, 32), () => add(shape), {
         className: 'eb-shape-tool', key: shape, draggable: true, disabled: board.objects.length >= 200,
         title: `${t(shape)} · ${t('value')} ${creationLevel(shape).value}`, 'aria-label': `${t(shape)} · ${t('value')} ${creationLevel(shape).value}`,
         onDragStart: () => setDragShape(shape), onDragEnd: () => setDragShape(null),
       })),
-      button(icon('plus', 20), () => setOverlay({ kind: 'library' }), {
+      button(icon('plus', 20), () => requestOverlay({ kind: 'library' }), {
         className: 'eb-shape-tool eb-shape-more', title: t('morePatterns'), 'aria-label': t('morePatterns'),
       }));
     const canvas = h('div', { className: 'eb-canvas-scroll', ref: canvasRef },
@@ -788,10 +886,15 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
           setDragShape(null);
         },
       }, canvas, selectionBar));
-    const colorChoices = h('div', { className: 'eb-color-choices', role: 'group', 'aria-label': t('creationColor') },
+    const colorChoices = h('div', {
+      className: 'eb-color-choices', role: 'group', 'aria-label': t('creationColor'), 'data-tour-id': 'quantity-color',
+    },
       levels.map((level) => button(h(React.Fragment, null,
         h('span', { className: 'eb-color-dot', style: { background: paletteColor(level.color) } }),
-        h('span', { className: 'eb-color-value' }, String(level.value))), () => { setToolValue(level.value); }, {
+        h('span', { className: 'eb-color-value' }, String(level.value))), () => {
+        setToolValue(level.value);
+        signalTour('quantity-color');
+      }, {
         key: level.value, 'aria-pressed': level.value === toolLevel.value, className: 'eb-color-button',
         title: `${t('creationColor')} · ${level.value}`, 'aria-label': `${t('creationColor')} · ${level.value}`,
       })));
@@ -801,7 +904,10 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       button(h(React.Fragment, null, icon('save', 16), h('span', null, t('export'))), saveFile, { role: 'menuitem' }),
       picker.fileNameState && h('p', { className: 'eb-menu-note' }, picker.fileNameState),
       h('div', { className: 'eb-menu-line' }),
-      h('label', { className: 'eb-menu-check' }, h('input', { type: 'checkbox', checked: attachTrace, onChange: (event) => setAttachTrace(event.target.checked) }), h('span', null, t('traceAttach'))));
+      h('label', { className: 'eb-menu-check' }, h('input', { type: 'checkbox', checked: attachTrace, onChange: (event) => setAttachTrace(event.target.checked) }), h('span', null, t('traceAttach'))),
+      TutorialOverlay && h(React.Fragment, null,
+        h('div', { className: 'eb-menu-line' }),
+        button(h('span', null, t('tutorialReplay')), () => startQuantityTour(), { role: 'menuitem' })));
     // One dock for both tabs, in this order. This tab keeps creation colours and the
     // trace checkbox; the geometry tab keeps grid and snap in that same slot.
     const dock = h('nav', { className: 'eb-dock', 'aria-label': t('canvasTools') },
@@ -819,26 +925,34 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       button(h(React.Fragment, null, icon('note', 19), noteHasText ? h('span', { className: 'eb-note-dot' }) : null), openNote, {
         className: `eb-note-button${noteTarget ? ' eb-contextual' : ''}`, title: noteTarget ? `${t('note')} · ${noteTarget.label}` : `${t('note')} · ${t('noteGeneral')}`,
         'aria-label': noteTarget ? `${t('note')} · ${noteTarget.label}` : `${t('note')} · ${t('noteGeneral')}`,
+        'data-tour-id': 'quantity-note',
       }),
-      button(icon('clear', 19), () => setOverlay({ kind: 'clear' }), { className: 'eb-icon-button eb-danger', title: t('clear'), 'aria-label': t('clear') }),
+      button(icon('clear', 19), () => requestOverlay({ kind: 'clear' }), { className: 'eb-icon-button eb-danger', title: t('clear'), 'aria-label': t('clear') }),
       button(icon('more', 19), () => { setMoreOpen(!moreOpen); }, { className: 'eb-icon-button eb-menu-trigger', title: t('moreActions'), 'aria-label': t('moreActions'), 'aria-expanded': moreOpen }),
       button(h(React.Fragment, null, icon('insert', 17), h('span', null, t('insert'))), insert, {
-        className: 'eb-primary', title: t('insert'), disabled: (!board.objects.length && !board.note && !(attachTrace && trace.totalChanges)) || phase !== 'plain' }));
-    const overlayNode = overlay && h('div', { className: 'eb-overlay', onPointerDown: (event) => { if (event.target === event.currentTarget) setOverlay(null); } },
-      h('div', { className: `eb-overlay-card eb-overlay-${overlay.kind}`, role: 'dialog', 'aria-modal': 'true', 'aria-label': overlay.kind === 'note' ? t('note') : overlay.kind === 'name' ? t('alias') : overlay.kind === 'library' ? t('morePatterns') : t('clear') },
+        className: 'eb-primary', title: t('insert'), 'data-tour-id': 'quantity-insert',
+        disabled: (shared.tourInsertMode?.(tour) === 'block'
+          || (!tour && !board.objects.length && !board.note && !(attachTrace && trace.totalChanges)))
+          || phase !== 'plain' }));
+    const overlayNode = overlay && h('div', { className: 'eb-overlay', onPointerDown: (event) => { if (event.target === event.currentTarget) dismissOverlay(); } },
+      h('div', {
+        className: `eb-overlay-card eb-overlay-${overlay.kind}`, role: 'dialog', 'aria-modal': 'true',
+        'aria-label': overlay.kind === 'note' ? t('note') : overlay.kind === 'name' ? t('alias') : overlay.kind === 'library' ? t('morePatterns') : t('clear'),
+        'data-tour-id': overlay.kind === 'note' ? 'quantity-note-panel' : undefined,
+      },
         overlay.kind === 'name' && h(React.Fragment, null,
           h('h2', null, overlay.group ? t('groupAlias') : t('alias')),
           h('input', { ref: nameRef, onChange: touchDraft, type: 'text', maxLength: 30, defaultValue: overlay.value, placeholder: overlay.group ? t('groupHint') : t('aliasHint'),
             onKeyDown: (event) => { if (event.key === 'Enter') { event.preventDefault(); applyName(); } } }),
           h('div', { className: 'eb-overlay-actions' },
-            button(t('cancel'), () => setOverlay(null)),
+            button(t('cancel'), dismissOverlay),
             button(t('apply'), applyName, { className: 'eb-primary' }))),
         overlay.kind === 'note' && h(React.Fragment, null,
           h('h2', null, t('note')),
           h('p', { className: 'eb-overlay-context' }, overlay.target ? `${t('noteAbout')} ${overlay.label}` : t('noteGeneral')),
           h('textarea', { ref: noteRef, onChange: touchDraft, maxLength: 500, defaultValue: overlay.value, placeholder: t('noteHint') }),
           h('div', { className: 'eb-overlay-actions' },
-            button(t('cancel'), () => setOverlay(null)),
+            button(t('cancel'), dismissOverlay),
             button(t('save'), applyNote, { className: 'eb-primary' }))),
         overlay.kind === 'library' && h(React.Fragment, null,
           h('h2', null, t('morePatterns')),
@@ -850,14 +964,18 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
               title: `${on ? t('removePattern') : t('addPattern')}: ${t(shape)}`, disabled: on && visibleShapes.length === 1,
             });
           })),
-          h('div', { className: 'eb-overlay-actions' }, button(t('done'), () => setOverlay(null), { className: 'eb-primary' }))),
+          h('div', { className: 'eb-overlay-actions' }, button(t('done'), dismissOverlay, { className: 'eb-primary' }))),
         overlay.kind === 'clear' && h(React.Fragment, null,
           h('h2', null, t('clear')),
           h('p', { className: 'eb-muted' }, t('clearQuestion')),
           h('div', { className: 'eb-overlay-actions' },
-            button(t('cancel'), () => setOverlay(null)),
+            button(t('cancel'), dismissOverlay),
             button(t('confirmClear'), confirmClearBoard, { className: 'eb-primary eb-danger-solid' })))));
     const statusNode = status && h('div', { className: 'eb-status-toast', role: 'status', 'aria-live': 'polite' }, status);
+    const tourNode = tour && TutorialOverlay && h(TutorialOverlay, {
+      step: tour.steps[tour.index], stepIndex: tour.index, stepCount: tour.steps.length,
+      t, hole: tourHole, onSkip: finishQuantityTour,
+    });
     const editor = h(React.Fragment, null,
       h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: picker.fileInputRef, onChange: importInput }),
       h('a', { hidden: true, ref: picker.downloadAnchorRef, download: t('attachmentName') }));
@@ -868,13 +986,14 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       // The shell owns the launcher, the dialog and the top bar, including the brand mark,
       // so this page only contributes its workspace.
       return h(React.Fragment, null,
-        h('div', { className: 'eb-workspace' },
+        h('div', { className: 'eb-workspace', ref: workspaceRef },
           palette,
           stage,
           dock,
           moreMenuNode,
           statusNode,
-          overlayNode),
+          overlayNode,
+          tourNode),
         editor);
     }
     return h(React.Fragment, null,
@@ -890,7 +1009,8 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
         ref: dialog, className: 'eb-dialog', 'aria-label': t('title'),
         onCancel: (event) => {
           event.preventDefault();
-          if (overlay) setOverlay(null);
+          if (tour) finishQuantityTour();
+          else if (overlay) dismissOverlay();
           else if (moreOpen) { setMoreOpen(false); }
           else close();
         },
@@ -898,13 +1018,14 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       },
       h('div', { className: 'eb-workbench' },
         topbar,
-        h('div', { className: 'eb-workspace' },
+        h('div', { className: 'eb-workspace', ref: workspaceRef },
           palette,
           stage,
           dock,
           moreMenuNode,
           statusNode,
-          overlayNode)),
+          overlayNode,
+          tourNode)),
         editor));
   };
   // The shell draws the shared launcher and top bar before this page mounts, so it
