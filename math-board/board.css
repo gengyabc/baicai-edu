@@ -192,13 +192,17 @@
 .eb-workbench .eb-tab{min-height:32px;padding:5px 14px;border-radius:8px;font-size:13px;font-weight:600;color:#5B6C76}
 .eb-workbench .eb-tab[aria-selected=true]{background:#FFFFFF;color:#1E293B;box-shadow:0 1px 3px #243B5322}
 .eb-tabpanel{position:absolute;inset:56px 0 0}
-/* The page inside a panel fills it: the panel already sits below the top bar. */
+/* The page inside a panel fills it, and the shell's top bar is the only top bar: the
+   page keeps its own copy for the single-tab layout, where it would be a second header. */
 .eb-tabpanel .eb-workspace{inset:0}
+.eb-tabpanel .eb-topbar{display:none}
+.eb-tabpanel .eb-geometry-workspace{inset:0}
 .eb-tabpanel[hidden]{display:none}
 .eb-workbench .eb-tabs + .eb-grow{flex:1}
 .eb-tool[aria-pressed=true]{background:#EAF4DE;border-color:#B8D898;color:#375F21}
-.eb-geometry-tools .eb-tool{width:100%;min-height:44px;padding:6px}
-.eb-geometry-tools .eb-label{font-size:9px;line-height:1.1;white-space:nowrap}
+/* Geometry-only metrics: the quantity toolbar keeps the shared 40px button height. */
+.eb-tabpanel .eb-geometry-workspace .eb-geometry-tools .eb-tool{width:100%;min-height:44px;padding:6px}
+.eb-tabpanel .eb-geometry-workspace .eb-geometry-tools .eb-label{font-size:9px;line-height:1.1;white-space:nowrap}
 .eb-geometry-workspace{position:absolute;inset:56px 0 0}
 .eb-artboard.eb-geometry,.eb-artboard.eb-grid{background-image:none}
 .eb-dock .eb-danger{color:#B74035}

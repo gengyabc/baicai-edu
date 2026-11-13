@@ -181,48 +181,44 @@ test('properties: random drags keep 2D = B + C, and translate-then-midpoint matc
   }
 });
 
-test('rectangle and parallelogram keep their constraints for random corner drags', () => {
-  let seed = 11;
-  const next = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
+test('dragging any quadrilateral corner keeps its diagonal partner and every right angle', () => {
+  // spec.md:32 「拖任一角，其对角不动，另两角按直角重算」
   const dot = (o, u, v) => (u.x - o.x) * (v.x - o.x) + (u.y - o.y) * (v.y - o.y);
   const d = (p, q) => Math.hypot(p.x - q.x, p.y - q.y);
   const vec = (p, q) => ({ x: q.x - p.x, y: q.y - p.y });
   const eq = (u, v) => near(u.x, v.x) && near(u.y, v.y);
   const cross = (o, u, v) => (u.x - o.x) * (v.y - o.y) - (u.y - o.y) * (v.x - o.x);
-  for (let round = 0; round < 40; round++) {
-    // A valid rectangle: take an anchor B and two perpendicular leg lengths, then place A and C.
-    const b = { x: 150 + Math.round(next() * 400), y: 120 + Math.round(next() * 350) };
-    const angle = next() * Math.PI * 2;
-    const l1 = 30 + Math.round(next() * 100), l2 = 30 + Math.round(next() * 100);
-    const a = { x: b.x + Math.cos(angle) * l1, y: b.y + Math.sin(angle) * l1 };
-    const c = { x: b.x - Math.sin(angle) * l2, y: b.y + Math.cos(angle) * l2 };
-    if (![a, b, c].every((p) => p.x >= 24 && p.x <= 776 && p.y >= 24 && p.y <= 576)) continue;
-    let board = add(add(add(G.empty(), a.x, a.y), b.x, b.y), c.x, c.y);
-    board = shape(board, 'rectangle', ['p-1', 'p-2', 'p-3']);
-    // Drag one of the free ends adjacent to the anchor; D is derived and never dragged.
-    const corner = 'p-1';
-    const anchor = at(board, 'p-2'), opposite = at(board, 'p-4');
-    const distance = 40 + next() * 400;
-    const length = Math.hypot(opposite.x - anchor.x, opposite.y - anchor.y) || 1;
-    const target = { x: anchor.x + (opposite.x - anchor.x) / length * Math.max(distance, 40),
-      y: anchor.y + (opposite.y - anchor.y) / length * Math.max(distance, 40) };
-    const moved = G.reduce(board, { type: 'movePoint', id: corner, x: target.x, y: target.y });
-    const corners = ['p-1', 'p-2', 'p-3', 'p-4'].map((id) => at(moved, id));
-    assert.ok(near(corners[0].x + corners[2].x, corners[1].x + corners[3].x), 'diagonals share a midpoint');
-    assert.ok(near(corners[0].y + corners[2].y, corners[1].y + corners[3].y));
-    assert.ok(near(corners[1].x, anchor.x) && near(corners[1].y, anchor.y), 'the anchor never moves');
-    assert.ok(near(d(corners[0], corners[1]), d(corners[2], corners[3])) && near(d(corners[1], corners[2]), d(corners[3], corners[0])));
-    // The anchor itself never moves.
-    assert.throws(() => G.reduce(board, { type: 'movePoint', id: 'p-2', x: target.x, y: target.y }), /right-angled corner/);
-
-    let para = add(add(add(G.empty(), 100, 100), 400, 100), 450, 350);
-    para = shape(para, 'parallelogram', ['p-1', 'p-2', 'p-3']);
-    const pm = G.reduce(para, { type: 'movePoint', id: 'p-1', x: 220, y: 170 });
-    assert.deepEqual([at(pm, 'p-2').x, at(pm, 'p-2').y], [at(para, 'p-2').x, at(para, 'p-2').y], 'the diagonal partner stays put');
-    const pc = ['p-1', 'p-2', 'p-3', 'p-4'].map((id) => at(pm, id));
-    // The ring is P1 P2 P3 P4 with P2 and P4 diagonal, so it stays convex.
-    assert.ok(cross(pc[0], pc[1], pc[2]) > 0 && cross(pc[0], pc[2], pc[3]) > 0, 'the ring stays convex');
-    assert.ok(eq(vec(pc[0], pc[1]), vec(pc[3], pc[2])) && eq(vec(pc[1], pc[2]), vec(pc[0], pc[3])), 'opposite sides stay parallel');
+  // The ring is P1 P2 P3 P4, and P1/P3 and P2/P4 are the diagonal pairs.
+  const partners = { 'p-1': 'p-3', 'p-3': 'p-1', 'p-2': 'p-4', 'p-4': 'p-2' };
+  const square = shape(add(add(add(G.empty(), 100, 100), 400, 100), 400, 300), 'rectangle', ['p-1', 'p-2', 'p-3']);
+  for (const [corner, target] of [['p-1', { x: 150, y: 140 }], ['p-2', { x: 380, y: 120 }],
+    ['p-3', { x: 380, y: 260 }], ['p-4', { x: 150, y: 300 }]]) {
+    // A derived corner is not a drag handle at all (the view never offers it either).
+    if (at(square, corner).kind === 'derived') {
+      assert.throws(() => G.reduce(square, { type: 'movePoint', id: corner, x: target.x, y: target.y }), /Only a free point can move/);
+      continue;
+    }
+    const moved = G.reduce(square, { type: 'movePoint', id: corner, x: target.x, y: target.y });
+    const ring = ['p-1', 'p-2', 'p-3', 'p-4'].map((id) => at(moved, id));
+    // The corner follows the pointer, the diagonal partner stays exactly put.
+    assert.ok(eq(at(moved, corner), target), `${corner} follows the pointer`);
+    assert.ok(eq(at(moved, partners[corner]), at(square, partners[corner])), `${corner}: the diagonal partner stays put`);
+    // All four angles stay right: the dot product at each corner vanishes.
+    for (const [o, u, v] of [[0, 1, 3], [1, 0, 2], [2, 1, 3], [3, 0, 2]]) {
+      assert.ok(near(dot(ring[o], ring[u], ring[v]), 0), 'every corner stays right-angled');
+    }
+    assert.ok(eq(vec(ring[0], ring[1]), vec(ring[3], ring[2])), 'opposite sides stay parallel');
+    assert.ok(near(d(ring[0], ring[2]), d(ring[1], ring[3])), 'the diagonals stay equal');
+  }
+  // The parallelogram follows the same rule (spec.md:31): the diagonal partner does not move.
+  let para = add(add(add(G.empty(), 100, 100), 400, 100), 450, 350);
+  para = shape(para, 'parallelogram', ['p-1', 'p-2', 'p-3']);
+  for (const corner of ['p-1', 'p-2', 'p-3']) {
+    const moved = G.reduce(para, { type: 'movePoint', id: corner, x: 220, y: 170 });
+    assert.ok(eq(at(moved, partners[corner]), at(para, partners[corner])), `${corner}: the diagonal partner stays put`);
+    const pc = ['p-1', 'p-2', 'p-3', 'p-4'].map((id) => at(moved, id));
+    assert.ok(eq(vec(pc[0], pc[1]), vec(pc[3], pc[2])), 'opposite sides stay parallel');
+    assert.ok(eq(vec(pc[1], pc[2]), vec(pc[0], pc[3])), 'opposite sides stay parallel');
   }
 });
 
@@ -240,18 +236,25 @@ test('a rectangle never degrades: an axis drag stops the shape from collapsing',
 });
 
 test('parallelogram drags keep opposite sides parallel and the diagonal neighbour fixed', () => {
+  // spec.md:31 「拖任一角，其对角不动，另两角重算」
+  const vec = (p, q) => ({ x: q.x - p.x, y: q.y - p.y });
+  const eq = (u, v) => near(u.x, v.x) && near(u.y, v.y);
+  const cross = (o, u, v) => (u.x - o.x) * (v.y - o.y) - (u.y - o.y) * (v.x - o.x);
   let b = add(add(add(G.empty(), 100, 100), 400, 100), 450, 350);
   b = shape(b, 'parallelogram', ['p-1', 'p-2', 'p-3']);
   const moved = G.reduce(b, { type: 'movePoint', id: 'p-1', x: 220, y: 170 });
-  // P2 and P4 form the diagonal, so their positions are untouched.
-  assert.deepEqual([at(moved, 'p-2').x, at(moved, 'p-2').y], [at(b, 'p-2').x, at(b, 'p-2').y]);
+  // The partner of P1 is P3: it stays exactly where it was, and P1 follows the pointer.
+  const partner = at(b, 'p-3');
+  assert.deepEqual([at(moved, 'p-3').x, at(moved, 'p-3').y], [partner.x, partner.y],
+    'the diagonal partner does not move');
+  assert.deepEqual([at(moved, 'p-1').x, at(moved, 'p-1').y], [220, 170]);
   const corners = ['p-1', 'p-2', 'p-3', 'p-4'].map((id) => at(moved, id));
-  const cross = (o, u, v) => (u.x - o.x) * (v.y - o.y) - (u.y - o.y) * (v.x - o.x);
-  assert.ok(cross(corners[0], corners[1], corners[2]) > 0, 'the ring stays convex');
-  const vec = (p, q) => ({ x: q.x - p.x, y: q.y - p.y });
-  const eq = (u, v) => near(u.x, v.x) && near(u.y, v.y);
+  assert.ok(cross(corners[0], corners[1], corners[2]) * cross(corners[0], corners[2], corners[3]) > 0, 'the ring stays simple');
   assert.ok(eq(vec(corners[0], corners[1]), vec(corners[3], corners[2])), 'P1P2 matches P4P3');
   assert.ok(eq(vec(corners[1], corners[2]), vec(corners[0], corners[3])), 'P2P3 matches P1P4');
+  // The shared midpoint of the diagonals holds: a parallelogram bisects its diagonals.
+  const mid = (p, q) => ({ x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 });
+  assert.ok(eq(mid(corners[0], corners[2]), mid(corners[1], corners[3])), 'diagonals bisect each other');
 });
 
 test('derived positions are recomputed, not persisted, and never imported as authority', () => {
@@ -280,10 +283,11 @@ test('deleting a point removes every downstream element and construction in one 
   const withSegment = shape(b, 'segment', ['p-1', 'p-2']);
   const withMid = G.reduce(withSegment, { type: 'addMidpoint', a: 'p-1', b: 'p-2' });
   assert.equal(withMid.points.length, 5);
-  // Deleting A drops the rectangle (it loses a corner) and the segment, but keeps
-  // the midpoint, which depends on B and C, not on A.
+  // Deleting A drops the rectangle (it loses a corner) and the segment. The midpoint D
+  // takes A as an input, so it loses a parent and goes with it (spec §4: a deletion
+  // propagates to every downstream reference and never leaves a dangling one).
   const deleted = G.reduce(withMid, { type: 'delete', ids: ['p-1'] });
-  // The rectangle's derived corner D and the midpoint both depend on A, so both go with it.
+  // The rectangle's derived corner and the midpoint both reference A, so both go with it.
   assert.deepEqual(deleted.points.map((p) => p.id), ['p-2', 'p-3']);
   assert.deepEqual(deleted.elements, []);
   assert.deepEqual(G.validate(serialized(deleted)), deleted);
@@ -411,4 +415,65 @@ test('factories have no runtime imports and operations never mutate their input'
   const built = new Function(`${createGeometryModel.toString()} return createGeometryModel();`)();
   assert.deepEqual(built.empty(), G.empty());
   assert.equal(built.reduce(built.empty(), { type: 'addPoint', x: 100, y: 100 }).points.length, 1);
+});
+
+test('a diagonal corner drag follows the pointer on both axes and absorbs at the threshold', () => {
+  // spec.md:37 「退化被吸收在拖动阈值处」: the preview stops at the last legal position instead
+  // of silently reading a diagonal request as a pure sideways move.
+  const sq = shape(add(add(add(G.empty(), 100, 100), 400, 100), 400, 300), 'rectangle', ['p-1', 'p-2', 'p-3']);
+  const preview = G.constrainedMove(sq, 'p-1', 160, 140);
+  assert.ok(preview.x > 100 && preview.y > 100, 'both coordinates change on a diagonal request');
+  const committed = G.reduce(sq, { type: 'movePoint', id: 'p-1', x: 160, y: 140 });
+  assert.deepEqual([preview.x, preview.y], [at(committed, 'p-1').x, at(committed, 'p-1').y],
+    'the preview is exactly the position the release commits');
+  // A request that cannot be honoured stops short of the shape becoming degenerate.
+  const flat = G.constrainedMove(sq, 'p-2', 400, 300);
+  const landed = G.reduce(sq, { type: 'movePoint', id: 'p-2', x: 400, y: 300 });
+  const ring = ['p-1', 'p-2', 'p-3', 'p-4'].map((id) => at(landed, id));
+  const area = Math.abs((ring[1].x - ring[0].x) * (ring[2].y - ring[0].y) - (ring[1].y - ring[0].y) * (ring[2].x - ring[0].x));
+  assert.ok(area > 0, 'the shape keeps a real area');
+  assert.deepEqual([flat.x, flat.y], [at(landed, 'p-2').x, at(landed, 'p-2').y], 'the preview matches the absorbed release');
+});
+
+test('deleting a point never leaves a derived point referencing a missing parent', () => {
+  // issue 16 「删除矩形任一角会删除该矩形与由它算出的派生角」; spec.md:43 「不留悬空引用」
+  const b = rectangle();
+  const withMid = G.reduce(b, { type: 'addMidpoint', a: 'p-1', b: 'p-2' });
+  const deleted = G.reduce(withMid, { type: 'delete', ids: ['p-1'] });
+  const ids = new Set(deleted.points.map((p) => p.id));
+  for (const p of deleted.points) {
+    for (const input of p.construction?.inputs || []) {
+      assert.ok(ids.has(input), `${p.id} references ${input}, which no longer exists`);
+    }
+  }
+  assert.deepEqual(deleted.points.map((p) => p.id), ['p-2', 'p-3'], 'the midpoint loses its parent and goes too');
+  assert.deepEqual(G.validate(serialized(deleted)), deleted, 'validate round-trips the cascade');
+  for (const e of deleted.elements) {
+    for (const ref of e.type === 'circle' ? [e.centerPointId, e.radiusPointId] : e.points) {
+      assert.ok(ids.has(ref), `${e.id} references ${ref}, which no longer exists`);
+    }
+  }
+  // An isolated midpoint the student deleted gets the same transitive treatment.
+  const chain = G.reduce(withMid, { type: 'delete', ids: ['p-5'] });
+  assert.deepEqual(chain.points.map((p) => p.id), ['p-1', 'p-2', 'p-3', 'p-4']);
+});
+
+test('a drag preview carries the corner moves and rim translations the model computed', () => {
+  // Feature envy: the view renders `preview.corners` / `preview.rims` instead of re-deriving.
+  const sq = rectangle();
+  const preview = G.constrainedMove(sq, 'p-1', 160, 140);
+  assert.deepEqual(Object.keys(preview).sort(), ['corners', 'rims', 'x', 'y']);
+  // A corner drag moves its two neighbours as well, so the preview names every one of them.
+  assert.deepEqual(preview.corners.map((c) => c.id).sort(), ['p-2', 'p-4']);
+  const committed = G.reduce(sq, { type: 'movePoint', id: 'p-1', x: 160, y: 140 });
+  for (const corner of preview.corners) {
+    assert.deepEqual([corner.x, corner.y], [at(committed, corner.id).x, at(committed, corner.id).y]);
+  }
+  // A centre drag previews the rim translation the model will apply on release.
+  const circle = shape(add(add(G.empty(), 200, 200), 300, 200), 'circle', [], { centerPointId: 'p-1', radiusPointId: 'p-2' });
+  const moved = G.constrainedMove(circle, 'p-1', 230, 240);
+  assert.deepEqual(moved.rims, { 'p-2': { x: 330, y: 240 } });
+  assert.deepEqual(moved.corners, [], 'the rim is previewed as a rim, not as a corner');
+  const released = G.reduce(circle, { type: 'movePoint', id: 'p-1', x: 230, y: 240 });
+  assert.deepEqual([at(released, 'p-2').x, at(released, 'p-2').y], [330, 240], 'the preview matches the release');
 });

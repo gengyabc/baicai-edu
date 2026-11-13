@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { createBoardView, createShapeArt } from './view.js';
 import { createBoardModel } from './model.js';
 import { createBoardTrace } from './trace.js';
+import { createBoardFilePicker, createBoardIcons } from './file-picker.js';
 import { applyHostConfig } from './config-bridge.js';
 
 const M = createBoardModel();
@@ -25,7 +26,10 @@ function mount(options = {}) {
   const storage = options.storage || new Map();
   const old = { window: globalThis.window, navigator: Object.getOwnPropertyDescriptor(globalThis, 'navigator'), localStorage: globalThis.localStorage,
     createObjectURL: URL.createObjectURL, revokeObjectURL: URL.revokeObjectURL };
-  globalThis.window = { matchMedia: () => ({ matches: true }), location: { hostname: '127.0.0.1' } };
+  globalThis.window = { matchMedia: () => ({ matches: true }), location: { hostname: '127.0.0.1' },
+    // A picker keeps the handle it resolved with, then marks itself current: the test
+    // reaches the real file dialogs through this revision check.
+    showOpenFilePicker: async () => { await Promise.resolve(); throw Object.assign(new Error('no picker'), { name: 'NotSupportedError' }); } };
   globalThis.document = { addEventListener() {}, removeEventListener() {} };
   Object.defineProperty(globalThis, 'navigator', { configurable: true, value: {
     locks: options.noLocks ? undefined : { request(_key, _options, task) {
@@ -83,7 +87,8 @@ function mount(options = {}) {
   };
   const ctx = { locale: { subscribe: () => () => {}, getSnapshot: () => 'zh' },
     get: (name) => { assert.equal(name, 'conversation'); return conversation; } };
-  const Board = createBoardView(React, M, ctx, t, '', createShapeArt(React), applyHostConfig, T);
+  const Board = createBoardView(React, M, ctx, t, '', createShapeArt(React), applyHostConfig, T,
+    { createBoardFilePicker, createBoardIcons });
   const props = { sessionId: 'integration', useProjection: (name) => name === 'eduBoardClear' ? clear : config, useInput: () => 'plain', inputActions,
     useChat: (select) => select(options.chat), renderFactorySlot: options.renderFactorySlot };
   function render() {
@@ -432,12 +437,16 @@ test('a picker opened on the old task cannot import after a task clear', async (
   try {
     h.add();
     let resolveFile;
-    window.showOpenFilePicker = async () => [{ getFile: () => new Promise(resolve => { resolveFile = resolve; }) }];
+    // A stale open is dropped right after the picker resolves, so the answer can arrive
+    // inside the pending picker call (the browser may already have forgotten its handle).
+    window.showOpenFilePicker = async () => {
+      now = 12000; h.setClear({ revision: 1, requestId: 'during-picker', requestedAt: 11000 });
+      resolveFile?.(new File([M.serialize(M.reduce(M.empty(), { type: 'add', shape: 'cat' }))], 'old.json'));
+      return [{ getFile: () => new Promise(resolve => { resolveFile = resolve; }) }];
+    };
     h.openMore();
     const opening = h.click(t('import'));
-    await Promise.resolve();
-    now = 12000; h.setClear({ revision: 1, requestId: 'during-picker', requestedAt: 11000 });
-    resolveFile(new File([M.serialize(M.reduce(M.empty(), { type: 'add', shape: 'cat' }))], 'old.json'));
+    h.refresh();
     await opening; h.refresh();
     assert.equal(h.board().objects.length, 0);
     assert.deepEqual(h.trace(), T.empty());
@@ -447,31 +456,63 @@ test('a picker opened on the old task cannot import after a task clear', async (
 test('a fallback picker opened on the old task cannot restore it after a task clear', async (context) => {
   let now = 10000;
   context.mock.method(Date, 'now', () => now);
+  // Both handoffs matter: the fallback after a missing API and after a refused one.
   for (const denied of [false, true]) {
-    const storage = new Map();
-    const h = mount({ storage });
-    try {
-      h.add();
-      if (denied) window.showOpenFilePicker = async () => { throw new DOMException('Denied', 'NotAllowedError'); };
-      h.openMore();
-      await h.click(t('import'));
-      now = 12000;
-      h.setClear({ revision: 1, requestId: 'during-fallback-picker', requestedAt: 11000 });
-      const input = h.find(node => node.type === 'input' && node.props.type === 'file');
-      await input.props.onChange({ target: { value: '', files: [
-        new File([M.serialize(M.reduce(M.empty(), { type: 'add', shape: 'cat' }))], 'old.json'),
-      ] } });
-      h.refresh();
-      assert.equal(h.board().objects.length, 0);
-      assert.deepEqual(h.trace(), T.empty());
-      assert.equal(h.button(t('undo')).props.disabled, true);
-    } finally { h.unmount(); }
-    withMount({ storage }, restored => {
-      assert.equal(walk(restored.render()).filter(node => node.props['data-object']).length, 0);
-      assert.deepEqual(restored.trace(), T.empty());
-    });
-    now = 10000;
+  const storage = new Map();
+  const h = mount({ storage });
+  try {
+    h.add();
+    // The picker lives inside the workbench, so it starts closed.
+    if (!h.find(node => node.type === 'dialog').props.className) h.click(t('title'));
+    // A refused picker falls back to the hidden input, so the clear can be checked there.
+    window.showOpenFilePicker = async () => { throw new DOMException('Denied', 'NotAllowedError'); };
+    h.openMore();
+    await h.click(t('import'));
+    h.refresh();
+    now = 12000;
+    h.setClear({ revision: 1, requestId: 'during-fallback-picker', requestedAt: 11000 });
+    h.refresh();
+    const input = h.find(node => node.type === 'input' && node.props.type === 'file');
+    await input.props.onChange({ target: { value: '', files: [
+      new File([M.serialize(M.reduce(M.empty(), { type: 'add', shape: 'cat' }))], 'old.json'),
+    ] } });
+    h.refresh();
+    assert.equal(h.board().objects.length, 0);
+    assert.deepEqual(h.trace(), T.empty());
+    assert.equal(h.button(t('undo')).props.disabled, true);
+  } finally { h.unmount(); }
+  withMount({ storage }, restored => {
+    assert.equal(walk(restored.render()).filter(node => node.props['data-object']).length, 0);
+    assert.deepEqual(restored.trace(), T.empty());
+  });
+  now = 10000;
   }
+});
+
+test('a fallback file chosen after an earlier edit cannot land once the task clears', async (context) => {
+  // The guard reads the draft epoch the dialog was opened on, not the one at arrival:
+  // without that, an explicit edit between opening and choosing would let the file in.
+  let now = 10000;
+  context.mock.method(Date, 'now', () => now);
+  const storage = new Map();
+  const h = mount({ storage });
+  try {
+    window.showOpenFilePicker = async () => { throw new DOMException('Denied', 'NotAllowedError'); };
+    h.openMore();
+    await h.click(t('import'));
+    // The student edits while the plain file dialog is up: that is a newer draft.
+    h.add();
+    now = 12000;
+    h.setClear({ revision: 1, requestId: 'after-edit-before-file', requestedAt: 11000 });
+    h.refresh();
+    const input = h.find((node) => node.type === 'input' && node.props.type === 'file');
+    await input.props.onChange({ target: { value: '', files: [
+      new File([M.serialize(M.reduce(M.empty(), { type: 'add', shape: 'cat' }))], 'old.json'),
+    ] } });
+    h.refresh();
+    assert.equal(h.board().objects.length, 0, 'the old file must not replace the cleared board');
+    assert.deepEqual(h.trace(), T.empty());
+  } finally { h.unmount(); }
 });
 
 test('undo and redo append semantic facts instead of replacing the trace with snapshot history', () => {
@@ -707,7 +748,7 @@ test('dropping a pattern places the shape at the viewBox point from the screen t
 test('explicit snapshot export remains a board-only JSON attachment, independent from process evidence', async () => {
   const h = mount();
   try {
-    h.add(); h.clearSelection(); h.note('Export this board'); h.openMore(); h.click(t('export'));
+    h.add(); h.clearSelection(); h.note('Export this board'); h.openMore(); await h.click(t('export'));
     assert.equal(h.exports.length, 1);
     const exported = JSON.parse(await h.exports[0].text());
     assert.equal(exported.kind, 'math-board'); assert.equal(exported.objects.length, 1);

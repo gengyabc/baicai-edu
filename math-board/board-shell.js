@@ -6,10 +6,14 @@ import { boardQuestionReferences } from './question-reference.js';
 
 /**
  * Build the tabbed board. Both pages are created once and stay mounted while the dialog
- * is open, so switching tabs never resets a draft or a history. With one page this is
- * exactly the old single-page board.
+ * is open, so switching tabs never resets a draft or a history.
+ *
+ * The shell draws the chrome both pages used to draw for themselves (launcher, dialog,
+ * brand mark, title). It still has no quantity-board knowledge: the quantity page passes
+ * its `mark(size)` in, so the shell paints the same level-coloured mark without knowing
+ * what a level is.
  */
-export function createTabbedBoardView(React, t, css, quantityPage, geometryPage) {
+export function createTabbedBoardView(React, t, css, quantityPage, geometryPage, mark) {
   const h = React.createElement;
   const QuantityPage = quantityPage();
   const GeometryPage = geometryPage ? geometryPage() : null;
@@ -50,12 +54,15 @@ export function createTabbedBoardView(React, t, css, quantityPage, geometryPage)
           type: 'button', className: 'eb-question-toggle', 'aria-expanded': questionExpanded,
           'aria-controls': `eb-question-${props.sessionId}`, onClick: () => setQuestionExpanded(!questionExpanded),
         }, questionExpanded ? t('questionCollapse') : t('questionExpand'))));
+    const brand = (size) => (typeof mark === 'function' ? mark(size) : null);
     const tabs = h('div', { className: 'eb-tabs', role: 'tablist', 'aria-label': t('tabs') },
       [['quantity', 'tabQuantity'], ['geometry', 'tabGeometry']].map(([name, label]) => h('button', {
         key: name, type: 'button', role: 'tab', id: `eb-tab-${name}`, className: 'eb-tab', 'data-tab': name,
         'aria-selected': tab === name, 'aria-controls': `eb-tabpanel-${name}`,
         onClick: () => setTab(name),
       }, t(label))));
+    // The panels carry no `data-tab`: that attribute belongs to the tab buttons alone,
+    // so a lookup for a single tab control never matches a panel too.
     const panel = (name, node) => h('div', {
       id: `eb-tabpanel-${name}`, role: 'tabpanel', 'aria-labelledby': `eb-tab-${name}`,
       className: 'eb-tabpanel', hidden: tab !== name,
@@ -65,13 +72,15 @@ export function createTabbedBoardView(React, t, css, quantityPage, geometryPage)
       h('button', {
         type: 'button', className: 'edu-board-launch', title: t('title'),
         'aria-label': t('title'), 'aria-haspopup': 'dialog', onClick: () => setOpened(true),
-      }, h('span', null, t('title'))),
+      }, brand(18), h('span', null, t('title'))),
       h('dialog', {
         ref: dialog, className: 'eb-dialog', 'aria-label': t('title'),
         onClose: () => setOpened(false),
         onCancel: (event) => { event.preventDefault(); setOpened(false); },
       }, h('div', { className: 'eb-workbench' },
-        h('header', { className: 'eb-topbar' }, h('span', null, t('title')), tabs, h('span', { className: 'eb-grow' })),
+        // The pages below were built for a top bar already at the top of the workbench,
+        // so the shell's bar keeps that one and hides the page's own copy.
+        h('header', { className: 'eb-topbar' }, brand(27), h('span', null, t('title')), tabs, h('span', { className: 'eb-grow' })),
         panel('quantity', h(QuantityPage, { ...props, split: true, question, close: () => setOpened(false) })),
         GeometryPage && panel('geometry', h(GeometryPage, { ...props, split: true, question, close: () => setOpened(false) })))));
   };

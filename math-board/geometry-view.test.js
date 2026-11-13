@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createBoardView, createShapeArt } from './view.js';
 import { createTabbedBoardView } from './board-shell.js';
+import { createBoardFilePicker, createBoardIcons } from './file-picker.js';
 import { createGeometryPage } from './geometry-view.js';
 import { createGeometryModel } from './geometry/model.js';
 import { createBoardModel } from './model.js';
@@ -84,9 +85,11 @@ function mount(options = {}) {
     releaseDraftAttachment() {},
   };
   const ctx = { locale: { subscribe: () => () => {}, getSnapshot: () => 'zh' }, get: () => conversation };
-  const quantityPage = () => createBoardView(React, M, ctx, t, '', createShapeArt(React), applyHostConfig, T);
-  const geometryPage = () => createGeometryPage(React, G, ctx, t);
-  const Board = createTabbedBoardView(React, t, '', quantityPage, geometryPage);
+  const shared = { createBoardFilePicker, createBoardIcons };
+  const quantityPage = () => createBoardView(React, M, ctx, t, '', createShapeArt(React), applyHostConfig, T, shared);
+  const geometryPage = () => createGeometryPage(React, G, ctx, t, shared);
+  // The shell draws the shared brand mark, so the quantity page hands it in.
+  const Board = createTabbedBoardView(React, t, '', quantityPage, geometryPage, (size) => quantityPage().Mark(size));
   const props = { sessionId: 'tabbed', useProjection: () => null, useInput: () => 'plain', inputActions };
 
   const h = React.createElement;
@@ -448,4 +451,75 @@ test('a geometry JSON import replaces the draft and a wrong-kind file changes no
       assert.deepEqual(h.board().points.map((p) => p.id), ['p-1', 'p-2']);
     } finally { h.unmount(); }
   } finally { globalThis.File = previousFile; }
+});
+
+test('a derived point is visible and selectable but never a snap target or drag handle', () => {
+  withMount((h) => {
+    h.tab('geometry');
+    h.tool('point');
+    h.clickAt(100, 100); h.clickAt(300, 100); h.clickAt(300, 300);
+    h.tool('rectangle');
+    h.clickAt(100, 100); h.clickAt(300, 100); h.clickAt(300, 300);
+    const derived = h.board().points.find((p) => p.kind === 'derived');
+    assert.ok(derived, 'the rectangle has a derived fourth corner');
+    // Re-clicking the derived corner with a shape tool does not reuse its id as an
+    // endpoint: a new free point is placed instead, and no shape references the derived id.
+    h.tool('segment');
+    h.clickAt(derived.x, derived.y);
+    const after = h.board();
+    assert.equal(after.points.filter((p) => p.kind === 'free').length, 4, 'a fresh free point was placed');
+    assert.equal(after.points.some((p) => p.id === derived.id && p.label !== derived.label), false);
+    // Starting a drag on the derived corner does not move it; a derived point never moves.
+    h.tool('select');
+    h.clickAt(derived.x, derived.y);
+    h.moveTo(derived.x + 40, derived.y + 40);
+    h.release(derived.x + 40, derived.y + 40);
+    assert.deepEqual([h.board().points.find((p) => p.id === derived.id).x,
+      h.board().points.find((p) => p.id === derived.id).y], [derived.x, derived.y],
+    'a derived point is not a drag handle');
+    // A visible endpoint is not duplicated by a click next to it: the click reuses it.
+    const free = h.board().points.find((p) => p.kind === 'free');
+    h.tool('point');
+    const before = h.board().points.length;
+    h.clickAt(free.x + 3, free.y + 3);
+    assert.equal(h.board().points.length, before, 'snapping to a free point never duplicates it');
+  });
+});
+
+test('zoom magnifies the drawing and fit shows the whole board', () => {
+  withMount((h) => {
+    h.tab('geometry');
+    const artboard = () => h.find((n) => n.type === 'svg' && String(n.props.className || '').includes('eb-geometry'));
+    const before = artboard();
+    assert.equal(before.props.viewBox, '0 0 800 600', 'fit-to-width frames the whole board');
+    h.find((n) => n.type === 'button' && n.props['aria-label'] === t('zoomIn')).props.onClick();
+    h.render();
+    const zoomed = artboard();
+    // A real zoom narrows the viewBox, so every stroke and label is magnified.
+    assert.equal(zoomed.props.viewBox, '80 60 640 480');
+    assert.ok(String(zoomed.props.style.width) === '100%', 'the canvas keeps its slot size');
+    // 适应宽度 restores the full board.
+    h.find((n) => n.type === 'button' && text(n) === '125%').props.onClick();
+    h.render();
+    const fitted = artboard();
+    assert.equal(fitted.props.viewBox, '0 0 800 600');
+  });
+});
+
+test('undo shortcuts and Delete stay off the canvas while an overlay is open', () => {
+  withMount((h) => {
+    h.tab('geometry');
+    h.tool('point');
+    h.clickAt(100, 100);
+    h.click(t('clearGeometry'));
+    const workspace = h.find((node) => String(node.props.className || '').includes('eb-geometry-workspace'));
+    let prevented = false;
+    workspace.props.onKeyDown({ key: 'z', metaKey: true, shiftKey: false, preventDefault() { prevented = true; } });
+    let deleted = false;
+    workspace.props.onKeyDown({ key: 'Delete', metaKey: false, shiftKey: false, preventDefault() { deleted = true; } });
+    h.render();
+    assert.equal(prevented, false, 'the overlay owns the keyboard');
+    assert.equal(deleted, false);
+    assert.equal(h.board().points.length, 1, 'nothing is deleted under the overlay');
+  });
 });

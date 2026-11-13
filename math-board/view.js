@@ -224,4 +224,3 @@ export function colorIndexForValue(levels, value) {
   return level ? level.color : 0;
 }
 export { createBoardView } from './view-component.js';
-export { createTabbedBoardView } from './board-shell.js';

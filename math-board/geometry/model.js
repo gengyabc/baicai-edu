@@ -37,19 +37,12 @@ export function createGeometryModel() {
   const cross = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
   const distance = (a, b) => Math.hypot(b.x - a.x, b.y - a.y);
   const midpoint = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
-  // Every three-point construction uses P4 = P1 + P3 - P2. A rectangle is a parallelogram
-  // whose right angle sits at P2, so the interface pins that corner: dragging P1 or P3
-  // then changes only a side length and keeps all four corner right.
+  // The one authoritative statement of the shared fourth-point formula: P4 = P1 + P3 - P2,
+  // so P2 and P4 are the diagonal pair for both families. Dragging a corner keeps its
+  // diagonal partner and re-derives the other one from the two remaining corners.
   const fourthPoint = (a, b, c) => ({ x: a.x + c.x - b.x, y: a.y + c.y - b.y });
-  // The anchor B of a rectangle carries the right angle, so it is the one corner
-  // which never moves; its two neighbours slide along the perpendicular legs.
-  const fixedAnchor = (canonical, id) => {
-    const owner = canonical.elements.find((e) => e.type === 'rectangle' && e.points.includes(id));
-    if (!owner) return false;
-    return owner.points[1] === id;
-  };
-  // Input corners P1 P2 P3: P2 and P4 are the diagonal pair. A rectangle needs the
-  // right angle at P2, the corner every drag keeps.
+  // A rectangle's three inputs P1 P2 P3 are perpendicular at their middle corner, so its
+  // construction fixes all four right angles no matter which corner the student dragged.
   const rectangleValid = ([a, b, c]) => {
     const dot = (a.x - b.x) * (c.x - b.x) + (a.y - b.y) * (c.y - b.y);
     const scale = Math.hypot(a.x - b.x, a.y - b.y) * Math.hypot(c.x - b.x, c.y - b.y);
@@ -116,7 +109,8 @@ export function createGeometryModel() {
         || !['free', 'derived'].includes(p.kind) || !finite(p.x) || !inside(p) || !text(p.note ?? '', 500)) fail('Invalid point');
       ids.add(p.id); labels.add(p.label); raw.push(p);
       if (p.kind === 'free') {
-        if (p.construction != null) fail('A free point carries no construction');
+        // A free point carries no construction; validateConstruction re-checks the wire
+        // form before a file is accepted, so a free point's construction is not re-tested here.
         pointMap.set(p.id, { id: p.id, label: p.label, kind: 'free', x: p.x, y: p.y, construction: null, note: p.note ?? '' });
         continue;
       }
@@ -178,16 +172,6 @@ export function createGeometryModel() {
   // A circle's centre is a handle for the whole circle: moving it carries the rim
   // point by the same offset, so the radius never changes on a centre drag.
   const circlesAt = (canonical, id) => canonical.elements.filter((e) => e.type === 'circle' && e.centerPointId === id);
-  function translateCircles(canonical, id, at) {
-    const rimIds = new Set(circlesAt(canonical, id).map((e) => e.radiusPointId));
-    if (!rimIds.size) return null;
-    const start = canonical.points.find((p) => p.id === id);
-    const dx = at.x - start.x, dy = at.y - start.y;
-    return validate({ ...canonical, points: canonical.points.map((p) => {
-      if (p.id === id) return { ...p, x: at.x, y: at.y };
-      return rimIds.has(p.id) ? { ...p, x: p.x + dx, y: p.y + dy } : p;
-    }) });
-  }
   // Walk start -> target and return the last position the predicate still accepts.
   function lastLegal(start, target, legal) {
     let good = start, bad = target;
@@ -197,56 +181,110 @@ export function createGeometryModel() {
     }
     return good;
   }
-  function moveWithCircles(canonical, id, at) {
-    if (!circlesAt(canonical, id).length) return withPoint(canonical, id, at);
-    try { return translateCircles(canonical, id, at); } catch {
-      // The rim would leave the board or break another shape: stop the drag short.
-      const start = canonical.points.find((p) => p.id === id);
-      const good = lastLegal(start, at, (probe) => {
-        try { return Boolean(translateCircles(canonical, id, probe)); } catch { return false; }
-      });
-      if (good === start) fail('The circle cannot move there');
-      return translateCircles(canonical, id, good);
-    }
-  }
-  // In a rectangle one corner carries the right angle and cannot move; the two
-  // corners next to it may slide along their own leg only. A corner slides by
-  // the projection of the request onto that leg, which keeps every angle exact.
-  function legOf(canonical, id) {
-    const owner = canonical.elements.find((e) => e.type === 'rectangle' && e.points.includes(id));
-    if (!owner) return null;
-    const b = canonical.points.find((q) => q.id === owner.points[1]);
-    const a = canonical.points.find((q) => q.id === owner.points[0]);
-    const c = canonical.points.find((q) => q.id === owner.points[2]);
-    if (!b || !a || !c || owner.points[1] === id) return null;
-    // Each free end owns exactly one leg: A owns BA, C owns BC. The direction points
-    // away from the anchor and has the leg's own length.
-    const end = owner.points[0] === id ? a : c;
-    const vector = { x: end.x - b.x, y: end.y - b.y };
-    const length = Math.hypot(vector.x, vector.y);
-    if (length <= EPSILON) return null;
-    return { b, end, unit: { x: vector.x / length, y: vector.y / length } };
+  // A drag on a quadrilateral corner holds the diagonally opposite corner still (spec §3).
+  // The dragged corner follows the pointer, its opposite corner stays, and the other two
+  // corners are recomputed about the shared diagonal midpoint. That is the same rule for a
+  // rectangle and a parallelogram, and it needs no per-corner special case.
+  //
+  // A quadrilateral has the two diagonal pairs (A, C) and (B, D). With W the dragged corner
+  // fixed at T and P its partner held, the other pair U, V turns about M = (T + P) / 2:
+  //   parallelogram: U, V = M ± k, keeping the pair's own half-diagonal k (both diagonals
+  //                  bisect each other, so every side stays parallel to its opposite);
+  //   rectangle:     the diagonals of a rectangle are equal, so k is also rotated to be
+  //                  perpendicular to T - P with |k| = |T - P| / 2. That forces the four
+  //                  right angles while W follows the pointer exactly.
+  function diagonalMove(canonical, id, target) {
+    const shape = canonical.elements.find((e) => (e.type === 'rectangle' || e.type === 'parallelogram')
+      && e.points.includes(id));
+    if (!shape) return null;
+    const ring = shape.points.map((ref) => canonical.points.find((p) => p.id === ref));
+    const [a, b, c, d] = ring;
+    if (!a || !b || !c || !d || d.kind !== 'derived') return null;
+    // Diagonal pairs: P1/P3 and P2/P4. Each corner's partner is the one across the centre.
+    const partnerOf = new Map([[a.id, c], [c.id, a], [b.id, d], [d.id, b]]);
+    const partner = partnerOf.get(id);
+    const owner = ring.find((p) => p.id === id);
+    if (!partner || !owner || owner.kind !== 'free') return null;
+    // The two corners that are neither the dragged one nor its partner; they turn about M.
+    const turning = ring.filter((p) => p.id !== id && p.id !== partner.id);
+    const rectangle = shape.type === 'rectangle';
+    const boardAt = (t) => {
+      const m = { x: (t.x + partner.x) / 2, y: (t.y + partner.y) / 2 };
+      // The current half-diagonal of the turning pair, and the half-diagonal the pointer implies.
+      const half = { x: (turning[0].x - turning[1].x) / 2, y: (turning[0].y - turning[1].y) / 2 };
+      const span = { x: (t.x - partner.x) / 2, y: (t.y - partner.y) / 2 };
+      // A rectangle needs |k| = |T - P| / 2 and k ⟂ T - P; a parallelogram keeps its own k.
+      // Each turning corner keeps the side it was on: the pair's own half-diagonal tells
+      // which one sits on the positive side of the turned half-diagonal.
+      const turned = rectangle ? { x: -span.y, y: span.x } : half;
+      const same = half.x * turned.x + half.y * turned.y >= 0;
+      const placed = new Map([[id, t],
+        [turning[0].id, { x: m.x + (same ? turned.x : -turned.x), y: m.y + (same ? turned.y : -turned.y) }],
+        [turning[1].id, { x: m.x - (same ? turned.x : -turned.x), y: m.y - (same ? turned.y : -turned.y) }]]);
+      return validate({ ...canonical, points: canonical.points.map((p) => {
+        const at = placed.get(p.id);
+        if (!at) return p;
+        // Free corners only move inside the board; the derived corner is checked there too.
+        return inside(at) ? { ...p, x: at.x, y: at.y } : fail('Invalid coordinate');
+      }) });
+    };
+    const start = { x: owner.x, y: owner.y };
+    const legal = (t) => {
+      if (!inside(t)) return false;
+      try { boardAt(t); return true; } catch { return false; }
+    };
+    if (legal(target)) return boardAt(target);
+    // Absorption: the pointer asked for a position the shape cannot take, so the drag stops
+    // at the last legal position on the way there instead of being read as another axis.
+    return boardAt(lastLegal(start, target, legal));
   }
   // A drag asks for a target; the model answers where the point may actually go.
   function axisMove(canonical, id, patch) {
     const point = canonical.points.find((p) => p.id === id) || fail('Unknown point');
+    if (point.kind !== 'free') fail('Only a free point can move');
     const target = { x: patch.x, y: patch.y };
     if (!finite(target.x) || !finite(target.y)) fail('Invalid coordinate');
-    const start = { x: point.x, y: point.y };
+    // A quadrilateral corner moves the whole ring, keeping its diagonal partner still.
+    const diagonal = diagonalMove(canonical, id, target);
+    if (diagonal) return diagonal;
+    const at = ({ x, y }) => ({ ...point, x, y });
+    const shapeAt = (coordinate) => validate({ ...canonical, points: canonical.points.map((p) => p.id === id ? at(coordinate) : p) });
+    const legal = ({ x, y }) => allowed(canonical, id, at({ x, y }));
     const clamped = { x: Math.max(MARGIN, Math.min(WIDTH - MARGIN, target.x)),
       y: Math.max(MARGIN, Math.min(HEIGHT - MARGIN, target.y)) };
-    if (allowed(canonical, id, clamped)) return clamped;
-    const leg = legOf(canonical, id);
-    // Sliding along the leg by the requested amount is exact for a rectangle.
-    if (leg) {
-      const along = (clamped.x - start.x) * leg.unit.x + (clamped.y - start.y) * leg.unit.y;
-      const wanted = { x: start.x + leg.unit.x * along, y: start.y + leg.unit.y * along };
-      const goal = { x: Math.max(MARGIN, Math.min(WIDTH - MARGIN, wanted.x)), y: Math.max(MARGIN, Math.min(HEIGHT - MARGIN, wanted.y)) };
-      if (allowed(canonical, id, goal)) return goal;
-      return lastLegal(start, goal, (probe) => allowed(canonical, id, probe));
-    }
-    // Any other shape: stop at the last legal point on the requested segment.
-    return lastLegal(start, clamped, (probe) => allowed(canonical, id, probe));
+    if (legal(clamped)) return shapeAt(clamped);
+    // Any other shape: stop at the last legal point on the requested segment. The start is
+    // always legal, so the bracket never leaves the board and always has a legal end.
+    return shapeAt(lastLegal(point, clamped, legal));
+  }
+  // A circle's centre is a handle for the whole circle: moving it carries the rim point
+  // by the same offset, so a centre drag never changes the radius.
+  function carryCircles(next, start, id, coordinate) {
+    const rimIds = new Set(circlesAt(next, id).map((e) => e.radiusPointId));
+    if (!rimIds.size) return next;
+    const dx = coordinate.x - start.x, dy = coordinate.y - start.y;
+    return validate({ ...next, points: next.points.map((p) => {
+      if (p.id === id) return { ...p, x: coordinate.x, y: coordinate.y };
+      return rimIds.has(p.id) ? { ...p, x: p.x + dx, y: p.y + dy } : p;
+    }) });
+  }
+  function movePoint(canonical, action) {
+    const point = canonical.points.find((p) => p.id === action.id) || fail('Unknown point');
+    // A quadrilateral corner drag answers with its whole ring; only a lone point needs the
+    // circle translation, so the ring result is returned as the model computed it.
+    if (!circlesAt(canonical, action.id).length) return axisMove(canonical, action.id, action);
+    const wanted = { x: action.x, y: action.y };
+    const start = { x: point.x, y: point.y };
+    const tryCarry = (coordinate) => {
+      try { return carryCircles(axisMove(canonical, action.id, coordinate), point, action.id, coordinate); } catch { return null; }
+    };
+    const direct = tryCarry(wanted);
+    if (direct) return direct;
+    // The rim would leave the board or break another shape: stop the drag short.
+    let last = null;
+    lastLegal(start, wanted, (probe) => { last = tryCarry(probe); return Boolean(last); });
+    if (!last) fail('The circle cannot move there');
+    return last;
   }
   function dependents(canonical, id) {
     const result = [];
@@ -274,13 +312,13 @@ export function createGeometryModel() {
     for (;;) {
       const keep = elements.filter((e) => !elementPoints(e).some((ref) => removed.has(ref)));
       if (keep.length === elements.length) break;
-      const gone = new Set(elements.filter((e) => !keep.includes(e)).map((e) => e.id));
-      // A derived point exists only to make a shape; losing that shape would leave it unexplained.
-      // Dependents of a removed point lose their inputs; and a derived point whose
-      // inputs are still present stays as a legitimate isolated point.
-      for (const p of canonical.points) if (p.kind === 'derived' && !removed.has(p.id)
-        && !keep.some((e) => elementPoints(e).includes(p.id)) && p.construction.inputs.every((input) => removed.has(input))) {
-        removed.add(p.id); gone.add(p.id);
+      // A quadrilateral's fourth corner exists only to make that shape, so losing the shape
+      // would leave it unexplained. A free-standing midpoint is a legitimate isolated point
+      // even with no shape around it; its own removal is handled by the queue above, which
+      // already took every construction that lost an input.
+      for (const p of canonical.points) if (p.construction?.op === 'rectangle'
+        || p.construction?.op === 'parallelogram') {
+        if (!removed.has(p.id) && !keep.some((e) => elementPoints(e).includes(p.id))) removed.add(p.id);
       }
       elements = keep;
     }
@@ -324,6 +362,14 @@ export function createGeometryModel() {
   const limited = (label) => {
     if (!text(label, 30) || !chars(label).length) fail('Invalid label');
   };
+  // Allocate a point's label and own its uniqueness in one place: every point-creating
+  // action accepts a student label or asks for the next free letter, then checks the set.
+  function allocateLabel(canonical, id, action) {
+    const label = Object.hasOwn(action, 'label') ? action.label : nextLabel(canonical, id);
+    limited(label);
+    if (canonical.points.some((p) => p.label === label)) fail('Labels must be unique');
+    return label;
+  }
   function reduceWith(canonical, action) {
     if (!record(action) || typeof action.type !== 'string') fail('Invalid action');
     if (action.type === 'batch') {
@@ -350,9 +396,7 @@ export function createGeometryModel() {
       case 'addPoint': {
         if (canonical.points.length >= 300) fail('Point limit exceeded');
         const id = nextId(canonical, 'p');
-        const label = Object.hasOwn(action, 'label') ? action.label : nextLabel(canonical, id);
-        limited(label);
-        if (canonical.points.some((p) => p.label === label)) fail('Labels must be unique');
+        const label = allocateLabel(canonical, id, action);
         const target = { x: action.x, y: action.y };
         if (!finite(target.x) || !finite(target.y) || !inside(target)) fail('Invalid coordinate');
         return validate({ ...canonical, points: [...canonical.points,
@@ -396,12 +440,10 @@ export function createGeometryModel() {
       case 'movePoint': {
         const point = pointById(action.id);
         if (point.kind !== 'free') fail('Only a free point can move');
-        if (fixedAnchor(canonical, action.id)) fail('The right-angled corner stays in place');
         if (!finite(action.x) || !finite(action.y)) fail('Invalid coordinate');
-        const at = axisMove(canonical, action.id, action);
-        // The click landed outside the board: the point stays where it was.
-        if (!finite(at.x) || !finite(at.y) || !inside(at)) fail('Invalid coordinate');
-        return moveWithCircles(canonical, action.id, at);
+        // A quadrilateral corner drag moves several corners at once; every other point
+        // moves alone. Either way the model answers with the whole legal next board.
+        return movePoint(canonical, action);
       }
       case 'addMidpoint': {
         const [a, b] = [pointById(action.a), pointById(action.b)];
@@ -409,9 +451,7 @@ export function createGeometryModel() {
         const at = midpoint(a, b);
         if (!inside(at)) fail('The midpoint would leave the board');
         const id = nextId(canonical, 'p');
-        const label = Object.hasOwn(action, 'label') ? action.label : nextLabel(canonical, id);
-        limited(label);
-        if (canonical.points.some((p) => p.label === label)) fail('Labels must be unique');
+        const label = allocateLabel(canonical, id, action);
         return validate({ ...canonical, points: [...canonical.points, { id, label, kind: 'derived',
           ...at, construction: { op: 'midpoint', inputs: [action.a, action.b] }, note: '' }] });
       }
@@ -445,16 +485,34 @@ export function createGeometryModel() {
     }
   }
   const reduce = (board, action) => reduceWith(cloneBoard(board), action);
-  /** Drag preview: the position the model will accept if the pointer is released here. */
+  /**
+   * Drag preview: where the model would land the point if the pointer were released here,
+   * or null when it cannot move. Everything the view draws during the drag comes from here,
+   * so the view never re-derives geometry the model already computed:
+   *   `x`, `y`  the dragged point,
+   *   `rims`    { rimId: {x, y} } every circle rim the drag carries along,
+   *   `corners` the other quadrilateral corners a corner drag moves, as [{id, x, y}].
+   */
   const constrainedMove = (board, id, x, y) => {
     const canonical = cloneBoard(board);
-    const at = axisMove(canonical, id, { x, y });
-    if (!inside(at)) return null;
-    try {
-      const next = moveWithCircles(canonical, id, at);
-      const point = next.points.find((p) => p.id === id);
-      return { x: point.x, y: point.y };
-    } catch { return null; }
+    const before = canonical.points.find((p) => p.id === id);
+    if (!before || before.kind !== 'free') return null;
+    let next;
+    try { next = movePoint(canonical, { id, x, y }); } catch { return null; }
+    const rims = {};
+    for (const e of canonical.elements) {
+      if (e.type !== 'circle' || e.centerPointId !== id) continue;
+      const rim = next.points.find((p) => p.id === e.radiusPointId);
+      if (rim) rims[rim.id] = { x: rim.x, y: rim.y };
+    }
+    // Any other point a construction carries must be drawn at its preview position too,
+    // so a corner drag shows the whole ring moving rather than a lone corner.
+    const corners = next.points
+      .filter((p) => p.id !== id && !Object.hasOwn(rims, p.id)
+        && canonical.points.some((q) => q.id === p.id && (q.x !== p.x || q.y !== p.y)))
+      .map((p) => ({ id: p.id, x: p.x, y: p.y }));
+    const dragged = next.points.find((p) => p.id === id);
+    return { x: dragged.x, y: dragged.y, rims, corners };
   };
   // The drawable library, in toolbox order. A point is a point; the rest are elements.
   const shapeLibrary = ['point', ...elementTypes];

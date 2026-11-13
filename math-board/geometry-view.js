@@ -1,7 +1,14 @@
 // Geometry tab: a draw-only canvas with points, segments, polygons, circles, parallelograms
 // and rectangles. Embedded into client.js by build.mjs. Nothing here reads the quantity
 // board: no patterns, no values, no shared storage key, no shared undo history.
-export function createGeometryPage(React, G, ctx, t) {
+
+/**
+ * The geometry page. `shared` is required and carries the modules both tabs use
+ * (`createBoardFilePicker` and `createBoardIcons` from file-picker.js): build.mjs inlines
+ * this factory with toString(), so importing them here would leave a reference that cannot
+ * resolve in the bundle. JS tests pass the real imports; client.js passes the inlined copies.
+ */
+export function createGeometryPage(React, G, ctx, t, shared) {
   const h = React.createElement;
   const STORAGE_PREFIX = 'dsh-edu-math-board:geometry:v1:';
   const HISTORY_LIMIT = 40;
@@ -9,72 +16,9 @@ export function createGeometryPage(React, G, ctx, t) {
   // The drawable library comes from the model so the two lists cannot drift;
   // "select" and "midpoint" are tools, not shapes.
   const TOOLS = ['select', ...G.shapeLibrary, 'midpoint'];
-  const ICONS = {
-    select: 'M5 3l14 8-6 1.5L11 19z',
-    point: 'M12 8a4 4 0 1 1 0 8a4 4 0 1 1 0-8',
-    segment: 'M5 19 19 5',
-    polygon: 'M12 3 21 9.5 18 20H6L3 9.5z',
-    circle: 'M12 4a8 8 0 1 1 0 16a8 8 0 1 1 0-16',
-    parallelogram: 'M3 18 8 6h13l-5 12z',
-    rectangle: 'M4 6h16v12H4z',
-    midpoint: 'M3 12h18M8 8v8M16 8v8',
-    undo: 'M9 5 4 10l5 5M4 10h9a6 6 0 0 1 0 12',
-    redo: 'm15 5 5 5-5 5m5-5h-9a6 6 0 0 0 0 12',
-    note: 'M20 11a8 8 0 0 1-8 8H7l-5 3V11a9 9 0 0 1 18 0ZM7 10h8M7 14h5',
-    trash: 'M4 6h16M9 6V3h6v3M7 6l1 15h8l1-15',
-    clear: 'm18 3-7 9m-3-2 7 4-4 7H3l2-10 3-1Zm-1 6-2 5m6-3-2 3M2 21h13',
-  };
-  const icon = (name, size = 20) => h('svg', {
-    width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor',
-    strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true,
-  }, h('path', { d: ICONS[name] || ICONS.select }));
-
-  // A separate IndexedDB entry keeps each mode's last file, so geometry save/open
-  // starts where the student left it while the quantity board keeps its own.
-  const DB_NAME = 'dsh-edu-math-board';
-  const DB_STORE = 'files';
-  const DB_LAST = 'last-geometry-board-file';
-  const JSON_TYPES = [{ description: 'JSON', accept: { 'application/json': ['.json'] } }];
-  function openFileDb() {
-    return new Promise((resolve, reject) => {
-      if (typeof indexedDB === 'undefined') return reject(new Error('unsupported'));
-      const request = indexedDB.open(DB_NAME, 1);
-      request.onupgradeneeded = () => {
-        if (!request.result.objectStoreNames.contains(DB_STORE)) request.result.createObjectStore(DB_STORE);
-      };
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-  }
-  async function readRememberedHandle() {
-    const db = await openFileDb();
-    try {
-      return await new Promise((resolve, reject) => {
-        const request = db.transaction(DB_STORE, 'readonly').objectStore(DB_STORE).get(DB_LAST);
-        request.onsuccess = () => resolve(request.result || null);
-        request.onerror = () => reject(request.error);
-      });
-    } finally { db.close(); }
-  }
-  async function rememberHandle(handle) {
-    const db = await openFileDb();
-    try {
-      await new Promise((resolve, reject) => {
-        const transaction = db.transaction(DB_STORE, 'readwrite');
-        transaction.objectStore(DB_STORE).put(handle, DB_LAST);
-        transaction.oncomplete = () => resolve();
-        transaction.onerror = () => reject(transaction.error);
-      });
-    } finally { db.close(); }
-  }
-  async function allowHandle(handle, mode) {
-    try {
-      const options = { mode };
-      if (await handle.queryPermission(options) === 'granted') return true;
-      return await handle.requestPermission(options) === 'granted';
-    } catch { return false; }
-  }
-
+  // Icons and the file pickers are shared with the quantity tab so the two tabs cannot
+  // drift apart; only the per-tab callbacks below differ.
+  const icon = shared.createBoardIcons(React);
   return function GeometryPage(props) {
     const key = `${STORAGE_PREFIX}${props.sessionId}`;
     const [ready, setReady] = React.useState(false);
@@ -97,10 +41,9 @@ export function createGeometryPage(React, G, ctx, t) {
     const [rename, setRename] = React.useState(null);
     const gesture = React.useRef(null);
     const svgRef = React.useRef(null);
-    const fileInputRef = React.useRef(null);
-    const fileHandle = React.useRef(null);
-    const [fileName, setFileName] = React.useState('');
     const noteRef = React.useRef(null), nameRef = React.useRef(null);
+    // An open that arrives after this tab's draft changed must not overwrite it.
+    const revision = React.useRef(0);
     const phase = props.useInput((s) => s.phase);
     const width = G.bounds.width, height = G.bounds.height;
 
@@ -121,14 +64,6 @@ export function createGeometryPage(React, G, ctx, t) {
       const timer = setTimeout(() => setStatus(''), 5200);
       return () => clearTimeout(timer);
     }, [status]);
-    React.useEffect(() => {
-      let live = true;
-      readRememberedHandle().then((handle) => {
-        if (!live || !handle) return;
-        fileHandle.current = handle; setFileName(handle.name || '');
-      }).catch(() => {});
-      return () => { live = false; };
-    }, []);
     React.useEffect(() => {
       if (rename) { const node = nameRef.current; node?.focus(); node?.select?.(); }
     }, [rename]);
@@ -179,17 +114,23 @@ export function createGeometryPage(React, G, ctx, t) {
         y: Math.max(G.bounds.margin, Math.min(height - G.bounds.margin, raw.y)),
       };
     }
+    // Only a free point is a legal construction input or a drag handle. A derived point stays
+    // visible and selectable as an isolated point, but clicking it must never reuse its id
+    // as an endpoint or start a drag on it (a construction cannot reference a derived point).
+    const freePoints = () => boardRef.current.points.filter((q) => q.kind === 'free');
     // Grid and snap are local view state; neither reaches the snapshot.
     function snapTo(p) {
       if (!snap) return p;
       let best = null;
-      for (const q of boardRef.current.points) {
+      for (const q of freePoints()) {
         const d = Math.hypot(q.x - p.x, q.y - p.y);
         if (d <= SNAP_RADIUS && (!best || d < best.d)) best = { d, q };
       }
       return best ? { x: best.q.x, y: best.q.y, id: best.q.id } : p;
     }
     function hitTest(p) {
+      // A derived point is still hit first, so selecting it does not fall through to a
+      // shape underneath; the caller decides whether it may be used as an endpoint.
       for (const q of boardRef.current.points) if (Math.hypot(q.x - p.x, q.y - p.y) <= 10) return { kind: 'point', id: q.id };
       for (const e of [...boardRef.current.elements].reverse()) {
         const ids = e.type === 'circle' ? [e.centerPointId, e.radiusPointId] : e.points;
@@ -240,7 +181,10 @@ export function createGeometryPage(React, G, ctx, t) {
       return next ? next.points.at(-1) : null;
     }
     function usePoint(target, p) {
-      let chosen = target;
+      // A derived point cannot be a construction input, so a click on it places a new free
+      // point instead of silently reusing an id the model would reject.
+      const usable = target && boardRef.current.points.find((q) => q.id === target.id)?.kind === 'free' ? target : null;
+      let chosen = usable;
       if (!chosen) {
         const created = clickEmpty(p);
         if (!created) return;
@@ -253,9 +197,9 @@ export function createGeometryPage(React, G, ctx, t) {
       if (tool === 'parallelogram' && ids.length === 3) return finish(ids);
       if (tool === 'rectangle' && ids.length === 3) return finish(ids);
       if (tool === 'polygon') {
-        // Three points close a triangle; a larger ring closes on the first point again.
-        if (ids.length > 3 && ids.at(-1) === ids[0]) return finish(ids.slice(0, -1));
-        if (ids.length >= 3 && chosen.id === ids[0] && ids.length > 3) return finish(ids.slice(0, -1));
+        // Three points close a triangle; a larger ring closes when the first point is clicked
+        // again, and that click never reaches here because the pending list already holds it.
+        if (ids.length > 3 && chosen.id === ids[0]) return finish(ids.slice(0, -1));
         setPending(ids); return;
       }
       setPending(ids);
@@ -294,7 +238,7 @@ export function createGeometryPage(React, G, ctx, t) {
         g.moved = true;
         // The drag previews the position the model accepts; release is the only undo step.
         const accepted = G.constrainedMove(g.base, g.id, p.x, p.y);
-        if (accepted) setPreview({ id: g.id, ...previewOffset(g.base, g.id, accepted) });
+        if (accepted) setPreview({ id: g.id, ...accepted });
         return;
       }
       if (tool !== 'select') setHover(snapTo(p));
@@ -338,12 +282,16 @@ export function createGeometryPage(React, G, ctx, t) {
         drafts = [];
       };
       try {
-        if (!conversation?.createDrafts || !props.inputActions) throw Error();
+        // An explicit guard, not a bare throw: the composer must be able to take a draft,
+        // and the same catch below rolls the whole insert back when it cannot.
+        if (!conversation?.createDrafts || !props.inputActions) throw new Error('The composer cannot take a geometry attachment');
         // The board note is the student's own words; it goes into the composer verbatim.
         const note = boardRef.current.note || '';
         const file = new File([G.serialize(boardRef.current)], t('geometryAttachmentName'), { type: 'application/json' });
         drafts = conversation.createDrafts(props.sessionId, [file]);
-        if (!props.inputActions.addAttachments(drafts.map((draft) => draft.id))) throw Error();
+        if (!props.inputActions.addAttachments(drafts.map((draft) => draft.id))) {
+          throw new Error('The composer refused the geometry attachment');
+        }
         if (note.trim()) props.inputActions.insertText(`\n${note}\n`, props.inputActions.captureInsertion());
         props.inputActions.persistDraft();
         setStatus(t(note.trim() ? 'insertedNote' : 'inserted'));
@@ -353,82 +301,44 @@ export function createGeometryPage(React, G, ctx, t) {
         setStatus(t('insertFailed'));
       }
     }
-    // Files reuse the same browser pickers as the quantity board; the remembered
-    // handle is not shared, so each mode remembers its own last file.
-    async function saveFile() {
-      const text = G.serialize(boardRef.current);
-      if (typeof window !== 'undefined' && window.showSaveFilePicker) {
-        try {
-          let handle = fileHandle.current;
-          if (handle && await allowHandle(handle, 'readwrite')) {
-            const writable = await handle.createWritable();
-            await writable.write(text); await writable.close();
-            setStatus(t('fileSaved'));
-            return;
-          }
-          handle = await window.showSaveFilePicker({ suggestedName: t('geometryAttachmentName'), types: JSON_TYPES });
-          const writable = await handle.createWritable();
-          await writable.write(text); await writable.close();
-          fileHandle.current = handle; setFileName(handle.name || '');
-          try { await rememberHandle(handle); } catch { /* remembering is best effort */ }
-          setStatus(t('fileSaved'));
-          return;
-        } catch (error) { if (error?.name === 'AbortError') return; }
-      }
-      const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-      const anchor = document.createElement('a');
-      anchor.href = url; anchor.download = t('geometryAttachmentName'); anchor.click();
-      URL.revokeObjectURL(url);
-      setStatus(t('fileDownloaded'));
-    }
-    function applyImportedFile(text) {
-      // Validation runs before anything is published: a bad file changes nothing.
-      const next = G.validate(JSON.parse(text));
-      publish(next); setHistory({ past: [], future: [] }); setSelection([]);
-      setStatus(t('imported'));
+    // Files use the pickers both tabs share; this page only supplies its own JSON, its
+    // draft and its sentences. Its remembered handle key is separate, so each mode
+    // resumes from its own last file.
+    function loadOpenedFile(file) {
+      return (async () => {
+        // Validation runs before anything is published: a bad file changes nothing.
+        const next = G.validate(JSON.parse(await file.text()));
+        publish(next); setHistory({ past: [], future: [] }); setSelection([]); setPending([]);
+        revision.current += 1;
+        setStatus(t('imported'));
+      })();
     }
     function importFailure(error) {
       // Only a file from the other board is named; everything else stays a plain failure.
-      if (error?.message === t('fileTooLarge')) return setStatus(t('fileTooLarge'));
-      if (error?.message === 'Another board kind') return setStatus(t('otherBoardFile'));
-      setStatus(t('geometryImportFailed'));
+      if (error?.message === t('fileTooLarge')) return t('fileTooLarge');
+      if (error?.message === 'Another board kind') return t('otherBoardFile');
+      return t('geometryImportFailed');
     }
-    async function openFile() {
-      if (typeof window !== 'undefined' && window.showOpenFilePicker) {
-        try {
-          const options = { multiple: false, types: JSON_TYPES };
-          if (fileHandle.current) options.startIn = fileHandle.current;
-          let handles;
-          try { handles = await window.showOpenFilePicker(options); }
-          catch (error) {
-            if (error?.name === 'TypeError' && options.startIn) { delete options.startIn; handles = await window.showOpenFilePicker(options); }
-            else throw error;
-          }
-          const handle = handles?.[0]; if (!handle) return;
-          const file = await handle.getFile();
-          try { applyImportedFile(await file.text()); }
-          catch (error) { importFailure(error); return; }
-          fileHandle.current = handle; setFileName(handle.name || '');
-          try { await rememberHandle(handle); } catch { /* remembering is best effort */ }
-          return;
-        } catch (error) {
-          if (error?.name === 'AbortError') return;
-          if (!['NotAllowedError', 'SecurityError', 'NotSupportedError'].includes(error?.name)) {
-            setStatus(`${t('failed')}`); return;
-          }
-        }
-      }
-      setStatus(t('fileOpenFallback'));
-      fileInputRef.current?.click();
-    }
-    async function importInput(event) {
-      const file = event.target.files?.[0]; event.target.value = '';
-      if (!file) return;
-      try {
-        if (file.size > 262144) throw new Error(t('fileTooLarge'));
-        applyImportedFile(await file.text());
-      } catch (error) { importFailure(error); }
-    }
+    const picker = shared.createBoardFilePicker({
+      React, t, dbName: 'dsh-edu-math-board', handleKey: 'last-geometry-board-file',
+      attachmentKey: 'geometryAttachmentName',
+      read: () => G.serialize(boardRef.current),
+      load: loadOpenedFile,
+      // An open that outlives an edit must not replace the draft the student has moved on to.
+      stale: (rev) => rev !== revision.current,
+      describe: importFailure,
+    });
+    const fileInputRef = picker.fileInputRef;
+    // The remembered last file is read once this page is interactive, so a reopen starts
+    // at the student's own file.
+    React.useEffect(() => { picker.rememberName(); }, []);
+    // The shared picker reports outcomes; this page shows them in its own status line.
+    const report = (result) => {
+      if (result?.message) setStatus(result.message);
+    };
+    const saveFile = () => picker.saveFile().then(report);
+    const openFile = () => picker.openFile({ revision: revision.current }).then(report);
+    const importInput = (event) => picker.importInput(event, { revision: revision.current }).then(report);
     function clearMode() {
       // Clearing this mode resets the geometry canvas and its undo history only.
       publish(G.empty());
@@ -437,23 +347,16 @@ export function createGeometryPage(React, G, ctx, t) {
       setStatus(t('geometryClearDone'));
     }
 
-    // A centre drag previews the whole circle, rim included, so it matches the release.
-    const previewOffset = (base, id, accepted) => {
-      const centre = base.points.find((q) => q.id === id);
-      const dx = accepted.x - centre.x, dy = accepted.y - centre.y;
-      const rims = {};
-      for (const e of base.elements) {
-        if (e.type !== 'circle' || e.centerPointId !== id) continue;
-        const rim = base.points.find((q) => q.id === e.radiusPointId);
-        if (rim) rims[rim.id] = { x: rim.x + dx, y: rim.y + dy };
-      }
-      return { x: accepted.x, y: accepted.y, rims };
-    };
+    // The drag preview is whatever the model computed: the dragged point, the rim points a
+    // centre drag carries, and the corners a quadrilateral drag moves. The view only draws.
     const at = (id) => {
       const q = pointById(id);
       if (!q) return null;
       if (preview?.rims?.[id]) return preview.rims[id];
-      return preview && preview.id === id ? { x: preview.x, y: preview.y } : { x: q.x, y: q.y };
+      if (preview?.id === id) return { x: preview.x, y: preview.y };
+      const corner = preview?.corners?.find((c) => c.id === id);
+      if (corner) return { x: corner.x, y: corner.y };
+      return { x: q.x, y: q.y };
     };
     function renderElement(e) {
       const picked = selection.includes(e.id);
@@ -480,13 +383,15 @@ export function createGeometryPage(React, G, ctx, t) {
       return h('g', group, h('polygon', { points: points.map((p) => `${p.x},${p.y}`).join(' '), ...stroke }));
     }
     function renderPoint(q) {
-      const shown = preview?.rims?.[q.id] || (preview && preview.id === q.id ? preview : q);
+      const shown = at(q.id) || q;
       const picked = selection.includes(q.id), staged = pending.includes(q.id);
       const label = `${q.label}${q.kind === 'derived' ? ` · ${t('derivedPoint')}` : ''}${q.note ? ` · ${t('hasNote')}` : ''}`;
       return h('g', {
         key: q.id, 'data-point': q.id, role: 'button', tabIndex: 0, 'aria-label': label, 'aria-pressed': picked,
         onKeyDown: (event) => {
           if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelection([q.id]); }
+          // An open overlay claims the keyboard: Delete and Backspace must not reach the canvas.
+          if (picker.overlayBlocksKey(overlay, event)) return;
           if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); action({ type: 'delete', ids: [q.id] }); setSelection([]); }
         },
       },
@@ -513,16 +418,24 @@ export function createGeometryPage(React, G, ctx, t) {
       return null;
     }
     const previewStyle = { fill: 'none', stroke: '#93C5FD', strokeWidth: 2, strokeDasharray: '5 4', 'pointer-events': 'none' };
+    // Zoom is real: the viewBox narrows by the zoom factor while the SVG keeps its CSS size,
+    // so every stroke, label and point grows with it. Fit-to-width shows the whole board.
+    // `non-scaling-stroke` is deliberately not used: a magnified figure must look magnified,
+    // exactly as the quantity board's zoom scales its artwork.
+    const span = { width: width / (fit ? 1 : zoom), height: height / (fit ? 1 : zoom) };
+    const origin = { x: (width - span.width) / 2, y: (height - span.height) / 2 };
     const canvas = h('div', { className: 'eb-canvas-scroll' },
       h('svg', {
         ref: svgRef, className: `eb-artboard eb-geometry${grid ? ' eb-grid' : ''}`,
-        style: { width: fit ? '100%' : width * zoom, height: fit ? 'auto' : height * zoom },
-        viewBox: `0 0 ${width} ${height}`, preserveAspectRatio: 'xMidYMid meet', role: 'group', 'aria-label': t('geometryCanvas'),
+        style: { width: '100%', height: fit ? 'auto' : '100%', aspectRatio: `${width} / ${height}` },
+        viewBox: `${origin.x} ${origin.y} ${span.width} ${span.height}`,
+        preserveAspectRatio: fit ? 'xMidYMid meet' : 'xMidYMid slice',
+        role: 'group', 'aria-label': t('geometryCanvas'),
         onPointerDown: pointerDown, onPointerMove: pointerMove,
         onPointerUp: (event) => pointerEnd(event), onPointerCancel: (event) => pointerEnd(event, true),
         onMouseLeave: () => setHover(null),
       },
-      h('rect', { width, height, fill: '#FFFFFF' }),
+      h('rect', { x: origin.x, y: origin.y, width: span.width, height: span.height, fill: '#FFFFFF' }),
       grid && h('g', { 'pointer-events': 'none' },
         Array.from({ length: Math.floor(width / 40) + 1 }, (_, i) => h('line', { key: `v${i}`, x1: i * 40, y1: 0, x2: i * 40, y2: height, stroke: '#EEF2F4' })),
         Array.from({ length: Math.floor(height / 40) + 1 }, (_, i) => h('line', { key: `h${i}`, x1: 0, y1: i * 40, x2: width, y2: i * 40, stroke: '#EEF2F4' }))),
@@ -605,6 +518,8 @@ export function createGeometryPage(React, G, ctx, t) {
     const statusNode = status && h('div', { className: 'eb-status-toast', role: 'status', 'aria-live': 'polite' }, status);
     return h(React.Fragment, null,
       h('div', { className: 'eb-workspace eb-geometry-workspace', onKeyDown: (event) => {
+        // An open overlay owns the keyboard, so the shortcuts below never fire under it.
+        if (overlay) return;
         // Undo/redo shortcuts work from anywhere inside the geometry tab.
         if (!(event.metaKey || event.ctrlKey)) return;
         if (event.key === 'z' || event.key === 'Z') { event.preventDefault(); if (event.shiftKey) redo(); else undo(); }

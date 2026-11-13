@@ -19,6 +19,7 @@
     "view.js",
     "view-component.js",
     "question-reference.js",
+    "file-picker.js",
     "geometry/model.js",
     "geometry-view.js",
     "board-shell.js",

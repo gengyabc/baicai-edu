@@ -2,81 +2,18 @@
 import { composerNote } from './view.js';
 import { boardQuestionReferences } from './question-reference.js';
 
-export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) {
+/**
+ * The quantity page. `shared` is required and carries the modules both tabs use
+ * (`createBoardFilePicker` and `createBoardIcons` from file-picker.js): build.mjs inlines
+ * this factory with toString(), so importing them here would leave a reference that cannot
+ * resolve in the bundle. JS tests pass the real imports; client.js passes the inlined copies.
+ */
+export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, shared) {
   const h = React.createElement;
   const paletteColor = (index) => M.color(index);
-  const DB_NAME = 'dsh-edu-math-board';
-  const DB_STORE = 'files';
-  const DB_LAST = 'last-board-file';
-  const JSON_TYPES = [{ description: 'JSON', accept: { 'application/json': ['.json'] } }];
-  function openFileDb() {
-    return new Promise((resolve, reject) => {
-      if (typeof indexedDB === 'undefined') return reject(new Error('unsupported'));
-      const request = indexedDB.open(DB_NAME, 1);
-      request.onupgradeneeded = () => {
-        if (!request.result.objectStoreNames.contains(DB_STORE)) request.result.createObjectStore(DB_STORE);
-      };
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-  }
-  async function readRememberedHandle() {
-    const db = await openFileDb();
-    try {
-      return await new Promise((resolve, reject) => {
-        const request = db.transaction(DB_STORE, 'readonly').objectStore(DB_STORE).get(DB_LAST);
-        request.onsuccess = () => resolve(request.result || null);
-        request.onerror = () => reject(request.error);
-      });
-    } finally { db.close(); }
-  }
-  async function rememberHandle(handle) {
-    const db = await openFileDb();
-    try {
-      await new Promise((resolve, reject) => {
-        const transaction = db.transaction(DB_STORE, 'readwrite');
-        transaction.objectStore(DB_STORE).put(handle, DB_LAST);
-        transaction.oncomplete = () => resolve();
-        transaction.onerror = () => reject(transaction.error);
-      });
-    } finally { db.close(); }
-  }
-  async function allowHandle(handle, mode) {
-    try {
-      const options = { mode };
-      if (await handle.queryPermission(options) === 'granted') return true;
-      return await handle.requestPermission(options) === 'granted';
-    } catch { return false; }
-  }
+  const icon = shared.createBoardIcons(React);
   const sameIds = (a, b) => a.length === b.length && a.every((id, index) => id === b[index]);
   const sorted = (ids) => [...ids].sort();
-  function icon(name, size = 18) {
-    const paths = {
-      undo: 'M9 5 4 10l5 5M4 10h9a6 6 0 0 1 0 12',
-      redo: 'm15 5 5 5-5 5m5-5h-9a6 6 0 0 0 0 12',
-      back: 'M19 12H5m6-6-6 6 6 6',
-      note: 'M20 11a8 8 0 0 1-8 8H7l-5 3V11a9 9 0 0 1 18 0ZM7 10h8M7 14h5',
-      group: 'M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5M8 8h8v8H8z',
-      ungroup: 'M3 3h5v5H3zM16 16h5v5h-5zM3 16h5v5H3zM16 3h5v5h-5z',
-      copy: 'M9 9h12v12H9zM15 9V3H3v12h6',
-      merge: 'M4 18 10 12M4 12h6v6M20 6l-6 6M14 12h6V6',
-      split: 'M10 4 4 10M4 4h6v6M14 20l6-6M20 20h-6v-6',
-      cross: 'M4 12h16',
-      name: 'm4 16 11-11 4 4L8 20H4Zm9-9 4 4',
-      trash: 'M4 6h16M9 6V3h6v3M7 6l1 15h8l1-15',
-      clear: 'm18 3-7 9m-3-2 7 4-4 7H3l2-10 3-1Zm-1 6-2 5m6-3-2 3M2 21h13',
-      multi: 'M3 3h8v8H3zM13 13h8v8h-8zM17 3v8M13 7h8',
-      check: 'm5 12 4 4L19 6',
-      plus: 'M12 5v14M5 12h14',
-      minus: 'M5 12h14',
-      more: 'M5 12h.01M12 12h.01M19 12h.01',
-      open: 'M3 7h6l2 3h10l-3 10H3ZM3 7V4h6l2 3h8v3',
-      save: 'M4 3h13l3 3v15H4ZM8 3v6h8V3M8 21v-7h8v7',
-      insert: 'M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5',
-      library: 'M4 4h6v6H4zm10 0h6v6h-6zM4 14h6v6H4zm10 0h6v6h-6z',
-    };
-    return h('svg', { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true }, h('path', { d: paths[name] || paths.group }));
-  }
   function swatch(shape, colorIndex, size = 30) {
     return h('svg', { width: size, height: size, viewBox: '-28 -28 56 56', 'aria-hidden': true }, art.node(shape, 17, { fill: paletteColor(colorIndex), stroke: '#1E293B', strokeWidth: 1.1 }));
   }
@@ -92,7 +29,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
       h('rect', { x: 6.5, y: 20, width: 21, height: 9, rx: 2, fill: levelColor(10000, 4) }));
   }
 
-  return function Board(props) {
+  function Board(props) {
     React.useSyncExternalStore((fn) => ctx.locale.subscribe(fn), () => ctx.locale.getSnapshot());
     const key = `dsh-edu-math-board:v4:${props.sessionId}`;
     const legacyKey = `dsh-edu-math-board:v2:${props.sessionId}`;
@@ -125,21 +62,32 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
     const [questionExpanded, setQuestionExpanded] = React.useState(false);
     const [moreOpen, setMoreOpen] = React.useState(false);
     const [append, setAppend] = React.useState(false);
-    const [fileName, setFileName] = React.useState('');
     const [dragShape, setDragShape] = React.useState(null);
     const toolLevel = board.settings.levels.find((level) => level.value === toolValue)
       || board.settings.levels.find((level) => level.value === 1) || board.settings.levels[0];
     const config = props.useProjection('eduBoardConfig');
     const watermark = React.useRef(-1);
     const pendingWatermark = React.useRef(null);
-    const dialog = React.useRef(null), fileInput = React.useRef(null), downloadAnchor = React.useRef(null);
-    const url = React.useRef(null), gesture = React.useRef(null), revision = React.useRef(0);
+    const dialog = React.useRef(null), gesture = React.useRef(null), revision = React.useRef(0);
+    // Opening a different file replaces the canvas, so an open that outlives a clear must
+    // not land as an edit: every clear starts a new draft epoch.
+    const draftEpoch = React.useRef(0);
+    // File handles, pickers and the browser-side memory are shared with the geometry tab;
+    // this page only supplies its own JSON, its draft and its sentences.
+    const picker = shared.createBoardFilePicker({
+      React, t, dbName: 'dsh-edu-math-board', handleKey: 'last-board-file', anchor: true,
+      read: () => (gesture.current = null, M.serialize(boardRef.current)),
+      load: (file, epoch) => loadOpenedFile(file, revision.current, epoch ?? draftEpoch.current),
+      stale: (rev) => rev !== revision.current,
+      // The handoff input may still hold a file chosen before a clear.
+      canAcceptFile: (epoch) => epoch === draftEpoch.current,
+      canEdit,
+      beforeOpen: flushEditor,
+    });
     const svgRef = React.useRef(null);
     const canvasRef = React.useRef(null);
     const revealRef = React.useRef([]);
     const nameRef = React.useRef(null), noteRef = React.useRef(null);
-    const fileHandle = React.useRef(null);
-    const fileInputRevision = React.useRef(null);
     const phase = props.useInput((s) => s.phase);
     const selected = board.objects.filter((o) => selection.includes(o.id));
     const single = selected.length === 1 ? selected[0] : null;
@@ -201,7 +149,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
         pendingWatermark.current = null;
       } catch { setStorageBlocked(true); setStatus(t('loadError')); }
       setReady(true);
-      return () => { revision.current++; gesture.current = null; if (url.current) URL.revokeObjectURL(url.current); };
+      return () => { revision.current++; gesture.current = null; };
     }, [key]);
 
     React.useEffect(() => {
@@ -319,14 +267,8 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
       if (!opened && node.open) node.close();
     }, [opened]);
     React.useEffect(() => () => { if (dialog.current?.open) dialog.current.close(); }, []);
-    React.useEffect(() => {
-      let live = true;
-      readRememberedHandle().then((handle) => {
-        if (!live || !handle) return;
-        fileHandle.current = handle; setFileName(handle.name || '');
-      }).catch(() => {});
-      return () => { live = false; };
-    }, []);
+    // Show the remembered file name right away; a missing memory is not an error.
+    React.useEffect(() => { picker.rememberName().catch(() => {}); }, []);
     React.useEffect(() => {
       if (!status || [t('autoClearError'), t('autoClearSkipped'), t('autoClearDone')].includes(status)) return;
       const timer = setTimeout(() => setStatus(''), 5200);
@@ -383,7 +325,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
       resetCanvas(next, nextTrace);
     }
     function resetCanvas(next, nextTrace) {
-      revision.current++; gesture.current = null; setPreview(null);
+      revision.current++; draftEpoch.current++; gesture.current = null; setPreview(null);
       publish(next); publishTrace(nextTrace);
       setHistory({ past: [], future: [] });
       selectIds([]); setAppend(false); setOverlay(null); revealRef.current = [];
@@ -554,6 +496,8 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
       }
     }
     function objectKey(e, o) {
+      // An open overlay claims `aria-modal`; the keyboard must not edit the canvas under it.
+      if (picker.overlayBlocksKey(overlay, e)) { e.preventDefault(); return; }
       const arrows = { ArrowLeft: [-10, 0], ArrowRight: [10, 0], ArrowUp: [0, -10], ArrowDown: [0, 10] };
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
@@ -625,35 +569,13 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
 
     async function saveFile() {
       flushEditor();
-      const text = M.serialize(boardRef.current);
-      if (typeof window !== 'undefined' && window.showSaveFilePicker) {
-        try {
-          let handle = fileHandle.current;
-          if (handle && await allowHandle(handle, 'readwrite')) {
-            const writable = await handle.createWritable();
-            await writable.write(text); await writable.close();
-            setStatus(t('fileSaved')); return;
-          }
-          handle = await window.showSaveFilePicker({ suggestedName: t('attachmentName'), types: JSON_TYPES });
-          const writable = await handle.createWritable();
-          await writable.write(text); await writable.close();
-          fileHandle.current = handle; setFileName(handle.name || '');
-          try { await rememberHandle(handle); } catch { /* remembering is best effort */ }
-          setStatus(t('fileSaved')); return;
-        } catch (error) {
-          if (error?.name === 'AbortError') return;
-          // A browser that exposes the API can still refuse it (permissions, embedded view).
-        }
-      }
-      if (url.current) URL.revokeObjectURL(url.current);
-      url.current = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-      downloadAnchor.current.href = url.current; downloadAnchor.current.click();
-      setStatus(t('fileDownloaded'));
+      setStatus((await picker.saveFile()).message || '');
     }
-    async function loadOpenedFile(file, rev) {
-      if (rev !== revision.current) return;
+    // The tab's own import: it validates before publishing and decides what a blocked
+    // draft may do. The shared picker only owns the picker, the size cap and the memory.
+    async function loadOpenedFile(file, rev, epoch = draftEpoch.current) {
+      if (rev !== revision.current || epoch !== draftEpoch.current) return;
       gesture.current = null; setPreview(null);
-      if (file.size > 262144) throw Error(t('fileTooLarge'));
       const next = M.validate(JSON.parse(await file.text()));
       if (rev !== revision.current) return;
       if (storageBlocked) { recoverDraft(next, T.empty(true), 'imported'); return; }
@@ -662,44 +584,27 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
     }
     async function openFile() {
       flushEditor();
-      const rev = ++revision.current;
-      if (typeof window !== 'undefined' && window.showOpenFilePicker) {
-        try {
-          const options = { multiple: false, types: JSON_TYPES };
-          if (fileHandle.current) options.startIn = fileHandle.current;
-          let handles;
-          try { handles = await window.showOpenFilePicker(options); }
-          catch (error) {
-            if (error?.name === 'TypeError' && options.startIn) { delete options.startIn; handles = await window.showOpenFilePicker(options); }
-            else throw error;
-          }
-          const handle = handles?.[0]; if (!handle || rev !== revision.current) return;
-          const file = await handle.getFile();
-          if (rev !== revision.current) return;
-          await loadOpenedFile(file, rev);
-          fileHandle.current = handle; setFileName(handle.name || '');
-          try { await rememberHandle(handle); } catch { /* remembering is best effort */ }
-          setMoreOpen(false);
-          return;
-        } catch (error) {
-          if (error?.name === 'AbortError') return;
-          if (!['NotAllowedError', 'SecurityError', 'NotSupportedError'].includes(error?.name)) {
-            setStatus(`${t('failed')}: ${error.message}`);
-            return;
-          }
-          // Permission denial must not prevent opening an ordinary local file.
-        }
-      }
-      if (rev !== revision.current) return;
-      fileInputRevision.current = rev;
-      setStatus(t('fileOpenFallback'));
-      fileInput.current.click();
+      // Each open owns a revision; an answer that arrives after the student edited the
+      // board is dropped instead of replacing the newer draft. The fallback input also
+      // remembers the draft it was opened on, so a stale file cannot land after a clear.
+      const epoch = draftEpoch.current;
+      inputEpoch.current = epoch; inputRevision.current = revision.current + 1;
+      await picker.openFile({ revision: ++revision.current, epoch });
+      setMoreOpen(false);
     }
+    // The handoff input belongs to an open started at a known draft: a file it returns
+    // after a clear is from the old task. Capture that epoch when the dialog starts, not
+    // when the file arrives, or the guard could never fail.
+    const inputEpoch = React.useRef(null);
+    const inputRevision = React.useRef(null);
     async function importInput(event) {
-      const rev = fileInputRevision.current;
-      fileInputRevision.current = null;
-      const file = event.target.files?.[0]; event.target.value = ''; if (!file || rev === null) return;
-      try { await loadOpenedFile(file, rev); } catch (error) { setStatus(`${t('failed')}: ${error.message}`); }
+      // Only the handoff can show a "choose a plain file" hint; the opened file reports
+      // its own success or failure through the tab's import.
+      const epoch = inputEpoch.current ?? draftEpoch.current;
+      const rev = inputRevision.current ?? revision.current;
+      inputEpoch.current = null; inputRevision.current = null;
+      const result = await picker.importInput(event, { revision: rev, epoch });
+      if (result.message) setStatus(result.message);
     }
 
     function noteTargetFor(items, group) {
@@ -806,6 +711,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
     const canSplit = Boolean(single && single.value > 1 && !single.removed);
     const noteTarget = noteTargetFor(selected, completeGroup);
     const noteHasText = Boolean(noteText(noteTarget));
+    const brand = brandMark(levels, 18);
     const topbar = h('header', { className: 'eb-topbar' }, brandMark(levels, 27), h('span', null, t('title')));
     const question = props.question || h('aside', { className: 'eb-question', 'aria-label': t('questionTeacher') },
       reference ? h('div', { id: `eb-question-${props.sessionId}`, className: `eb-question-text${questionExpanded ? '' : ' eb-collapsed'}` },
@@ -886,7 +792,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
       h('div', { className: 'eb-menu-head' }, t('files')),
       button(h(React.Fragment, null, icon('open', 16), h('span', null, t('import'))), openFile, { role: 'menuitem' }),
       button(h(React.Fragment, null, icon('save', 16), h('span', null, t('export'))), saveFile, { role: 'menuitem' }),
-      fileName && h('p', { className: 'eb-menu-note' }, fileName),
+      picker.fileNameState && h('p', { className: 'eb-menu-note' }, picker.fileNameState),
       h('div', { className: 'eb-menu-line' }),
       h('label', { className: 'eb-menu-check' }, h('input', { type: 'checkbox', checked: attachTrace, onChange: (event) => setAttachTrace(event.target.checked) }), h('span', null, t('traceAttach'))));
     const dock = h('nav', { className: 'eb-dock', 'aria-label': t('canvasTools') },
@@ -944,12 +850,14 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
             button(t('confirmClear'), confirmClearBoard, { className: 'eb-primary eb-danger-solid' })))));
     const statusNode = status && h('div', { className: 'eb-status-toast', role: 'status', 'aria-live': 'polite' }, status);
     const editor = h(React.Fragment, null,
-      h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: fileInput, onChange: importInput }),
-      h('a', { hidden: true, ref: downloadAnchor, download: t('attachmentName') }));
+      h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: picker.fileInputRef, onChange: importInput }),
+      h('a', { hidden: true, ref: picker.downloadAnchorRef, download: t('attachmentName') }));
     // Two tabs share one dialog: the shell owns the launcher, the dialog and the tab
     // bar, so this page contributes its workspace only. A single-tab board keeps the
     // tree it always had, including its own launcher and dialog.
     if (props.split) {
+      // The shell owns the launcher, the dialog and the top bar, including the brand mark,
+      // so this page only contributes its workspace.
       return h(React.Fragment, null,
         h('div', { className: 'eb-workspace' },
           palette,
@@ -967,7 +875,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
         'aria-label': t('title'), 'aria-haspopup': 'dialog',
         disabled: !ready, onClick: () => setOpened(true),
       },
-      brandMark(levels, 18),
+      brand,
       h('span', null, t('title'))),
       h('dialog', {
         ref: dialog, className: 'eb-dialog', 'aria-label': t('title'),
@@ -990,4 +898,10 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T) 
           overlayNode)),
         editor));
   };
+  // The shell draws the shared launcher and top bar before this page mounts, so it
+  // needs the mark without a live board. The default levels give the same colours the
+  // page paints; a student who changed the levels still sees the page's own header.
+  function BoardMark(size = 18) { return brandMark(M.defaultSettings().levels, size); }
+  Board.Mark = BoardMark;
+  return Board;
 }
