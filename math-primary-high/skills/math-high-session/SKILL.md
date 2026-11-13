@@ -10,7 +10,7 @@ Teach from the student's reasoning with the task-selected methods in `math-high-
 
 ## Start and Input
 
-Load `math-high-core` and follow its "Start and Input"; read its references per the condition table. The delivery language, grade-band notes, and personalization boundaries come from `math-high-core`.
+Load `math-high-core` (reuse it when this session already has it) and follow its "Start and Input"; read only the references that have not been read yet in this session per the condition table. The delivery language, grade-band notes, and personalization boundaries come from `math-high-core`.
 
 ## Learning-Recommendation Gate
 

@@ -55,3 +55,13 @@ The default is Guided Coach. When the subject `memory.profile_memory.preferred_p
 ## Session and Data
 
 Subjects only produce segments; routing, logging, mode switches, topic changes, and saving are scheduled by `references/session-lifecycle.md` of `learn-data`, and write permission follows `learn-data`.
+
+## Load Once, Reuse After
+
+A teaching session keeps one in-context record of what has already been loaded; it is not a file and is not written to the log.
+
+- A skill whose `<skill_content>` is already in the current session is loaded; reuse it. Do not call `skill` on the same name again, and do not copy or restate its rules in a working note that replaces the original.
+- A reference already read in the current session is read; reuse it. Read it again only when it is not in context, it was edited since, or the student explicitly asks for a re-read. The same holds for student-data files: Read Snapshot and the phase-sensitive files (profile, memory, current state, milestones, session log) are read once per entry, then kept in memory and updated in sync after each successful write.
+- A path can only be reused after resolving its owner: the reference relative to the skill base directory that the owner skill returned; re-reading a path that a different skill has already read is not a duplicate.
+- A parent skill that needs its child's content depends on the child having been loaded earlier in the session. When the child is not in context, load it rather than reconstruct its rules from memory.
+- One explicit re-read is allowed when the cached copy may be wrong (an external edit, a pending-save recovery, or a student-visible file just written): acting on a stale copy costs more than reading again.

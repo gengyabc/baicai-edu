@@ -16,7 +16,7 @@ user-invocable: false
 - `mode`：`learn` | `feynman`。
 - `focus`：本轮主题字符串；为空时由子 skill 从档案或材料中确定。
 
-尚未加载时加载 `chinese-core`（`learn-core`、`learn-data` 已由入口加载）。路由器只用本文件判断方向，不读 `chinese-core` 的 reference；具体规则由被路由到的子 skill 读取。
+尚未加载时加载 `chinese-core`（`learn-core`、`learn-data` 已由入口加载）；本会话已加载的内容直接复用，不重复加载。路由器只用本文件判断方向，不读 `chinese-core` 的 reference；具体规则由被路由到的子 skill 读取。
 
 科目不匹配或科目文件缺失时交回入口处理；本路由器不切换科目、不创建或修改学生数据。
 

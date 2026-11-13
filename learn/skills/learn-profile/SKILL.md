@@ -5,7 +5,7 @@ description: View learning progress, saved plans, or edit the profile. Use when 
 
 # Student Profile
 
-Load `learn-core` and `learn-data` if not already loaded. First read `outputs/students/session.json` and the shared profile to determine the student and the real current subject; if the current student or the shared profile is missing, direct to `/learn-start` and stop. Read `references/teaching-resolver.md` from `learn-data` and adopt its teaching implementation and scope result: `teaching.core_skill` identifies the actual specialist or general core and does not mean the current stage necessarily fits a specialist. Then execute only the view or edit branch the student requested.
+Load `learn-core` and `learn-data` (only the ones not yet loaded this session; reuse already loaded ones per `learn-core`'s "Load Once, Reuse After"). First read `outputs/students/session.json` and the shared profile to determine the student and the real current subject; if the current student or the shared profile is missing, direct to `/learn-start` and stop. Read `references/teaching-resolver.md` from `learn-data` and adopt its teaching implementation and scope result: `teaching.core_skill` identifies the actual specialist or general core and does not mean the current stage necessarily fits a specialist. Then execute only the view or edit branch the student requested.
 
 ## View
 

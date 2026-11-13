@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Learn
 
-Load `learn-core` and `learn-data` if not already loaded, then read and execute `references/session-lifecycle.md` from `learn-data`. A new session uses `entry_point: learn` and initial `mode: learn`; an existing session resumes according to the lifecycle.
+Load `learn-core` and `learn-data` (only the ones not yet loaded this session; already loaded ones are reused per `learn-core`'s "Load Once, Reuse After"), then read and execute `references/session-lifecycle.md` from `learn-data`. A new session uses `entry_point: learn` and initial `mode: learn`; an existing session resumes according to the lifecycle.
 
 ## Choose a Target
 

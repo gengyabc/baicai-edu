@@ -16,18 +16,18 @@ This file adds only the grade 4–6 rules.
 
 ## Method Kernel and Transfer
 
-Read this section after the shared contract's "The Student Decides the Problem" table when the student chose to author, and before the answerer answers. `references/problem-design.md` chooses the problem by act and stays the entry for text-book problem selection; when the act makes the student the author, it hands the choosing to this file. Authoring is a transfer activity the student may decline; declining returns to the current teaching without creating a weaker-learner record. Authoring needs no lesson completed first, and no set of methods finished before it: the student may keep a method kernel they have not yet been taught and let the teacher's verification test the method with them. Composing the problem is the student's work, and the answerer's answer takes the answerer role.
+Read after the shared contract's "The Student Decides the Problem" table, before answering a student-authored problem. `references/problem-design.md` owns teacher-selected problems; here the student chooses. They may decline authoring and return to the current teaching without penalty. No prior lesson or completed method sequence is required; an unfamiliar method is allowed, and the AI checks the resulting problem. The student composes; the AI answers.
 
 Keep these four separately in the evidence:
 
 | Strand | What it is |
 |---|---|
 | Composition | The student's decision to keep a structure, choose a scene, set numbers and conditions, and state the question |
-| Solving | Independent work by the student on a problem they did not author |
+| Solving | The student's demonstrated solution and reasoning, including on a problem they authored; record hints and prior answer exposure |
 | Grading | The student's decision about the answerer's answer |
 | Transfer | Independent use of the relationship in a changed scene or a changed condition |
 
-A valid problem, a self-reported answer, self-correcting numbers in internal check, and an affirming grade each stay in Composition or Grading; none of them promotes Solving or Transfer. The answerer answering the student's problem is not the student's independent solving.
+A valid problem, a bare self-reported answer, or an affirming grade alone does not establish Solving or Transfer. The answerer answering the student's problem is not the student's independent solving. If the student voluntarily supplies a justified solution before seeing the answer, use that reasoning as evidence even on their own problem. After hints or answer exposure, record the work with that support; transfer still needs demonstrated use in a changed scene or condition. Keep missing evidence unknown rather than asking an extra quiz question.
 
 ## Compose or Decide One Spot
 
@@ -53,7 +53,7 @@ A complete, valid problem is answered earnestly and handed over for grading, wit
 
 ## Close the Loop
 
-- Only an affirming grade closes the loop on the answerer's answer. Do not chase a full explanation or further authored problems to complete the migration record; the shared contract's "Exit" owns the wrap-up; the transfer evidence stays unknown.
+- An affirming grade is enough to wrap up under the shared contract's "Exit"; further explanation or another problem is optional. Keep unobserved solving or transfer unknown, while retaining any reasoning the student volunteered. Honour stopping and resolve pending AI errors under the shared contract.
 - A specific disagreement is rechecked against the conditions before accepting or rejecting; the dispatcher's signal choice stays with `math-high-student-problem`.
 - At most one merged `session_segment` per turn is produced by `math-high-session`. The composition, the grading, and any deliberate error being clarified are described inside existing `strategy_summary` and `skill_errors_observed` by `references/math-segment-fields.md`; no transfer score, stage or profile field is created.
 

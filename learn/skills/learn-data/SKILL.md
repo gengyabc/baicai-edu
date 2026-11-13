@@ -40,6 +40,9 @@ outputs/students/
 
 Read session.json first. If it contains pending_transition, run `references/teaching-transition.md` before initializing target files or doing ordinary restore, so the source authorization and target context are restored in a directed way; do not just start the new subject with defaults. The snapshot is read once by the entry skill: at session start, after context recovery when the snapshot is missing, or when switching student/subject. Subject skills always use the snapshot passed in by the entry; this applies to all subject skills and is not repeated elsewhere.
 
+- Re-read an individual file only when it is missing from context, the entry switched student or subject, a pending save or transition must be recovered, or the cached copy may be stale after an external write. Do not re-read the whole snapshot for an ordinary turn.
+- `references/...` files follow the same rule per `learn-core`'s "Load Once, Reuse After": after one read in the session they stay in context, and the Reading by Scenario table below selects only what is still unread for this turn.
+
 1. `outputs/students/session.json`
 2. `outputs/students/<student_id>/profile.json` (shared profile)
 3. `outputs/students/<student_id>/<subject>/profile.json` (subject profile)

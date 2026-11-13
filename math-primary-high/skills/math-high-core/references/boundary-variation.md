@@ -30,7 +30,7 @@ Rows where the change is not structural stay in the method file that owns them: 
 
 ## Conflicts inside a result
 
-A changed condition can make the problem unsolvable while another route still gives a valid object, or make the chosen route lose its warrant while every word of the statement remains answerable. Keep the two statements apart:
+A changed condition may invalidate the old method while the problem still has a solution. Distinguish:
 
 - **The method no longer fits:** the old step is missing a condition it needed.
 - **The problem has no solution:** no object satisfies the changed conditions; this needs its own check, not the failure of the old route.
@@ -58,9 +58,9 @@ Verify work with these; keep answers and complete routes out of an independent o
 - **Ordered versus unranked, four people:** captain and deputy are twelve ordered choices (4×3). Choosing an unranked group of two gives six groups: each group corresponds to exactly two ordered choices (roles swapped), and that is a claim about **every** group, not one example. Use one pairing as a probe, then ask for the covering argument or the group-by-group check.
 - **Same change with five people:** unranked choose-two gives ten groups, and the ranked version gives twenty. Define the object first: choosing two places in a race is ordered, a team list is not. Halving every “choose” question, or answering ten when the roles are present, both come from skipping the object.
 - **Changed start with the same rule:** the triangular-dot count from one row of one dot still gives T(10)=55; starting one row later only moves the start and the final size. The recurrence T(n)=T(n−1)+n survives; this is a near transfer, not a limit.
-- **Changed increment:** six rows with six dots added per row totals 126, and the same two-copy pairing (two reversed copies give six rows of six×seven) still justifies the halving. The recurrence changes to adding six times the row number; the pairing argument survives. Ask which of the two parts the student moves.
-- **Changed price table:** twenty tickets of two and five yuan reaching 64 still gives eight dear and twelve cheap, because the dearer ticket costs three more every time. If the dear ticket costs five for any of the first ten issued and six for each one after that, the constant gap no longer holds above the tenth: the old “divide the gap by three” gives 38/3 instead of a count for 78, yet twelve dear tickets give 78 exactly, so the task has an answer the old route does not reach.
-- **No answer versus broken route:** with a uniform three-yuan gap, 65 cannot be formed from twenty tickets (25 is not a multiple of three), because every reachable total is 40 + 3k; the task has no answer. With the dear-ticket table above, 78 has an answer of twelve dear tickets even though the gradient rule returns 38/3. An answer of “no solution” from a failed old route is wrong for 78; a claim that the old method keeps working is wrong there too.
+- **Changed increment:** let row k contain 6k dots, for k=1 through 6. The total is 6×21=126. Two reversed copies make six rows of 42 dots, so the pairing still works although the recurrence now adds 6k instead of k. Ask which part of the old reasoning survives.
+- **Changed price table:** sell twenty tickets. Cheap tickets always cost 2 yuan; the first ten dear tickets cost 5 yuan each and each additional dear ticket costs 6 yuan, regardless of sale order. Twelve dear and eight cheap tickets total 10×5+2×6+8×2=78. The old constant-gap calculation gives (78−40)/3=38/3, so it no longer applies across the price boundary, although a solution exists.
+- **No answer versus broken route:** with uniform prices of 2 and 5 yuan, twenty tickets can total only 40+3k for an integer k from 0 to 20; 65 is impossible because 65−40=25 is not divisible by 3. Contrast this with the tiered-price 78-yuan case: failure of the old calculation there does not mean no solution.
 - **Claim after a changed condition:** thirteen people in twelve months still forces a shared month, and adding a thirteenth category or preserving “one person per category” changes which step carries the argument; the count of objects against the count of allowed kinds is the load-bearing step, not the story.
 
 ## Boundaries with Other Files

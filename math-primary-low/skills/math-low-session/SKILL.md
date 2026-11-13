@@ -10,7 +10,7 @@ Teach with CGI (Cognitively Guided Instruction); the rules come from `math-low-c
 
 ## Start and Input
 
-Load `math-low-core`, follow its "Start and Input", and read references per its condition table.
+Load `math-low-core` (reuse it when this session already has it), follow its "Start and Input", and read only the references that have not been read yet in this session per its condition table.
 
 ## Learning-Recommendation Gate
 

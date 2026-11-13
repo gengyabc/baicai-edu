@@ -53,10 +53,10 @@ test('student-authored problems wire the shared answerer role into the upper-pri
   for (const ref of ['math-teaching-core', 'mathematical-strategies', 'problem-design', 'pedagogy-core']) {
     assert.ok(supplement.includes(`${ref}.md`), ref)
   }
-  hasAll(supplement, ['decline', 'no lesson completed first', 'Composition', 'Solving', 'Grading', 'Transfer',
+  hasAll(supplement, ['decline', 'No prior lesson', 'Composition', 'Solving', 'Grading', 'Transfer',
     'not the student\'s independent solving', 'one thing', 'nod at it as theirs',
     'no warning and no extra', 'teacher-led oral quiz', 'confirms returning',
-    'Only an affirming grade closes the loop', 'never recorded as a student difficulty',
+    'An affirming grade is enough to wrap up', 'never recorded as a student difficulty',
     'not generalized to the student\'s homework or ordinary requests', '## Teacher-only checked cases',
     '(64−40)/3 = 8', '8 dearer and 12 cheap', '25/3', 'respect that intent',
     'no nonnegative whole-number solution'])
@@ -2079,12 +2079,12 @@ test('counterexample checks reach the existing proof entry without a second logi
   assert.doesNotMatch(highRef('mathematical-strategies'), new RegExp(ref.replaceAll('.', '\\.')))
   const counterexamples = highRef('counterexamples-and-proposition-direction')
   hasAll(counterexamples, ['references/proof-teaching.md', 'references/derivation-teaching.md',
-    'references/prerequisite-learning.md', 'math-high-session', 'Counterexamples · contract coverage',
+    'references/prerequisite-learning.md', 'math-high-session',
     'Teacher-only checked cases', 'references/math-segment-fields.md'])
-  // The proof file keeps owning direction, necessity and refutation; it points and does not copy.
-  for (const heading of ['## Teacher-only checked cases', '## Counterexamples · contract coverage']) {
-    assert.ok(!proof.includes(heading), `proof-teaching must not copy ${heading}`)
-  }
+  // The proof file points at the supplement without copying its examples.
+  assert.doesNotMatch(proof, /## Teacher-only checked cases/)
+  assert.doesNotMatch(counterexamples, /## Counterexamples · contract coverage/,
+    'operating rules stay in one place, not a duplicate coverage appendix')
   const proofSection = (number) => proof.split(`\n## ${number}. `)[1]?.split('\n## ')[0] ?? ''
   for (const own of ['Candidate strategies are options', '- **Direction error:**', '- **Scope error:**']) {
     assert.ok(proofSection('2').includes(own) || proofSection('4').includes(own), `proof-teaching keeps ${own}`)
@@ -2100,26 +2100,19 @@ test('counterexample checks reach the existing proof entry without a second logi
   assert.doesNotMatch(counterexamples, /https?:\/\//)
 })
 
-test('counterexample rules separate necessity from sufficiency and keep teacher cases hidden', () => {
+test('counterexample supplement delegates evidence rules and keeps teacher cases hidden', () => {
   // Architecture and disclosure only; mathematical counts live in the case script.
   const counterexamples = highRef('counterexamples-and-proposition-direction')
   const [, checked] = counterexamples.split('## Teacher-only checked cases')
   assert.ok(checked?.trim(), 'checked cases have a teacher-only boundary')
-  const [, coverage] = counterexamples.split('## Counterexamples · contract coverage')
-  assert.ok(coverage?.trim(), 'rules carry their own static coverage section')
-  hasAll(coverage, ['voluntary probing', 'teacher-supplied counterexample', 'one relevant clarification',
-    'necessary', 'not sufficient', 'failed search is not a proof', 'every premise holds',
-    'the conclusion fails', 'a tileable instance does not rescue', 'universal scope and an P→Q direction',
-    'do not record a correct necessity result as an error', 'connectivity', 'four odd vertices',
-    'supported understanding', 'session_segment: null', 'one merged segment per turn',
-    'contacting this reference remains optional', 'Informed full-solution choice',
-    'prerequisite learning', 'no new boundary file', 'for a bare “can\'t be tiled” claim'])
-  // Private conventions of the board artifact stay out of the installed rules.
-  for (const hidden of ['blue lines', '(row, column)', 'one black and one white', 'necessary condition, so']) {
-    assert.ok(!coverage.toLowerCase().includes(hidden.toLowerCase()), `not in runtime rules: ${hidden}`)
-  }
-  hasAll(checked, ['(1,1)', '(1,2)', '(2,1)', '(3,3)', '(4,4)', '6 black', '6 white',
-    'not sufficient', 'at most its two endpoints can be odd'])
+  const [rules] = counterexamples.split('## Teacher-only checked cases')
+  // Guard disclosure/attribution boundaries in their operating source, not a copied checklist.
+  hasAll(rules, ['references/proof-teaching.md', 'references/math-segment-fields.md',
+    'references/prerequisite-learning.md', 'Informed full-solution choice',
+    'session_segment: null', 'Teacher-supplied', 'supported understanding',
+    'independent construction'])
+  // Board-artifact annotation conventions are not runtime dependencies.
+  assert.doesNotMatch(rules, /blue lines|\(row, column\)/i)
   const scenarios = text('math-primary-high/tests/teaching-scenarios.md')
   hasAll(scenarios, ['## 反例与命题方向', 'CB1', 'CB2', '不否定'])
   // The supplement adds no state, act, submode, or band change.

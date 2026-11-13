@@ -5,7 +5,7 @@ description: Feynman learning. Use when the student wants to be the little teach
 
 # Feynman Learning
 
-Load `learn-core` and `learn-data` if not already loaded. Before starting, read `references/feynman-mode.md` and `references/feynman-skill-whitelist.md` from `learn-core`, and apply the role, skill confirmation, and deliberate-mistake rules.
+Load `learn-core` and `learn-data` (only the ones not yet loaded this session; reuse already loaded ones per `learn-core`'s "Load Once, Reuse After"). Before starting, read `references/feynman-mode.md` and `references/feynman-skill-whitelist.md` from `learn-core`, and apply the role, skill confirmation, and deliberate-mistake rules.
 
 Read and execute `references/session-lifecycle.md` from `learn-data`:
 

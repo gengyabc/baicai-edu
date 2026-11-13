@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Start Learning
 
-Load `learn-core` and `learn-data` if not already loaded. In order: confirm the learning identity, identify the student, resolve the teaching implementation, and activate the profile; teaching is left to `/learn`. If the existing log contains a `finalize_plan`, recover it per the save protocol first and switch only after it succeeds.
+Load `learn-core` and `learn-data` (only the ones not yet loaded this session; reuse already loaded ones per `learn-core`'s "Load Once, Reuse After"). In order: confirm the learning identity, identify the student, resolve the teaching implementation, and activate the profile; teaching is left to `/learn`. If the existing log contains a `finalize_plan`, recover it per the save protocol first and switch only after it succeeds.
 
 All student-facing process labels and prompts below are locale keys, resolved through the active UI locale per `references/ui-locale.md` in `learn-data` (catalogs in `learn-data`'s `references/locales/`); never hard-code a language-specific literal.
 

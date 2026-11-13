@@ -12,7 +12,7 @@ The math rules both primary bands must change together. This is not a teaching i
 
 The caller is the current math band, which already holds the current provider, `mode` and confirmed-skill evidence, the current problem and pending step, the practice purpose, and the evidence and signal to return. When an input a rule depends on is missing, take that rule's most conservative branch (no confirmed skill means always answer correctly).
 
-Loading this skill returns its base directory. Read only the one matching reference and do not pre-load the others; do not invent a contract that is missing.
+Loading this skill returns its base directory. Read only the one matching reference, do not pre-load the others, and reuse a contract already read this session instead of reading it again; do not invent a contract that is missing.
 
 | When the band needs | Read | The band keeps |
 |---|---|---|
