@@ -246,10 +246,12 @@ function mount(options = {}) {
     notePanel() {
       return visibleNodes().find((node) => String(node.props?.['data-tour-id'] || '').endsWith('-note-panel'));
     },
-    keydown(key) {
-      const event = { key, preventDefault() {} };
+    keydown(key, target) {
+      let prevented = false;
+      const event = { key, target, preventDefault() { prevented = true; } };
       for (const handler of documentListeners.get('keydown') || []) handler(event);
       refresh();
+      return prevented;
     },
     // Browser order: keydown, then the dialog's cancel event.
     escape() {
@@ -501,6 +503,100 @@ test('geometry selection does not offer an append mode', () => {
     const labels = walk(h.tree).filter((node) => node.type === 'button').map(text);
     assert.equal(labels.includes(t('appendSelect')), false);
     assert.equal(labels.includes(t('appendDone')), false);
+  });
+});
+
+test('a selected edge or circle stroke resizes the shape, and the first press only selects', () => {
+  withMount((h) => {
+    h.tab('geometry');
+    h.tool('rectangle');
+    h.clickAt(100, 100);
+    h.clickAt(300, 100);
+    h.clickAt(300, 300);
+    // Every side is selected after drawing, so the drag carries the whole rectangle.
+    h.clickAt(200, 100);
+    h.moveTo(240, 150);
+    assert.equal(h.board().points.find((p) => p.id === 'p-1').y, 100, 'the drag is only a preview');
+    assert.match(String(h.find((node) => node.type === 'polygon').props.points), /140,150/);
+    assert.match(String(h.find((node) => node.type === 'polygon').props.points), /340,350/);
+    h.release(240, 150);
+    assert.deepEqual(h.board().points.map((p) => [p.id, p.x, p.y]), [
+      ['p-1', 140, 150], ['p-2', 340, 150], ['p-3', 340, 350], ['p-4', 140, 350],
+    ]);
+    h.clickAt(140, 150);
+    h.moveTo(180, 190);
+    h.release(180, 190);
+    assert.deepEqual(h.board().points.map((p) => [p.id, p.x, p.y]), [
+      ['p-1', 180, 190], ['p-2', 380, 190], ['p-3', 380, 390], ['p-4', 180, 390],
+    ], 'a corner of the fully selected rectangle moves the whole shape');
+    h.click(t('undo'));
+    h.click(t('undo'));
+    assert.equal(h.board().points.find((p) => p.id === 'p-1').y, 100);
+
+    h.clickAt(40, 40);
+    h.release(40, 40);
+    h.clickAt(200, 100);
+    h.moveTo(200, 180);
+    h.release(200, 180);
+    assert.equal(h.board().points.find((p) => p.id === 'p-1').y, 100, 'an unselected edge only becomes selected');
+    h.clickAt(200, 100);
+    h.moveTo(200, 180);
+    h.release(200, 180);
+    assert.equal(h.board().points.find((p) => p.id === 'p-1').y, 180);
+    assert.equal(h.board().points.find((p) => p.id === 'p-1').x, 100);
+    assert.equal(h.board().points.find((p) => p.id === 'p-3').y, 300, 'the opposite edge stays');
+    assert.equal(h.board().points.find((p) => p.id === 'p-4').y, 300, 'the opposite edge stays');
+
+    h.tool('circle');
+    h.clickAt(500, 200);
+    h.clickAt(620, 200);
+    h.clickAt(620, 200);
+    h.moveTo(700, 200);
+    h.release(700, 200);
+    const circle = h.board().elements.find((e) => e.type === 'circle');
+    const center = h.board().points.find((p) => p.id === circle.centerPointId);
+    const rim = h.board().points.find((p) => p.id === circle.radiusPointId);
+    assert.deepEqual([center.x, center.y], [500, 200], 'the centre stays');
+    assert.deepEqual([rim.x, rim.y], [700, 200]);
+  });
+});
+
+test('dragging the derived corner of a freshly drawn rectangle moves the whole shape', () => {
+  withMount((h) => {
+    h.tab('geometry');
+    h.tool('rectangle');
+    h.clickAt(100, 100);
+    h.clickAt(300, 100);
+    h.clickAt(300, 300);
+    const derived = h.board().points.find((p) => p.kind === 'derived');
+    assert.deepEqual([derived.x, derived.y], [100, 300]);
+    h.clickAt(derived.x, derived.y);
+    h.moveTo(derived.x + 40, derived.y + 40);
+    h.release(derived.x + 40, derived.y + 40);
+    assert.deepEqual(h.board().points.map((p) => [p.id, p.x, p.y]), [
+      ['p-1', 140, 140], ['p-2', 340, 140], ['p-3', 340, 340], ['p-4', 140, 340],
+    ]);
+  });
+});
+
+test('dragging a fully selected segment moves the other fully selected shape with it', () => {
+  withMount((h) => {
+    h.tab('geometry');
+    h.tool('segment');
+    h.clickAt(120, 80);
+    h.clickAt(320, 80);
+    h.tool('triangle');
+    h.clickAt(140, 220);
+    h.clickAt(340, 220);
+    h.clickAt(240, 400);
+    h.clickAt(40, 40);
+    h.moveTo(450, 480);
+    h.release(450, 480);
+    const before = h.board().points.map((p) => [p.id, p.x, p.y]);
+    h.clickAt(220, 80);
+    h.moveTo(260, 130);
+    h.release(260, 130);
+    assert.deepEqual(h.board().points.map((p) => [p.id, p.x, p.y]), before.map(([id, x, y]) => [id, x + 40, y + 50]));
   });
 });
 
@@ -817,6 +913,58 @@ test('midpoint marks the selected segment and stays idle until a segment is sele
   });
 });
 
+test('a selected side of a shape can take a midpoint', () => {
+  withMount((h) => {
+    h.tab('geometry');
+    const midpoint = () => h.find((node) => node.type === 'button' && node.props['aria-label'] === t('midpoint'));
+    h.tool('triangle');
+    h.clickAt(120, 80);
+    h.clickAt(360, 90);
+    h.clickAt(200, 320);
+    assert.equal(midpoint().props.disabled, true, 'every side of a new shape is selected, so midpoint stays idle');
+
+    // The closing side runs from the third vertex back to the first.
+    h.clickAt(40, 40);
+    h.release(40, 40);
+    h.clickAt(160, 200);
+    assert.equal(midpoint().props.disabled, false, 'one selected side of the triangle can take a midpoint');
+    h.click(t('midpoint'));
+    const board = h.board();
+    const derived = board.points.find((point) => point.kind === 'derived');
+    assert.equal(board.elements.length, 1, 'marking a midpoint does not add another shape');
+    assert.equal(board.elements[0].type, 'polygon');
+    assert.deepEqual(derived.construction, { op: 'midpoint', inputs: ['p-3', 'p-1'] });
+    assert.equal(derived.x, 160);
+    assert.equal(derived.y, 200);
+
+    h.clickAt(180, 260);
+    assert.equal(midpoint().props.disabled, true, 'a side that already has its midpoint stays idle');
+
+    h.clickAt(40, 40);
+    h.release(40, 40);
+    h.clickAt(280, 205);
+    assert.equal(midpoint().props.disabled, false, 'another side of the same shape can still take a midpoint');
+
+    h.tool('circle');
+    h.clickAt(560, 200);
+    h.clickAt(680, 200);
+    assert.equal(midpoint().props.disabled, true, 'a circle has no side to mark');
+
+    h.tool('rectangle');
+    h.clickAt(100, 420);
+    h.clickAt(260, 420);
+    h.clickAt(260, 540);
+    h.clickAt(40, 40);
+    h.release(40, 40);
+    h.clickAt(180, 420);
+    assert.equal(midpoint().props.disabled, false, 'a rectangle side between two free corners can take a midpoint');
+    h.clickAt(40, 40);
+    h.release(40, 40);
+    h.clickAt(180, 540);
+    assert.equal(midpoint().props.disabled, true, 'a side that ends on the derived corner stays idle');
+  });
+});
+
 test('the point tool is drawn as a filled circle', () => {
   withMount((h) => {
     h.tab('geometry');
@@ -1080,6 +1228,7 @@ test('clicking one side of a triangle deletes only that side', () => {
     h.clickAt(360, 90);
     h.clickAt(200, 320);
     h.clickAt(240, 85);
+    h.release(240, 85);
     assert.match(text(h.find((node) => node.props.className === 'eb-floating')), new RegExp(`${t('selectedCount')} 1`));
     h.click(t('trash'));
     const board = h.board();
@@ -1099,6 +1248,8 @@ test('deleting a selected segment removes endpoints with no other use', () => {
     h.tool('segment');
     h.clickAt(100, 140);
     h.clickAt(340, 140);
+    assert.equal(h.keydown('Delete', { tagName: 'SELECT' }), false);
+    assert.equal(h.board().elements.length, 1, 'the question menu keeps Delete');
     h.keydown('Delete');
     assert.deepEqual(h.board().elements, []);
     assert.deepEqual(h.board().points, []);
@@ -1116,6 +1267,77 @@ test('deleting a selected segment removes endpoints with no other use', () => {
     assert.equal(board.elements.length, 1);
     assert.equal(board.elements[0].type, 'polygon');
     assert.equal(board.points.length, 3, 'vertices the triangle still uses stay');
+  });
+});
+
+test('Delete and Backspace remove the quantity selection without focusing a shape', () => {
+  withMount((h) => {
+    h.click(t('title'));
+    const addCircle = () => {
+      h.find((node) => node.type === 'button'
+        && String(node.props['aria-label'] || '').startsWith(`${t('circle')} ·`)).props.onClick();
+      h.render();
+    };
+    const shapes = () => walk(h.tree).filter((node) => node.props && node.props['data-object']);
+    const ids = () => h.quantityBoard().objects.map((object) => object.id);
+    const failed = () => walk(h.tree).some((node) => node.props.className === 'eb-status-toast'
+      && String(text(node)).startsWith(t('failed')));
+    addCircle();
+    addCircle();
+    assert.deepEqual(ids(), ['object-1', 'object-2']);
+    // The newest shape is selected. A click does not focus it, so Delete has to
+    // reach the selection from the document the way it does on the geometry tab.
+    shapes().find((node) => node.props['data-object'] === 'object-1').props.onKeyDown({
+      key: 'Enter', shiftKey: true, preventDefault() {},
+    });
+    h.render();
+    assert.equal(h.keydown('Delete', { tagName: 'SELECT' }), false);
+    assert.deepEqual(ids(), ['object-1', 'object-2'], 'the question menu keeps Delete');
+    assert.equal(h.keydown('Delete'), true);
+    assert.deepEqual(ids(), []);
+    assert.equal(failed(), false, 'one key is a single delete');
+    h.click(t('undo'));
+    assert.deepEqual(ids(), ['object-1', 'object-2']);
+    // Undo clears the selection, so pick the second shape again. Backspace on the
+    // other, focused shape removes only that one.
+    shapes().find((node) => node.props['data-object'] === 'object-2').props.onKeyDown({
+      key: 'Enter', preventDefault() {},
+    });
+    h.render();
+    assert.equal(h.keydown('Backspace', {
+      tagName: 'g',
+      closest(selector) {
+        return selector === '[data-object]' ? { getAttribute: () => 'object-1' } : null;
+      },
+    }), true);
+    assert.deepEqual(ids(), ['object-2']);
+
+    h.find((node) => node.type === 'button'
+      && String(node.props['aria-label'] || '').startsWith(`${t('note')} ·`)).props.onClick();
+    h.render();
+    assert.equal(h.keydown('Backspace', { tagName: 'TEXTAREA' }), false);
+    assert.deepEqual(ids(), ['object-2'], 'a note keeps Backspace');
+    h.keydown('Escape');
+    shapes().find((node) => node.props['data-object'] === 'object-2').props.onKeyDown({
+      key: 'Enter', preventDefault() {},
+    });
+    h.render();
+    assert.equal(h.keydown('Delete'), true);
+    assert.deepEqual(ids(), []);
+
+    addCircle();
+    h.tab('geometry');
+    h.tool('segment');
+    h.clickAt(80, 80);
+    h.clickAt(240, 80);
+    h.tab('quantity');
+    h.keydown('Delete');
+    assert.deepEqual(ids(), []);
+    h.tab('geometry');
+    assert.equal(h.board().elements.length, 1, 'quantity Delete leaves the geometry canvas alone');
+    h.keydown('Delete');
+    assert.deepEqual(h.board().elements, []);
+    assert.deepEqual(h.board().points, []);
   });
 });
 

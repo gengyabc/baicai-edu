@@ -137,6 +137,9 @@ export function createGeometryModel() {
       const construction = validateConstruction(p.construction, pointMap, p.id);
       const inputs = construction.inputs.map((ref) => pointMap.get(ref));
       const at = construction.op === 'midpoint' ? midpoint(inputs[0], inputs[1]) : fourthPoint(...inputs);
+      // The coordinates on the wire are stale: shiftFree writes only free points, and
+      // P4 = P1 + P3 - P2 can leave the board while those free points stay inside.
+      if (!inside(at)) fail('Invalid point');
       pointMap.set(p.id, { id: p.id, label: p.label, kind: 'derived', ...at, construction, note: p.note ?? '' });
     }
     const elements = input.elements.map((e) => {
@@ -305,6 +308,113 @@ export function createGeometryModel() {
     lastLegal(start, wanted, (probe) => { last = tryCarry(probe); return Boolean(last); });
     if (!last) fail('The circle cannot move there');
     return last;
+  }
+  // Move these free points by one vector. A circle whose centre is among them is
+  // carried with it, so the radius stays. Derived corners are recomputed, not shifted.
+  function shiftFree(canonical, ids, vector) {
+    const shifts = new Map();
+    for (const id of ids) {
+      const point = canonical.points.find((p) => p.id === id);
+      if (!point || point.kind !== 'free') continue;
+      shifts.set(id, { x: point.x + vector.x, y: point.y + vector.y });
+    }
+    if (!shifts.size) return validate(canonical);
+    for (const [id, at] of shifts) {
+      const before = canonical.points.find((p) => p.id === id);
+      const dx = at.x - before.x, dy = at.y - before.y;
+      for (const element of canonical.elements) {
+        if (element.type !== 'circle' || element.centerPointId !== id || shifts.has(element.radiusPointId)) continue;
+        const rim = canonical.points.find((p) => p.id === element.radiusPointId);
+        if (!rim || rim.kind !== 'free') continue;
+        shifts.set(rim.id, { x: rim.x + dx, y: rim.y + dy });
+      }
+    }
+    return validate({ ...canonical, points: canonical.points.map((p) => {
+      const at = shifts.get(p.id);
+      return at ? { ...p, x: at.x, y: at.y } : p;
+    }) });
+  }
+  const placeEdge = (canonical, aId, bId, vector) => shiftFree(canonical, [aId, bId], vector);
+  function slide(canonical, ids, vector) {
+    const placed = (t) => {
+      try { return shiftFree(canonical, ids, { x: vector.x * t, y: vector.y * t }); } catch { return null; }
+    };
+    const direct = placed(1);
+    if (direct) return direct;
+    let best = placed(0) || validate(canonical);
+    let lo = 0, hi = 1;
+    for (let step = 0; step < 40; step++) {
+      const mid = (lo + hi) / 2;
+      const got = placed(mid);
+      if (got) { best = got; lo = mid; } else hi = mid;
+    }
+    return best;
+  }
+  function translatePoints(canonical, action) {
+    if (!Array.isArray(action.ids) || !action.ids.length || action.ids.length > 300 || new Set(action.ids).size !== action.ids.length) {
+      fail('Select distinct points or shapes');
+    }
+    if (!finite(action.dx) || !finite(action.dy)) fail('Invalid coordinate');
+    for (const id of action.ids) canonical.points.find((p) => p.id === id) || fail('Unknown point');
+    return slide(canonical, action.ids, { x: action.dx, y: action.dy });
+  }
+  // Shoelace sum. Its sign is the ring's winding; a resize must not flip the shape
+  // through its opposite side, and no side may shrink to the degenerate threshold.
+  function signedArea(points) {
+    let sum = 0;
+    for (let i = 0; i < points.length; i++) {
+      const p = points[i], q = points[(i + 1) % points.length];
+      sum += p.x * q.y - q.x * p.y;
+    }
+    return sum;
+  }
+  function edgeHolds(canonical, next, elementId) {
+    const element = next.elements.find((e) => e.id === elementId);
+    if (!element?.points || element.type === 'segment') return true;
+    const ring = (board, item) => item.points.map((id) => board.points.find((p) => p.id === id));
+    const before = ring(canonical, canonical.elements.find((e) => e.id === elementId));
+    const after = ring(next, element);
+    const start = signedArea(before);
+    if (start * signedArea(after) <= 0) return false;
+    for (let i = 0; i < after.length; i++) {
+      if (distance(after[i], after[(i + 1) % after.length]) <= EPSILON) return false;
+    }
+    return true;
+  }
+  function moveEdge(canonical, action) {
+    const element = canonical.elements.find((e) => e.id === action.id) || fail('Unknown element');
+    const edges = shapeEdges(element);
+    if (!Number.isInteger(action.index) || action.index < 0 || action.index >= edges.length) fail('Unknown element');
+    if (!finite(action.dx) || !finite(action.dy)) fail('Invalid coordinate');
+    const [aId, bId] = edges[action.index];
+    const a = canonical.points.find((p) => p.id === aId);
+    const b = canonical.points.find((p) => p.id === bId);
+    let vector = { x: action.dx, y: action.dy };
+    if (element.type === 'rectangle' && a && b) {
+      const ex = b.x - a.x, ey = b.y - a.y;
+      const len = Math.hypot(ex, ey);
+      if (!(len > EPSILON)) return validate(canonical);
+      const nx = -ey / len, ny = ex / len;
+      const along = vector.x * nx + vector.y * ny;
+      vector = { x: along * nx, y: along * ny };
+    }
+    const placed = (t) => {
+      try {
+        const next = placeEdge(canonical, aId, bId, { x: vector.x * t, y: vector.y * t });
+        return edgeHolds(canonical, next, element.id) ? next : null;
+      } catch { return null; }
+    };
+    const direct = placed(1);
+    if (direct) return direct;
+    // The pointer asked for a size the shape cannot take. Stop at the last legal fraction.
+    let best = placed(0) || validate(canonical);
+    let lo = 0, hi = 1;
+    for (let step = 0; step < 40; step++) {
+      const mid = (lo + hi) / 2;
+      const got = placed(mid);
+      if (got) { best = got; lo = mid; } else hi = mid;
+    }
+    return best;
   }
   function dependents(canonical, id) {
     const result = [];
@@ -583,6 +693,8 @@ export function createGeometryModel() {
         // moves alone. Either way the model answers with the whole legal next board.
         return movePoint(canonical, action);
       }
+      case 'moveEdge': return moveEdge(canonical, action);
+      case 'translate': return translatePoints(canonical, action);
       case 'addMidpoint': {
         const [a, b] = [pointById(action.a), pointById(action.b)];
         if (action.a === action.b) fail('A midpoint needs two different points');
@@ -672,9 +784,36 @@ export function createGeometryModel() {
     const dragged = next.points.find((p) => p.id === id);
     return { x: dragged.x, y: dragged.y, rims, corners };
   };
+  // Edge-drag preview. `x` and `y` are the pointer delta the student asked for;
+  // `corners` is every point the model actually moved, including a carried rim.
+  const constrainedEdgeMove = (board, id, index, dx, dy) => {
+    const canonical = cloneBoard(board);
+    let next;
+    try { next = moveEdge(canonical, { id, index, dx, dy }); } catch { return null; }
+    const corners = next.points
+      .filter((p) => {
+        const before = canonical.points.find((q) => q.id === p.id);
+        return before && (before.x !== p.x || before.y !== p.y);
+      })
+      .map((p) => ({ id: p.id, x: p.x, y: p.y }));
+    return { x: dx, y: dy, rims: {}, corners };
+  };
+  // Whole-shape drag. Same preview shape as an edge drag: every point that actually moved.
+  const constrainedTranslate = (board, ids, dx, dy) => {
+    const canonical = cloneBoard(board);
+    let next;
+    try { next = translatePoints(canonical, { ids, dx, dy }); } catch { return null; }
+    const corners = next.points
+      .filter((p) => {
+        const before = canonical.points.find((q) => q.id === p.id);
+        return before && (before.x !== p.x || before.y !== p.y);
+      })
+      .map((p) => ({ id: p.id, x: p.x, y: p.y }));
+    return { x: dx, y: dy, rims: {}, corners };
+  };;
   // The drawable library, in toolbox order. A point is a point; the rest are elements.
   const shapeLibrary = ['point', ...elementTypes];
   return { kind: KIND, coordinateSystem, shapeLibrary, elementTypes: [...elementTypes], roles: [...roles], operations: [...operations],
     bounds: { width: WIDTH, height: HEIGHT, margin: MARGIN, epsilon: EPSILON },
-    empty, validate, reduce, constrainedMove, rectangleAt, dependents: (board, id) => dependents(cloneBoard(board), id), serialize };
+    empty, validate, reduce, constrainedMove, constrainedEdgeMove, constrainedTranslate, rectangleAt, dependents: (board, id) => dependents(cloneBoard(board), id), serialize };
 }

@@ -1362,6 +1362,24 @@ window.__ModuleLoader__.load({
       // Only the visible tab hears Escape, so a hidden page cannot cancel the other one.
       if (!tabActive) return undefined;
       const onKey = (event) => {
+        if (event.key === 'Delete' || event.key === 'Backspace') {
+          // An overlay or the tour owns the keyboard. A text field or the question
+          // menu keeps the key. A focused shape outside the selection is removed on
+          // its own, matching Enter and the arrow keys. Any other focus deletes the
+          // current selection, so the key works after a click the way it does on
+          // the geometry board.
+          if (overlay || tour) return;
+          const tag = event.target?.tagName;
+          if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || event.target?.isContentEditable) return;
+          const focusedId = event.target?.closest?.('[data-object]')?.getAttribute('data-object');
+          const ids = focusedId && !selection.includes(focusedId) ? [focusedId] : selection;
+          const live = ids.filter((id) => boardRef.current.objects.some((object) => object.id === id));
+          if (!live.length) return;
+          event.preventDefault();
+          batch(live.map((id) => ({ type: 'delete', id })));
+          selectIds([]);
+          return;
+        }
         if (event.key !== 'Escape') return;
         const noteHeld = overlay?.kind === 'note' && shared.tourHoldsNotePanel?.(tour);
         if (overlay && !noteHeld) { event.preventDefault(); dismissOverlay(); }
@@ -1377,7 +1395,7 @@ window.__ModuleLoader__.load({
       };
       document.addEventListener('keydown', onKey);
       return () => document.removeEventListener('keydown', onKey);
-    }, [tabActive, overlay, moreOpen, append, tour, dragShape]);
+    }, [tabActive, overlay, moreOpen, append, tour, dragShape, selection]);
 
     function flushEditor() {
       const active = dialog.current?.ownerDocument.activeElement;
@@ -1593,7 +1611,9 @@ window.__ModuleLoader__.load({
         e.preventDefault(); const [dx, dy] = arrows[e.key];
         action({ type: 'moveMany', ids: selection.includes(o.id) ? selection : [o.id], dx, dy });
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        e.preventDefault(); batch((selection.includes(o.id) ? selection : [o.id]).map((id) => ({ type: 'delete', id }))); selectIds([]);
+        // The document listener deletes. Swallow the key here so a focused shape
+        // does not also navigate the browser back.
+        e.preventDefault();
       }
     }
     function close() {
@@ -2146,7 +2166,7 @@ window.__ModuleLoader__.load({
   // The drawable library comes from the model so the two lists cannot drift.
   // "select" is a tool, not a shape. A triangle is three clicks that close as a polygon,
   // so it stays out of the snapshot's element types. Polygon sits after rectangle.
-  // Midpoint is an action on a selected segment, drawn beside these tools rather than as one of them.
+  // Midpoint is an action on one selected side, drawn beside these tools rather than as one of them.
   const shapeTools = G.shapeLibrary.filter((name) => name !== 'point' && name !== 'polygon');
   const segmentAt = shapeTools.indexOf('segment');
   const DRAW_TOOLS = [
@@ -2395,9 +2415,9 @@ window.__ModuleLoader__.load({
         y: Math.max(G.bounds.margin, Math.min(height - G.bounds.margin, raw.y)),
       };
     }
-    // Only a free point is a legal construction input or a drag handle. A derived point stays
-    // visible and selectable as an isolated point, but clicking it must never reuse its id
-    // as an endpoint or start a drag on it (a construction cannot reference a derived point).
+    // Only a free point is a legal construction input or a lone drag handle. A derived point stays
+    // visible and selectable, and clicking it must never reuse its id as an endpoint. A vertex of
+    // a fully selected shape, derived or free, translates that shape by moving its free points.
     const freePoints = () => boardRef.current.points.filter((q) => q.kind === 'free');
     // Grid and snap are local view state; neither reaches the snapshot.
     function snapTo(p) {
@@ -2556,6 +2576,56 @@ window.__ModuleLoader__.load({
       }
       return ids;
     }
+    // A closed shape is fully selected when every edge is in the selection, which is how
+    // drawing one leaves it. A segment is fully selected when the segment itself is.
+    // A circle has no edges: its stroke stays a radius handle.
+    function shapeFullySelected(element) {
+      if (!element || element.type === 'circle') return false;
+      if (element.type === 'segment') return selection.includes(element.id);
+      if (!closedShape(element.type)) return false;
+      return element.points.every((_, index) => selection.includes(edgeKey(element.id, index)));
+    }
+    function translationIds() {
+      const state = boardRef.current;
+      const ids = [];
+      for (const element of state.elements) {
+        if (!shapeFullySelected(element)) continue;
+        const refs = element.points || [];
+        for (const id of refs) {
+          if (state.points.find((p) => p.id === id)?.kind === 'free' && !ids.includes(id)) ids.push(id);
+        }
+      }
+      return ids;
+    }
+    function edgeOf(target) {
+      if (target?.kind !== 'edge') return null;
+      const mark = target.id.lastIndexOf('#');
+      if (mark <= 0) return null;
+      const id = target.id.slice(0, mark);
+      const index = Number(target.id.slice(mark + 1));
+      const element = boardRef.current.elements.find((e) => e.id === id);
+      if (!element || !Number.isInteger(index)) return null;
+      return { id, index, element };
+    }
+    // One selected edge resizes. The whole shape, once every edge is selected, does not.
+    function resizeHandle(target) {
+      if (!target || target.kind === 'point') return null;
+      const state = boardRef.current;
+      const edge = edgeOf(target);
+      if (edge) {
+        if (!selection.includes(target.id) || shapeFullySelected(edge.element)) return null;
+        return { kind: 'edge', id: edge.id, index: edge.index, selectionId: target.id };
+      }
+      const element = state.elements.find((e) => e.id === target.id);
+      if (!element || !selection.includes(element.id)) return null;
+      if (element.type === 'circle') {
+        const rim = state.points.find((q) => q.id === element.radiusPointId);
+        if (!rim || rim.kind !== 'free') return null;
+        return { kind: 'radius', id: rim.id, selectionId: element.id };
+      }
+      if (element.type === 'segment') return { kind: 'edge', id: element.id, index: 0, selectionId: element.id };
+      return null;
+    }
     function pointerDown(event) {
       if (event.button !== 0 || !ready) return;
       const p = localPoint(event);
@@ -2564,10 +2634,67 @@ window.__ModuleLoader__.load({
       if (tool === 'select') {
         const hidden = exclusiveRimIds(boardRef.current);
         const q = pointId && !hidden.has(pointId) ? pointById(pointId) : null;
-        if (q && q.kind === 'free') {
-          if (!selection.includes(q.id)) setSelection([q.id]);
-          gesture.current = { kind: 'drag', id: q.id, start: p, base: boardRef.current, pointer: event.pointerId, moved: false };
-          setPreview({ id: q.id, x: q.x, y: q.y });
+        if (q) {
+          const moving = translationIds();
+          const onSelectedShape = boardRef.current.elements.some((element) =>
+            shapeFullySelected(element) && (element.points || []).includes(q.id));
+          // A derived corner is not in translationIds; the free points carry it.
+          if (moving.length && onSelectedShape && (q.kind !== 'free' || moving.includes(q.id))) {
+            gesture.current = { kind: 'translate', ids: moving, narrow: [q.id], start: p, base: boardRef.current, pointer: event.pointerId, moved: false };
+            setPreview(null);
+            setMarquee(null);
+            event.preventDefault(); event.currentTarget.setPointerCapture?.(event.pointerId);
+            return;
+          }
+          if (q.kind === 'free') {
+            if (!selection.includes(q.id)) setSelection([q.id]);
+            gesture.current = { kind: 'drag', id: q.id, start: p, base: boardRef.current, pointer: event.pointerId, moved: false };
+            setPreview({ id: q.id, x: q.x, y: q.y });
+            setMarquee(null);
+            event.preventDefault(); event.currentTarget.setPointerCapture?.(event.pointerId);
+            return;
+          }
+        }
+        const whole = edgeOf(target);
+        if (whole && shapeFullySelected(whole.element)) {
+          const moving = translationIds();
+          if (moving.length) {
+            gesture.current = { kind: 'translate', ids: moving, narrow: [target.id], start: p, base: boardRef.current, pointer: event.pointerId, moved: false };
+            setPreview(null);
+            setMarquee(null);
+            event.preventDefault(); event.currentTarget.setPointerCapture?.(event.pointerId);
+            return;
+          }
+        }
+        // A segment's stroke is the element, not an edge. Once the segment is fully
+        // selected, that stroke translates the group; a later endpoint drag changes length.
+        if (target?.kind === 'element') {
+          const element = boardRef.current.elements.find((item) => item.id === target.id);
+          if (element?.type === 'segment' && shapeFullySelected(element)) {
+            const moving = translationIds();
+            if (moving.length) {
+              gesture.current = { kind: 'translate', ids: moving, narrow: [element.id], start: p, base: boardRef.current, pointer: event.pointerId, moved: false };
+              setPreview(null);
+              setMarquee(null);
+              event.preventDefault(); event.currentTarget.setPointerCapture?.(event.pointerId);
+              return;
+            }
+          }
+        }
+        const handle = resizeHandle(target);
+        if (handle?.kind === 'radius') {
+          const rim = boardRef.current.points.find((item) => item.id === handle.id);
+          setSelection([handle.selectionId]);
+          gesture.current = { kind: 'drag', id: rim.id, start: p, base: boardRef.current, pointer: event.pointerId, moved: false };
+          setPreview({ id: rim.id, x: rim.x, y: rim.y });
+          setMarquee(null);
+          event.preventDefault(); event.currentTarget.setPointerCapture?.(event.pointerId);
+          return;
+        }
+        if (handle?.kind === 'edge') {
+          setSelection([handle.selectionId]);
+          gesture.current = { kind: 'edge', id: handle.id, index: handle.index, start: p, base: boardRef.current, pointer: event.pointerId, moved: false };
+          setPreview(null);
           setMarquee(null);
           event.preventDefault(); event.currentTarget.setPointerCapture?.(event.pointerId);
           return;
@@ -2599,6 +2726,14 @@ window.__ModuleLoader__.load({
           return;
         }
         // The drag previews the position the model accepts; release is the only undo step.
+        if (g.kind === 'edge' || g.kind === 'translate') {
+          g.point = p;
+          const accepted = g.kind === 'translate'
+            ? G.constrainedTranslate(g.base, g.ids, p.x - g.start.x, p.y - g.start.y)
+            : G.constrainedEdgeMove(g.base, g.id, g.index, p.x - g.start.x, p.y - g.start.y);
+          if (accepted) setPreview({ corners: accepted.corners, rims: accepted.rims });
+          return;
+        }
         const accepted = G.constrainedMove(g.base, g.id, p.x, p.y);
         if (accepted) setPreview({ id: g.id, ...accepted });
         return;
@@ -2613,6 +2748,17 @@ window.__ModuleLoader__.load({
         setMarquee(null);
         if (cancelled || !g.moved) { setSelection([]); return; }
         setSelection(idsInBox(boxFrom(g.start, g.current || g.start)));
+        return;
+      }
+      if (g.kind === 'edge' || g.kind === 'translate') {
+        const end = g.point;
+        setPreview(null);
+        if (cancelled || !g.moved || !end) {
+          if (!cancelled && g.narrow) setSelection(g.narrow);
+          return;
+        }
+        if (g.kind === 'translate') action({ type: 'translate', ids: g.ids, dx: end.x - g.start.x, dy: end.y - g.start.y });
+        else action({ type: 'moveEdge', id: g.id, index: g.index, dx: end.x - g.start.x, dy: end.y - g.start.y });
         return;
       }
       const shown = preview;
@@ -2658,7 +2804,7 @@ window.__ModuleLoader__.load({
         if (event.key === 'Delete' || event.key === 'Backspace') {
           if (!selection.length || overlay || rename || tour) return;
           const tag = event.target?.tagName;
-          if (tag === 'INPUT' || tag === 'TEXTAREA' || event.target?.isContentEditable) return;
+          if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || event.target?.isContentEditable) return;
           event.preventDefault();
           deleteSelection();
           return;
@@ -2936,24 +3082,44 @@ window.__ModuleLoader__.load({
         h('text', { x: 400, y: 190, textAnchor: 'middle', fill: '#64748B', fontSize: 17, fontWeight: 500 }, t('geometryEmpty')),
         h('text', { x: 400, y: 216, textAnchor: 'middle', fill: '#64748B', fontSize: 12 }, t('geometryEmptyHint')))));
 
-    // Midpoint is an action on one selected segment, not a tool that drops new endpoints.
-    // It stays disabled until that segment's two free ends do not already have a midpoint.
+    // Midpoint is an action on one selected side, not a tool that drops new endpoints.
+    // A segment is that side. A polygon, rectangle, or parallelogram is selected one
+    // edge at a time; a circle has none. The control stays disabled until that side's
+    // two free ends do not already have a midpoint.
+    function sideEnds(key) {
+      const mark = typeof key === 'string' ? key.lastIndexOf('#') : -1;
+      if (mark > 0) {
+        const id = key.slice(0, mark);
+        const indexText = key.slice(mark + 1);
+        const index = Number(indexText);
+        if (!Number.isInteger(index) || String(index) !== indexText) return null;
+        const element = board.elements.find((item) => item.id === id);
+        if (!element || !closedShape(element.type) || !Array.isArray(element.points)) return null;
+        if (index < 0 || index >= element.points.length) return null;
+        const a = element.points[index];
+        const b = element.points[(index + 1) % element.points.length];
+        return a && b && a !== b ? [a, b] : null;
+      }
+      const element = board.elements.find((item) => item.id === key);
+      if (!element || element.type !== 'segment' || element.points.length !== 2) return null;
+      return element.points;
+    }
     function midpointTarget() {
       if (selection.length !== 1) return null;
-      const element = board.elements.find((item) => item.id === selection[0]);
-      if (!element || element.type !== 'segment' || element.points.length !== 2) return null;
-      const [a, b] = element.points;
-      const ends = [a, b].map((id) => board.points.find((point) => point.id === id));
-      if (ends.some((point) => !point || point.kind !== 'free')) return null;
+      const ends = sideEnds(selection[0]);
+      if (!ends) return null;
+      const [a, b] = ends;
+      const points = [a, b].map((id) => board.points.find((point) => point.id === id));
+      if (points.some((point) => !point || point.kind !== 'free')) return null;
       const taken = board.points.some((point) => point.construction?.op === 'midpoint'
         && point.construction.inputs?.length === 2
         && point.construction.inputs.includes(a) && point.construction.inputs.includes(b));
-      return taken ? null : element;
+      return taken ? null : { a, b };
     }
     function markMidpoint() {
-      const element = midpointTarget();
-      if (!element) return;
-      const [a, b] = element.points;
+      const target = midpointTarget();
+      if (!target) return;
+      const { a, b } = target;
       const next = action({ type: 'addMidpoint', a, b });
       if (!next) return;
       const created = next.points.find((point) => point.construction?.op === 'midpoint'
@@ -3220,6 +3386,9 @@ window.__ModuleLoader__.load({
       const construction = validateConstruction(p.construction, pointMap, p.id);
       const inputs = construction.inputs.map((ref) => pointMap.get(ref));
       const at = construction.op === 'midpoint' ? midpoint(inputs[0], inputs[1]) : fourthPoint(...inputs);
+      // The coordinates on the wire are stale: shiftFree writes only free points, and
+      // P4 = P1 + P3 - P2 can leave the board while those free points stay inside.
+      if (!inside(at)) fail('Invalid point');
       pointMap.set(p.id, { id: p.id, label: p.label, kind: 'derived', ...at, construction, note: p.note ?? '' });
     }
     const elements = input.elements.map((e) => {
@@ -3388,6 +3557,113 @@ window.__ModuleLoader__.load({
     lastLegal(start, wanted, (probe) => { last = tryCarry(probe); return Boolean(last); });
     if (!last) fail('The circle cannot move there');
     return last;
+  }
+  // Move these free points by one vector. A circle whose centre is among them is
+  // carried with it, so the radius stays. Derived corners are recomputed, not shifted.
+  function shiftFree(canonical, ids, vector) {
+    const shifts = new Map();
+    for (const id of ids) {
+      const point = canonical.points.find((p) => p.id === id);
+      if (!point || point.kind !== 'free') continue;
+      shifts.set(id, { x: point.x + vector.x, y: point.y + vector.y });
+    }
+    if (!shifts.size) return validate(canonical);
+    for (const [id, at] of shifts) {
+      const before = canonical.points.find((p) => p.id === id);
+      const dx = at.x - before.x, dy = at.y - before.y;
+      for (const element of canonical.elements) {
+        if (element.type !== 'circle' || element.centerPointId !== id || shifts.has(element.radiusPointId)) continue;
+        const rim = canonical.points.find((p) => p.id === element.radiusPointId);
+        if (!rim || rim.kind !== 'free') continue;
+        shifts.set(rim.id, { x: rim.x + dx, y: rim.y + dy });
+      }
+    }
+    return validate({ ...canonical, points: canonical.points.map((p) => {
+      const at = shifts.get(p.id);
+      return at ? { ...p, x: at.x, y: at.y } : p;
+    }) });
+  }
+  const placeEdge = (canonical, aId, bId, vector) => shiftFree(canonical, [aId, bId], vector);
+  function slide(canonical, ids, vector) {
+    const placed = (t) => {
+      try { return shiftFree(canonical, ids, { x: vector.x * t, y: vector.y * t }); } catch { return null; }
+    };
+    const direct = placed(1);
+    if (direct) return direct;
+    let best = placed(0) || validate(canonical);
+    let lo = 0, hi = 1;
+    for (let step = 0; step < 40; step++) {
+      const mid = (lo + hi) / 2;
+      const got = placed(mid);
+      if (got) { best = got; lo = mid; } else hi = mid;
+    }
+    return best;
+  }
+  function translatePoints(canonical, action) {
+    if (!Array.isArray(action.ids) || !action.ids.length || action.ids.length > 300 || new Set(action.ids).size !== action.ids.length) {
+      fail('Select distinct points or shapes');
+    }
+    if (!finite(action.dx) || !finite(action.dy)) fail('Invalid coordinate');
+    for (const id of action.ids) canonical.points.find((p) => p.id === id) || fail('Unknown point');
+    return slide(canonical, action.ids, { x: action.dx, y: action.dy });
+  }
+  // Shoelace sum. Its sign is the ring's winding; a resize must not flip the shape
+  // through its opposite side, and no side may shrink to the degenerate threshold.
+  function signedArea(points) {
+    let sum = 0;
+    for (let i = 0; i < points.length; i++) {
+      const p = points[i], q = points[(i + 1) % points.length];
+      sum += p.x * q.y - q.x * p.y;
+    }
+    return sum;
+  }
+  function edgeHolds(canonical, next, elementId) {
+    const element = next.elements.find((e) => e.id === elementId);
+    if (!element?.points || element.type === 'segment') return true;
+    const ring = (board, item) => item.points.map((id) => board.points.find((p) => p.id === id));
+    const before = ring(canonical, canonical.elements.find((e) => e.id === elementId));
+    const after = ring(next, element);
+    const start = signedArea(before);
+    if (start * signedArea(after) <= 0) return false;
+    for (let i = 0; i < after.length; i++) {
+      if (distance(after[i], after[(i + 1) % after.length]) <= EPSILON) return false;
+    }
+    return true;
+  }
+  function moveEdge(canonical, action) {
+    const element = canonical.elements.find((e) => e.id === action.id) || fail('Unknown element');
+    const edges = shapeEdges(element);
+    if (!Number.isInteger(action.index) || action.index < 0 || action.index >= edges.length) fail('Unknown element');
+    if (!finite(action.dx) || !finite(action.dy)) fail('Invalid coordinate');
+    const [aId, bId] = edges[action.index];
+    const a = canonical.points.find((p) => p.id === aId);
+    const b = canonical.points.find((p) => p.id === bId);
+    let vector = { x: action.dx, y: action.dy };
+    if (element.type === 'rectangle' && a && b) {
+      const ex = b.x - a.x, ey = b.y - a.y;
+      const len = Math.hypot(ex, ey);
+      if (!(len > EPSILON)) return validate(canonical);
+      const nx = -ey / len, ny = ex / len;
+      const along = vector.x * nx + vector.y * ny;
+      vector = { x: along * nx, y: along * ny };
+    }
+    const placed = (t) => {
+      try {
+        const next = placeEdge(canonical, aId, bId, { x: vector.x * t, y: vector.y * t });
+        return edgeHolds(canonical, next, element.id) ? next : null;
+      } catch { return null; }
+    };
+    const direct = placed(1);
+    if (direct) return direct;
+    // The pointer asked for a size the shape cannot take. Stop at the last legal fraction.
+    let best = placed(0) || validate(canonical);
+    let lo = 0, hi = 1;
+    for (let step = 0; step < 40; step++) {
+      const mid = (lo + hi) / 2;
+      const got = placed(mid);
+      if (got) { best = got; lo = mid; } else hi = mid;
+    }
+    return best;
   }
   function dependents(canonical, id) {
     const result = [];
@@ -3666,6 +3942,8 @@ window.__ModuleLoader__.load({
         // moves alone. Either way the model answers with the whole legal next board.
         return movePoint(canonical, action);
       }
+      case 'moveEdge': return moveEdge(canonical, action);
+      case 'translate': return translatePoints(canonical, action);
       case 'addMidpoint': {
         const [a, b] = [pointById(action.a), pointById(action.b)];
         if (action.a === action.b) fail('A midpoint needs two different points');
@@ -3755,11 +4033,38 @@ window.__ModuleLoader__.load({
     const dragged = next.points.find((p) => p.id === id);
     return { x: dragged.x, y: dragged.y, rims, corners };
   };
+  // Edge-drag preview. `x` and `y` are the pointer delta the student asked for;
+  // `corners` is every point the model actually moved, including a carried rim.
+  const constrainedEdgeMove = (board, id, index, dx, dy) => {
+    const canonical = cloneBoard(board);
+    let next;
+    try { next = moveEdge(canonical, { id, index, dx, dy }); } catch { return null; }
+    const corners = next.points
+      .filter((p) => {
+        const before = canonical.points.find((q) => q.id === p.id);
+        return before && (before.x !== p.x || before.y !== p.y);
+      })
+      .map((p) => ({ id: p.id, x: p.x, y: p.y }));
+    return { x: dx, y: dy, rims: {}, corners };
+  };
+  // Whole-shape drag. Same preview shape as an edge drag: every point that actually moved.
+  const constrainedTranslate = (board, ids, dx, dy) => {
+    const canonical = cloneBoard(board);
+    let next;
+    try { next = translatePoints(canonical, { ids, dx, dy }); } catch { return null; }
+    const corners = next.points
+      .filter((p) => {
+        const before = canonical.points.find((q) => q.id === p.id);
+        return before && (before.x !== p.x || before.y !== p.y);
+      })
+      .map((p) => ({ id: p.id, x: p.x, y: p.y }));
+    return { x: dx, y: dy, rims: {}, corners };
+  };;
   // The drawable library, in toolbox order. A point is a point; the rest are elements.
   const shapeLibrary = ['point', ...elementTypes];
   return { kind: KIND, coordinateSystem, shapeLibrary, elementTypes: [...elementTypes], roles: [...roles], operations: [...operations],
     bounds: { width: WIDTH, height: HEIGHT, margin: MARGIN, epsilon: EPSILON },
-    empty, validate, reduce, constrainedMove, rectangleAt, dependents: (board, id) => dependents(cloneBoard(board), id), serialize };
+    empty, validate, reduce, constrainedMove, constrainedEdgeMove, constrainedTranslate, rectangleAt, dependents: (board, id) => dependents(cloneBoard(board), id), serialize };
 };
     const createFilePicker = function createBoardFilePicker(options) {
   // Declared here, not at module scope: build.mjs inlines only this function's source,

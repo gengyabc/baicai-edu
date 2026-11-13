@@ -550,6 +550,128 @@ test('deleting a point never leaves a derived point referencing a missing parent
   assert.deepEqual(chain.points.map((p) => p.id), ['p-1', 'p-2', 'p-3', 'p-4']);
 });
 
+test('dragging an edge resizes that side and leaves the opposite side fixed', () => {
+  const rect = rectangle();
+  // A sideways component must not shear a rectangle: only the part perpendicular to the edge counts.
+  const lower = G.reduce(rect, { type: 'moveEdge', id: 'e-1', index: 0, dx: 40, dy: 50 });
+  assert.deepEqual([at(lower, 'p-1').x, at(lower, 'p-1').y], [100, 150]);
+  assert.deepEqual([at(lower, 'p-2').x, at(lower, 'p-2').y], [300, 150]);
+  assert.deepEqual([at(lower, 'p-3').x, at(lower, 'p-3').y], [300, 300], 'the opposite edge stays');
+  assert.deepEqual([at(lower, 'p-4').x, at(lower, 'p-4').y], [100, 300], 'the opposite edge stays');
+  const ring = ['p-1', 'p-2', 'p-3', 'p-4'].map((id) => at(lower, id));
+  const dot = (o, u, v) => (u.x - o.x) * (v.x - o.x) + (u.y - o.y) * (v.y - o.y);
+  for (const [o, u, v] of [[0, 1, 3], [1, 0, 2], [2, 1, 3], [3, 0, 2]]) {
+    assert.ok(near(dot(ring[o], ring[u], ring[v]), 0), 'every corner stays right-angled');
+  }
+  // Pulling the same edge through the opposite side stops short of a flat rectangle.
+  const flat = G.reduce(rect, { type: 'moveEdge', id: 'e-1', index: 0, dx: 0, dy: 400 });
+  const height = at(flat, 'p-3').y - at(flat, 'p-1').y;
+  assert.ok(height > 0.4 && height < 2, 'the drag stops at the threshold');
+  assert.equal(at(flat, 'p-3').y, 300);
+  assert.equal(at(flat, 'p-1').x, 100);
+
+  let para = shape(add(add(add(G.empty(), 100, 100), 400, 100), 450, 350), 'parallelogram', ['p-1', 'p-2', 'p-3']);
+  const slid = G.reduce(para, { type: 'moveEdge', id: 'e-1', index: 0, dx: 30, dy: 40 });
+  assert.deepEqual([at(slid, 'p-1').x, at(slid, 'p-1').y], [130, 140]);
+  assert.deepEqual([at(slid, 'p-2').x, at(slid, 'p-2').y], [430, 140]);
+  assert.deepEqual([at(slid, 'p-3').x, at(slid, 'p-3').y], [450, 350], 'the opposite edge stays');
+  assert.deepEqual([at(slid, 'p-4').x, at(slid, 'p-4').y], [150, 350], 'the opposite edge stays');
+  const vec = (p, q) => ({ x: q.x - p.x, y: q.y - p.y });
+  const eq = (u, v) => near(u.x, v.x) && near(u.y, v.y);
+  const corners = ['p-1', 'p-2', 'p-3', 'p-4'].map((id) => at(slid, id));
+  assert.ok(eq(vec(corners[0], corners[1]), vec(corners[3], corners[2])));
+  assert.ok(eq(vec(corners[1], corners[2]), vec(corners[0], corners[3])));
+
+  const tri = shape(add(add(add(G.empty(), 100, 100), 400, 100), 250, 400), 'polygon', ['p-1', 'p-2', 'p-3']);
+  const side = G.reduce(tri, { type: 'moveEdge', id: 'e-1', index: 0, dx: 0, dy: 30 });
+  assert.deepEqual([at(side, 'p-1').x, at(side, 'p-1').y], [100, 130]);
+  assert.deepEqual([at(side, 'p-2').x, at(side, 'p-2').y], [400, 130]);
+  assert.deepEqual([at(side, 'p-3').x, at(side, 'p-3').y], [250, 400], 'the far vertex stays');
+
+  const seg = shape(add(add(G.empty(), 100, 140), 340, 140), 'segment', ['p-1', 'p-2']);
+  const shifted = G.reduce(seg, { type: 'moveEdge', id: 'e-1', index: 0, dx: 10, dy: 60 });
+  assert.deepEqual([at(shifted, 'p-1').x, at(shifted, 'p-1').y], [110, 200]);
+  assert.deepEqual([at(shifted, 'p-2').x, at(shifted, 'p-2').y], [350, 200]);
+  assert.ok(near(Math.hypot(240, 0), Math.hypot(at(shifted, 'p-2').x - at(shifted, 'p-1').x, at(shifted, 'p-2').y - at(shifted, 'p-1').y)),
+    'dragging the segment keeps its length');
+
+  assert.throws(() => G.reduce(rect, { type: 'moveEdge', id: 'e-9', index: 0, dx: 1, dy: 1 }));
+  assert.throws(() => G.reduce(rect, { type: 'moveEdge', id: 'e-1', index: 9, dx: 1, dy: 1 }));
+});
+
+test('an edge drag carries a circle whose centre is on that edge', () => {
+  let b = add(add(add(add(G.empty(), 100, 100), 400, 100), 250, 400), 180, 100);
+  b = shape(b, 'polygon', ['p-1', 'p-2', 'p-3']);
+  b = shape(b, 'circle', [], { centerPointId: 'p-1', radiusPointId: 'p-4' });
+  const moved = G.reduce(b, { type: 'moveEdge', id: 'e-1', index: 0, dx: 0, dy: 40 });
+  assert.deepEqual([at(moved, 'p-1').x, at(moved, 'p-1').y], [100, 140]);
+  assert.deepEqual([at(moved, 'p-4').x, at(moved, 'p-4').y], [180, 140], 'the rim follows the centre');
+  assert.ok(near(80, Math.hypot(at(moved, 'p-4').x - at(moved, 'p-1').x, at(moved, 'p-4').y - at(moved, 'p-1').y)));
+  const other = G.reduce(b, { type: 'moveEdge', id: 'e-1', index: 1, dx: 20, dy: 0 });
+  assert.deepEqual([at(other, 'p-1').x, at(other, 'p-1').y], [100, 100], 'a far edge leaves the circle');
+  assert.deepEqual([at(other, 'p-4').x, at(other, 'p-4').y], [180, 100]);
+});
+
+test('translating a whole shape moves every corner by the same vector', () => {
+  const rect = rectangle();
+  const moved = G.reduce(rect, { type: 'translate', ids: ['p-1', 'p-2', 'p-3'], dx: 20, dy: -30 });
+  assert.deepEqual([at(moved, 'p-1').x, at(moved, 'p-1').y], [120, 70]);
+  assert.deepEqual([at(moved, 'p-2').x, at(moved, 'p-2').y], [320, 70]);
+  assert.deepEqual([at(moved, 'p-3').x, at(moved, 'p-3').y], [320, 270]);
+  assert.deepEqual([at(moved, 'p-4').x, at(moved, 'p-4').y], [120, 270], 'the derived corner follows');
+  const ring = ['p-1', 'p-2', 'p-3', 'p-4'].map((id) => at(moved, id));
+  const dot = (o, u, v) => (u.x - o.x) * (v.x - o.x) + (u.y - o.y) * (v.y - o.y);
+  for (const [o, u, v] of [[0, 1, 3], [1, 0, 2], [2, 1, 3], [3, 0, 2]]) {
+    assert.ok(near(dot(ring[o], ring[u], ring[v]), 0), 'translation keeps the right angles');
+  }
+  // The shape stops at the margin instead of leaving the board.
+  const stopped = G.reduce(rect, { type: 'translate', ids: ['p-1', 'p-2', 'p-3'], dx: -200, dy: 0 });
+  assert.ok(at(stopped, 'p-1').x >= 24 && at(stopped, 'p-1').x < 24.01, 'the drag stops at the margin');
+  assert.ok(near(at(stopped, 'p-2').x - at(stopped, 'p-1').x, 200), 'every corner keeps the same shift');
+  assert.equal(at(stopped, 'p-1').y, 100);
+  const preview = G.constrainedTranslate(rect, ['p-1', 'p-2', 'p-3'], 20, -30);
+  for (const corner of preview.corners) {
+    assert.deepEqual([corner.x, corner.y], [at(moved, corner.id).x, at(moved, corner.id).y]);
+  }
+});
+
+test('a derived corner outside the free-point box stops at the margin', () => {
+  const { margin, width, height } = G.bounds;
+  // P4 = P1 + P3 - P2. The free corners sit in x >= 200; the derived corner is at x = 50.
+  let para = shape(add(add(add(G.empty(), 200, 100), 400, 100), 250, 300), 'parallelogram', ['p-1', 'p-2', 'p-3']);
+  const free = ['p-1', 'p-2', 'p-3'].map((id) => at(para, id));
+  assert.ok(at(para, 'p-4').x < Math.min(...free.map((p) => p.x)), 'the derived corner starts outside the free points box');
+  const onBoard = (board) => {
+    for (const point of board.points) {
+      assert.ok(point.x >= margin && point.y >= margin
+        && point.x <= width - margin && point.y <= height - margin, `${point.id} stays inside the margin`);
+    }
+  };
+  const translated = G.reduce(para, { type: 'translate', ids: ['p-1', 'p-2', 'p-3'], dx: -200, dy: 0 });
+  onBoard(translated);
+  assert.ok(at(translated, 'p-4').x >= margin && at(translated, 'p-4').x < margin + 0.01,
+    'translate stops the derived corner at the margin');
+  // The bottom edge joins the free P3 to the derived P4. Sliding it left pushes P4 out
+  // while P3, and the opposite edge, would still be inside.
+  const resized = G.reduce(para, { type: 'moveEdge', id: 'e-1', index: 2, dx: -400, dy: 0 });
+  onBoard(resized);
+  assert.ok(at(resized, 'p-4').x >= margin && at(resized, 'p-4').x < margin + 0.01,
+    'moveEdge stops the derived corner at the margin');
+  assert.equal(at(resized, 'p-1').x, 200, 'the opposite edge stays');
+  assert.equal(at(resized, 'p-2').x, 400, 'the opposite edge stays');
+});
+
+test('an edge-drag preview matches the board the release commits', () => {
+  const rect = rectangle();
+  const preview = G.constrainedEdgeMove(rect, 'e-1', 0, 40, 50);
+  assert.deepEqual(Object.keys(preview).sort(), ['corners', 'rims', 'x', 'y']);
+  const committed = G.reduce(rect, { type: 'moveEdge', id: 'e-1', index: 0, dx: 40, dy: 50 });
+  assert.deepEqual(preview.corners.map((c) => c.id).sort(), ['p-1', 'p-2']);
+  for (const corner of preview.corners) {
+    assert.deepEqual([corner.x, corner.y], [at(committed, corner.id).x, at(committed, corner.id).y]);
+  }
+});
+
 test('a drag preview carries the corner moves and rim translations the model computed', () => {
   // Feature envy: the view renders `preview.corners` / `preview.rims` instead of re-deriving.
   const sq = rectangle();

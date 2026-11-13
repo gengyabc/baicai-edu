@@ -375,6 +375,24 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       // Only the visible tab hears Escape, so a hidden page cannot cancel the other one.
       if (!tabActive) return undefined;
       const onKey = (event) => {
+        if (event.key === 'Delete' || event.key === 'Backspace') {
+          // An overlay or the tour owns the keyboard. A text field or the question
+          // menu keeps the key. A focused shape outside the selection is removed on
+          // its own, matching Enter and the arrow keys. Any other focus deletes the
+          // current selection, so the key works after a click the way it does on
+          // the geometry board.
+          if (overlay || tour) return;
+          const tag = event.target?.tagName;
+          if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || event.target?.isContentEditable) return;
+          const focusedId = event.target?.closest?.('[data-object]')?.getAttribute('data-object');
+          const ids = focusedId && !selection.includes(focusedId) ? [focusedId] : selection;
+          const live = ids.filter((id) => boardRef.current.objects.some((object) => object.id === id));
+          if (!live.length) return;
+          event.preventDefault();
+          batch(live.map((id) => ({ type: 'delete', id })));
+          selectIds([]);
+          return;
+        }
         if (event.key !== 'Escape') return;
         const noteHeld = overlay?.kind === 'note' && shared.tourHoldsNotePanel?.(tour);
         if (overlay && !noteHeld) { event.preventDefault(); dismissOverlay(); }
@@ -390,7 +408,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       };
       document.addEventListener('keydown', onKey);
       return () => document.removeEventListener('keydown', onKey);
-    }, [tabActive, overlay, moreOpen, append, tour, dragShape]);
+    }, [tabActive, overlay, moreOpen, append, tour, dragShape, selection]);
 
     function flushEditor() {
       const active = dialog.current?.ownerDocument.activeElement;
@@ -606,7 +624,9 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
         e.preventDefault(); const [dx, dy] = arrows[e.key];
         action({ type: 'moveMany', ids: selection.includes(o.id) ? selection : [o.id], dx, dy });
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        e.preventDefault(); batch((selection.includes(o.id) ? selection : [o.id]).map((id) => ({ type: 'delete', id }))); selectIds([]);
+        // The document listener deletes. Swallow the key here so a focused shape
+        // does not also navigate the browser back.
+        e.preventDefault();
       }
     }
     function close() {
