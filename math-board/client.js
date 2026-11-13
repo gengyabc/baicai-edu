@@ -2145,11 +2145,75 @@ window.__ModuleLoader__.load({
   const SNAP_RADIUS = 12;
   // The drawable library comes from the model so the two lists cannot drift.
   // "select" is a tool, not a shape. A triangle is three clicks that close as a polygon,
-  // so it stays out of the snapshot's element types. Midpoint is an action on a selected
-  // segment, drawn beside these tools rather than as one of them.
-  const shapeTools = G.shapeLibrary.filter((name) => name !== 'point');
-  const polygonAt = shapeTools.indexOf('polygon');
-  const DRAW_TOOLS = ['select', 'point', ...shapeTools.slice(0, polygonAt), 'triangle', ...shapeTools.slice(polygonAt)];
+  // so it stays out of the snapshot's element types. Polygon sits after rectangle.
+  // Midpoint is an action on a selected segment, drawn beside these tools rather than as one of them.
+  const shapeTools = G.shapeLibrary.filter((name) => name !== 'point' && name !== 'polygon');
+  const segmentAt = shapeTools.indexOf('segment');
+  const DRAW_TOOLS = [
+    'select', 'point',
+    ...shapeTools.slice(0, segmentAt + 1),
+    'triangle',
+    ...shapeTools.slice(segmentAt + 1),
+    'polygon',
+  ];
+  // Box geometry for marquee selection. A point counts when it lies inside; a shape counts
+  // when its stroke meets the rectangle.
+  function boxFrom(a, b) {
+    return {
+      x0: Math.min(a.x, b.x), y0: Math.min(a.y, b.y),
+      x1: Math.max(a.x, b.x), y1: Math.max(a.y, b.y),
+    };
+  }
+  function pointInBox(p, box) {
+    return p.x >= box.x0 && p.x <= box.x1 && p.y >= box.y0 && p.y <= box.y1;
+  }
+  function orient(o, a, b) {
+    return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+  }
+  function segmentsCross(a, b, c, d) {
+    const ab = orient(a, b, c) * orient(a, b, d);
+    const cd = orient(c, d, a) * orient(c, d, b);
+    if (ab < 0 && cd < 0) return true;
+    const on = (p, q, r) => Math.abs(orient(p, q, r)) <= 1e-6
+      && r.x >= Math.min(p.x, q.x) - 1e-6 && r.x <= Math.max(p.x, q.x) + 1e-6
+      && r.y >= Math.min(p.y, q.y) - 1e-6 && r.y <= Math.max(p.y, q.y) + 1e-6;
+    return on(a, b, c) || on(a, b, d) || on(c, d, a) || on(c, d, b);
+  }
+  function segmentHitsBox(a, b, box) {
+    if (pointInBox(a, box) || pointInBox(b, box)) return true;
+    const corners = [
+      { x: box.x0, y: box.y0 }, { x: box.x1, y: box.y0 },
+      { x: box.x1, y: box.y1 }, { x: box.x0, y: box.y1 },
+    ];
+    return corners.some((corner, i) => segmentsCross(a, b, corner, corners[(i + 1) % 4]));
+  }
+  function edgeKey(id, index) { return `${id}#${index}`; }
+  const closedShape = (type) => type === 'polygon' || type === 'rectangle' || type === 'parallelogram';
+  function circleHitsBox(center, radius, box) {
+    const nearestX = Math.max(box.x0, Math.min(center.x, box.x1));
+    const nearestY = Math.max(box.y0, Math.min(center.y, box.y1));
+    const nearest = Math.hypot(center.x - nearestX, center.y - nearestY);
+    const far = Math.hypot(
+      Math.max(Math.abs(center.x - box.x0), Math.abs(center.x - box.x1)),
+      Math.max(Math.abs(center.y - box.y0), Math.abs(center.y - box.y1)),
+    );
+    return nearest <= radius + 0.5 && far + 0.5 >= radius;
+  }
+  // A rim point that no other shape and no construction uses is only the circle's radius
+  // handle. It stays in the snapshot so the radius is defined, and it is not drawn.
+  function exclusiveRimIds(state) {
+    const used = new Set();
+    for (const e of state.elements) {
+      if (e.type === 'circle') used.add(e.centerPointId);
+      else for (const id of e.points) used.add(id);
+    }
+    for (const p of state.points) for (const input of p.construction?.inputs || []) used.add(input);
+    const hidden = new Set();
+    for (const e of state.elements) {
+      if (e.type === 'circle' && e.radiusPointId && !used.has(e.radiusPointId)) hidden.add(e.radiusPointId);
+    }
+    return hidden;
+  }
   // Icons and the file pickers are shared with the quantity tab so the two tabs cannot
   // drift apart; only the per-tab callbacks below differ.
   const icon = shared.createBoardIcons(React);
@@ -2164,6 +2228,7 @@ window.__ModuleLoader__.load({
     const [pending, setPending] = React.useState([]);
     const [selection, setSelection] = React.useState([]);
     const [hover, setHover] = React.useState(null);
+    const [marquee, setMarquee] = React.useState(null);
     const [preview, setPreview] = React.useState(null);
     const [zoom, setZoom] = React.useState(1);
     const [fit, setFit] = React.useState(true);
@@ -2337,8 +2402,10 @@ window.__ModuleLoader__.load({
     // Grid and snap are local view state; neither reaches the snapshot.
     function snapTo(p) {
       if (!snap) return p;
+      const hidden = exclusiveRimIds(boardRef.current);
       let best = null;
       for (const q of freePoints()) {
+        if (hidden.has(q.id)) continue;
         const d = Math.hypot(q.x - p.x, q.y - p.y);
         if (d <= SNAP_RADIUS && (!best || d < best.d)) best = { d, q };
       }
@@ -2347,8 +2414,14 @@ window.__ModuleLoader__.load({
     function hitTest(p) {
       // A derived point is still hit first, so selecting it does not fall through to a
       // shape underneath; the caller decides whether it may be used as an endpoint.
-      for (const q of boardRef.current.points) if (Math.hypot(q.x - p.x, q.y - p.y) <= 10) return { kind: 'point', id: q.id };
-      for (const e of [...boardRef.current.elements].reverse()) {
+      // A circle's exclusive rim point is not a hit target: the stroke is the circle.
+      const state = boardRef.current;
+      const hidden = exclusiveRimIds(state);
+      for (const q of state.points) {
+        if (hidden.has(q.id)) continue;
+        if (Math.hypot(q.x - p.x, q.y - p.y) <= 10) return { kind: 'point', id: q.id };
+      }
+      for (const e of [...state.elements].reverse()) {
         const ids = e.type === 'circle' ? [e.centerPointId, e.radiusPointId] : e.points;
         const pts = ids.map(pointById).filter(Boolean);
         if (e.type === 'circle') {
@@ -2358,10 +2431,15 @@ window.__ModuleLoader__.load({
           if (Math.abs(Math.hypot(p.x - center.x, p.y - center.y) - radius) <= 6) return { kind: 'element', id: e.id };
           continue;
         }
+        const closed = closedShape(e.type);
         for (let i = 0; i + 1 < pts.length; i++) {
-          if (segmentDistance(p, pts[i], pts[i + 1]) <= 6) return { kind: 'element', id: e.id };
+          if (segmentDistance(p, pts[i], pts[i + 1]) <= 6) {
+            return closed ? { kind: 'edge', id: edgeKey(e.id, i) } : { kind: 'element', id: e.id };
+          }
         }
-        if (pts.length > 2 && segmentDistance(p, pts.at(-1), pts[0]) <= 6) return { kind: 'element', id: e.id };
+        if (closed && pts.length > 2 && segmentDistance(p, pts.at(-1), pts[0]) <= 6) {
+          return { kind: 'edge', id: edgeKey(e.id, pts.length - 1) };
+        }
       }
       return null;
     }
@@ -2394,7 +2472,8 @@ window.__ModuleLoader__.load({
       if (!next) return;
       setTool('select');
       const created = next.elements.find((e) => !before.elements.some((old) => old.id === e.id));
-      if (created) setSelection([created.id]);
+      if (created && closedShape(created.type)) setSelection(created.points.map((_, index) => edgeKey(created.id, index)));
+      else if (created) setSelection([created.id]);
       if (drawing === 'segment') signalTour('geometry-add-segment');
     }
     function clickEmpty(p) {
@@ -2448,23 +2527,59 @@ window.__ModuleLoader__.load({
       }
       setPending(ids);
     }
+    function idsInBox(box) {
+      const state = boardRef.current;
+      const hidden = exclusiveRimIds(state);
+      const ids = [];
+      for (const q of state.points) {
+        if (!hidden.has(q.id) && pointInBox(q, box)) ids.push(q.id);
+      }
+      for (const e of state.elements) {
+        if (e.type === 'circle') {
+          const center = state.points.find((item) => item.id === e.centerPointId);
+          const rim = state.points.find((item) => item.id === e.radiusPointId);
+          if (center && rim && circleHitsBox(center, Math.hypot(rim.x - center.x, rim.y - center.y), box)) ids.push(e.id);
+          continue;
+        }
+        const pts = e.points.map((id) => state.points.find((item) => item.id === id));
+        if (pts.some((item) => !item)) continue;
+        const closed = closedShape(e.type);
+        for (let i = 0; i + 1 < pts.length; i++) {
+          if (!segmentHitsBox(pts[i], pts[i + 1], box)) continue;
+          const key = closed ? edgeKey(e.id, i) : e.id;
+          if (!ids.includes(key)) ids.push(key);
+        }
+        if (closed && pts.length > 2 && segmentHitsBox(pts.at(-1), pts[0], box)) {
+          const key = edgeKey(e.id, pts.length - 1);
+          if (!ids.includes(key)) ids.push(key);
+        }
+      }
+      return ids;
+    }
     function pointerDown(event) {
       if (event.button !== 0 || !ready) return;
       const p = localPoint(event);
       const target = hitTest(p);
       const pointId = event.target.closest?.('[data-point]')?.getAttribute('data-point');
       if (tool === 'select') {
-        const q = pointId ? pointById(pointId) : null;
+        const hidden = exclusiveRimIds(boardRef.current);
+        const q = pointId && !hidden.has(pointId) ? pointById(pointId) : null;
         if (q && q.kind === 'free') {
           if (!selection.includes(q.id)) setSelection([q.id]);
           gesture.current = { kind: 'drag', id: q.id, start: p, base: boardRef.current, pointer: event.pointerId, moved: false };
           setPreview({ id: q.id, x: q.x, y: q.y });
+          setMarquee(null);
           event.preventDefault(); event.currentTarget.setPointerCapture?.(event.pointerId);
           return;
         }
-        if (target) setSelection([target.id]);
-        else setSelection([]);
-        event.preventDefault();
+        if (target) {
+          setSelection([target.id]);
+          event.preventDefault();
+          return;
+        }
+        // Empty press starts a marquee. A click with no drag clears the selection on release.
+        gesture.current = { kind: 'marquee', start: p, current: p, pointer: event.pointerId, moved: false };
+        event.preventDefault(); event.currentTarget.setPointerCapture?.(event.pointerId);
         return;
       }
       if (target?.kind === 'point') usePoint(target, p);
@@ -2478,6 +2593,11 @@ window.__ModuleLoader__.load({
       if (g && g.pointer === event.pointerId) {
         if (Math.abs(p.x - g.start.x) + Math.abs(p.y - g.start.y) < 3 && !g.moved) return;
         g.moved = true;
+        if (g.kind === 'marquee') {
+          g.current = p;
+          setMarquee({ x1: g.start.x, y1: g.start.y, x2: p.x, y2: p.y });
+          return;
+        }
         // The drag previews the position the model accepts; release is the only undo step.
         const accepted = G.constrainedMove(g.base, g.id, p.x, p.y);
         if (accepted) setPreview({ id: g.id, ...accepted });
@@ -2489,6 +2609,12 @@ window.__ModuleLoader__.load({
       const g = gesture.current;
       if (!g || g.pointer !== event.pointerId) return;
       gesture.current = null;
+      if (g.kind === 'marquee') {
+        setMarquee(null);
+        if (cancelled || !g.moved) { setSelection([]); return; }
+        setSelection(idsInBox(boxFrom(g.start, g.current || g.start)));
+        return;
+      }
       const shown = preview;
       setPreview(null);
       if (cancelled || !g.moved || !shown) return;
@@ -2529,6 +2655,14 @@ window.__ModuleLoader__.load({
     React.useEffect(() => {
       if (!tabActive) return undefined;
       const onKey = (event) => {
+        if (event.key === 'Delete' || event.key === 'Backspace') {
+          if (!selection.length || overlay || rename || tour) return;
+          const tag = event.target?.tagName;
+          if (tag === 'INPUT' || tag === 'TEXTAREA' || event.target?.isContentEditable) return;
+          event.preventDefault();
+          deleteSelection();
+          return;
+        }
         if (event.key !== 'Escape') return;
         // Note-save keeps its panel. Anything else open is the current operation,
         // and a later Escape can still drop a line that was underneath it.
@@ -2541,6 +2675,7 @@ window.__ModuleLoader__.load({
           event.preventDefault();
           gesture.current = null;
           setPreview(null);
+          setMarquee(null);
           return;
         }
         // An unfinished shape, or a drawing tool that has not placed anything yet.
@@ -2551,7 +2686,7 @@ window.__ModuleLoader__.load({
       };
       document.addEventListener('keydown', onKey);
       return () => document.removeEventListener('keydown', onKey);
-    }, [tabActive, overlay, rename, moreOpen, tour, pending, tool]);
+    }, [tabActive, overlay, rename, moreOpen, tour, pending, tool, selection]);
     function applyNote() {
       const value = noteRef.current?.value ?? '';
       if (noteTarget) action({ type: 'annotate', target: noteTarget.kind, id: noteTarget.id, value });
@@ -2663,8 +2798,19 @@ window.__ModuleLoader__.load({
       if (corner) return { x: corner.x, y: corner.y };
       return { x: q.x, y: q.y };
     };
+    function selectedEdgeIndexes(elementId) {
+      const indexes = [];
+      for (const item of selection) {
+        const mark = String(item).lastIndexOf('#');
+        if (mark <= 0 || item.slice(0, mark) !== elementId) continue;
+        const index = Number(item.slice(mark + 1));
+        if (Number.isInteger(index)) indexes.push(index);
+      }
+      return indexes;
+    }
     function renderElement(e) {
       const picked = selection.includes(e.id);
+      const edgeIndexes = selectedEdgeIndexes(e.id);
       const stroke = {
         stroke: picked ? '#2563EB' : '#1E293B', strokeWidth: picked ? 3 : 1.8, fill: 'none',
         strokeLinejoin: 'round', strokeLinecap: 'round',
@@ -2672,20 +2818,34 @@ window.__ModuleLoader__.load({
       };
       const label = `${t(e.type)}${e.role === 'auxiliary' ? ` · ${t('auxiliary')}` : ''}${e.note ? ` · ${t('hasNote')}` : ''}`;
       const group = {
-        key: e.id, 'data-element': e.id, role: 'button', tabIndex: 0, 'aria-label': label, 'aria-pressed': picked,
-        onKeyDown: (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelection([e.id]); } },
+        key: e.id, 'data-element': e.id, role: 'button', tabIndex: 0, 'aria-label': label,
+        'aria-pressed': picked || edgeIndexes.length > 0,
+        onKeyDown: (event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          if (closedShape(e.type)) setSelection(e.points.map((_, index) => edgeKey(e.id, index)));
+          else setSelection([e.id]);
+        },
       };
       if (e.type === 'circle') {
         const center = at(e.centerPointId), rim = at(e.radiusPointId);
         if (!center || !rim) return null;
         return h('g', group, h('circle', { cx: center.x, cy: center.y, r: Math.hypot(rim.x - center.x, rim.y - center.y), ...stroke }));
       }
-      const points = e.points.map(at).filter(Boolean);
-      if (points.length < 2) return null;
+      const points = e.points.map(at);
+      if (points.some((point) => !point) || points.length < 2) return null;
       if (e.type === 'segment') {
         return h('g', group, h('line', { x1: points[0].x, y1: points[0].y, x2: points[1].x, y2: points[1].y, ...stroke }));
       }
-      return h('g', group, h('polygon', { points: points.map((p) => `${p.x},${p.y}`).join(' '), ...stroke }));
+      const highlighted = edgeIndexes.map((index) => {
+        const a = points[index], b = points[(index + 1) % points.length];
+        if (!a || !b) return null;
+        return h('line', {
+          key: `edge-${index}`, x1: a.x, y1: a.y, x2: b.x, y2: b.y,
+          stroke: '#2563EB', strokeWidth: 3, strokeLinecap: 'round', pointerEvents: 'none',
+        });
+      }).filter(Boolean);
+      return h('g', group, h('polygon', { points: points.map((p) => `${p.x},${p.y}`).join(' '), ...stroke }), ...highlighted);
     }
     function renderPoint(q) {
       const shown = at(q.id) || q;
@@ -2701,7 +2861,9 @@ window.__ModuleLoader__.load({
             event.preventDefault();
             return;
           }
-          if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); action({ type: 'delete', ids: [q.id] }); setSelection([]); }
+          // Delete is handled for the whole selection on the document listener. Swallow
+          // the key here so a focused point does not also navigate the browser back.
+          if (event.key === 'Delete' || event.key === 'Backspace') event.preventDefault();
         },
       },
       h('circle', { cx: shown.x, cy: shown.y, r: 11, fill: 'transparent' }),
@@ -2741,6 +2903,7 @@ window.__ModuleLoader__.load({
     // them to the viewport height. `non-scaling-stroke` is deliberately not used: a
     // magnified figure must look magnified, exactly as the quantity board's zoom scales
     // its artwork.
+    const hiddenRims = exclusiveRimIds(board);
     const span = { width: width / (fit ? 1 : zoom), height: height / (fit ? 1 : zoom) };
     const origin = { x: (width - span.width) / 2, y: (height - span.height) / 2 };
     const canvas = h('div', { className: 'eb-canvas-scroll', 'data-tour-id': 'geometry-canvas' },
@@ -2759,7 +2922,12 @@ window.__ModuleLoader__.load({
         Array.from({ length: Math.floor(width / 40) + 1 }, (_, i) => h('line', { key: `v${i}`, x1: i * 40, y1: 0, x2: i * 40, y2: height, stroke: '#EEF2F4' })),
         Array.from({ length: Math.floor(height / 40) + 1 }, (_, i) => h('line', { key: `h${i}`, x1: 0, y1: i * 40, x2: width, y2: i * 40, stroke: '#EEF2F4' }))),
       board.elements.map(renderElement),
-      board.points.map(renderPoint),
+      board.points.filter((q) => !hiddenRims.has(q.id)).map(renderPoint),
+      marquee && h('rect', {
+        x: Math.min(marquee.x1, marquee.x2), y: Math.min(marquee.y1, marquee.y2),
+        width: Math.abs(marquee.x2 - marquee.x1), height: Math.abs(marquee.y2 - marquee.y1),
+        fill: '#2563EB22', stroke: '#2563EB', strokeWidth: 1, strokeDasharray: '4 3', pointerEvents: 'none',
+      }),
       hintShape(),
       hover && !pending.length && tool !== 'select' && tool !== 'point'
         && h('circle', { cx: hover.x, cy: hover.y, r: 6, fill: '#BFDBFE', stroke: '#2563EB', strokeWidth: 1.5, 'pointer-events': 'none' }),
@@ -3233,6 +3401,15 @@ window.__ModuleLoader__.load({
     return result;
   }
   const elementPoints = (e) => e.type === 'circle' ? [e.centerPointId, e.radiusPointId] : e.points;
+  // True when some element outside `skip`, or some construction, still names this point.
+  function pointReferenced(canonical, id, skip = new Set()) {
+    if (!id) return false;
+    for (const e of canonical.elements) {
+      if (skip.has(e.id)) continue;
+      if (elementPoints(e).includes(id)) return true;
+    }
+    return canonical.points.some((p) => p.id !== id && p.construction?.inputs.includes(id));
+  }
   /** Every point and element which disappears when `ids` are deleted, then all elements losing a point. */
   function cascade(canonical, ids) {
     const removed = new Set(ids);
@@ -3257,12 +3434,100 @@ window.__ModuleLoader__.load({
       }
       elements = keep;
     }
+    // A circle that disappeared takes a rim point nothing else uses. That point is only
+    // the radius handle, so leaving it would show a dot the circle no longer explains.
+    const live = new Set(elements.map((e) => e.id));
+    const gone = new Set(canonical.elements.filter((e) => !live.has(e.id)).map((e) => e.id));
+    for (const e of canonical.elements) {
+      if (e.type !== 'circle' || live.has(e.id) || !e.radiusPointId || removed.has(e.radiusPointId)) continue;
+      if (!pointReferenced(canonical, e.radiusPointId, gone)) removed.add(e.radiusPointId);
+    }
     return { points: canonical.points.filter((p) => !removed.has(p.id)), elements, removedPoints: removed };
   }
   function deleteIds(canonical, ids) {
     const result = cascade(canonical, ids);
-    // Deleting a shape keeps the points it merely passed through.
     return validate({ ...canonical, points: result.points, elements: result.elements });
+  }
+  // Points that disappear with the named shapes: a segment's endpoints when nothing else
+  // uses them, a circle's rim point when it is only that radius handle, and a
+  // quadrilateral's derived corner. Other free vertices stay.
+  function pointsLeavingWith(canonical, elementIds) {
+    const skip = new Set(elementIds);
+    const extra = [];
+    const take = (id) => { if (id && !extra.includes(id)) extra.push(id); };
+    for (const e of canonical.elements) {
+      if (!skip.has(e.id)) continue;
+      if (e.type === 'segment') {
+        for (const id of e.points) if (!pointReferenced(canonical, id, skip)) take(id);
+      } else if (e.type === 'circle') {
+        if (e.radiusPointId && !pointReferenced(canonical, e.radiusPointId, skip)) take(e.radiusPointId);
+      } else {
+        for (const id of elementPoints(e)) {
+          if (canonical.points.find((p) => p.id === id)?.kind === 'derived') take(id);
+        }
+      }
+    }
+    return extra;
+  }
+  function removeSelection(canonical, pointIds, elementIds) {
+    const ids = [...pointIds];
+    for (const id of pointsLeavingWith(canonical, elementIds)) if (!ids.includes(id)) ids.push(id);
+    const elements = canonical.elements.filter((e) => !elementIds.includes(e.id));
+    const next = validate({ ...canonical, elements });
+    if (!ids.length) return next;
+    return deleteIds(next, ids);
+  }
+  // A closed shape is a ring of edges. Index i joins point i to the next point, and the
+  // last index closes the ring. A segment is its single edge.
+  function shapeEdges(element) {
+    const ids = element.points;
+    if (!ids || ids.length < 2) return [];
+    if (element.type === 'segment') return [[ids[0], ids[1]]];
+    if (element.type === 'circle') return [];
+    const edges = [];
+    for (let i = 0; i < ids.length; i++) edges.push([ids[i], ids[(i + 1) % ids.length]]);
+    return edges;
+  }
+  const sameSegment = (element, a, b) => element.type === 'segment'
+    && ((element.points[0] === a && element.points[1] === b) || (element.points[0] === b && element.points[1] === a));
+  // Drop the named edges. Every other side of that shape becomes its own segment, and a
+  // vertex that no remaining side and nothing else uses is deleted with them.
+  function deleteShapeEdges(canonical, refs) {
+    const grouped = new Map();
+    for (const ref of refs) {
+      const bucket = grouped.get(ref.id) || [];
+      if (!bucket.includes(ref.index)) bucket.push(ref.index);
+      grouped.set(ref.id, bucket);
+    }
+    let board = canonical;
+    for (const [id, indexes] of grouped) {
+      const element = board.elements.find((e) => e.id === id) || fail('Unknown point');
+      const edges = shapeEdges(element);
+      if (!edges.length) fail('Unknown point');
+      for (const index of indexes) {
+        if (!Number.isInteger(index) || index < 0 || index >= edges.length) fail('Unknown point');
+      }
+      const drop = new Set(indexes);
+      const keep = edges.filter((_, index) => !drop.has(index));
+      let donor = board;
+      const added = [];
+      for (const [a, b] of keep) {
+        if (board.elements.some((e) => e.id !== id && sameSegment(e, a, b)) || added.some((e) => sameSegment(e, a, b))) continue;
+        const segId = nextId(donor, 'e');
+        const seg = { id: segId, type: 'segment', points: [a, b], role: element.role, note: '' };
+        added.push(seg);
+        donor = { ...donor, elements: [...donor.elements, seg] };
+      }
+      const draft = { ...board, elements: [...board.elements.filter((e) => e.id !== id), ...added] };
+      const survivors = new Set(keep.flat());
+      const orphans = [];
+      for (const pid of element.points) {
+        if (survivors.has(pid) || orphans.includes(pid)) continue;
+        if (!pointReferenced(draft, pid)) orphans.push(pid);
+      }
+      board = orphans.length ? deleteIds(validate(draft), orphans) : validate(draft);
+    }
+    return board;
   }
   function nextId(canonical, prefix) {
     let max = 0;
@@ -3427,14 +3692,34 @@ window.__ModuleLoader__.load({
       case 'note': if (!text(action.value, 500)) fail('Note exceeds 500 characters'); return validate({ ...canonical, note: action.value });
       case 'delete': {
         if (!Array.isArray(action.ids) || !action.ids.length || action.ids.length > 300 || new Set(action.ids).size !== action.ids.length) fail('Select distinct points or shapes');
-        for (const id of action.ids) { pointById(id); }
-        return deleteIds(canonical, action.ids);
+        const pointIds = [];
+        const elementIds = [];
+        const edgeRefs = [];
+        for (const id of action.ids) {
+          const mark = typeof id === 'string' ? id.lastIndexOf('#') : -1;
+          if (mark > 0) {
+            const elementId = id.slice(0, mark);
+            const indexText = id.slice(mark + 1);
+            const index = Number(indexText);
+            if (Number.isInteger(index) && String(index) === indexText && canonical.elements.some((e) => e.id === elementId)) {
+              edgeRefs.push({ id: elementId, index });
+              continue;
+            }
+          }
+          if (canonical.points.some((p) => p.id === id)) pointIds.push(id);
+          else if (canonical.elements.some((e) => e.id === id)) elementIds.push(id);
+          else fail('Unknown point');
+        }
+        let next = edgeRefs.length ? deleteShapeEdges(canonical, edgeRefs) : canonical;
+        const livePoints = pointIds.filter((pid) => next.points.some((p) => p.id === pid));
+        const liveElements = elementIds.filter((eid) => next.elements.some((e) => e.id === eid));
+        if (liveElements.length) return removeSelection(next, livePoints, liveElements);
+        if (livePoints.length) return deleteIds(next, livePoints);
+        return next;
       }
       case 'deleteElement': {
         elementById(action.id);
-        // A derived point exists only to make this shape, so it goes with it.
-        const extra = elementPoints(elementById(action.id)).filter((id) => pointById(id).kind === 'derived');
-        return deleteIds(canonical, [action.id, ...extra]);
+        return removeSelection(canonical, [], [action.id]);
       }
       case 'clear': return validate({ ...empty(), note: canonical.note });
       default: fail('Unknown action');
@@ -3949,7 +4234,7 @@ window.__ModuleLoader__.load({
 };
     const art = createArt(React);
     const G = createGeoModel();
-    const dictionaries = {"en":{"title":"Math board","workspaceSubtitle":"Place shapes · group them · name the amounts","toolbox":"Toolbox","tapToAdd":"Tap to place, or drag one in","shapes":"Patterns","circle":"Circle","square":"Square","rectangle":"Rectangle","triangle":"Triangle","star":"Star","hexagon":"Hexagon","diamond":"Diamond","heart":"Heart","oval":"Oval","cat":"Cat","dog":"Dog","car":"Car","person":"Person","apple":"Apple","fish":"Fish","rocket":"Rocket","flower":"Flower","butterfly":"Butterfly","house":"House","icecream":"Ice cream","settings":"Settings","settingsIntro":"You choose which patterns sit in the toolbox, what each stands for, and which colour marks which amount.","patterns":"Pattern library","patternsHint":"Tap a pattern to put it on the left rail; tap again to tuck it away. Shapes already on the canvas stay.","addPattern":"Add to toolbox","removePattern":"Tuck away","morePatterns":"More patterns","levelLadder":"Value ladder","level":"Level","colorName":"Colour","removeLevel":"Remove level","addLevel":"Add level","resetSettings":"Reset","shapeDefaults":"What these patterns stand for","applyFuture":"New shapes only","applyExisting":"Also change existing","settingsFutureDone":"Saved. New shapes use the new value.","settingsExistingDone":"Saved. Existing unmerged shapes also use the new value.","cancel":"Cancel","value":"Standing for","alias":"Name","aliasHint":"For example: apple","canvas":"Shape canvas","canvasEmpty":"Pick a shape on the left to begin","canvasEmptyHint":"Drag to arrange · box-select · Shift-click to add","gestureHint":"Drag to arrange · box-select · Shift-click to add","multiSelect":"Multi-select","focusMode":"Canvas only","zoomIn":"Zoom in","zoomOut":"Zoom out","fitView":"Fit width","selectionActions":"Selected shape actions","selectedCount":"Selected","makeGroup":"Group","ungroup":"Ungroup","merge":"Merge","split":"Split","copy":"Copy","crossOut":"Cross out","restore":"Restore","trash":"Delete selected","group":"Group","defaultGroup":"My group","groupAlias":"Group name","groupHint":"For example: Rabbit's share","groupedNoAlias":"Shapes in a group share its name instead of having their own.","duplicateGroup":"Duplicate group","mergedFrom":"Merged from","noSelection":"Select one shape or box-select several to name, group, or merge them.","mergeReason":"Merging needs the same shape, the same value, the same name, the same group, and a total that matches one of your levels.","hintGrouped":"A whole group is selected: renaming changes the group.","hintSelected":"Name, group or merge the selection.","hintEmpty":"Drag shapes to arrange; drag on empty space to select several.","myObjects":"My thinking","myGroup":"My group","inspectorHint":"Select shapes to name them here","note":"My explanation","noteHint":"What do these shapes mean? How did you think about it?","noteGeneral":"Whole board · not tied to particular shapes","noteAbout":"About","hasNote":"Has an explanation","creationColor":"Creation colour","questionSource":"Choose a teacher message","questionTeacher":"Teacher","questionExpand":"Expand","questionCollapse":"Collapse","questionEmpty":"No teacher messages yet.","files":"Files","moreActions":"More actions","canvasTools":"Board tools","appendSelect":"Add to selection","appendDone":"Finish selecting","appendHint":"Tap shapes to add or remove them; useful on touch screens","apply":"Apply","save":"Save","done":"Done","fileSaved":"Saved to the last location.","fileDownloaded":"Board file downloaded.","fileOpenFallback":"Using the standard file picker; the browser may not remember the last location.","undo":"Undo","redo":"Redo","group2":"Group","close":"Close","gear":"Settings","minus":"Remove","plus":"Add","cross":"Cross out","multi":"Multi-select","focus":"Focus","export":"Save JSON","import":"Open JSON","clear":"Clear canvas","clearQuestion":"Clear the canvas and this modification record? Files already added to an answer stay. This cannot be undone.","confirmClear":"Confirm clear","clearDone":"Canvas and modification record cleared.","autoClearDone":"Canvas and modifications cleared for the new task. Existing answer attachments remain.","autoClearSkipped":"A late clear was skipped to keep later edits. Clear manually before using the board.","autoClearError":"Automatic clear did not complete. Clear manually before using the board.","insert":"Add to answer","inserted":"The board file is attached. Review it and send it yourself.","insertedNote":"The board file is attached, and your own words are in the composer. Review them and send yourself.","insertFailed":"Cannot insert now. Wait until the composer is editable and try again.","attachmentName":"my-math-board.json","backToChat":"Back to chat","localDraft":"Your draft stays here until you send it.","failed":"Action not completed","fileTooLarge":"Choose a board JSON smaller than 256 KB.","imported":"Board opened.","storageError":"Cannot save this browser draft. Save JSON to keep your work.","loadError":"Cannot read the draft. Original data was not overwritten.","configApplied":"Your spoken values and colours are now applied.","configGap":"Settings history had a gap; retained changes were replayed with their original scopes.","configError":"A settings update could not be applied; earlier successful changes were kept.","removed":"Crossed out","active":"Kept","traceTitle":"Modification record","traceAttach":"Attach modification record (optional)","tracePreview":"View modifications","traceHide":"Hide modifications","traceNewAttempt":"Start a new attempt","traceClear":"Clear record","traceNotice":"Changes stay in this browser, without times or drag paths. Your teacher sees them only if attached and sent; sent files remain with the conversation.","traceScope":"Retained modifications to this draft so far, not necessarily one continuous sitting. These are observations, not correctness judgments; omitted details are marked.","tracePriorUnknown":"Earlier process unknown: the starting board may have content, or history has a gap.","traceTotals":"{count} changes recorded; {omitted} changes omitted in the middle.","traceEmpty":"No modifications recorded yet.","traceGap":"… Intermediate modifications omitted …","traceResetQuestion":"Keep the board and delete its local modification record to start anew? Existing draft/sent attachments remain. Undo history will also be cleared.","traceResetConfirm":"Confirm new attempt","traceResetDone":"New attempt started; board kept, earlier process marked unknown.","traceLoadError":"Earlier modifications could not be restored and are marked unknown. The board remains usable.","traceRecordError":"This change could not be added to the modification record; later process is marked unknown. The board itself is saved.","traceSkipped":"Modification record unavailable. The board file is attached; review and send yourself.","traceAttachmentName":"my-modifications.json","traceOrigin_student":"My action","traceOrigin_system":"Chat settings sync","traceType_add":"Add","traceType_batch":"Batch change","traceType_group":"Change groups","traceType_merge":"Merge","traceType_split":"Split","traceType_delete":"Delete","traceType_note":"Edit explanation","traceType_configure":"Change settings","traceType_move":"Move or arrange","traceType_undo":"Undo","traceType_redo":"Redo","traceType_clear":"Clear board","traceType_import":"Open board file","traceType_update":"Edit shape","traceType_duplicate":"Duplicate","traceField_count":"Shape count","traceField_activeCount":"Kept shapes","traceField_removedCount":"Crossed-out shapes","traceField_value":"Kept total value","traceField_removedValue":"Crossed-out value","traceField_groupCount":"Group count","traceField_groupedCount":"Grouped shapes","traceField_mergedCount":"Merged shapes","traceField_objects":"Composition (pattern:value ×count)","traceField_aliases":"Shape names","traceField_colors":"Level colour indices","traceField_groups":"Groups (name:count/value)","traceField_note":"My explanation (excerpt)","traceField_settings_levels":"Levels (value:colour index)","traceField_settings_defaults":"Default meanings (pattern:value:name)","traceField_settings_shapes":"Toolbox patterns","traceField_movedCount":"Shapes moved in this step","traceField_changedCount":"Other changes","traceField_detailsOmitted":"Details omitted in this step","tabs":"Mode","tabQuantity":"Arithmetic","tabGeometry":"Geometry","geometryCanvas":"Geometry canvas","geometryEmpty":"Pick a tool, then click on the canvas to start drawing","geometryEmptyHint":"Point · segment · triangle · polygon · circle · parallelogram · rectangle","geometryTools":"Geometry tools","point":"Point","segment":"Segment","polygon":"Polygon","parallelogram":"Parallelogram","midpoint":"Midpoint","auxiliary":"Auxiliary line","derivedPoint":"Constructed point","geometrySelectionActions":"Selected shape actions","renamePoint":"Rename point","geometryClearDone":"Geometry canvas and undo history cleared.","geometryLoadError":"Cannot read the geometry draft. Original data was not overwritten.","otherBoardFile":"That is the other board's file; the geometry board cannot open it.","gridOn":"Grid: on","gridOff":"Grid: off","snapOn":"Snap: on","snapOff":"Snap: off","geometryAttachmentName":"my-geometry-board.json","clearGeometry":"Clear geometry canvas","geometryClearQuestion":"Clear the geometry canvas and its undo history? Files already added to an answer stay. This cannot be undone.","select":"Select","geometryImportFailed":"That file could not be opened; the geometry canvas is unchanged.","tutorialReplay":"View tutorial","tutorialSkip":"Skip tutorial","tutorialProgress":"Step {step} / {total}","tutorialDone":"Tutorial finished. Use undo to remove practice marks.","tutorialInsertPractice":"Practice only: when you really answer, tap Add to answer, then review and send yourself.","tutorialQAddTitle":"Place a pattern","tutorialQAddBody":"Tap any pattern on the left to put it on the canvas.","tutorialQColorTitle":"Choose a creation colour","tutorialQColorBody":"Tap a value colour below. New patterns will use that amount.","tutorialQAddMoreTitle":"Place another","tutorialQAddMoreBody":"Tap a left-rail pattern again so you have more to talk about.","tutorialQNoteTitle":"I want to say","tutorialQNoteBody":"Tap the speech bubble and write what the shapes mean.","tutorialQNoteSaveTitle":"Save the note","tutorialQNoteSaveBody":"When you are done, tap Save. With nothing selected, the note is for the whole board.","tutorialQInsertTitle":"Add to answer","tutorialQInsertBody":"This attaches the board to the chat. In the tutorial, tapping it only practices—nothing is attached.","tutorialGPointToolTitle":"Point tool","tutorialGPointToolBody":"Choose Point, then place points on the canvas.","tutorialGPlacePointTitle":"Place a point","tutorialGPlacePointBody":"Tap empty canvas to drop a labelled point.","tutorialGSegmentToolTitle":"Segment tool","tutorialGSegmentToolBody":"Choose Segment to join two points with a line.","tutorialGDrawSegmentTitle":"Draw a segment","tutorialGDrawSegmentBody":"Tap two places (or existing points) on the canvas to draw a segment.","tutorialGNoteTitle":"I want to say","tutorialGNoteBody":"Tap the speech bubble and write what you want to explain.","tutorialGNoteSaveTitle":"Save the note","tutorialGNoteSaveBody":"When you are done, tap Save.","tutorialGInsertTitle":"Add to answer","tutorialGInsertBody":"This attaches the geometry board. In the tutorial, tapping it only practices—nothing is attached."},"zh":{"title":"数学画板","workspaceSubtitle":"摆图形 · 圈一组 · 自己说数量","toolbox":"工具箱","tapToAdd":"点一下放到画布；也可以拖进来","shapes":"图案","circle":"圆形","square":"方块","rectangle":"矩形","triangle":"三角形","star":"星形","hexagon":"六边形","diamond":"菱形","heart":"爱心","oval":"椭圆","cat":"小猫","dog":"小狗","car":"汽车","person":"人","apple":"苹果","fish":"小鱼","rocket":"火箭","flower":"小花","butterfly":"蝴蝶","house":"房子","icecream":"冰淇淋","settings":"设置","settingsIntro":"你来决定工具箱里有哪些图案、每个图案代表多少，以及哪个数值用哪种颜色。","patterns":"图案库","patternsHint":"点一下图案就放到左侧图案轨，再点一下收起来；已经摆好的图形不会消失。","addPattern":"添加到工具箱","removePattern":"从工具箱收起","morePatterns":"更多图案","levelLadder":"数值阶梯","level":"第几级","colorName":"颜色","removeLevel":"删除这一级","addLevel":"增加一级","resetSettings":"恢复默认","shapeDefaults":"这些图案默认代表多少","applyFuture":"只用于新图形","applyExisting":"也改已有图形","settingsFutureDone":"已保存设置，新添加的图形按新数值。","settingsExistingDone":"已保存设置，未合并的已有图形也改成新数值。","cancel":"取消","value":"代表","alias":"名字","aliasHint":"例如：苹果","canvas":"图形画布","canvasEmpty":"从左边选一个图形，开始摆一摆","canvasEmptyHint":"拖动摆放 · 空白处框选 · Shift 点击加选","gestureHint":"拖动摆放 · 空白处框选 · Shift 点击加选","multiSelect":"多选","focusMode":"只看画布","zoomIn":"放大画布","zoomOut":"缩小画布","fitView":"适应宽度","selectionActions":"所选图形操作","selectedCount":"已选","makeGroup":"圈为一组","ungroup":"解散组","merge":"合并","split":"拆开","copy":"复制","crossOut":"划去","restore":"恢复","trash":"删除所选","group":"组","defaultGroup":"我的一组","groupAlias":"这一组的名字","groupHint":"例如：小兔的一份","groupedNoAlias":"组里的图形不单独起名字；改名后整组一起变。","duplicateGroup":"复制这一组","mergedFrom":"由这些图形合并而来","noSelection":"点一个图形，或框选几个，就能起名字、圈组、合并。","mergeReason":"合并需要同一形状、同一数值、同一个名字、同属一组，而且总量正好是你设定的一级。","hintGrouped":"已选中一整组：改名只影响这一组。","hintSelected":"选中后可起名字、圈组或合并。","hintEmpty":"拖动摆放图形；空白处拖框可一次选中多个。","myObjects":"我的想法","myGroup":"我的一组","inspectorHint":"选中图形后在这里起名字","note":"我想说","noteHint":"这些图形代表什么？你是怎么想的？","noteGeneral":"整张画板 · 未关联特定图形","noteAbout":"针对","hasNote":"有说明","creationColor":"创建颜色","questionSource":"选择教师消息","questionTeacher":"老师","questionExpand":"展开","questionCollapse":"收起","questionEmpty":"暂无教师消息。","files":"文件","moreActions":"更多操作","canvasTools":"画板工具","appendSelect":"追加选择","appendDone":"完成选择","appendHint":"点按图形追加或移出选择，适合触屏","apply":"应用","save":"保存","done":"完成","fileSaved":"已保存到上次的位置。","fileDownloaded":"已下载画板文件。","fileOpenFallback":"将使用普通文件选择，浏览器可能无法记住上次的位置。","undo":"撤销","redo":"重做","group2":"圈组","close":"关闭","gear":"设置","minus":"减少","plus":"增加","cross":"划去","multi":"多选","focus":"专注","export":"保存 JSON","import":"打开 JSON","clear":"清空画布","clearQuestion":"要清空画布和这次的修改记录吗？已经放进回答的文件还在。清空后不能撤销。","confirmClear":"确认清空","clearDone":"已清空画布和修改记录。","autoClearDone":"新任务已清空画布和修改记录；已放入回答的文件仍保留。","autoClearSkipped":"为保留后续修改，已跳过迟到的清空请求。请先手动清空再用画板。","autoClearError":"自动清空未完成，请先手动清空再用画板。","insert":"放入回答","inserted":"已附上画板文件；请检查后自己发送。","insertedNote":"已附上画板文件，你写的话也放进输入框了；请检查后自己发送。","insertFailed":"暂时无法放入回答，请等输入框可编辑后重试。","attachmentName":"我的画板.json","backToChat":"返回对话","localDraft":"草稿还没发送，老师看不到；发送前随时可以改。","failed":"操作未完成","fileTooLarge":"文件太大，请选择小于 256 KB 的画板 JSON。","imported":"已打开画板。","storageError":"浏览器无法保存草稿，请保存 JSON 以免丢失。","loadError":"草稿无法读取，原数据未覆盖。","configApplied":"已按你刚才说的，更新了图形数值和颜色。","configGap":"设置历史有缺口；已按保留记录的作用范围回放。","configError":"有一条设置更新未能应用；更早成功的修改已保留。","removed":"已划去","active":"保留","traceTitle":"修改记录","traceAttach":"回答时附上修改记录（可取消）","tracePreview":"查看修改记录","traceHide":"收起修改记录","traceNewAttempt":"开始新的尝试","traceClear":"清除记录","traceNotice":"修改记录保存在这个浏览器，不记时间和拖动轨迹。附上并发送后，老师才能看到；会随对话保留。","traceScope":"这是这份草稿到目前为止保留的修改，不一定来自一次连续操作。数字与文字是修改事实，不是对错结论；省略的细节以省略标记说明。","tracePriorUnknown":"此前过程未知：起点可能已有内容，或记录有缺口。","traceTotals":"共记录 {count} 次变更，中间省略 {omitted} 次。","traceEmpty":"还没有记录到修改。","traceGap":"……中间修改已省略……","traceResetQuestion":"保留当前画板，删去本地修改记录并开始新的尝试？已放入回答或发送的附件不会删除，撤销历史也将清空。","traceResetConfirm":"确认重新开始","traceResetDone":"已开始新的尝试，画板保留，此前过程标为未知。","traceLoadError":"此前修改记录无法恢复，已标为未知；画板仍可使用。","traceRecordError":"这次修改没能记进修改记录，此后的过程标为未知；画板本身已保存。","traceSkipped":"修改记录不可用，已附上画板文件；请检查后自己发送。","traceAttachmentName":"我的修改记录.json","traceOrigin_student":"我的操作","traceOrigin_system":"对话设置同步","traceType_add":"添加","traceType_batch":"批量修改","traceType_group":"修改分组","traceType_merge":"合并","traceType_split":"拆开","traceType_delete":"删除","traceType_note":"修改说明","traceType_configure":"修改设置","traceType_move":"移动或整理","traceType_undo":"撤销","traceType_redo":"重做","traceType_clear":"清空画板","traceType_import":"打开画板文件","traceType_update":"修改图形","traceType_duplicate":"复制","traceField_count":"图形数","traceField_activeCount":"保留图形数","traceField_removedCount":"划去图形数","traceField_value":"保留图形代表的总量","traceField_removedValue":"划去图形代表的总量","traceField_groupCount":"组数","traceField_groupedCount":"已分组图形数","traceField_mergedCount":"合并图形数","traceField_objects":"图形组成（图案:代表值 ×个数）","traceField_aliases":"图形名字","traceField_colors":"量级颜色编号","traceField_groups":"各组（名字:个数/代表总量）","traceField_note":"我想说（节选）","traceField_settings_levels":"量级（数值:颜色编号）","traceField_settings_defaults":"默认含义（图案:数值:名字）","traceField_settings_shapes":"工具箱图案","traceField_movedCount":"本步移动的图形数","traceField_changedCount":"其他变更数","traceField_detailsOmitted":"本步省略细节数","tabs":"模式","tabQuantity":"算数","tabGeometry":"几何","geometryCanvas":"几何画布","geometryEmpty":"选一个工具，在画布上点一下开始画","geometryEmptyHint":"点 · 线段 · 三角形 · 多边形 · 圆 · 平行四边形 · 矩形","geometryTools":"几何工具","point":"点","segment":"线段","polygon":"多边形","parallelogram":"平行四边形","midpoint":"取中点","auxiliary":"辅助线","derivedPoint":"算出来的点","geometrySelectionActions":"所选图形操作","renamePoint":"重命名的点","geometryClearDone":"已清空几何画布和撤销历史。","geometryLoadError":"几何草稿无法读取，原数据未覆盖。","otherBoardFile":"这是另一个画板的文件，几何画板打不开。","gridOn":"网格：开","gridOff":"网格：关","snapOn":"吸附：开","snapOff":"吸附：关","geometryAttachmentName":"我的几何画板.json","clearGeometry":"清空几何画布","geometryClearQuestion":"要清空几何画布和它的撤销历史吗？已经放进回答的文件还在。清空后不能撤销。","select":"选择","geometryImportFailed":"这个文件打不开，几何画布没有变化。","tutorialReplay":"查看教程","tutorialSkip":"跳过教程","tutorialProgress":"第 {step} / {total} 步","tutorialDone":"教程结束。练习留下的笔迹可用撤销去掉。","tutorialInsertPractice":"练习到这里：真正作答时再点「放入回答」，检查后自己发送。","tutorialQAddTitle":"放一个图案","tutorialQAddBody":"点左侧任意图案，放到画布上。","tutorialQColorTitle":"选创建颜色","tutorialQColorBody":"点底部的数值颜色：新图案会用这个量级。","tutorialQAddMoreTitle":"再放一个","tutorialQAddMoreBody":"再点一次左侧图案，多摆几个更好说明。","tutorialQNoteTitle":"我想说","tutorialQNoteBody":"点气泡按钮，写下这些图形代表什么。","tutorialQNoteSaveTitle":"保存说明","tutorialQNoteSaveBody":"写好后点「保存」。没有选中图形时，说明属于整张画板。","tutorialQInsertTitle":"放入回答","tutorialQInsertBody":"点这里会把画板附到对话里。教程里点一下即可，不会真的放入。","tutorialGPointToolTitle":"点工具","tutorialGPointToolBody":"先选「点」，再在画布上落点。","tutorialGPlacePointTitle":"放一个点","tutorialGPlacePointBody":"在画布空白处点一下，出现带标签的点。","tutorialGSegmentToolTitle":"线段工具","tutorialGSegmentToolBody":"选「线段」，用两个点连成一条线。","tutorialGDrawSegmentTitle":"画一条线段","tutorialGDrawSegmentBody":"在画布上点两个位置（或已有点），画出线段。","tutorialGNoteTitle":"我想说","tutorialGNoteBody":"点气泡按钮，写下你想说明的内容。","tutorialGNoteSaveTitle":"保存说明","tutorialGNoteSaveBody":"写好后点「保存」。","tutorialGInsertTitle":"放入回答","tutorialGInsertBody":"点这里附上几何画板。教程里点一下即可，不会真的放入。"}};
+    const dictionaries = {"en":{"title":"Math board","workspaceSubtitle":"Place shapes · group them · name the amounts","toolbox":"Toolbox","tapToAdd":"Tap to place, or drag one in","shapes":"Patterns","circle":"Circle","square":"Square","rectangle":"Rectangle","triangle":"Triangle","star":"Star","hexagon":"Hexagon","diamond":"Diamond","heart":"Heart","oval":"Oval","cat":"Cat","dog":"Dog","car":"Car","person":"Person","apple":"Apple","fish":"Fish","rocket":"Rocket","flower":"Flower","butterfly":"Butterfly","house":"House","icecream":"Ice cream","settings":"Settings","settingsIntro":"You choose which patterns sit in the toolbox, what each stands for, and which colour marks which amount.","patterns":"Pattern library","patternsHint":"Tap a pattern to put it on the left rail; tap again to tuck it away. Shapes already on the canvas stay.","addPattern":"Add to toolbox","removePattern":"Tuck away","morePatterns":"More patterns","levelLadder":"Value ladder","level":"Level","colorName":"Colour","removeLevel":"Remove level","addLevel":"Add level","resetSettings":"Reset","shapeDefaults":"What these patterns stand for","applyFuture":"New shapes only","applyExisting":"Also change existing","settingsFutureDone":"Saved. New shapes use the new value.","settingsExistingDone":"Saved. Existing unmerged shapes also use the new value.","cancel":"Cancel","value":"Standing for","alias":"Name","aliasHint":"For example: apple","canvas":"Shape canvas","canvasEmpty":"Pick a shape on the left to begin","canvasEmptyHint":"Drag to arrange · box-select · Shift-click to add","gestureHint":"Drag to arrange · box-select · Shift-click to add","multiSelect":"Multi-select","focusMode":"Canvas only","zoomIn":"Zoom in","zoomOut":"Zoom out","fitView":"Fit width","selectionActions":"Selected shape actions","selectedCount":"Selected","makeGroup":"Group","ungroup":"Ungroup","merge":"Merge","split":"Split","copy":"Copy","crossOut":"Cross out","restore":"Restore","trash":"Delete selected","group":"Group","defaultGroup":"My group","groupAlias":"Group name","groupHint":"For example: Rabbit's share","groupedNoAlias":"Shapes in a group share its name instead of having their own.","duplicateGroup":"Duplicate group","mergedFrom":"Merged from","noSelection":"Select one shape or box-select several to name, group, or merge them.","mergeReason":"Merging needs the same shape, the same value, the same name, the same group, and a total that matches one of your levels.","hintGrouped":"A whole group is selected: renaming changes the group.","hintSelected":"Name, group or merge the selection.","hintEmpty":"Drag shapes to arrange; drag on empty space to select several.","myObjects":"My thinking","myGroup":"My group","inspectorHint":"Select shapes to name them here","note":"My explanation","noteHint":"What do these shapes mean? How did you think about it?","noteGeneral":"Whole board · not tied to particular shapes","noteAbout":"About","hasNote":"Has an explanation","creationColor":"Creation colour","questionSource":"Choose a teacher message","questionTeacher":"Teacher","questionExpand":"Expand","questionCollapse":"Collapse","questionEmpty":"No teacher messages yet.","files":"Files","moreActions":"More actions","canvasTools":"Board tools","appendSelect":"Add to selection","appendDone":"Finish selecting","appendHint":"Tap shapes to add or remove them; useful on touch screens","apply":"Apply","save":"Save","done":"Done","fileSaved":"Saved to the last location.","fileDownloaded":"Board file downloaded.","fileOpenFallback":"Using the standard file picker; the browser may not remember the last location.","undo":"Undo","redo":"Redo","group2":"Group","close":"Close","gear":"Settings","minus":"Remove","plus":"Add","cross":"Cross out","multi":"Multi-select","focus":"Focus","export":"Save JSON","import":"Open JSON","clear":"Clear canvas","clearQuestion":"Clear the canvas and this modification record? Files already added to an answer stay. This cannot be undone.","confirmClear":"Confirm clear","clearDone":"Canvas and modification record cleared.","autoClearDone":"Canvas and modifications cleared for the new task. Existing answer attachments remain.","autoClearSkipped":"A late clear was skipped to keep later edits. Clear manually before using the board.","autoClearError":"Automatic clear did not complete. Clear manually before using the board.","insert":"Add to answer","inserted":"The board file is attached. Review it and send it yourself.","insertedNote":"The board file is attached, and your own words are in the composer. Review them and send yourself.","insertFailed":"Cannot insert now. Wait until the composer is editable and try again.","attachmentName":"my-math-board.json","backToChat":"Back to chat","localDraft":"Your draft stays here until you send it.","failed":"Action not completed","fileTooLarge":"Choose a board JSON smaller than 256 KB.","imported":"Board opened.","storageError":"Cannot save this browser draft. Save JSON to keep your work.","loadError":"Cannot read the draft. Original data was not overwritten.","configApplied":"Your spoken values and colours are now applied.","configGap":"Settings history had a gap; retained changes were replayed with their original scopes.","configError":"A settings update could not be applied; earlier successful changes were kept.","removed":"Crossed out","active":"Kept","traceTitle":"Modification record","traceAttach":"Attach modification record (optional)","tracePreview":"View modifications","traceHide":"Hide modifications","traceNewAttempt":"Start a new attempt","traceClear":"Clear record","traceNotice":"Changes stay in this browser, without times or drag paths. Your teacher sees them only if attached and sent; sent files remain with the conversation.","traceScope":"Retained modifications to this draft so far, not necessarily one continuous sitting. These are observations, not correctness judgments; omitted details are marked.","tracePriorUnknown":"Earlier process unknown: the starting board may have content, or history has a gap.","traceTotals":"{count} changes recorded; {omitted} changes omitted in the middle.","traceEmpty":"No modifications recorded yet.","traceGap":"… Intermediate modifications omitted …","traceResetQuestion":"Keep the board and delete its local modification record to start anew? Existing draft/sent attachments remain. Undo history will also be cleared.","traceResetConfirm":"Confirm new attempt","traceResetDone":"New attempt started; board kept, earlier process marked unknown.","traceLoadError":"Earlier modifications could not be restored and are marked unknown. The board remains usable.","traceRecordError":"This change could not be added to the modification record; later process is marked unknown. The board itself is saved.","traceSkipped":"Modification record unavailable. The board file is attached; review and send yourself.","traceAttachmentName":"my-modifications.json","traceOrigin_student":"My action","traceOrigin_system":"Chat settings sync","traceType_add":"Add","traceType_batch":"Batch change","traceType_group":"Change groups","traceType_merge":"Merge","traceType_split":"Split","traceType_delete":"Delete","traceType_note":"Edit explanation","traceType_configure":"Change settings","traceType_move":"Move or arrange","traceType_undo":"Undo","traceType_redo":"Redo","traceType_clear":"Clear board","traceType_import":"Open board file","traceType_update":"Edit shape","traceType_duplicate":"Duplicate","traceField_count":"Shape count","traceField_activeCount":"Kept shapes","traceField_removedCount":"Crossed-out shapes","traceField_value":"Kept total value","traceField_removedValue":"Crossed-out value","traceField_groupCount":"Group count","traceField_groupedCount":"Grouped shapes","traceField_mergedCount":"Merged shapes","traceField_objects":"Composition (pattern:value ×count)","traceField_aliases":"Shape names","traceField_colors":"Level colour indices","traceField_groups":"Groups (name:count/value)","traceField_note":"My explanation (excerpt)","traceField_settings_levels":"Levels (value:colour index)","traceField_settings_defaults":"Default meanings (pattern:value:name)","traceField_settings_shapes":"Toolbox patterns","traceField_movedCount":"Shapes moved in this step","traceField_changedCount":"Other changes","traceField_detailsOmitted":"Details omitted in this step","tabs":"Mode","tabQuantity":"Arithmetic","tabGeometry":"Geometry","geometryCanvas":"Geometry canvas","geometryEmpty":"Pick a tool, then click on the canvas to start drawing","geometryEmptyHint":"Point · segment · triangle · circle · parallelogram · rectangle · polygon","geometryTools":"Geometry tools","point":"Point","segment":"Segment","polygon":"Polygon","parallelogram":"Parallelogram","midpoint":"Midpoint","auxiliary":"Auxiliary line","derivedPoint":"Constructed point","geometrySelectionActions":"Selected shape actions","renamePoint":"Rename point","geometryClearDone":"Geometry canvas and undo history cleared.","geometryLoadError":"Cannot read the geometry draft. Original data was not overwritten.","otherBoardFile":"That is the other board's file; the geometry board cannot open it.","gridOn":"Grid: on","gridOff":"Grid: off","snapOn":"Snap: on","snapOff":"Snap: off","geometryAttachmentName":"my-geometry-board.json","clearGeometry":"Clear geometry canvas","geometryClearQuestion":"Clear the geometry canvas and its undo history? Files already added to an answer stay. This cannot be undone.","select":"Select","geometryImportFailed":"That file could not be opened; the geometry canvas is unchanged.","tutorialReplay":"View tutorial","tutorialSkip":"Skip tutorial","tutorialProgress":"Step {step} / {total}","tutorialDone":"Tutorial finished. Use undo to remove practice marks.","tutorialInsertPractice":"Practice only: when you really answer, tap Add to answer, then review and send yourself.","tutorialQAddTitle":"Place a pattern","tutorialQAddBody":"Tap any pattern on the left to put it on the canvas.","tutorialQColorTitle":"Choose a creation colour","tutorialQColorBody":"Tap a value colour below. New patterns will use that amount.","tutorialQAddMoreTitle":"Place another","tutorialQAddMoreBody":"Tap a left-rail pattern again so you have more to talk about.","tutorialQNoteTitle":"I want to say","tutorialQNoteBody":"Tap the speech bubble and write what the shapes mean.","tutorialQNoteSaveTitle":"Save the note","tutorialQNoteSaveBody":"When you are done, tap Save. With nothing selected, the note is for the whole board.","tutorialQInsertTitle":"Add to answer","tutorialQInsertBody":"This attaches the board to the chat. In the tutorial, tapping it only practices—nothing is attached.","tutorialGPointToolTitle":"Point tool","tutorialGPointToolBody":"Choose Point, then place points on the canvas.","tutorialGPlacePointTitle":"Place a point","tutorialGPlacePointBody":"Tap empty canvas to drop a labelled point.","tutorialGSegmentToolTitle":"Segment tool","tutorialGSegmentToolBody":"Choose Segment to join two points with a line.","tutorialGDrawSegmentTitle":"Draw a segment","tutorialGDrawSegmentBody":"Tap two places (or existing points) on the canvas to draw a segment.","tutorialGNoteTitle":"I want to say","tutorialGNoteBody":"Tap the speech bubble and write what you want to explain.","tutorialGNoteSaveTitle":"Save the note","tutorialGNoteSaveBody":"When you are done, tap Save.","tutorialGInsertTitle":"Add to answer","tutorialGInsertBody":"This attaches the geometry board. In the tutorial, tapping it only practices—nothing is attached."},"zh":{"title":"数学画板","workspaceSubtitle":"摆图形 · 圈一组 · 自己说数量","toolbox":"工具箱","tapToAdd":"点一下放到画布；也可以拖进来","shapes":"图案","circle":"圆形","square":"方块","rectangle":"矩形","triangle":"三角形","star":"星形","hexagon":"六边形","diamond":"菱形","heart":"爱心","oval":"椭圆","cat":"小猫","dog":"小狗","car":"汽车","person":"人","apple":"苹果","fish":"小鱼","rocket":"火箭","flower":"小花","butterfly":"蝴蝶","house":"房子","icecream":"冰淇淋","settings":"设置","settingsIntro":"你来决定工具箱里有哪些图案、每个图案代表多少，以及哪个数值用哪种颜色。","patterns":"图案库","patternsHint":"点一下图案就放到左侧图案轨，再点一下收起来；已经摆好的图形不会消失。","addPattern":"添加到工具箱","removePattern":"从工具箱收起","morePatterns":"更多图案","levelLadder":"数值阶梯","level":"第几级","colorName":"颜色","removeLevel":"删除这一级","addLevel":"增加一级","resetSettings":"恢复默认","shapeDefaults":"这些图案默认代表多少","applyFuture":"只用于新图形","applyExisting":"也改已有图形","settingsFutureDone":"已保存设置，新添加的图形按新数值。","settingsExistingDone":"已保存设置，未合并的已有图形也改成新数值。","cancel":"取消","value":"代表","alias":"名字","aliasHint":"例如：苹果","canvas":"图形画布","canvasEmpty":"从左边选一个图形，开始摆一摆","canvasEmptyHint":"拖动摆放 · 空白处框选 · Shift 点击加选","gestureHint":"拖动摆放 · 空白处框选 · Shift 点击加选","multiSelect":"多选","focusMode":"只看画布","zoomIn":"放大画布","zoomOut":"缩小画布","fitView":"适应宽度","selectionActions":"所选图形操作","selectedCount":"已选","makeGroup":"圈为一组","ungroup":"解散组","merge":"合并","split":"拆开","copy":"复制","crossOut":"划去","restore":"恢复","trash":"删除所选","group":"组","defaultGroup":"我的一组","groupAlias":"这一组的名字","groupHint":"例如：小兔的一份","groupedNoAlias":"组里的图形不单独起名字；改名后整组一起变。","duplicateGroup":"复制这一组","mergedFrom":"由这些图形合并而来","noSelection":"点一个图形，或框选几个，就能起名字、圈组、合并。","mergeReason":"合并需要同一形状、同一数值、同一个名字、同属一组，而且总量正好是你设定的一级。","hintGrouped":"已选中一整组：改名只影响这一组。","hintSelected":"选中后可起名字、圈组或合并。","hintEmpty":"拖动摆放图形；空白处拖框可一次选中多个。","myObjects":"我的想法","myGroup":"我的一组","inspectorHint":"选中图形后在这里起名字","note":"我想说","noteHint":"这些图形代表什么？你是怎么想的？","noteGeneral":"整张画板 · 未关联特定图形","noteAbout":"针对","hasNote":"有说明","creationColor":"创建颜色","questionSource":"选择教师消息","questionTeacher":"老师","questionExpand":"展开","questionCollapse":"收起","questionEmpty":"暂无教师消息。","files":"文件","moreActions":"更多操作","canvasTools":"画板工具","appendSelect":"追加选择","appendDone":"完成选择","appendHint":"点按图形追加或移出选择，适合触屏","apply":"应用","save":"保存","done":"完成","fileSaved":"已保存到上次的位置。","fileDownloaded":"已下载画板文件。","fileOpenFallback":"将使用普通文件选择，浏览器可能无法记住上次的位置。","undo":"撤销","redo":"重做","group2":"圈组","close":"关闭","gear":"设置","minus":"减少","plus":"增加","cross":"划去","multi":"多选","focus":"专注","export":"保存 JSON","import":"打开 JSON","clear":"清空画布","clearQuestion":"要清空画布和这次的修改记录吗？已经放进回答的文件还在。清空后不能撤销。","confirmClear":"确认清空","clearDone":"已清空画布和修改记录。","autoClearDone":"新任务已清空画布和修改记录；已放入回答的文件仍保留。","autoClearSkipped":"为保留后续修改，已跳过迟到的清空请求。请先手动清空再用画板。","autoClearError":"自动清空未完成，请先手动清空再用画板。","insert":"放入回答","inserted":"已附上画板文件；请检查后自己发送。","insertedNote":"已附上画板文件，你写的话也放进输入框了；请检查后自己发送。","insertFailed":"暂时无法放入回答，请等输入框可编辑后重试。","attachmentName":"我的画板.json","backToChat":"返回对话","localDraft":"草稿还没发送，老师看不到；发送前随时可以改。","failed":"操作未完成","fileTooLarge":"文件太大，请选择小于 256 KB 的画板 JSON。","imported":"已打开画板。","storageError":"浏览器无法保存草稿，请保存 JSON 以免丢失。","loadError":"草稿无法读取，原数据未覆盖。","configApplied":"已按你刚才说的，更新了图形数值和颜色。","configGap":"设置历史有缺口；已按保留记录的作用范围回放。","configError":"有一条设置更新未能应用；更早成功的修改已保留。","removed":"已划去","active":"保留","traceTitle":"修改记录","traceAttach":"回答时附上修改记录（可取消）","tracePreview":"查看修改记录","traceHide":"收起修改记录","traceNewAttempt":"开始新的尝试","traceClear":"清除记录","traceNotice":"修改记录保存在这个浏览器，不记时间和拖动轨迹。附上并发送后，老师才能看到；会随对话保留。","traceScope":"这是这份草稿到目前为止保留的修改，不一定来自一次连续操作。数字与文字是修改事实，不是对错结论；省略的细节以省略标记说明。","tracePriorUnknown":"此前过程未知：起点可能已有内容，或记录有缺口。","traceTotals":"共记录 {count} 次变更，中间省略 {omitted} 次。","traceEmpty":"还没有记录到修改。","traceGap":"……中间修改已省略……","traceResetQuestion":"保留当前画板，删去本地修改记录并开始新的尝试？已放入回答或发送的附件不会删除，撤销历史也将清空。","traceResetConfirm":"确认重新开始","traceResetDone":"已开始新的尝试，画板保留，此前过程标为未知。","traceLoadError":"此前修改记录无法恢复，已标为未知；画板仍可使用。","traceRecordError":"这次修改没能记进修改记录，此后的过程标为未知；画板本身已保存。","traceSkipped":"修改记录不可用，已附上画板文件；请检查后自己发送。","traceAttachmentName":"我的修改记录.json","traceOrigin_student":"我的操作","traceOrigin_system":"对话设置同步","traceType_add":"添加","traceType_batch":"批量修改","traceType_group":"修改分组","traceType_merge":"合并","traceType_split":"拆开","traceType_delete":"删除","traceType_note":"修改说明","traceType_configure":"修改设置","traceType_move":"移动或整理","traceType_undo":"撤销","traceType_redo":"重做","traceType_clear":"清空画板","traceType_import":"打开画板文件","traceType_update":"修改图形","traceType_duplicate":"复制","traceField_count":"图形数","traceField_activeCount":"保留图形数","traceField_removedCount":"划去图形数","traceField_value":"保留图形代表的总量","traceField_removedValue":"划去图形代表的总量","traceField_groupCount":"组数","traceField_groupedCount":"已分组图形数","traceField_mergedCount":"合并图形数","traceField_objects":"图形组成（图案:代表值 ×个数）","traceField_aliases":"图形名字","traceField_colors":"量级颜色编号","traceField_groups":"各组（名字:个数/代表总量）","traceField_note":"我想说（节选）","traceField_settings_levels":"量级（数值:颜色编号）","traceField_settings_defaults":"默认含义（图案:数值:名字）","traceField_settings_shapes":"工具箱图案","traceField_movedCount":"本步移动的图形数","traceField_changedCount":"其他变更数","traceField_detailsOmitted":"本步省略细节数","tabs":"模式","tabQuantity":"算数","tabGeometry":"几何","geometryCanvas":"几何画布","geometryEmpty":"选一个工具，在画布上点一下开始画","geometryEmptyHint":"点 · 线段 · 三角形 · 圆 · 平行四边形 · 矩形 · 多边形","geometryTools":"几何工具","point":"点","segment":"线段","polygon":"多边形","parallelogram":"平行四边形","midpoint":"取中点","auxiliary":"辅助线","derivedPoint":"算出来的点","geometrySelectionActions":"所选图形操作","renamePoint":"重命名的点","geometryClearDone":"已清空几何画布和撤销历史。","geometryLoadError":"几何草稿无法读取，原数据未覆盖。","otherBoardFile":"这是另一个画板的文件，几何画板打不开。","gridOn":"网格：开","gridOff":"网格：关","snapOn":"吸附：开","snapOff":"吸附：关","geometryAttachmentName":"我的几何画板.json","clearGeometry":"清空几何画布","geometryClearQuestion":"要清空几何画布和它的撤销历史吗？已经放进回答的文件还在。清空后不能撤销。","select":"选择","geometryImportFailed":"这个文件打不开，几何画布没有变化。","tutorialReplay":"查看教程","tutorialSkip":"跳过教程","tutorialProgress":"第 {step} / {total} 步","tutorialDone":"教程结束。练习留下的笔迹可用撤销去掉。","tutorialInsertPractice":"练习到这里：真正作答时再点「放入回答」，检查后自己发送。","tutorialQAddTitle":"放一个图案","tutorialQAddBody":"点左侧任意图案，放到画布上。","tutorialQColorTitle":"选创建颜色","tutorialQColorBody":"点底部的数值颜色：新图案会用这个量级。","tutorialQAddMoreTitle":"再放一个","tutorialQAddMoreBody":"再点一次左侧图案，多摆几个更好说明。","tutorialQNoteTitle":"我想说","tutorialQNoteBody":"点气泡按钮，写下这些图形代表什么。","tutorialQNoteSaveTitle":"保存说明","tutorialQNoteSaveBody":"写好后点「保存」。没有选中图形时，说明属于整张画板。","tutorialQInsertTitle":"放入回答","tutorialQInsertBody":"点这里会把画板附到对话里。教程里点一下即可，不会真的放入。","tutorialGPointToolTitle":"点工具","tutorialGPointToolBody":"先选「点」，再在画布上落点。","tutorialGPlacePointTitle":"放一个点","tutorialGPlacePointBody":"在画布空白处点一下，出现带标签的点。","tutorialGSegmentToolTitle":"线段工具","tutorialGSegmentToolBody":"选「线段」，用两个点连成一条线。","tutorialGDrawSegmentTitle":"画一条线段","tutorialGDrawSegmentBody":"在画布上点两个位置（或已有点），画出线段。","tutorialGNoteTitle":"我想说","tutorialGNoteBody":"点气泡按钮，写下你想说明的内容。","tutorialGNoteSaveTitle":"保存说明","tutorialGNoteSaveBody":"写好后点「保存」。","tutorialGInsertTitle":"放入回答","tutorialGInsertBody":"点这里附上几何画板。教程里点一下即可，不会真的放入。"}};
     return {
       inject: ['slots', 'locale'],
       apply(ctx) {

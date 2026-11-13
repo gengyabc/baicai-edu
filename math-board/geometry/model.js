@@ -318,6 +318,15 @@ export function createGeometryModel() {
     return result;
   }
   const elementPoints = (e) => e.type === 'circle' ? [e.centerPointId, e.radiusPointId] : e.points;
+  // True when some element outside `skip`, or some construction, still names this point.
+  function pointReferenced(canonical, id, skip = new Set()) {
+    if (!id) return false;
+    for (const e of canonical.elements) {
+      if (skip.has(e.id)) continue;
+      if (elementPoints(e).includes(id)) return true;
+    }
+    return canonical.points.some((p) => p.id !== id && p.construction?.inputs.includes(id));
+  }
   /** Every point and element which disappears when `ids` are deleted, then all elements losing a point. */
   function cascade(canonical, ids) {
     const removed = new Set(ids);
@@ -342,12 +351,100 @@ export function createGeometryModel() {
       }
       elements = keep;
     }
+    // A circle that disappeared takes a rim point nothing else uses. That point is only
+    // the radius handle, so leaving it would show a dot the circle no longer explains.
+    const live = new Set(elements.map((e) => e.id));
+    const gone = new Set(canonical.elements.filter((e) => !live.has(e.id)).map((e) => e.id));
+    for (const e of canonical.elements) {
+      if (e.type !== 'circle' || live.has(e.id) || !e.radiusPointId || removed.has(e.radiusPointId)) continue;
+      if (!pointReferenced(canonical, e.radiusPointId, gone)) removed.add(e.radiusPointId);
+    }
     return { points: canonical.points.filter((p) => !removed.has(p.id)), elements, removedPoints: removed };
   }
   function deleteIds(canonical, ids) {
     const result = cascade(canonical, ids);
-    // Deleting a shape keeps the points it merely passed through.
     return validate({ ...canonical, points: result.points, elements: result.elements });
+  }
+  // Points that disappear with the named shapes: a segment's endpoints when nothing else
+  // uses them, a circle's rim point when it is only that radius handle, and a
+  // quadrilateral's derived corner. Other free vertices stay.
+  function pointsLeavingWith(canonical, elementIds) {
+    const skip = new Set(elementIds);
+    const extra = [];
+    const take = (id) => { if (id && !extra.includes(id)) extra.push(id); };
+    for (const e of canonical.elements) {
+      if (!skip.has(e.id)) continue;
+      if (e.type === 'segment') {
+        for (const id of e.points) if (!pointReferenced(canonical, id, skip)) take(id);
+      } else if (e.type === 'circle') {
+        if (e.radiusPointId && !pointReferenced(canonical, e.radiusPointId, skip)) take(e.radiusPointId);
+      } else {
+        for (const id of elementPoints(e)) {
+          if (canonical.points.find((p) => p.id === id)?.kind === 'derived') take(id);
+        }
+      }
+    }
+    return extra;
+  }
+  function removeSelection(canonical, pointIds, elementIds) {
+    const ids = [...pointIds];
+    for (const id of pointsLeavingWith(canonical, elementIds)) if (!ids.includes(id)) ids.push(id);
+    const elements = canonical.elements.filter((e) => !elementIds.includes(e.id));
+    const next = validate({ ...canonical, elements });
+    if (!ids.length) return next;
+    return deleteIds(next, ids);
+  }
+  // A closed shape is a ring of edges. Index i joins point i to the next point, and the
+  // last index closes the ring. A segment is its single edge.
+  function shapeEdges(element) {
+    const ids = element.points;
+    if (!ids || ids.length < 2) return [];
+    if (element.type === 'segment') return [[ids[0], ids[1]]];
+    if (element.type === 'circle') return [];
+    const edges = [];
+    for (let i = 0; i < ids.length; i++) edges.push([ids[i], ids[(i + 1) % ids.length]]);
+    return edges;
+  }
+  const sameSegment = (element, a, b) => element.type === 'segment'
+    && ((element.points[0] === a && element.points[1] === b) || (element.points[0] === b && element.points[1] === a));
+  // Drop the named edges. Every other side of that shape becomes its own segment, and a
+  // vertex that no remaining side and nothing else uses is deleted with them.
+  function deleteShapeEdges(canonical, refs) {
+    const grouped = new Map();
+    for (const ref of refs) {
+      const bucket = grouped.get(ref.id) || [];
+      if (!bucket.includes(ref.index)) bucket.push(ref.index);
+      grouped.set(ref.id, bucket);
+    }
+    let board = canonical;
+    for (const [id, indexes] of grouped) {
+      const element = board.elements.find((e) => e.id === id) || fail('Unknown point');
+      const edges = shapeEdges(element);
+      if (!edges.length) fail('Unknown point');
+      for (const index of indexes) {
+        if (!Number.isInteger(index) || index < 0 || index >= edges.length) fail('Unknown point');
+      }
+      const drop = new Set(indexes);
+      const keep = edges.filter((_, index) => !drop.has(index));
+      let donor = board;
+      const added = [];
+      for (const [a, b] of keep) {
+        if (board.elements.some((e) => e.id !== id && sameSegment(e, a, b)) || added.some((e) => sameSegment(e, a, b))) continue;
+        const segId = nextId(donor, 'e');
+        const seg = { id: segId, type: 'segment', points: [a, b], role: element.role, note: '' };
+        added.push(seg);
+        donor = { ...donor, elements: [...donor.elements, seg] };
+      }
+      const draft = { ...board, elements: [...board.elements.filter((e) => e.id !== id), ...added] };
+      const survivors = new Set(keep.flat());
+      const orphans = [];
+      for (const pid of element.points) {
+        if (survivors.has(pid) || orphans.includes(pid)) continue;
+        if (!pointReferenced(draft, pid)) orphans.push(pid);
+      }
+      board = orphans.length ? deleteIds(validate(draft), orphans) : validate(draft);
+    }
+    return board;
   }
   function nextId(canonical, prefix) {
     let max = 0;
@@ -512,14 +609,34 @@ export function createGeometryModel() {
       case 'note': if (!text(action.value, 500)) fail('Note exceeds 500 characters'); return validate({ ...canonical, note: action.value });
       case 'delete': {
         if (!Array.isArray(action.ids) || !action.ids.length || action.ids.length > 300 || new Set(action.ids).size !== action.ids.length) fail('Select distinct points or shapes');
-        for (const id of action.ids) { pointById(id); }
-        return deleteIds(canonical, action.ids);
+        const pointIds = [];
+        const elementIds = [];
+        const edgeRefs = [];
+        for (const id of action.ids) {
+          const mark = typeof id === 'string' ? id.lastIndexOf('#') : -1;
+          if (mark > 0) {
+            const elementId = id.slice(0, mark);
+            const indexText = id.slice(mark + 1);
+            const index = Number(indexText);
+            if (Number.isInteger(index) && String(index) === indexText && canonical.elements.some((e) => e.id === elementId)) {
+              edgeRefs.push({ id: elementId, index });
+              continue;
+            }
+          }
+          if (canonical.points.some((p) => p.id === id)) pointIds.push(id);
+          else if (canonical.elements.some((e) => e.id === id)) elementIds.push(id);
+          else fail('Unknown point');
+        }
+        let next = edgeRefs.length ? deleteShapeEdges(canonical, edgeRefs) : canonical;
+        const livePoints = pointIds.filter((pid) => next.points.some((p) => p.id === pid));
+        const liveElements = elementIds.filter((eid) => next.elements.some((e) => e.id === eid));
+        if (liveElements.length) return removeSelection(next, livePoints, liveElements);
+        if (livePoints.length) return deleteIds(next, livePoints);
+        return next;
       }
       case 'deleteElement': {
         elementById(action.id);
-        // A derived point exists only to make this shape, so it goes with it.
-        const extra = elementPoints(elementById(action.id)).filter((id) => pointById(id).kind === 'derived');
-        return deleteIds(canonical, [action.id, ...extra]);
+        return removeSelection(canonical, [], [action.id]);
       }
       case 'clear': return validate({ ...empty(), note: canonical.note });
       default: fail('Unknown action');

@@ -346,6 +346,50 @@ test('deleting a point removes every downstream element and construction in one 
   assert.deepEqual(shapedGone.points.map((p) => p.id).sort(), ['p-1', 'p-2', 'p-3', 'p-5']);
 });
 
+test('deleting a segment removes endpoints that nothing else uses', () => {
+  const alone = shape(add(add(G.empty(), 100, 100), 300, 160), 'segment', ['p-1', 'p-2']);
+  const cleared = G.reduce(alone, { type: 'delete', ids: ['e-1'] });
+  assert.deepEqual(cleared.elements, []);
+  assert.deepEqual(cleared.points, [], 'both endpoints existed only for that segment');
+  // A shared endpoint stays, and so does a midpoint that still names the ends.
+  let shared = shape(add(add(add(G.empty(), 100, 100), 300, 100), 300, 260), 'segment', ['p-1', 'p-2']);
+  shared = shape(shared, 'segment', ['p-2', 'p-3']);
+  shared = G.reduce(shared, { type: 'addMidpoint', a: 'p-1', b: 'p-2' });
+  const oneSide = G.reduce(shared, { type: 'delete', ids: ['e-2'] });
+  assert.deepEqual(oneSide.elements.map((e) => e.points), [['p-1', 'p-2']]);
+  assert.deepEqual(oneSide.points.map((p) => p.id).sort(), ['p-1', 'p-2', 'p-4']);
+  const withMid = G.reduce(oneSide, { type: 'deleteElement', id: 'e-1' });
+  assert.deepEqual(withMid.elements, []);
+  assert.deepEqual(withMid.points.map((p) => p.id).sort(), ['p-1', 'p-2', 'p-4'], 'the midpoint still uses the ends');
+});
+
+test('deleting one side of a polygon or rectangle leaves the other sides', () => {
+  const tri = shape(add(add(add(G.empty(), 120, 80), 360, 90), 200, 320), 'polygon', ['p-1', 'p-2', 'p-3']);
+  const opened = G.reduce(tri, { type: 'delete', ids: ['e-1#2'] });
+  assert.deepEqual(opened.points.map((p) => p.id), ['p-1', 'p-2', 'p-3']);
+  assert.deepEqual(opened.elements.map((e) => e.points), [['p-1', 'p-2'], ['p-2', 'p-3']]);
+  // The vertex that loses both of its sides goes; the remaining side keeps its ends.
+  const oneSide = G.reduce(opened, { type: 'delete', ids: [opened.elements[0].id] });
+  assert.deepEqual(oneSide.elements.map((e) => e.points), [['p-2', 'p-3']]);
+  assert.deepEqual(oneSide.points.map((p) => p.id), ['p-2', 'p-3']);
+  const rect = G.reduce(rectangle(), { type: 'delete', ids: ['e-1#0'] });
+  assert.deepEqual(rect.elements.map((e) => e.points), [['p-2', 'p-3'], ['p-3', 'p-4'], ['p-4', 'p-1']]);
+  assert.equal(rect.points.length, 4, 'every corner of the remaining sides stays');
+});
+
+test('deleting a circle drops a rim point that only defined the radius', () => {
+  const circle = shape(add(add(G.empty(), 200, 200), 320, 200), 'circle', [], { centerPointId: 'p-1', radiusPointId: 'p-2' });
+  const removed = G.reduce(circle, { type: 'delete', ids: ['e-1'] });
+  assert.deepEqual(removed.elements, []);
+  assert.deepEqual(removed.points.map((p) => p.id), ['p-1'], 'the centre stays and the rim handle goes');
+  // A rim that is also a segment end is a real point and stays when the circle goes.
+  let shared = shape(add(add(G.empty(), 200, 200), 320, 200), 'segment', ['p-1', 'p-2']);
+  shared = shape(shared, 'circle', [], { centerPointId: 'p-1', radiusPointId: 'p-2' });
+  const circleGone = G.reduce(shared, { type: 'delete', ids: ['e-2'] });
+  assert.deepEqual(circleGone.elements.map((e) => e.type), ['segment']);
+  assert.deepEqual(circleGone.points.map((p) => p.id), ['p-1', 'p-2']);
+});
+
 test('construction DAGs reject cycles, missing inputs and non-free inputs', () => {
   const base = add(add(add(G.empty(), 100, 100), 300, 200), 500, 300);
   // A point may not construct itself from itself.

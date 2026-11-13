@@ -1005,6 +1005,120 @@ test('geometry tour advances on signals, blocks early insert, and keeps the note
   });
 });
 
+test('polygon is the tool after rectangle', () => {
+  withMount((h) => {
+    h.tab('geometry');
+    const rail = h.find((node) => String(node.props.className || '').includes('eb-geometry-tools'));
+    const labels = walk(rail)
+      .filter((node) => node.type === 'button' && Object.hasOwn(node.props, 'aria-pressed'))
+      .map((node) => node.props['aria-label']);
+    assert.deepEqual(labels, [
+      t('select'), t('point'), t('segment'), t('triangle'), t('circle'),
+      t('parallelogram'), t('rectangle'), t('polygon'),
+    ]);
+  });
+});
+
+test('a circle does not draw its rim point, and deleting the circle removes that point', () => {
+  withMount((h) => {
+    h.tab('geometry');
+    h.tool('circle');
+    h.clickAt(200, 200);
+    h.clickAt(320, 200);
+    const board = h.board();
+    assert.equal(board.points.length, 2, 'the radius is still stored as a rim point');
+    const canvas = h.find((node) => String(node.props.className || '').includes('eb-artboard'));
+    const marks = walk(canvas).filter((node) => node.props?.['data-point']);
+    assert.deepEqual(marks.map((node) => node.props['data-point']), ['p-1'], 'only the centre is drawn');
+    h.click(t('trash'));
+    assert.deepEqual(h.board().elements, []);
+    assert.deepEqual(h.board().points.map((p) => p.id), ['p-1']);
+  });
+});
+
+test('a rim point that belongs to another shape stays visible', () => {
+  withMount((h) => {
+    h.tab('geometry');
+    h.tool('segment');
+    h.clickAt(200, 200);
+    h.clickAt(320, 200);
+    h.tool('circle');
+    h.clickAt(200, 200);
+    h.clickAt(320, 200);
+    const canvas = h.find((node) => String(node.props.className || '').includes('eb-artboard'));
+    const marks = walk(canvas).filter((node) => node.props?.['data-point']).map((node) => node.props['data-point']);
+    assert.deepEqual(marks.sort(), ['p-1', 'p-2']);
+  });
+});
+
+test('select mode box-selects several objects and deletes them together', () => {
+  withMount((h) => {
+    h.tab('geometry');
+    h.tool('point');
+    h.clickAt(100, 100);
+    h.clickAt(220, 100);
+    h.clickAt(520, 420);
+    h.tool('segment');
+    h.clickAt(100, 100);
+    h.clickAt(220, 100);
+    h.tool('select');
+    h.clickAt(70, 70);
+    h.moveTo(250, 150);
+    h.release(250, 150);
+    assert.match(text(h.find((node) => node.props.className === 'eb-floating')), /3/);
+    h.click(t('trash'));
+    assert.deepEqual(h.board().elements, []);
+    assert.deepEqual(h.board().points.map((p) => p.id), ['p-3'], 'the point outside the box stays');
+  });
+});
+
+test('clicking one side of a triangle deletes only that side', () => {
+  withMount((h) => {
+    h.tab('geometry');
+    h.tool('triangle');
+    h.clickAt(120, 80);
+    h.clickAt(360, 90);
+    h.clickAt(200, 320);
+    h.clickAt(240, 85);
+    assert.match(text(h.find((node) => node.props.className === 'eb-floating')), new RegExp(`${t('selectedCount')} 1`));
+    h.click(t('trash'));
+    const board = h.board();
+    assert.deepEqual(board.elements.map((e) => e.points), [['p-2', 'p-3'], ['p-3', 'p-1']]);
+    assert.equal(board.points.length, 3, 'the corners of the remaining sides stay');
+    h.clickAt(280, 205);
+    h.click(t('trash'));
+    assert.deepEqual(h.board().elements.map((e) => e.points), [['p-3', 'p-1']]);
+    assert.deepEqual(h.board().points.map((p) => p.id), ['p-1', 'p-3']);
+  });
+});
+
+test('deleting a selected segment removes endpoints with no other use', () => {
+  withMount((h) => {
+    h.tab('geometry');
+    h.click(t('title'));
+    h.tool('segment');
+    h.clickAt(100, 140);
+    h.clickAt(340, 140);
+    h.keydown('Delete');
+    assert.deepEqual(h.board().elements, []);
+    assert.deepEqual(h.board().points, []);
+    h.tool('segment');
+    h.clickAt(100, 200);
+    h.clickAt(100, 80);
+    h.tool('triangle');
+    h.clickAt(100, 200);
+    h.clickAt(300, 200);
+    h.clickAt(200, 360);
+    h.tool('select');
+    h.clickAt(100, 140);
+    h.click(t('trash'));
+    const board = h.board();
+    assert.equal(board.elements.length, 1);
+    assert.equal(board.elements[0].type, 'polygon');
+    assert.equal(board.points.length, 3, 'vertices the triangle still uses stay');
+  });
+});
+
 function visibleTour(h) {
   return walk(h.tree).some((node) => node.props?.className === 'eb-tour-tip');
 }

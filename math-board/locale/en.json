@@ -203,7 +203,7 @@
   "tabGeometry": "Geometry",
   "geometryCanvas": "Geometry canvas",
   "geometryEmpty": "Pick a tool, then click on the canvas to start drawing",
-  "geometryEmptyHint": "Point · segment · triangle · polygon · circle · parallelogram · rectangle",
+  "geometryEmptyHint": "Point · segment · triangle · circle · parallelogram · rectangle · polygon",
   "geometryTools": "Geometry tools",
   "point": "Point",
   "segment": "Segment",

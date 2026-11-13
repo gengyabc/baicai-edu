@@ -15,11 +15,75 @@ export function createGeometryPage(React, G, ctx, t, shared) {
   const SNAP_RADIUS = 12;
   // The drawable library comes from the model so the two lists cannot drift.
   // "select" is a tool, not a shape. A triangle is three clicks that close as a polygon,
-  // so it stays out of the snapshot's element types. Midpoint is an action on a selected
-  // segment, drawn beside these tools rather than as one of them.
-  const shapeTools = G.shapeLibrary.filter((name) => name !== 'point');
-  const polygonAt = shapeTools.indexOf('polygon');
-  const DRAW_TOOLS = ['select', 'point', ...shapeTools.slice(0, polygonAt), 'triangle', ...shapeTools.slice(polygonAt)];
+  // so it stays out of the snapshot's element types. Polygon sits after rectangle.
+  // Midpoint is an action on a selected segment, drawn beside these tools rather than as one of them.
+  const shapeTools = G.shapeLibrary.filter((name) => name !== 'point' && name !== 'polygon');
+  const segmentAt = shapeTools.indexOf('segment');
+  const DRAW_TOOLS = [
+    'select', 'point',
+    ...shapeTools.slice(0, segmentAt + 1),
+    'triangle',
+    ...shapeTools.slice(segmentAt + 1),
+    'polygon',
+  ];
+  // Box geometry for marquee selection. A point counts when it lies inside; a shape counts
+  // when its stroke meets the rectangle.
+  function boxFrom(a, b) {
+    return {
+      x0: Math.min(a.x, b.x), y0: Math.min(a.y, b.y),
+      x1: Math.max(a.x, b.x), y1: Math.max(a.y, b.y),
+    };
+  }
+  function pointInBox(p, box) {
+    return p.x >= box.x0 && p.x <= box.x1 && p.y >= box.y0 && p.y <= box.y1;
+  }
+  function orient(o, a, b) {
+    return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+  }
+  function segmentsCross(a, b, c, d) {
+    const ab = orient(a, b, c) * orient(a, b, d);
+    const cd = orient(c, d, a) * orient(c, d, b);
+    if (ab < 0 && cd < 0) return true;
+    const on = (p, q, r) => Math.abs(orient(p, q, r)) <= 1e-6
+      && r.x >= Math.min(p.x, q.x) - 1e-6 && r.x <= Math.max(p.x, q.x) + 1e-6
+      && r.y >= Math.min(p.y, q.y) - 1e-6 && r.y <= Math.max(p.y, q.y) + 1e-6;
+    return on(a, b, c) || on(a, b, d) || on(c, d, a) || on(c, d, b);
+  }
+  function segmentHitsBox(a, b, box) {
+    if (pointInBox(a, box) || pointInBox(b, box)) return true;
+    const corners = [
+      { x: box.x0, y: box.y0 }, { x: box.x1, y: box.y0 },
+      { x: box.x1, y: box.y1 }, { x: box.x0, y: box.y1 },
+    ];
+    return corners.some((corner, i) => segmentsCross(a, b, corner, corners[(i + 1) % 4]));
+  }
+  function edgeKey(id, index) { return `${id}#${index}`; }
+  const closedShape = (type) => type === 'polygon' || type === 'rectangle' || type === 'parallelogram';
+  function circleHitsBox(center, radius, box) {
+    const nearestX = Math.max(box.x0, Math.min(center.x, box.x1));
+    const nearestY = Math.max(box.y0, Math.min(center.y, box.y1));
+    const nearest = Math.hypot(center.x - nearestX, center.y - nearestY);
+    const far = Math.hypot(
+      Math.max(Math.abs(center.x - box.x0), Math.abs(center.x - box.x1)),
+      Math.max(Math.abs(center.y - box.y0), Math.abs(center.y - box.y1)),
+    );
+    return nearest <= radius + 0.5 && far + 0.5 >= radius;
+  }
+  // A rim point that no other shape and no construction uses is only the circle's radius
+  // handle. It stays in the snapshot so the radius is defined, and it is not drawn.
+  function exclusiveRimIds(state) {
+    const used = new Set();
+    for (const e of state.elements) {
+      if (e.type === 'circle') used.add(e.centerPointId);
+      else for (const id of e.points) used.add(id);
+    }
+    for (const p of state.points) for (const input of p.construction?.inputs || []) used.add(input);
+    const hidden = new Set();
+    for (const e of state.elements) {
+      if (e.type === 'circle' && e.radiusPointId && !used.has(e.radiusPointId)) hidden.add(e.radiusPointId);
+    }
+    return hidden;
+  }
   // Icons and the file pickers are shared with the quantity tab so the two tabs cannot
   // drift apart; only the per-tab callbacks below differ.
   const icon = shared.createBoardIcons(React);
@@ -34,6 +98,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     const [pending, setPending] = React.useState([]);
     const [selection, setSelection] = React.useState([]);
     const [hover, setHover] = React.useState(null);
+    const [marquee, setMarquee] = React.useState(null);
     const [preview, setPreview] = React.useState(null);
     const [zoom, setZoom] = React.useState(1);
     const [fit, setFit] = React.useState(true);
@@ -207,8 +272,10 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     // Grid and snap are local view state; neither reaches the snapshot.
     function snapTo(p) {
       if (!snap) return p;
+      const hidden = exclusiveRimIds(boardRef.current);
       let best = null;
       for (const q of freePoints()) {
+        if (hidden.has(q.id)) continue;
         const d = Math.hypot(q.x - p.x, q.y - p.y);
         if (d <= SNAP_RADIUS && (!best || d < best.d)) best = { d, q };
       }
@@ -217,8 +284,14 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     function hitTest(p) {
       // A derived point is still hit first, so selecting it does not fall through to a
       // shape underneath; the caller decides whether it may be used as an endpoint.
-      for (const q of boardRef.current.points) if (Math.hypot(q.x - p.x, q.y - p.y) <= 10) return { kind: 'point', id: q.id };
-      for (const e of [...boardRef.current.elements].reverse()) {
+      // A circle's exclusive rim point is not a hit target: the stroke is the circle.
+      const state = boardRef.current;
+      const hidden = exclusiveRimIds(state);
+      for (const q of state.points) {
+        if (hidden.has(q.id)) continue;
+        if (Math.hypot(q.x - p.x, q.y - p.y) <= 10) return { kind: 'point', id: q.id };
+      }
+      for (const e of [...state.elements].reverse()) {
         const ids = e.type === 'circle' ? [e.centerPointId, e.radiusPointId] : e.points;
         const pts = ids.map(pointById).filter(Boolean);
         if (e.type === 'circle') {
@@ -228,10 +301,15 @@ export function createGeometryPage(React, G, ctx, t, shared) {
           if (Math.abs(Math.hypot(p.x - center.x, p.y - center.y) - radius) <= 6) return { kind: 'element', id: e.id };
           continue;
         }
+        const closed = closedShape(e.type);
         for (let i = 0; i + 1 < pts.length; i++) {
-          if (segmentDistance(p, pts[i], pts[i + 1]) <= 6) return { kind: 'element', id: e.id };
+          if (segmentDistance(p, pts[i], pts[i + 1]) <= 6) {
+            return closed ? { kind: 'edge', id: edgeKey(e.id, i) } : { kind: 'element', id: e.id };
+          }
         }
-        if (pts.length > 2 && segmentDistance(p, pts.at(-1), pts[0]) <= 6) return { kind: 'element', id: e.id };
+        if (closed && pts.length > 2 && segmentDistance(p, pts.at(-1), pts[0]) <= 6) {
+          return { kind: 'edge', id: edgeKey(e.id, pts.length - 1) };
+        }
       }
       return null;
     }
@@ -264,7 +342,8 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       if (!next) return;
       setTool('select');
       const created = next.elements.find((e) => !before.elements.some((old) => old.id === e.id));
-      if (created) setSelection([created.id]);
+      if (created && closedShape(created.type)) setSelection(created.points.map((_, index) => edgeKey(created.id, index)));
+      else if (created) setSelection([created.id]);
       if (drawing === 'segment') signalTour('geometry-add-segment');
     }
     function clickEmpty(p) {
@@ -318,23 +397,59 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       }
       setPending(ids);
     }
+    function idsInBox(box) {
+      const state = boardRef.current;
+      const hidden = exclusiveRimIds(state);
+      const ids = [];
+      for (const q of state.points) {
+        if (!hidden.has(q.id) && pointInBox(q, box)) ids.push(q.id);
+      }
+      for (const e of state.elements) {
+        if (e.type === 'circle') {
+          const center = state.points.find((item) => item.id === e.centerPointId);
+          const rim = state.points.find((item) => item.id === e.radiusPointId);
+          if (center && rim && circleHitsBox(center, Math.hypot(rim.x - center.x, rim.y - center.y), box)) ids.push(e.id);
+          continue;
+        }
+        const pts = e.points.map((id) => state.points.find((item) => item.id === id));
+        if (pts.some((item) => !item)) continue;
+        const closed = closedShape(e.type);
+        for (let i = 0; i + 1 < pts.length; i++) {
+          if (!segmentHitsBox(pts[i], pts[i + 1], box)) continue;
+          const key = closed ? edgeKey(e.id, i) : e.id;
+          if (!ids.includes(key)) ids.push(key);
+        }
+        if (closed && pts.length > 2 && segmentHitsBox(pts.at(-1), pts[0], box)) {
+          const key = edgeKey(e.id, pts.length - 1);
+          if (!ids.includes(key)) ids.push(key);
+        }
+      }
+      return ids;
+    }
     function pointerDown(event) {
       if (event.button !== 0 || !ready) return;
       const p = localPoint(event);
       const target = hitTest(p);
       const pointId = event.target.closest?.('[data-point]')?.getAttribute('data-point');
       if (tool === 'select') {
-        const q = pointId ? pointById(pointId) : null;
+        const hidden = exclusiveRimIds(boardRef.current);
+        const q = pointId && !hidden.has(pointId) ? pointById(pointId) : null;
         if (q && q.kind === 'free') {
           if (!selection.includes(q.id)) setSelection([q.id]);
           gesture.current = { kind: 'drag', id: q.id, start: p, base: boardRef.current, pointer: event.pointerId, moved: false };
           setPreview({ id: q.id, x: q.x, y: q.y });
+          setMarquee(null);
           event.preventDefault(); event.currentTarget.setPointerCapture?.(event.pointerId);
           return;
         }
-        if (target) setSelection([target.id]);
-        else setSelection([]);
-        event.preventDefault();
+        if (target) {
+          setSelection([target.id]);
+          event.preventDefault();
+          return;
+        }
+        // Empty press starts a marquee. A click with no drag clears the selection on release.
+        gesture.current = { kind: 'marquee', start: p, current: p, pointer: event.pointerId, moved: false };
+        event.preventDefault(); event.currentTarget.setPointerCapture?.(event.pointerId);
         return;
       }
       if (target?.kind === 'point') usePoint(target, p);
@@ -348,6 +463,11 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       if (g && g.pointer === event.pointerId) {
         if (Math.abs(p.x - g.start.x) + Math.abs(p.y - g.start.y) < 3 && !g.moved) return;
         g.moved = true;
+        if (g.kind === 'marquee') {
+          g.current = p;
+          setMarquee({ x1: g.start.x, y1: g.start.y, x2: p.x, y2: p.y });
+          return;
+        }
         // The drag previews the position the model accepts; release is the only undo step.
         const accepted = G.constrainedMove(g.base, g.id, p.x, p.y);
         if (accepted) setPreview({ id: g.id, ...accepted });
@@ -359,6 +479,12 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       const g = gesture.current;
       if (!g || g.pointer !== event.pointerId) return;
       gesture.current = null;
+      if (g.kind === 'marquee') {
+        setMarquee(null);
+        if (cancelled || !g.moved) { setSelection([]); return; }
+        setSelection(idsInBox(boxFrom(g.start, g.current || g.start)));
+        return;
+      }
       const shown = preview;
       setPreview(null);
       if (cancelled || !g.moved || !shown) return;
@@ -399,6 +525,14 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     React.useEffect(() => {
       if (!tabActive) return undefined;
       const onKey = (event) => {
+        if (event.key === 'Delete' || event.key === 'Backspace') {
+          if (!selection.length || overlay || rename || tour) return;
+          const tag = event.target?.tagName;
+          if (tag === 'INPUT' || tag === 'TEXTAREA' || event.target?.isContentEditable) return;
+          event.preventDefault();
+          deleteSelection();
+          return;
+        }
         if (event.key !== 'Escape') return;
         // Note-save keeps its panel. Anything else open is the current operation,
         // and a later Escape can still drop a line that was underneath it.
@@ -411,6 +545,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
           event.preventDefault();
           gesture.current = null;
           setPreview(null);
+          setMarquee(null);
           return;
         }
         // An unfinished shape, or a drawing tool that has not placed anything yet.
@@ -421,7 +556,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       };
       document.addEventListener('keydown', onKey);
       return () => document.removeEventListener('keydown', onKey);
-    }, [tabActive, overlay, rename, moreOpen, tour, pending, tool]);
+    }, [tabActive, overlay, rename, moreOpen, tour, pending, tool, selection]);
     function applyNote() {
       const value = noteRef.current?.value ?? '';
       if (noteTarget) action({ type: 'annotate', target: noteTarget.kind, id: noteTarget.id, value });
@@ -533,8 +668,19 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       if (corner) return { x: corner.x, y: corner.y };
       return { x: q.x, y: q.y };
     };
+    function selectedEdgeIndexes(elementId) {
+      const indexes = [];
+      for (const item of selection) {
+        const mark = String(item).lastIndexOf('#');
+        if (mark <= 0 || item.slice(0, mark) !== elementId) continue;
+        const index = Number(item.slice(mark + 1));
+        if (Number.isInteger(index)) indexes.push(index);
+      }
+      return indexes;
+    }
     function renderElement(e) {
       const picked = selection.includes(e.id);
+      const edgeIndexes = selectedEdgeIndexes(e.id);
       const stroke = {
         stroke: picked ? '#2563EB' : '#1E293B', strokeWidth: picked ? 3 : 1.8, fill: 'none',
         strokeLinejoin: 'round', strokeLinecap: 'round',
@@ -542,20 +688,34 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       };
       const label = `${t(e.type)}${e.role === 'auxiliary' ? ` · ${t('auxiliary')}` : ''}${e.note ? ` · ${t('hasNote')}` : ''}`;
       const group = {
-        key: e.id, 'data-element': e.id, role: 'button', tabIndex: 0, 'aria-label': label, 'aria-pressed': picked,
-        onKeyDown: (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelection([e.id]); } },
+        key: e.id, 'data-element': e.id, role: 'button', tabIndex: 0, 'aria-label': label,
+        'aria-pressed': picked || edgeIndexes.length > 0,
+        onKeyDown: (event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          if (closedShape(e.type)) setSelection(e.points.map((_, index) => edgeKey(e.id, index)));
+          else setSelection([e.id]);
+        },
       };
       if (e.type === 'circle') {
         const center = at(e.centerPointId), rim = at(e.radiusPointId);
         if (!center || !rim) return null;
         return h('g', group, h('circle', { cx: center.x, cy: center.y, r: Math.hypot(rim.x - center.x, rim.y - center.y), ...stroke }));
       }
-      const points = e.points.map(at).filter(Boolean);
-      if (points.length < 2) return null;
+      const points = e.points.map(at);
+      if (points.some((point) => !point) || points.length < 2) return null;
       if (e.type === 'segment') {
         return h('g', group, h('line', { x1: points[0].x, y1: points[0].y, x2: points[1].x, y2: points[1].y, ...stroke }));
       }
-      return h('g', group, h('polygon', { points: points.map((p) => `${p.x},${p.y}`).join(' '), ...stroke }));
+      const highlighted = edgeIndexes.map((index) => {
+        const a = points[index], b = points[(index + 1) % points.length];
+        if (!a || !b) return null;
+        return h('line', {
+          key: `edge-${index}`, x1: a.x, y1: a.y, x2: b.x, y2: b.y,
+          stroke: '#2563EB', strokeWidth: 3, strokeLinecap: 'round', pointerEvents: 'none',
+        });
+      }).filter(Boolean);
+      return h('g', group, h('polygon', { points: points.map((p) => `${p.x},${p.y}`).join(' '), ...stroke }), ...highlighted);
     }
     function renderPoint(q) {
       const shown = at(q.id) || q;
@@ -571,7 +731,9 @@ export function createGeometryPage(React, G, ctx, t, shared) {
             event.preventDefault();
             return;
           }
-          if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); action({ type: 'delete', ids: [q.id] }); setSelection([]); }
+          // Delete is handled for the whole selection on the document listener. Swallow
+          // the key here so a focused point does not also navigate the browser back.
+          if (event.key === 'Delete' || event.key === 'Backspace') event.preventDefault();
         },
       },
       h('circle', { cx: shown.x, cy: shown.y, r: 11, fill: 'transparent' }),
@@ -611,6 +773,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     // them to the viewport height. `non-scaling-stroke` is deliberately not used: a
     // magnified figure must look magnified, exactly as the quantity board's zoom scales
     // its artwork.
+    const hiddenRims = exclusiveRimIds(board);
     const span = { width: width / (fit ? 1 : zoom), height: height / (fit ? 1 : zoom) };
     const origin = { x: (width - span.width) / 2, y: (height - span.height) / 2 };
     const canvas = h('div', { className: 'eb-canvas-scroll', 'data-tour-id': 'geometry-canvas' },
@@ -629,7 +792,12 @@ export function createGeometryPage(React, G, ctx, t, shared) {
         Array.from({ length: Math.floor(width / 40) + 1 }, (_, i) => h('line', { key: `v${i}`, x1: i * 40, y1: 0, x2: i * 40, y2: height, stroke: '#EEF2F4' })),
         Array.from({ length: Math.floor(height / 40) + 1 }, (_, i) => h('line', { key: `h${i}`, x1: 0, y1: i * 40, x2: width, y2: i * 40, stroke: '#EEF2F4' }))),
       board.elements.map(renderElement),
-      board.points.map(renderPoint),
+      board.points.filter((q) => !hiddenRims.has(q.id)).map(renderPoint),
+      marquee && h('rect', {
+        x: Math.min(marquee.x1, marquee.x2), y: Math.min(marquee.y1, marquee.y2),
+        width: Math.abs(marquee.x2 - marquee.x1), height: Math.abs(marquee.y2 - marquee.y1),
+        fill: '#2563EB22', stroke: '#2563EB', strokeWidth: 1, strokeDasharray: '4 3', pointerEvents: 'none',
+      }),
       hintShape(),
       hover && !pending.length && tool !== 'select' && tool !== 'point'
         && h('circle', { cx: hover.x, cy: hover.y, r: 6, fill: '#BFDBFE', stroke: '#2563EB', strokeWidth: 1.5, 'pointer-events': 'none' }),
