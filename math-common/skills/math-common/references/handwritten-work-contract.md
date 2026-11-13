@@ -20,6 +20,8 @@ For math, the reading hints are:
 
 These are reading hints, not conclusions. A clear-looking token can still be wrong; mark the ambiguity instead of guessing. The current provider's local rules may add further notation hints; apply them, and do not invent hints they do not give.
 
+If a symbol, unit, label, or alignment ambiguity changes the mathematical judgment, the current teaching owner asks the student to confirm only that token or provide another view before making an error or cognitive-diagnosis claim from it. Keep the affected judgment unknown; unrelated unambiguous steps may still be checked. Use available deterministic arithmetic checks rather than relying solely on a mental calculation.
+
 ## Step-Check Facts
 
 After reading, check only deterministic facts about the lines as written:

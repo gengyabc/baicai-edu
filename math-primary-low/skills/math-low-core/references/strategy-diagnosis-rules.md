@@ -6,6 +6,8 @@
 
 Identify the current problem type, unknown, number domain, and the student's actual actions; clarify only the current one point and keep untouched items unknown. The same student changes strategy with problem type and numbers, and returning to a concrete representation is not regression. Tool appearance, a fast answer, or a rote rule does not by itself set the stage. For performance after a hint, separate the original idea, what the teaching assistant supplied, and what the student completed themselves.
 
+Use the smallest contrast that distinguishes a plausible misconception from an alternative such as a slip, a reading issue, or an expression gap. Reuse existing discriminating work. Seek another independent observation only if it can change the conclusion or next move; post-hint success is supported evidence, and unresolved causes stay unknown.
+
 For non-response, probe per `learn-core`'s `references/guidance-non-response-handling.md`; when there is a specific contradiction, ask how they thought about that step. Ask "where did it go wrong" only when the student already agrees it was miscalculated.
 
 ## Error Causes

@@ -22,38 +22,33 @@ Check conditions, units, and what is asked, then:
 
 Solve internally first and run the internal check required by the current provider's math teaching core: the unknown, units, divisibility, and remainders; for multiple solutions, the range.
 
-- **Ordinary learning**: give the correct result and one checkable relationship, leaving room for explanation, questioning, or other methods; no long solutions and no random wrong answers. One restricted deliberate error is optional (below). When a right/wrong contrast is needed, return `continue_practice` and suggest session use the practice contrast branch.
-- **Feynman**: per the shared audience role/allowlist, raise a confusion or wrong idea around one relationship. Do not err deliberately on confirmed skills and do not manufacture consecutive wrong answers to maintain a ratio. Before the current reply ends, explicitly correct the conclusion and the error point, then invite explanation; this cannot wait for the next message.
+- **Ordinary learning**: answer sincerely with the verified correct result and one checkable relationship, leaving room for explanation, questioning, or other methods; no long solutions. Never submit a deliberately wrong result as the AI's own answer, including on confirmed skills.
+- **Feynman**: per the shared audience role/allowlist, raise one clearly labeled hypothetical confusion, not an asserted correct result. Do not err deliberately on confirmed skills or manufacture consecutive errors to maintain a ratio. Before the current reply ends, explicitly correct the conclusion and error point, then invite explanation; this cannot wait for the next message. Work after exposure may show explanation or reconstruction, not independent error detection.
 
-### Restricted deliberate error in ordinary learning
+### Explicit error-analysis activity
 
-- **Allowed only if** this problem's focus skill is already in `confirmed_skills` (confirmations already projected within this session count). With no confirmed skill, when the student asks for help, or just after a real student error, always answer correctly.
-- **Limits**: at most one per problem, never on two consecutive problems, never to keep a ratio.
-- **Wrong idea**: fits the focus, single and traceable, verified as truly wrong, understandable to the student (such as confusing quantity roles or adding unequal units); for Feynman, also outside the allowlist.
-- **This reply**: solve correctly first and note the correct conclusion and the error point; hand over only the wrong idea and answer for the student to grade. Do not self-correct, hint "I might be wrong", or ask "did you notice?".
-- **Resolution**: the correct conclusion must be clarified before this problem is wrapped up; if the student leaves without grading, clarify first and then go. Until then the error is *pending*.
-- **Evidence**: information already revealed (including after a clarified deliberate error) is not the student's independent discovery. When the student proactively points out the error and gives the correct relationship, confirmation evidence may be recorded per the shared allowlist.
+When a right/wrong contrast would help, return `continue_practice` and suggest session offer a separate contrast activity. After the student agrees, present a verified, traceable sample as a clearly labeled claim to check (for example a hypothetical sample solution), not as the AI's correct answer. Clarify the correct relation when closing. Attribute error detection or repair separately from independent solving; not spotting a sample's error is not itself a student solving error. Information already revealed is not independent discovery. No ordinary answer creates a pending deliberate error.
 
 ## Role Boundary
 
 **The problem-maker leads**: the student makes the problem and grades it; the AI is the answerer.
 
 - In ordinary learning, solve earnestly and hand the initiative back with "I got ..., please grade it"; this is not switching into Feynman mode.
-- A restricted deliberate error is still answer material; grading is not turned into a quiz follow-up.
-- A deliberate AI error is not recorded as a student error; if the student does not point it out, it is not recorded as undiscovered or as a difficulty.
+- Grading is not turned into a quiz follow-up; explicit error analysis requires its own agreed activity.
+- An AI or sample error is not recorded as a student error; if the student does not point it out, it is not recorded as undiscovered or as a difficulty.
 
-**Next step by the student's comment** (a pending error is always clarified first):
+**Next step by the student's comment** (clarify any unresolved legacy wrong answer first):
 
 | Student says | Action |
 |---|---|
 | "Right" / "same as mine" | Exit (below). If the student has another solution or explains proactively, listen earnestly and use the existing explanation directly |
-| "Wrong", no location | Ask one question about your own answer, such as "Which step did I get wrong?". If still nothing specific: keep the disagreement (after clarifying a pending error) and hand the flow choice back |
-| A specific disagreement | Recheck your own solution first. If it exposes the deliberate error or a real miscalculation, admit and fix it. If the reasoning clearly contradicts the conditions, ask one real question in the answerer's voice; if still unclarified, keep it unknown and hand the flow choice back |
+| "Wrong", no location | Ask one question about your own answer, such as "Which step did I get wrong?". If still nothing specific: keep the disagreement and hand the flow choice back |
+| A specific disagreement | Recheck your own solution first. If it exposes a real miscalculation, admit and fix it. If the reasoning clearly contradicts the conditions, ask one real question in the answerer's voice; if still unclarified, keep it unknown and hand the flow choice back |
 | Asks for help | Confirm by a flow option whether to return to joint solving or to the teaching assistant's guidance; only after the choice does the mainline arrange scaffolding, practice, or diagnosis |
 
 **Exit**
 
-- The default exit after grading is wrap-up: when there is no deliberate error this turn, wrap up directly; with a pending error, first clarify the error point and the correct conclusion, then wrap up, and do not ask why it was not noticed.
+- The default exit after grading is wrap-up: wrap up directly without an acceptance quiz. Legacy recovery only: if an old session actually contains an unresolved deliberately wrong answer, first clarify the error point and correct conclusion, then receive the current reply or wrap up; never ask why it was not noticed. New ordinary turns do not create this state.
 - Do not call the shared no-response flow to probe repeatedly, shrink the problem, or ask to switch to the board for the sake of evidence. Only after the student chooses to return to the teaching assistant's guidance is the corresponding teaching branch handled.
 - When resuming an old acceptance-style follow-up, first receive the current reply under this boundary and do not continue the acceptance chain.
 

@@ -34,5 +34,5 @@ Each entry: `id | usual entry band (indicative, not mandated) | prerequisite IDs
 ## Graph usage guidance
 
 - Check prerequisite chains conditionally, not as a mandatory exhaustive diagnostic. A grade-6 child solving percentages accurately need not retake place-value questions.
-- Confirm a misconception probe with two contrasting probes per `references/strategy-diagnosis-rules.md`; error types also come from that file.
+- Use the minimal discriminating contrast per `references/strategy-diagnosis-rules.md`, reusing existing evidence rather than a fixed probe count; error types also come from that file.
 - Each node admits multiple grade-entry paths and can be revisited at deeper reasoning levels.

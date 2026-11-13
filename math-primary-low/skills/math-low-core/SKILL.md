@@ -6,7 +6,7 @@ user-invocable: false
 
 # Math Rules
 
-This package teaches with Cognitively Guided Instruction (CGI): problem types, strategy judgments, questioning, and scaffolds all follow CGI. Details are in `references/math-teaching-core.md`.
+This package uses Cognitively Guided Instruction (CGI) for quantity relationships and children's strategies; task format, explicit support, and practice are selected by goal and evidence. Details are in `references/math-teaching-core.md`.
 
 Shared math rules, loaded by name by `math-low-session`, `math-low-diagnose`, `math-low-practice`, and `math-low-student-problem`. This skill produces no student reply or segment.
 
@@ -15,8 +15,8 @@ Shared math rules, loaded by name by `math-low-session`, `math-low-diagnose`, `m
 Shared by every math branch; sub-skills do not repeat it:
 
 - Enter only through the shared lifecycle of `/learn` or `/learn-feynman`; session, student, snapshot, and handoff fields are already checked by the entry and passed in (see Route And Record in `learn-data`'s `references/session-lifecycle.md`). With no entry handoff (no snapshot), ask the student to enter `/learn`.
-- `learn-core` and `learn-data` are already loaded by the entry. Tone, confirmation, no-response, Feynman role and allowlist, personalization boundary, ending, and safety all follow `learn-core`'s condition table; when `mode: feynman`, read its `references/feynman-mode.md` first and stay in the student-as-audience role.
-- Problems follow CGI; problem surface form follows `references/problem-design.md`. Interests enter a problem only when the bridging condition in `references/math-personalization.md` holds.
+- `learn-core` and `learn-data` are already loaded by the entry. Tone, confirmation, no-response, Feynman role and allowlist, personalization boundary, ending, and safety all follow `learn-core`'s condition table; when `mode: feynman`, read its `references/feynman-mode.md` first and keep the student as presenter and the AI as listener.
+- Quantity-relationship problems use CGI; task format follows the goal per `references/problem-design.md`. Interests enter a problem only when the bridging condition in `references/math-personalization.md` holds.
 - Before generating a problem or hint, if `memory.profile_memory.material_difficulty` is not `standard`, adjust one load factor (numbers, representation, or amount of prompting) per `learn-core`'s `references/difficulty-adjustment.md`; do not change the strategy stage.
 - Only the entry calls `learn-errors`, once for files. On `files_processed: true`, read the extracted analysis that `material_refs` points to; if an unprocessed image, Markdown, or raw-scan request appears mid-lesson, hand it back to the entry. This package never calls `learn-errors` directly.
 - Diagnosis, practice, and student-makes-problems only return evidence and produce no segment; scheduling and merging belong to `math-low-session`, and logging, profile, and finalize go to the shared flow.
@@ -36,12 +36,12 @@ If `math-common` cannot be loaded, keep teaching under this safe fallback and do
 | Choosing, modifying, or varying problems; addition, subtraction, multiplication, division, place value, multi-digit numbers | `references/problem-design.md` |
 | Fraction meaning, equal partition, equivalence, comparison, operations, or decimals | `references/fraction-relations.md` |
 | Equals sign, true/false or open number sentences, relating the two sides without computing, or a student-stated property such as swapping addends | `references/relational-thinking.md` |
-| Preparing a hint, the student finds it troublesome, asks for a new method, or a hint does not work | `references/scaffold-calibration.md` |
+| Selecting support or an agreed new-learning example; preparing a hint; the student finds it troublesome, asks for a new method, or a hint does not work | `references/scaffold-calibration.md` |
 | Message carries a board attachment or edit-history attachment (`我的画板.json` / `我的修改记录.json`), or the student asks how to use the board | `references/structured-drawing.md` |
 | A message or file carries the student's handwritten math work, a math diagram, or a printed math page | Load `math-common`, read its handwritten-work contract from the returned base directory, then load `learn-read-image`; the contract supplies reading hints and step-check facts |
 | Judging arithmetic / multi-digit / fraction strategy stage or analyzing error causes | `references/strategy-diagnosis-rules.md` |
 | Student makes problems to test the AI; designing the AI's answers | `references/math-student-problem-design.md` |
-| Generating diagnostic / contrast / variation / connection practice | `references/targeted-practice-rules.md` |
+| Generating diagnostic / contrast / variation / connection practice or Consolidate / Revisit retrieval | `references/targeted-practice-rules.md` |
 | Producing the math segment or merging sub-flow evidence | `references/math-segment-fields.md` |
 
 ## Subject contract

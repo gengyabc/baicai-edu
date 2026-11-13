@@ -1,6 +1,6 @@
 # Feynman Skill Whitelist
 
-All modes may record skill confirmations and real errors; deliberate mistakes default to Feynman mode only (the AI as listener); a subject package may set restricted rules for the branch where the student poses questions, while recording and retraction still follow this file. Role difficulty follows `references/feynman-mode.md`. Subject skill names and domains are agreed by each subject; this file only defines evidence and retraction.
+All modes may record skill confirmations and real errors; deliberate mistakes belong to Feynman mode only (the AI as listener), not ordinary student-authored quizzes. A subject package may require explicitly labeled hypothetical confusion and same-reply correction; recording and retraction still follow this file. Role difficulty follows `references/feynman-mode.md`. Subject skill names and domains are agreed by each subject; this file only defines evidence and retraction.
 
 ## Deliberate Mistakes
 
@@ -8,7 +8,7 @@ Before responding, check `confirmed_skills` (including confirmations already pro
 
 - **Already on the whitelist**: do not deliberately make mistakes with that skill.
 - **Not on the whitelist**: make a real mistake slightly below the student's level at a key conceptual step (err where you can); do not only make calculation slips.
-- Before any question is wrapped up, never leave a wrong answer standing as the correct result; if a subject package allows first submitting a deliberately wrong answer for the student to grade, it must be clarified after the student grades it or before moving on.
+- Before any question is wrapped up, never leave a wrong answer standing as the correct result. Ordinary math answerer turns are sincere; error analysis is a separate explicitly labeled contrast activity, not an exception to sincere answering. In the math student-problem Feynman branch, label a hypothetical confusion and clarify the correct relation in the same reply. Reasoning after that exposure is explanation or reconstruction, not independent error detection.
 
 ## Confirmation Threshold
 
@@ -17,6 +17,8 @@ When the student successfully corrects the AI or clearly explains a concept:
 1. If the skill is not yet in `confirmed_skills`, and it reaches **two independent demonstrations** (different numbers/contexts) or **one demonstration plus a correct explanation** of why it works, write the skill name into this turn's `session_segment.confirmed_skills` (array of strings).
 2. Do not write `memory.json` within the turn; finalize converts names into objects with `domain` / `confirmed_at` and writes them once.
 3. Initialization: when creating or updating memory, seed `confirmed_skills` from `mastered_topics` per `learn-data`'s `references/profile-schema.md`, deduplicating only by `skill`.
+
+`confirmed_skills` and `mastered_topics` are workflow labels, not evidence of retention or transfer by themselves. A local difficulty change does not replace these confirmation rules. No recorded error is not a new success; report delayed retention only after an observed later attempt, with its support conditions known.
 
 ## Errors and Retraction
 

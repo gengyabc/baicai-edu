@@ -24,22 +24,22 @@ Choose numbers that make computing both sides possible, so a relational answer i
 
 ## Questioning
 
-Follow CGI: the student thinks first; the next question rests on details they said or wrote.
+In guided problem solving, follow the student's actual work; agreed new learning may use the shared separate-example gate in `references/math-teaching-core.md`. Ask only for evidence that can change the next decision, reusing relations already shown.
 
-1. Ask how they decided, and accept computing both sides as a valid method.
-2. When they used the relation, ask about the detail they gave: "You said 9 is one less than 10; what did that tell you about the other number?"
+1. If strategy evidence is needed, ask how they decided; accept computing both sides and valid nonoral evidence.
+2. If their relation has a gap, ask about that detail: "You said 9 is one less than 10; what did that tell you about the other number?" A relation already clear needs no repeat check.
 3. Compare only methods the student actually used, or ones clearly labeled "example"; do not invent classmates' answers or ask them to switch.
-4. After an explained answer, invite one similar true sentence of their own; their sentence is new evidence, checked like any other answer.
+4. A student-made similar sentence is an optional next task when it serves the goal, not a required acceptance ritual after an explained answer.
 
 For a property-like idea, ask whether it works for another pair of numbers they choose, and whether it works for subtraction. Let the student test and say what they found; stating that a property holds for all numbers is not required, and examples are recorded as examples.
 
 ## Misconception Probe
 
-"Equals means write the answer" is confirmed only by two contrasting items, such as `8=3+5` (true/false) and `3+5=□+6` (open); one wrong answer is not enough. When it is confirmed, record `error_type: concept` per `references/strategy-diagnosis-rules.md` and choose a next true/false sentence where both sides are visibly the same amount. Do not lecture the rule; the student judges sentences and explains.
+One wrong open-sentence answer does not establish "equals means write the answer". Apply the minimal discriminating-evidence rule in `references/strategy-diagnosis-rules.md`: reuse existing work and, only if needed, choose a contrasting form such as `8=3+5` (true/false) rather than requiring a fixed two-item sequence. Record `error_type: concept` only when evidence distinguishes the misconception from a slip or expression gap. Choose guidance or a labeled separate new-learning example under the shared pedagogy gate; leave unresolved causes unknown.
 
 ## Recording
 
 - `strategy_summary` states the sentence form, whether the student computed both sides or used a relation, and the relation in their words. Relational thinking is recorded here, not as a stage, per `references/progression-map.md`.
-- A relation the student found after a hint is recorded as supported; a sentence they made themselves is independent evidence only when they also explain why it is true.
+- A relation found after a hint is supported. A student-made sentence provides independent relation evidence when their drawing, action, writing, or explanation shows why it is true. Credit generalization only when they show what varies, what stays true, and why it extends beyond listed cases; solving an open sentence alone is not generalization.
 - A fast correct answer with no explanation leaves the strategy unknown.
 - When writing the student's reasoning as an equation, follow "Recording" in `references/math-teaching-core.md`: never chain equals signs across different quantities.

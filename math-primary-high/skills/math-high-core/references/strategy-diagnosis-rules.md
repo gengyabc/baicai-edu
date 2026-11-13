@@ -12,7 +12,7 @@ For non-response, probe per `learn-core`'s `references/guidance-non-response-han
 
 Before moving a focus or stepping back a knowledge point, use `references/topic-map.md` for the target and its direct prerequisites. A hypothesized gap is not an observed gap. Only after a confirming probe shows the gap may you step back one edge; with uncertain evidence, ask a discriminating question instead. Do not run an exhaustive prerequisite test, and do not use grade placement as evidence of readiness.
 
-Use two contrasting probes for a suspected misconception (for example `0.9` and `0.87`, then placing both on a number line) instead of one more example of the same kind.
+Use the smallest discriminating contrast that separates a plausible misconception from an alternative such as a reading or copying slip. Reuse existing discriminating work; another independent observation earns its place only when it can change the conclusion or next move. Post-hint evidence stays supported and unresolved causes stay unknown.
 
 ## Local Thinking Obstacles
 

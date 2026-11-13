@@ -49,12 +49,12 @@ If `math-common` cannot be loaded (when it is already in this session, reuse it 
 | Counting routes or constructing a network traversal under connection, direction, obstacle or repetition constraints | `references/path-network-construction.md`; distinguish finding one route from counting all, not a trigger for every story or diagram |
 | A route-critical tool gap is confirmed, a tool-learning child reveals another gap, or a recursive learning plan is restored or becomes too burdensome | `references/prerequisite-learning.md`; session retains dispatch and lifecycle writes the plan |
 | Deciding which act the next step belongs to | `references/learn-act-allocation.md` |
-| Preparing a hint, the student finds it troublesome, asks for a new method, or a hint does not work | `references/scaffold-calibration.md` |
+| Preparing support or an agreed new-learning opening example, the student finds it troublesome, asks for a new method, or a hint does not work | `references/scaffold-calibration.md` |
 | Snapshot contains interests, preferences, easy/hard topics, or experiences, or the student cannot do the current problem | `references/math-personalization.md` |
 | Judging an arithmetic / multi-digit / fraction / symbolic strategy stage | `references/progression-map.md` |
 | Producing the math segment or merging sub-flow evidence | `references/math-segment-fields.md` |
 | Grade defaults, profile fields, file-analysis domain, target classification, or recommendations | the matching role in "Subject contract" below |
-| A message carries a math-board attachment or edit history, or the student asks how to use the board | `references/structured-drawing.md` |
+| A message carries a math-board or geometry-board attachment, submitted quantity-board edit history, or the student asks how to use the board | `references/structured-drawing.md` |
 | A message or file carries the student's handwritten math work, a math diagram, or a printed math page | Load `math-common`, read its handwritten-work contract from the returned base directory, then load `learn-read-image`; the contract supplies reading hints and step-check facts |
 | The student explicitly asks to clear the optional board, or a new task reuses a submitted representation | `references/board-task-boundary.md` |
 | The student brought a multi-part exercise and its sub-questions span one board or several | `references/batch-board-boundary.md` |
@@ -82,7 +82,7 @@ Band selection belongs to `learn-data`'s `references/teaching-resolver.md`. The 
 
 ## Turn Delivery Rules
 
-- Teaching steps advance across student messages: pose one answerable question and wait, then apply the shared confirmation rules to decide the next step. Keep one main pending question at a time.
+- Teaching steps advance across student messages: advance one main mathematical goal with at most one pending question, then apply the shared confirmation rules to the response. A labeled representation, equation, and explanation may serve that same goal; a problem-only turn still stops at its question.
 - Every turn's math teaching belongs to one act set: an opening act that selects and verifies a problem, practice around an error pattern, student-made problems with the student as author and judge, guiding an application-modeling situation, or the learner-explain act under `mode: feynman`. The act sets the task, the output format, and the stop condition; `references/learn-act-allocation.md` owns which act comes next.
 - New tasks do not trigger board tools; the board rows of the condition table above cover clearing and multi-part attribution.
 - `personal.interests` and subject preferences change context or representation only; they never replace the mathematics under discussion and never set the stage.

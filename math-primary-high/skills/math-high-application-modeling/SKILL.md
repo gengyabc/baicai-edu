@@ -14,9 +14,9 @@ Use a real situation only: one the student supplies, one the extracted material 
 
 For a blocked connection between quantities or a choice of intermediate quantity within an otherwise viable plan, read `math-high-core`'s `references/derivation-teaching.md` and `references/word-problem-derivation.md`; use their bridge within the current part. This method support does not change the act or bypass the return signals for an evidenced quantity-relationship failure. A fully specified textbook journey problem is not routed here merely because it has a story or needs several calculations.
 
-## The Six Parts (one per turn at most)
+## The Six Parts (checkpoints)
 
-The modelling cycle is the act's required output skeleton; it does not require six teaching turns. The reply shape is a child answer with six parts, and each turn advances only the part the student is working on:
+Use these parts as checkpoints, not fixed cognitive stages or six repeated questions. Reuse work already shown and advance one main mathematical goal with at most one pending question:
 
 1. **Situation**: the real decision and who it is for; what is known and what is missing.
 2. **Plan**: the quantities that matter, the assumptions made, and the route (unit rate, equation, table, or diagram).
@@ -27,10 +27,10 @@ The modelling cycle is the act's required output skeleton; it does not require s
 
 ## Execute
 
-1. Pick the part from `context.turn_state.leaf_step`; on a fresh entry start at 1 unless the focus already names a part. Completion condition: one part blocked out and one pending question.
+1. Resume the checkpoint in `context.turn_state.leaf_step`; on fresh entry reuse the situation and work already supplied to locate the first meaningful gap. Completion condition: one goal and at most one pending question, without re-asking established work.
 2. When the student's plan is missing or contradictory, return to part 2 with one question about one quantity, not the whole plan. Completion condition: the plan has the quantities and assumptions needed for the next part.
 3. When the model is wrong or the units are inconsistent, use `math-high-core`'s `references/scaffold-calibration.md`; when the failure is a quantity relationship rather than a modelling step (for example multiplying two values that do not combine), return `continue_practice` with the evidence rather than repairing the model for the student.
-4. When the data cannot support a conclusion (too few cases, an unstated assumption that decides the result), say so and ask what the student would add; do not manufacture a confident answer.
+4. When an assumption is decisive, check one plausible alternative or state why the data do not support a firm conclusion. When data are insufficient, clarify one useful addition instead of manufacturing certainty. Attribute who supplied the assumption, validation, and interpretation; a calculated number alone is not completed modeling.
 5. Verify each calculation per `math-high-core`'s internal check before it is presented as the model's value; a verification failure is the AI's own error and is corrected openly.
 
 Completion condition: the six parts are supported by the student's own statements and work, and one conclusion is stated with its limits. When the parts cannot be completed, wrap up honestly with the part that is blocked and one next step.

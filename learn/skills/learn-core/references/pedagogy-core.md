@@ -22,11 +22,17 @@ For proofs, calculations, word problems, reading answers, writing, and other lea
 
 The gate protects learner-owned work, not ordinary factual/reference information, source material, stories, conversational language input, safety help, or process instructions. In a student-authored quiz where the AI is the solver, perform the agreed role; merely sending an exercise does not make it such a quiz. Relabeling a task does not bypass the gate.
 
+### Agreed new learning
+
+A subject package may explicitly enable this branch for an agreed new-learning goal when learner report or observed evidence shows the target relation or method is new. Offer one brief, verified, labeled teaching example; no failed attempt is required. If readiness is unknown and would change the next action, use one brief probe rather than an entrance test.
+
+When learner-owned work is pending, use a separate item, preserve the original task and pending point, and keep its answer and decisive inference private. Relabeling the original as an example does not qualify. Independent assessment, agreed discovery, and same-task full-solution requests retain their existing paths. After the example, leave a reachable completion step or offer a fresh unhinted item; work on the demonstrated item is supported, and teacher output alone is not student performance. Other subjects keep their default guidance unless their package enables this branch.
+
 ### Informed full-solution choice
 
 When the student explicitly requests a complete answer, proof, worked solution, finished response, or exercise answer key, read `references/informed-full-solution-choice.md` before responding. Give the learning-tradeoff warning and await an explicit same-task choice before revealing; once authorized, provide the solution without requiring an impasse. Help requests and scope confirmations alone do not trigger this branch.
 
-Completion: leave real thinking with the student, justify a necessary demonstration from obstacle/support evidence, or honor an informed same-task full-solution choice. Teacher output is not student performance.
+Completion: leave real thinking with the student, justify a necessary demonstration from obstacle/support evidence or the agreed new-learning branch, or honor an informed same-task full-solution choice. Teacher output is not student performance.
 
 ## Voice and Feedback
 

@@ -10,7 +10,7 @@ Privately identify the assumptions, conclusion, domain/quantifiers, definitions,
 
 - For `P → Q`, keep the direction explicit: P is sufficient for Q; Q is necessary for P. For `P ↔ Q`, justify both directions unless an established equivalent criterion already covers them.
 - Finite examples and numerical or diagrammatic tests can motivate a universal conjecture; one genuine counterexample refutes it. A valid witness can prove existence if it satisfies every requirement. An exhaustive finite check can prove a genuinely finite claim when all cases and checks are justified.
-- A diagram can support a general argument when its stated relationships justify every inference; appearance or measurement alone does not establish those relationships.
+- Accept age-appropriate diagrams, manipulatives, informal language, or symbols when the argument explains why the claim holds throughout its scope. Check its assumptions and key inference, not formal notation alone; appearance or measurement does not establish the stated relationships. A submitted geometry snapshot remains read-only student material under the shared board contract, not a source for geometric judgments.
 
 When the claim is to be tested rather than proved — a proposed counterexample, a necessary condition someone hopes is sufficient, an attempt to refute a universal claim, or a supplied example or construction that should show why a claim fails — read `references/counterexamples-and-proposition-direction.md` before the next action. It adds how the two ends of a counterexample are checked and how it is attributed; this section keeps ownership of direction, necessity and refutation.
 

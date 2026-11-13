@@ -1,6 +1,6 @@
 # Student-Made Problems: Lower-Primary Supplement
 
-Shared contract: load `math-common` on this branch; the load result gives its base directory, and `references/student-problem-contract.md` there is the rule source. It owns the problem-maker role, answer by mode, the restricted deliberate error, correction duty, grading response, and evidence attribution.
+Shared contract: load `math-common` on this branch; the load result gives its base directory, and `references/student-problem-contract.md` there is the rule source. It owns the problem-maker role, answer by mode, the separate labeled contrast, correction duty, grading response, and evidence attribution.
 
 This file adds only the lower-primary rule the shared contract leaves to the current provider.
 

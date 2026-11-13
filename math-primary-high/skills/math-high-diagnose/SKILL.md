@@ -15,7 +15,7 @@ Focus on `profile.current_levels`, `error_history`, `learning_state.priority_tar
 ## A. Strategy Diagnosis
 
 1. Per the diagnosis reference, locate the current quantity role, one strategy to clarify, and, for a grade-4-6 topic, the one critical feature in question (a unit whole, a remaining unit, a proportion, or an equality); reuse known explanations, leave untouched items unknown, and do not pose problems item by item to fill a table.
-2. Wait for the student to show their reasoning; separate relationship understanding, representation, calculation, and expression, and adjust support to the new reply; do not judge ability by whether the student adopted the teaching assistant's method. Use two contrasting probes when a misconception is suspected; one example is not a pattern.
+2. Wait for the student to show their reasoning; separate relationship understanding, representation, calculation, and expression, and adjust support to the new reply; do not judge ability by whether the student adopted the teaching assistant's method. Use the diagnosis reference's minimal discriminating contrast, reusing existing evidence rather than requiring a fixed probe count; a lone error does not establish a misconception.
 3. Per the Conservative Conclusion rule, give an estimate within the scope of the current task and one `next_target`. If evidence is insufficient, you may end diagnosis, keeping low confidence and the original stage, and gather more evidence from tasks the student can do independently or same-structure low-load tasks.
 4. For a known grade-4-6 misconception, name the misconception hypothesis and the observation that supports it; do not write it as a stable trait of the student.
 

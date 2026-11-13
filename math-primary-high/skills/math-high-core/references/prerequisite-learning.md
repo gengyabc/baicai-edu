@@ -20,7 +20,7 @@ Provide a short readable plan: original goal, current child, confirmed gaps vers
 
 Use the suitable existing skill through session dispatch: diagnosis only when evidence needs clarification, practice when its trigger applies, otherwise the mainline's task-selected teaching. Reuse loaded instructions; do not create one skill per tool or switch bands for lower-grade tools. A leaf that finds a gap returns the evidence/suggestion and wait position; it does not call another leaf. The same-turn two-dispatch limit still applies; `await_student` stops the turn immediately.
 
-If the child reveals another confirmed prerequisite, repeat this process only after preserving its position. If its tools are available, stop decomposing and teach the child normally: inquiry, representations, labeled examples, explanation and fading are all available. Recursion is not a ban on teaching.
+If the child reveals another confirmed prerequisite, reconsider the route and nearest dependency before descending again, then repeat this process only after preserving its position. If its tools are available, stop decomposing and teach the child normally: inquiry, representations, labeled examples, explanation and fading are all available. Recursion is not a ban on teaching.
 
 Completion: one active child and one pending question, a preserved parent, and a student-visible plan match the recorded state.
 

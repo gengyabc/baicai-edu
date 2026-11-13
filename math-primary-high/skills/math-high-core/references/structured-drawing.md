@@ -4,6 +4,10 @@ Shared protocol: load `math-common` when a board attachment arrives or the stude
 
 This file adds the grade 4–6 clear, teaching-use, representation, and batch rules.
 
+## Geometry Snapshot Boundary
+
+For a `geometry-board` attachment, follow the shared board contract before replying: read the submitted read-only snapshot separately from quantity data and use only student-authored statements. It has no geometry edit-history attachment. Do not infer or judge lengths, angles, parallelism, perpendicularity, equality, collinearity, appearance, or correctness from it. If its meaning is unclear, ask one question about the student's explanation. The quantity-board steps below do not apply to geometry and no clear request is displayed on the geometry tab.
+
 ## Local Rules
 
 - In grades 4–6 the board may carry equal groups, arrays, or a declared part-whole relationship. It stores valued shapes, groups, and notes, not a general drawing surface: arbitrary bars, number lines, continuous areas, coordinates, and fractional values are not native primitives. Use words, a table, or a paper diagram when those better express the relationship; do not treat position or shape size as measurement. The same reading rules apply: values are declared by the student, a grouping is a stated structure, and the operation or relationship is still the student's to explain. When a board step could be either a stated structure or an accidental layout, ask one question instead of deciding.

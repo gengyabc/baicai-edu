@@ -36,13 +36,13 @@ A changed condition may invalidate the old method while the problem still has a 
 - **The problem has no solution:** no object satisfies the changed conditions; this needs its own check, not the failure of the old route.
 - **Still open:** neither claim is established yet; say what would settle it.
 
-Failure of the old route alone never establishes no-solution, and finding one solution never shows the old route still works. When the student's other route is valid, accept it and let the boundary case remain a check of the old method rather than a demand to replace it.
+Failure of the old route alone never establishes no-solution, and finding one solution or a coinciding numerical answer never shows the old route still works. When the student's other route is valid, accept it and let the boundary case remain a check of the old method rather than a demand to replace it.
 
 ## Evidence and completion
 
 Use the existing fields in `references/math-segment-fields.md` and one merged segment per turn. Keep these distinct:
 
-- **Boundary discrimination:** the student names the changed condition, the step it touches, and what survives; this is independent work only when they supplied the link, not when they repeated a summary.
+- **Boundary discrimination:** the student names the changed condition, whether the original method remains valid, the step it touches, and why; record this separately from context transfer and computation; this is independent work only when they supplied the link, not when they repeated a summary.
 - **Near transfer:** a new surface with the same structure. Correct here shows the structure survived the surface; it does not show the limit was seen.
 - **Supported work:** the student used a condition, route or correction after the teacher pointed it out. A correct count after the teacher named the change is not independent boundary discrimination.
 - **Still unknown:** refused, untested or unclear.

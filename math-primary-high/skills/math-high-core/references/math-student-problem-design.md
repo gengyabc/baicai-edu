@@ -1,6 +1,6 @@
 # Student-Made Problems: Upper-Primary Supplement
 
-Shared contract: load `math-common` on this branch; the load result gives its base directory, and `references/student-problem-contract.md` there is the rule source. It owns the problem-maker role, answer by mode, the restricted deliberate error, correction duty, grading response, and evidence attribution.
+Shared contract: load `math-common` on this branch; the load result gives its base directory, and `references/student-problem-contract.md` there is the rule source. It owns the problem-maker role, sincere ordinary answers, separately labeled error-analysis contrasts, Feynman hypothetical confusion and same-reply correction, legacy correction duty, grading response, and evidence attribution.
 
 This file adds only the grade 4–6 rules.
 
@@ -25,7 +25,7 @@ Keep these four separately in the evidence:
 | Composition | The student's decision to keep a structure, choose a scene, set numbers and conditions, and state the question |
 | Solving | The student's demonstrated solution and reasoning, including on a problem they authored; record hints and prior answer exposure |
 | Grading | The student's decision about the answerer's answer |
-| Transfer | Independent use of the relationship in a changed scene or a changed condition |
+| Transfer / boundary evidence | Independent use in a meaningfully changed context, or discrimination after a changed decisive condition; record these separately |
 
 A valid problem, a bare self-reported answer, or an affirming grade alone does not establish Solving or Transfer. The answerer answering the student's problem is not the student's independent solving. If the student voluntarily supplies a justified solution before seeing the answer, use that reasoning as evidence even on their own problem. After hints or answer exposure, record the work with that support; transfer still needs demonstrated use in a changed scene or condition. Keep missing evidence unknown rather than asking an extra quiz question.
 
@@ -47,7 +47,7 @@ The student's conditions are their problem; clarify exactly the spot that is mis
 
 A complete, valid problem is answered earnestly and handed over for grading, with no warning and no extra "why" questions. The ordinary learner's explicit request for a complete solution is handled by `learn-core`'s `references/pedagogy-core.md` under its Informed full-solution choice, when the student is learning from a teacher's problem. The authored problem comes from the other direction: the answerer's answer is the requested answer of that activity, so it is delivered directly as teacher-labelled answer material for the student to grade, not prefixed by that warning.
 
-- A deliberate error is still answer material; the shared contract's restricted deliberate error conditions and correction duty own it, as does the rule that an AI error is never recorded as a student difficulty. That option is not generalized to the student's homework or ordinary requests, and it is never used to test authorship.
+- Ordinary answer material is sincere and verified, with one checkable relation. The shared contract owns any separate, explicitly labeled contrast activity and its correction duty; an AI-supplied wrong claim is never the AI's ordinary answer or a student difficulty. Feynman confusion stays hypothetical with same-reply correction, and legacy pending wrong answers are clarified first under that contract.
 - Do not convert the activity into a teacher-led oral quiz. The student who authored asks; the answerer answers. The answerer may not in the same reply restate the problem as an exercise for the student, ask for justifications, or append verification items.
 - When the student asks for help, refuses, or wants to return to joint solving, confirm by a flow option whether to return to joint solving or continue, as the shared contract's "Role Boundary" row does; the role choice is not inverted. Once the student confirms returning, the teacher role resumes under `math-teaching-core.md`, with the first problem or the scaffolded step chosen from this package's rules and the same evidence boundaries.
 
@@ -55,7 +55,7 @@ A complete, valid problem is answered earnestly and handed over for grading, wit
 
 - An affirming grade is enough to wrap up under the shared contract's "Exit"; further explanation or another problem is optional. Keep unobserved solving or transfer unknown, while retaining any reasoning the student volunteered. Honour stopping and resolve pending AI errors under the shared contract.
 - A specific disagreement is rechecked against the conditions before accepting or rejecting; the dispatcher's signal choice stays with `math-high-student-problem`.
-- At most one merged `session_segment` per turn is produced by `math-high-session`. The composition, the grading, and any deliberate error being clarified are described inside existing `strategy_summary` and `skill_errors_observed` by `references/math-segment-fields.md`; no transfer score, stage or profile field is created.
+- At most one merged `session_segment` per turn is produced by `math-high-session`. The composition, the grading, and any separately labeled error analysis or legacy correction are described inside existing `strategy_summary` and `skill_errors_observed` by `references/math-segment-fields.md`; no transfer score, stage or profile field is created.
 
 ## Teacher-only checked cases
 

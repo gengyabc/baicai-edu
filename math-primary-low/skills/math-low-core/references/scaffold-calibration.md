@@ -1,9 +1,21 @@
 # Math Scaffold Calibration
 
-Use this file only after the student has started working, is stuck, or has explicitly asked for help.
+Use when selecting support, including an agreed new-learning example, a concrete obstacle, or an explicit help request. First apply **Guide before revealing** in `learn-core`'s `references/pedagogy-core.md`; that shared gate owns the separate-example entry, assessment/discovery boundaries, and **Informed full-solution choice** for the same task.
 
-Respond to the student's thinking per CGI (Jacobs & Empson's four kinds: confirm understanding of the story, ask about details of an existing strategy, encourage considering other strategies, connect to records and equations). When stuck, choose one support action: confirm the student understands the story, ask about details they have already produced, propose a tool (objects, drawing, fingers, or the board; how to use it is the student's decision), swap in easier numbers within the same story and return to the original numbers once done, or remind them of a related problem. When the student has tried and still has no way forward, you may also restate the same relationship with one interest detail per `references/math-personalization.md`.
+## Choose Support by Evidence
 
-One action and one pending question each time, then wait; withdraw once the student can continue. Apply **Guide before revealing** and its **Informed full-solution choice** exception in `learn-core`'s `references/pedagogy-core.md`: explicit complete-solution requests use the shared choice rather than this guided support sequence. In guided work, an attempt plus a local request to see a method does not alone justify solving the task. Use the student's concrete obstacle and response to targeted support to establish a genuine impasse; only then show the smallest necessary step or analogous example, label it as teacher help, and leave the next substantive step to the student. Repeated sticking goes to diagnosis; sustained non-response follows the shared protocol.
+Support levels are options, not mandatory steps or a required sequence of failures:
 
-Record work after a hint as supported; also record honestly if easier numbers were swapped in or an example was seen. If this turn carries a sent edit history, when the student is stuck repeatedly, first see whether they keep changing representations (re-circling, splitting, re-laying after a clear); based on that, ask what each of the two representations means, or hand to diagnosis; counts and undos alone do not make a difficulty conclusion.
+| Current evidence | Suitable support |
+|---|---|
+| Target relation or method is new under the shared new-learning gate | One short, verified, labeled teaching example on a separate item |
+| Some foundation, but cannot start | Partial demonstration or an analogous item within the shared gate |
+| A viable strategy already exists | Ask about one actual detail, clarify quantity meaning, or connect their work to an equation |
+| Relation understood, execution or retrieval unstable | Brief independent practice with specific feedback; use the shared Consolidate / Revisit purpose |
+| Fluent on the current relation | Fade support; offer a meaningful variation or transfer check when relevant |
+
+In guided work, continue the student's viable strategy. Options include confirming the story, asking about their actual work, proposing objects/drawing/fingers/the board without prescribing a layout, using easier numbers in the same story and returning to the originals, or recalling a related problem. Interest bridging follows `references/math-personalization.md`. An attempt plus a local request alone does not justify solving the learner-owned task; use the shared gate to choose the smallest necessary support at a genuine impasse.
+
+Advance one main cognitive goal with at most one pending question. After a demonstration, offer one reachable completion step or a fresh unhinted item as appropriate; withdraw support when the student can continue. Repeated unresolved sticking may return to diagnosis; sustained non-response follows the shared protocol.
+
+Record demonstrated-item work as supported, including easier-number substitutions and seen examples. If sent quantity-board edit history is relevant, ask about the meaning of changed representations rather than inferring difficulty from counts or undos. Geometry snapshots have no edit-history inference or geometric judgment; follow the shared board contract.

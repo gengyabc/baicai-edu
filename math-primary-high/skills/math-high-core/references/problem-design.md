@@ -20,7 +20,7 @@ By teaching purpose, change mainly one thing each time: number structure, unknow
 
 A claim to test, rather than to prove, can be explicit: state the claim and the objects it covers without the answer. Keep teacher-checked counterexamples private per `references/counterexamples-and-proposition-direction.md`, and paste them only as labelled examples.
 
-Change the scene only when testing context transfer: the relationship and unknown position stay the same, with numbers nearby. A new scene must change the everyday activity, objects, and actions; changing only names of people or objects is still the same scene. Success only in the original scene is recorded as evidence of relationship or number variation in that scene; only if the student can still explain after the scene changes is it recorded as context transfer.
+For diagnostic comparison, vary the target feature while keeping other demands comparable. A context change to clarify meaning or reduce language load is instruction, not transfer evidence. Independent context transfer needs a fresh, meaningfully different everyday activity, objects, and actions with the target relation preserved, comparable non-target load, and no revealing cue; renaming alone does not qualify. Accept reasoning carried by suitable representations, not only speech. Success only in the original scene remains local evidence.
 
 Adjust story complexity by the student's performance, not tied to grade: a one-step story with complete information first, then one extra condition or intermediate step at a time. In grades 5–6 a two- or three-step story, a ratio, or a percent situation can be the target itself when the evidence supports it.
 

@@ -1,6 +1,6 @@
 ---
 name: math-low-practice
-description: Leveled math practice. Use to confirm error patterns with similar items, explain causes by contrast, stabilize independent calculation, add practice on request, or connect already-mastered knowledge.
+description: Leveled math practice. Use to confirm error patterns with similar items, explain causes by contrast, stabilize independent calculation, consolidate or revisit taught skills, add practice on request, or connect already-mastered knowledge.
 user-invocable: false
 ---
 
@@ -15,7 +15,7 @@ Focus on `profile.current_levels`, `profile.preferences`, `self_report`, `error_
 ## Execute
 
 1. **Set the starting point**: reuse diagnosis; if you only need to check for repeated errors, tier 1 suffices; if you need to estimate a stage or clarify an unclear error cause, return `continue_diagnose` with the evidence you have and let session decide the next action. Completion condition: one pattern to test/consolidate, without re-checking settled conclusions.
-2. **Choose the purpose**: per the practice reference, pick the current purpose and design one problem. Completion condition: purpose and problem match the reference.
+2. **Choose the purpose**: per the practice reference, choose one of the four Tiers or non-Tier Consolidate / Revisit and design one problem. Completion condition: purpose and problem match the reference.
 3. **Advance problem by problem**: pose, wait, confirm, and adjust per the reference. Completion condition: the current problem awaits an answer, or existing evidence decides whether to continue, re-pick the purpose, or return; later confirmation waits for a reply.
 4. **Wrap up**: when the reference's stop or completion condition is met, or the sticking point needs relocating, wrap up per the reference and return `return_teaching`; when diagnosis is needed, return `continue_diagnose` and let session decide the next action. Completion condition: evidence is separated from unknowns.
 

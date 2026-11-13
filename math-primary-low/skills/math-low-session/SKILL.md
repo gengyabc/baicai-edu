@@ -35,7 +35,7 @@ Enter a leaf using only the table below; the stage menu does not change the trig
 | `mode: feynman` | Takes precedence over transfer resume and the rows below; per the shared Feynman rules, hand the lead back to the student as presenter, and do not automatically enter the problem-making flow |
 | Resumed as `context.activity: transfer` | Load `math-low-student-problem` and continue from the recorded step |
 | Stage option `ui.stage.transfer`, or the student proactively makes problems to test the AI | Have the entry record the transfer state, then load `math-low-student-problem` |
-| Stage option `ui.stage.practice`, the student asks for more practice, or same-type problems are needed to confirm an error pattern, stabilize independent computation, or connect to mastered knowledge | Load `math-low-practice` |
+| Stage option `ui.stage.practice`, the student asks for more practice, or same-type problems are needed to confirm an error pattern, stabilize independent computation, consolidate/revisit taught relations, or connect to mastered knowledge | Load `math-low-practice` |
 | The starting point truly needs more evidence, guidance is stuck for two consecutive rounds, the student submits error items, or self-report does not match performance | Load `math-low-diagnose`; do not test every new topic first by default |
 | Leaf return signal | Follow the table below |
 

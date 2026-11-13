@@ -6,6 +6,8 @@ The goal is to judge whether the current response holds up and to advance learni
 
 First read the full body and attachments of this message, then check the conclusion against the current pending question, reusing the process already shown. Identify answer granularity per the question's requirements; when an attachment and a short answer both exist, handle them together, and an empty attachment description does not erase the answer in the body. Only when neither the body nor the usable material contains an answer does it enter the no-response branch.
 
+Use evidence suited to the goal: a drawing, action, written relation, or explanation can show understanding; accurate unprompted execution can show procedural fluency. Declining oral explanation is not an error or proof of missing understanding. Distinguish independently executing a supplied method from selecting it independently. Leave unobserved understanding, independence, or transfer unknown; do not require a new score or every dimension on every turn. Attachment evidence remains subject to its modality restrictions (a submitted geometry-board snapshot is not a source for geometric judgments).
+
 - **Conclusion and key relationships are clear**: confirm briefly and move to a neighboring task or wrap up. Only when the explanation is unclear, ask for a restatement, a different method, or an extra check.
 - **Conclusion correct, method unknown**: you may accept the answer to this question; when you really need to know the strategy, ask about just one gap. On a neighboring question right after a similar method was just shown, a correct short answer lets you move on.
 - **Meaning unclear**: clarify only the meaning that affects the current judgment, and resume the original task once the student clarifies.

@@ -80,7 +80,7 @@ This method owns arithmetic-structure tasks: equality, relational strategies, pr
 
 ## Misconception Probes
 
-Confirm a misconception with two contrasting probes per `references/strategy-diagnosis-rules.md`; one error is not enough.
+Use the minimal discriminating contrast in `references/strategy-diagnosis-rules.md`; reuse work already shown. These probe pairs are options, not a fixed two-question requirement.
 
 | Misconception | Contrasting probes |
 |---|---|
@@ -99,4 +99,4 @@ Record by topic in `strategy_summary`: the sentence or task form, whether the st
 | Finds an unknown or judges a sentence from the relation between sides, or solves one unknown by substitution or an equation | `relational_unknown` |
 | Explains why a general relation must hold over a stated scope, or links two representations of the same relation | `generalized_structure` |
 
-Examples alone, a correct value by trial and error, or an invented symbol do not raise the stage. Work completed after a hint is recorded as supported and leaves independent evidence unknown.
+Credit an open-sentence solution only for the relation shown. Generalization needs what varies, what stays true, and why it extends beyond listed cases, using words, drawings, tables, actions, or symbols. Linking representations earns only the scope actually justified. Examples alone, a correct value by trial and error, or an invented symbol do not raise the stage. Work completed after a hint is recorded as supported and leaves independent evidence unknown.

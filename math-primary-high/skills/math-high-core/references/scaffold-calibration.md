@@ -4,11 +4,11 @@ Read before giving a hint, example, or support, including a planned opening exam
 
 ## Match Support to the Step
 
-Apply **Guide before revealing** and its **Informed full-solution choice** exception in `learn-core`'s `references/pedagogy-core.md` before every example or explanation. Explicit complete-solution requests use that shared path rather than this guided scaffold sequence. In guided work, first allow one reachable attempt; respond to what the student has actually shown by clarifying a condition, asking about their strategy, connecting a representation to notation, or suggesting a simpler case. Planned explicit instruction and an explicit request to see a method do not establish an impasse. When the shared gate justifies a demonstration, verify and label the smallest necessary example or blocked step, then leave a reachable inference to the student. Fade support across subsequent turns; avoid fixed failure quotas.
+Use **Guide before revealing** in `learn-core`'s `references/pedagogy-core.md` to select guided work, its agreed new-learning separate-example entry, or **Informed full-solution choice**. The shared gate owns eligibility and learner-owned task boundaries; a qualifying new-learning example needs no failed attempt. In guided work, build on the student's viable strategy and actual obstacle. After a permitted demonstration, offer one reachable completion step or a fresh unhinted item as appropriate. Record demonstrated-item work as supported and fade support; neither hints nor failed attempts are quotas.
 
 A confirmed missing prerequisite tool first enters a recorded child task per `references/prerequisite-learning.md`; an inline worked example in the parent does not replace that entry. Inside the child, once its own tools are available, the normal example/explanation/fading options below remain available. Unknown readiness first calls for a purposeful probe, not automatic remediation.
 
-Choose one action and one pending question, then wait. Keep the student's viable approach and withdraw support once they can continue. A request for explanation calls for support matched to the obstacle under the shared gate, not an automatic whole-task demonstration; do not enforce a mechanical hint ladder. Feynman mode preserves the student-presenter role under shared rules.
+Choose one main cognitive goal with at most one pending question, then wait when needed. Keep the student's viable approach and withdraw support once they can continue. A request for explanation calls for support matched to the obstacle under the shared gate, not an automatic whole-task demonstration; do not enforce a mechanical hint ladder. Feynman mode preserves the student-presenter role under shared rules.
 
 ## Support Options (grades 4–6)
 

@@ -30,6 +30,8 @@ Merge rules:
 | `current_levels` (optional) | With enough strategy evidence, give partial updates of `arithmetic_strategy_stage` / `multidigit_strategy_stage` / `fraction_strategy_stage` / `symbolic_strategy_stage`; stage interpretation belongs to `references/progression-map.md`, and diagnostic evidence to `references/strategy-diagnosis-rules.md` |
 | `diagnosis` (optional) | Math domain `domain`, one specific error `label`, and key-step `evidence`; classification belongs to the same diagnosis reference, and the full original problem text stays in the source file or analysis file |
 
+In `strategy_summary`, include only what informs the next decision: correctness, the relation or strategy shown, support received, and any changed-context or actual delayed condition. Distinguish independently executing a supplied method from independently selecting it; unobserved aspects stay unknown. Add no required field or composite score. `confirmed_skills` and `mastered_topics` are shared workflow labels, not retention or transfer evidence by themselves; no recorded error is not a new success, and delayed retention needs an observed later attempt. Local challenge changes do not replace shared confirmation rules.
+
 Stage, diagnosis, and skill confirmation are each decided by their own evidence thresholds; omit optional fields not observed and keep existing profile values. The same performance is interpreted only within its task scope: a correct percent task does not establish proportional reasoning everywhere, and a correct computed value after an example does not establish independent understanding. When the existing schema suffices, keep differences in natural language and add no stage or global level.
 
 ## Word-Problem Derivation Evidence

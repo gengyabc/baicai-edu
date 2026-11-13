@@ -8,7 +8,7 @@ user-invocable: false
 
 ## Start and Input
 
-Load `math-low-core` and follow its "Start and Input". Also read `math-low-core`'s `references/math-teaching-core.md` and `references/strategy-diagnosis-rules.md` (unified observation, error causes, conservative estimates, and confidence); when generating diagnostic practice, also read `references/targeted-practice-rules.md`. Write diagnostic problems as everyday stories; interests do not enter the problem stem, and bridging conditions follow the personalization reference.
+Load `math-low-core` and follow its "Start and Input". Also read `math-low-core`'s `references/math-teaching-core.md` and `references/strategy-diagnosis-rules.md` (unified observation, error causes, conservative estimates, and confidence); when generating diagnostic practice, also read `references/targeted-practice-rules.md`. Choose diagnostic format by the goal per `references/problem-design.md`; use stories when quantity meaning matters, without unrelated reading load. Interests do not enter the problem stem, and bridging conditions follow the personalization reference.
 
 Focus on `profile.current_levels`, `error_history`, `learning_state.priority_targets`, and the skills already confirmed in memory. With processed-file `material_refs`, use error-item triage; otherwise use strategy diagnosis.
 

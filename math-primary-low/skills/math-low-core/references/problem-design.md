@@ -4,7 +4,7 @@ Use CGI problem types (join, separate, part-part-whole, compare, multiplication,
 
 ## The Current Problem
 
-Choose one focused unknown from the explicit goal or evidence. The default stem is an everyday-life story ending at one final question; a practice format the student explicitly asks for takes priority, and an open number sentence may check a single quantity fact; equality and relational sentences follow `references/relational-thinking.md`. Use number choice for calculation or strategy goals, without naming a strategy; you may offer two or three sets of numbers for the student to choose from. If the student cannot do it, easier numbers in the same story are allowed, then return to the original numbers; see `references/scaffold-calibration.md`.
+Choose one focused unknown from the explicit goal or evidence. Prefer an everyday-life story ending at one final question for quantity meaning and unknown roles. For calculation, equality, measurement, or representation goals, choose a bare calculation, number line, open sentence, or diagram when more useful and less language-heavy; a format the student explicitly asks for takes priority. Equality and relational sentences follow `references/relational-thinking.md`. Use number choice for calculation or strategy goals, without naming a strategy; you may offer two or three sets of numbers for the student to choose from. If the student cannot do it, easier numbers in the same story are allowed, then return to the original numbers; see `references/scaffold-calibration.md`.
 
 ## Relationship Complexity Before Number Size
 
@@ -27,6 +27,6 @@ Completion criterion before posing (internal, not student evidence or new log fi
 
 Change mainly one thing at a time: number structure, unknown position, problem type, or scene; a change in number structure also counts as variation. When developing a strategy you may keep the scene and may deliberately repeat numbers or results. Keep the original scene until the current problem is finished.
 
-Change the scene only when testing context transfer: same relationship and unknown position, nearby numbers, and a different everyday activity, objects, and actions (renaming people or objects is the same scene). Success only in the original scene counts as relationship or number variation; context transfer needs the student to still explain after the scene changes.
+For a diagnostic comparison, vary the target feature while keeping other demands comparable. A scene change that clarifies meaning or reduces language load is instruction, not transfer evidence. To check context transfer, use a fresh, meaningfully different everyday activity, objects, and actions, preserving the target relationship, unknown position, and comparable number/language load, without a revealing cue. Renaming alone is not a new context. Accept a valid drawing, action, written relation, or explanation showing the preserved relationship; success only in the original scene remains local evidence.
 
 Pace by the student's request and demonstrated relationships, not grade. Once evidence suffices, move to the next meaningful structural change rather than another numeric variant; same-type numeric practice is for an identified calculation gap or an explicit practice request, under the practice contract's stop rule.
