@@ -251,6 +251,16 @@ function mount(options = {}) {
       for (const handler of documentListeners.get('keydown') || []) handler(event);
       refresh();
     },
+    // Browser order: keydown, then the dialog's cancel event.
+    escape() {
+      const event = { key: 'Escape', preventDefault() {} };
+      for (const handler of documentListeners.get('keydown') || []) handler(event);
+      find((node) => node.type === 'dialog').props.onCancel?.({ preventDefault() {} });
+      refresh();
+    },
+    dialogOpen() {
+      return find((node) => node.type === 'dialog').props.ref.current.open;
+    },
     unmount() {
       for (const store of stores.values()) for (const slot of store.slots) slot?.cleanup?.();
       globalThis.window = old.window; globalThis.localStorage = old.localStorage;
@@ -367,6 +377,130 @@ test('a geometry figure is drawn with points, labels and one undo unit', () => {
     h.click(t('undo'));
     assert.equal(h.board().elements.length, 0);
     assert.equal(h.board().points.length, 2);
+  });
+});
+
+test('escape cancels the unfinished line and leaves the board open', () => {
+  withMount((h) => {
+    h.click(t('title'));
+    assert.equal(h.dialogOpen(), true);
+    h.tab('geometry');
+    h.tool('segment');
+    h.clickAt(100, 100);
+    h.moveTo(240, 160);
+    assert.equal(h.board().points.length, 1);
+    assert.equal(h.board().elements.length, 0);
+    assert.equal(walk(h.tree).filter((node) => node.type === 'polyline').length, 1, 'the unfinished segment previews');
+
+    h.escape();
+    assert.equal(h.dialogOpen(), true, 'Escape keeps the board open');
+    assert.equal(h.board().points.length, 0, 'the unfinished line takes its new point with it');
+    assert.equal(h.board().elements.length, 0);
+    assert.equal(walk(h.tree).filter((node) => node.type === 'polyline').length, 0);
+    assert.equal(h.button(t('segment')).props['aria-pressed'], false);
+    assert.equal(h.button(t('select')).props['aria-pressed'], true);
+
+    // A point placed on its own stays; Escape only drops the line that was using it.
+    h.tool('point');
+    h.clickAt(100, 100);
+    h.tool('segment');
+    h.clickAt(100, 100);
+    h.moveTo(240, 160);
+    assert.equal(h.board().points.length, 1);
+    h.escape();
+    assert.equal(h.dialogOpen(), true);
+    assert.equal(h.board().points.length, 1);
+    assert.equal(h.button(t('select')).props['aria-pressed'], true);
+
+    // A finished segment is not an in-progress operation.
+    h.tool('segment');
+    h.clickAt(100, 100);
+    h.clickAt(300, 100);
+    assert.equal(h.board().elements.length, 1);
+    h.escape();
+    assert.equal(h.dialogOpen(), true);
+    assert.equal(h.board().elements.length, 1);
+    assert.equal(h.board().points.length, 2);
+
+    // With nothing in progress, Escape still does not close the board.
+    h.tab('quantity');
+    h.escape();
+    assert.equal(h.dialogOpen(), true);
+  });
+});
+
+test('a press on the dimmed area outside the board closes it and keeps the draft', () => {
+  withMount((h) => {
+    const dialogNode = () => {
+      const dialog = h.find((node) => node.type === 'dialog');
+      const node = dialog.props.ref.current;
+      node.getBoundingClientRect = () => ({ left: 40, top: 30, right: 900, bottom: 700 });
+      return { dialog, node };
+    };
+    const press = (x, y, target, button = 0) => {
+      const { dialog, node } = dialogNode();
+      dialog.props.onPointerDown({ button, clientX: x, clientY: y, target, currentTarget: node });
+      h.render();
+    };
+    h.click(t('title'));
+    assert.equal(h.dialogOpen(), true);
+    const { node } = dialogNode();
+    press(120, 80, node);
+    assert.equal(h.dialogOpen(), true, 'a press inside the dialog box stays');
+    press(0, 0, { closest() { return null; } });
+    assert.equal(h.dialogOpen(), true, 'a press that starts on the board stays');
+    press(0, 0, node, 2);
+    assert.equal(h.dialogOpen(), true, 'a secondary press on the backdrop stays');
+
+    const tool = h.find((n) => n.type === 'button'
+      && String(n.props['aria-label'] || '').startsWith(`${t('circle')} ·`));
+    tool.props.onClick();
+    h.render();
+    h.find((n) => n.type === 'button' && String(n.props['aria-label'] || '').startsWith(`${t('note')} ·`)).props.onClick();
+    h.render();
+    h.find((n) => n.props?.['data-tour-id'] === 'quantity-note-panel');
+
+    press(0, 0, dialogNode().node);
+    assert.equal(h.dialogOpen(), false, 'the dimmed area closes the board');
+    assert.equal(JSON.parse(h.raw(QUANTITY_KEY)).objects.length, 1, 'closing keeps the draft');
+
+    h.click(t('title'));
+    assert.equal(walk(h.tree).some((n) => n.props?.['data-tour-id'] === 'quantity-note-panel'), false);
+    h.tab('geometry');
+    press(1000, 10, dialogNode().node);
+    assert.equal(h.dialogOpen(), false, 'the geometry tab closes the same way');
+    assert.equal(JSON.parse(h.raw(QUANTITY_KEY)).objects.length, 1);
+  });
+});
+
+test('escape cancels a point drag without moving it', () => {
+  withMount((h) => {
+    h.click(t('title'));
+    h.tab('geometry');
+    h.tool('point');
+    h.clickAt(100, 100);
+    h.tool('select');
+    h.clickAt(100, 100);
+    h.moveTo(140, 120);
+    h.escape();
+    h.release(140, 120);
+    assert.equal(h.dialogOpen(), true);
+    assert.equal(h.board().points[0].x, 100);
+    assert.equal(h.board().points[0].y, 100);
+  });
+});
+
+test('geometry selection does not offer an append mode', () => {
+  withMount((h) => {
+    h.tab('geometry');
+    h.tool('point');
+    h.clickAt(100, 100);
+    h.tool('select');
+    h.clickAt(100, 100);
+    h.button(t('renamePoint'));
+    const labels = walk(h.tree).filter((node) => node.type === 'button').map(text);
+    assert.equal(labels.includes(t('appendSelect')), false);
+    assert.equal(labels.includes(t('appendDone')), false);
   });
 });
 

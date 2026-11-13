@@ -1359,16 +1359,25 @@ window.__ModuleLoader__.load({
       requestOverlay(null);
     }
     React.useEffect(() => {
-      if (!shown) return;
+      // Only the visible tab hears Escape, so a hidden page cannot cancel the other one.
+      if (!tabActive) return undefined;
       const onKey = (event) => {
         if (event.key !== 'Escape') return;
-        if (overlay) { event.preventDefault(); dismissOverlay(); }
-        if (moreOpen) { setMoreOpen(false); }
-        if (append) setAppend(false);
+        const noteHeld = overlay?.kind === 'note' && shared.tourHoldsNotePanel?.(tour);
+        if (overlay && !noteHeld) { event.preventDefault(); dismissOverlay(); }
+        if (moreOpen) { event.preventDefault(); setMoreOpen(false); }
+        if (append) { event.preventDefault(); setAppend(false); }
+        if (noteHeld || overlay || moreOpen || append) return;
+        if (gesture.current || dragShape) {
+          event.preventDefault();
+          gesture.current = null;
+          setPreview(null);
+          setDragShape(null);
+        }
       };
       document.addEventListener('keydown', onKey);
       return () => document.removeEventListener('keydown', onKey);
-    }, [shown, overlay, moreOpen, tour]);
+    }, [tabActive, overlay, moreOpen, append, tour, dragShape]);
 
     function flushEditor() {
       const active = dialog.current?.ownerDocument.activeElement;
@@ -1597,6 +1606,8 @@ window.__ModuleLoader__.load({
       if (props.split) props.close?.();
       else setOpened(false);
     }
+    // A press outside the shared dialog uses this same close.
+    if (props.bindClose) props.bindClose(close);
     function recoverDraft(next, nextTrace, message) {
       const version = revision.current;
       withDraftLock(() => {
@@ -1999,7 +2010,8 @@ window.__ModuleLoader__.load({
           if (tour) finishQuantityTour();
           else if (overlay) dismissOverlay();
           else if (moreOpen) { setMoreOpen(false); }
-          else close();
+          else if (append) setAppend(false);
+          else if (gesture.current) { gesture.current = null; setPreview(null); }
         },
         onClose: () => setOpened(false),
       },
@@ -2064,6 +2076,25 @@ window.__ModuleLoader__.load({
           'aria-controls': `eb-question-${props.sessionId}`, onClick: () => setQuestionExpanded(!questionExpanded),
         }, questionExpanded ? t('questionCollapse') : t('questionExpand'))));
     const brand = (size) => (typeof mark === 'function' ? mark(size) : null);
+    // Each page registers the same close 返回对话 uses. A backdrop press calls the
+    // visible tab's close, so a note or menu on that tab is put away with the dialog.
+    const closers = React.useRef({});
+    function requestClose() {
+      const closePage = closers.current[tab];
+      if (closePage) closePage();
+      else setOpened(false);
+    }
+    // The backdrop hit is delivered to the dialog element, with a point outside its box.
+    // A press that starts on the board keeps the dialog up, even if it later ends outside.
+    function dismissFromBackdrop(event) {
+      if (event.button != null && event.button !== 0) return;
+      const node = event.currentTarget;
+      if (!node || event.target !== node || typeof node.getBoundingClientRect !== 'function') return;
+      const box = node.getBoundingClientRect();
+      const inside = event.clientX >= box.left && event.clientX <= box.right
+        && event.clientY >= box.top && event.clientY <= box.bottom;
+      if (!inside) requestClose();
+    }
     const tabs = h('div', { className: 'eb-tabs', role: 'tablist', 'aria-label': t('tabs') },
       [['quantity', 'tabQuantity'], ['geometry', 'tabGeometry']].map(([name, label]) => h('button', {
         key: name, type: 'button', role: 'tab', id: `eb-tab-${name}`, className: 'eb-tab', 'data-tab': name,
@@ -2085,17 +2116,24 @@ window.__ModuleLoader__.load({
       h('dialog', {
         ref: dialog, className: 'eb-dialog', 'aria-label': t('title'),
         onClose: () => setOpened(false),
-        onCancel: (event) => { event.preventDefault(); setOpened(false); },
+        onPointerDown: dismissFromBackdrop,
+        // Escape never closes the board. The browser fires `cancel` after the page's
+        // keydown handler, which drops the current operation (an unfinished line, a
+        // drag, a menu, a note). 返回对话 and a primary press on the dimmed area
+        // outside this dialog close it.
+        onCancel: (event) => { event.preventDefault(); },
       }, h('div', { className: 'eb-workbench' },
         // The pages below were built for a top bar already at the top of the workbench,
         // so the shell's bar keeps that one and hides the page's own copy.
         h('header', { className: 'eb-topbar' }, brand(27), h('span', null, t('title')), tabs, h('span', { className: 'eb-grow' })),
         panel('quantity', h(QuantityPage, {
           ...props, split: true, question, close: () => setOpened(false),
+          bindClose: (fn) => { closers.current.quantity = fn; },
           tabActive: opened && tab === 'quantity',
         })),
         GeometryPage && panel('geometry', h(GeometryPage, {
           ...props, split: true, question, close: () => setOpened(false),
+          bindClose: (fn) => { closers.current.geometry = fn; },
           tabActive: opened && tab === 'geometry',
         })))));
   };
@@ -2125,7 +2163,6 @@ window.__ModuleLoader__.load({
     const [auxiliary, setAuxiliary] = React.useState(false);
     const [pending, setPending] = React.useState([]);
     const [selection, setSelection] = React.useState([]);
-    const [append, setAppend] = React.useState(false);
     const [hover, setHover] = React.useState(null);
     const [preview, setPreview] = React.useState(null);
     const [zoom, setZoom] = React.useState(1);
@@ -2142,6 +2179,9 @@ window.__ModuleLoader__.load({
     const tourSpotlightRef = React.useRef(null);
     const TutorialOverlay = shared.createTutorialOverlay?.(React);
     const gesture = React.useRef(null);
+    // Free points created for the unfinished shape. Escape deletes these and leaves
+    // points the student had already placed.
+    const constructionPoints = React.useRef([]);
     const svgRef = React.useRef(null);
     const noteRef = React.useRef(null), nameRef = React.useRef(null);
     // An open that arrives after this tab's draft changed must not overwrite it.
@@ -2258,15 +2298,16 @@ window.__ModuleLoader__.load({
         return next;
       } catch (error) { setStatus(`${t('failed')}: ${error.message}`); return null; }
     }
+    function forgetConstruction() { constructionPoints.current = []; }
     function undo() {
       const prev = history.past.at(-1); if (!prev) return;
       setHistory({ past: history.past.slice(0, -1), future: [boardRef.current, ...history.future].slice(0, HISTORY_LIMIT) });
-      publish(prev); setSelection([]); setPending([]);
+      forgetConstruction(); publish(prev); setSelection([]); setPending([]);
     }
     function redo() {
       const next = history.future[0]; if (!next) return;
       setHistory({ past: [...history.past, boardRef.current].slice(-HISTORY_LIMIT), future: history.future.slice(1) });
-      publish(next); setSelection([]); setPending([]);
+      forgetConstruction(); publish(next); setSelection([]); setPending([]);
     }
     const pointById = (id) => board.points.find((p) => p.id === id);
     const selectedPoints = selection.map(pointById).filter(Boolean);
@@ -2330,10 +2371,8 @@ window.__ModuleLoader__.load({
       const at = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / length));
       return Math.hypot(p.x - (a.x + at * dx), p.y - (a.y + at * dy));
     }
-    function toggleSelection(id) {
-      setSelection((old) => old.includes(id) ? old.filter((x) => x !== id) : [...old, id]);
-    }
     function chooseTool(name) {
+      forgetConstruction();
       setTool(name); setPending([]); setSelection([]);
       if (name === 'point') signalTour('geometry-tool-point');
       if (name === 'segment') signalTour('geometry-tool-segment');
@@ -2350,6 +2389,7 @@ window.__ModuleLoader__.load({
       // action reports a refusal instead of throwing out of the click, which used to
       // leave the clicked corners on the board and never draw the shape.
       const next = spec ? action(spec) : null;
+      forgetConstruction();
       setPending([]);
       if (!next) return;
       setTool('select');
@@ -2362,7 +2402,9 @@ window.__ModuleLoader__.load({
       // Only the point tool counts for the place-point tour step; other tools also
       // drop free points as construction inputs and must not advance that step.
       if (next && tool === 'point') signalTour('geometry-add-point');
-      return next ? next.points.at(-1) : null;
+      const created = next ? next.points.at(-1) : null;
+      if (created && tool !== 'point') constructionPoints.current.push(created.id);
+      return created;
     }
     function usePoint(target, p) {
       // A derived point cannot be a construction input, so a click on it places a new free
@@ -2420,10 +2462,8 @@ window.__ModuleLoader__.load({
           event.preventDefault(); event.currentTarget.setPointerCapture?.(event.pointerId);
           return;
         }
-        if (target) {
-          if (append) toggleSelection(target.id);
-          else setSelection([target.id]);
-        } else if (!append) setSelection([]);
+        if (target) setSelection([target.id]);
+        else setSelection([]);
         event.preventDefault();
         return;
       }
@@ -2472,18 +2512,46 @@ window.__ModuleLoader__.load({
     function dismissOverlay() {
       requestOverlay(null);
     }
+    function cancelDrawing() {
+      const live = boardRef.current;
+      const ids = constructionPoints.current.filter((id) => {
+        const point = live.points.find((item) => item.id === id);
+        if (!point || point.kind !== 'free') return false;
+        return !live.elements.some((el) =>
+          (el.points || []).includes(id) || el.centerPointId === id || el.radiusPointId === id);
+      });
+      forgetConstruction();
+      setPending([]);
+      setHover(null);
+      setTool('select');
+      if (ids.length) action({ type: 'delete', ids });
+    }
     React.useEffect(() => {
       if (!tabActive) return undefined;
       const onKey = (event) => {
         if (event.key !== 'Escape') return;
-        if (overlay) { event.preventDefault(); dismissOverlay(); }
-        if (rename) setRename(null);
-        if (moreOpen) setMoreOpen(false);
-        if (append) setAppend(false);
+        // Note-save keeps its panel. Anything else open is the current operation,
+        // and a later Escape can still drop a line that was underneath it.
+        const noteHeld = overlay?.kind === 'note' && shared.tourHoldsNotePanel?.(tour);
+        if (overlay && !noteHeld) { event.preventDefault(); dismissOverlay(); }
+        if (rename) { event.preventDefault(); setRename(null); }
+        if (moreOpen) { event.preventDefault(); setMoreOpen(false); }
+        if (noteHeld || overlay || rename || moreOpen) return;
+        if (gesture.current) {
+          event.preventDefault();
+          gesture.current = null;
+          setPreview(null);
+          return;
+        }
+        // An unfinished shape, or a drawing tool that has not placed anything yet.
+        if (pending.length || tool !== 'select') {
+          event.preventDefault();
+          cancelDrawing();
+        }
       };
       document.addEventListener('keydown', onKey);
       return () => document.removeEventListener('keydown', onKey);
-    }, [tabActive, overlay, rename, moreOpen, append, tour]);
+    }, [tabActive, overlay, rename, moreOpen, tour, pending, tool]);
     function applyNote() {
       const value = noteRef.current?.value ?? '';
       if (noteTarget) action({ type: 'annotate', target: noteTarget.kind, id: noteTarget.id, value });
@@ -2543,6 +2611,7 @@ window.__ModuleLoader__.load({
       return (async () => {
         // Validation runs before anything is published: a bad file changes nothing.
         const next = G.validate(JSON.parse(await file.text()));
+        forgetConstruction();
         publish(next); setHistory({ past: [], future: [] }); setSelection([]); setPending([]);
         revision.current += 1;
         setStatus(t('imported'));
@@ -2576,6 +2645,7 @@ window.__ModuleLoader__.load({
     const importInput = (event) => picker.importInput(event, { revision: revision.current }).then(report);
     function clearMode() {
       // Clearing this mode resets the geometry canvas and its undo history only.
+      forgetConstruction();
       publish(G.empty());
       setHistory({ past: [], future: [] });
       setSelection([]); setPending([]); setOverlay(null);
@@ -2743,7 +2813,6 @@ window.__ModuleLoader__.load({
     const selectionBar = selection.length > 0 && h('div', { className: 'eb-floating', role: 'toolbar', 'aria-label': t('geometrySelectionActions') },
       h('small', null, `${t('selectedCount')} ${selection.length}`),
       singlePoint && h('button', { type: 'button', className: 'eb-context-action', onClick: () => setRename({ id: singlePoint.id, value: singlePoint.label }) }, t('renamePoint')),
-      h('button', { type: 'button', 'aria-pressed': append, onClick: () => setAppend(!append) }, append ? t('appendDone') : t('appendSelect')),
       h('button', { type: 'button', className: 'eb-danger', onClick: deleteSelection }, icon('trash', 16), t('trash')));
     const stage = h('section', { className: 'eb-stage-wrap', 'aria-label': t('geometryCanvas') },
       props.question,
@@ -2832,6 +2901,8 @@ window.__ModuleLoader__.load({
       step: tour.steps[tour.index], stepIndex: tour.index, stepCount: tour.steps.length,
       t, hole: tourHole, onSkip: finishGeometryTour,
     });
+    // A press outside the shared dialog uses the same close as 返回对话.
+    if (props.bindClose) props.bindClose(() => props.close?.());
     return h(React.Fragment, null,
       h('div', {
         className: 'eb-workspace eb-geometry-workspace', ref: workspaceRef,

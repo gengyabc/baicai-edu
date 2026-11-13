@@ -372,16 +372,25 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       requestOverlay(null);
     }
     React.useEffect(() => {
-      if (!shown) return;
+      // Only the visible tab hears Escape, so a hidden page cannot cancel the other one.
+      if (!tabActive) return undefined;
       const onKey = (event) => {
         if (event.key !== 'Escape') return;
-        if (overlay) { event.preventDefault(); dismissOverlay(); }
-        if (moreOpen) { setMoreOpen(false); }
-        if (append) setAppend(false);
+        const noteHeld = overlay?.kind === 'note' && shared.tourHoldsNotePanel?.(tour);
+        if (overlay && !noteHeld) { event.preventDefault(); dismissOverlay(); }
+        if (moreOpen) { event.preventDefault(); setMoreOpen(false); }
+        if (append) { event.preventDefault(); setAppend(false); }
+        if (noteHeld || overlay || moreOpen || append) return;
+        if (gesture.current || dragShape) {
+          event.preventDefault();
+          gesture.current = null;
+          setPreview(null);
+          setDragShape(null);
+        }
       };
       document.addEventListener('keydown', onKey);
       return () => document.removeEventListener('keydown', onKey);
-    }, [shown, overlay, moreOpen, tour]);
+    }, [tabActive, overlay, moreOpen, append, tour, dragShape]);
 
     function flushEditor() {
       const active = dialog.current?.ownerDocument.activeElement;
@@ -610,6 +619,8 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       if (props.split) props.close?.();
       else setOpened(false);
     }
+    // A press outside the shared dialog uses this same close.
+    if (props.bindClose) props.bindClose(close);
     function recoverDraft(next, nextTrace, message) {
       const version = revision.current;
       withDraftLock(() => {
@@ -1012,7 +1023,8 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
           if (tour) finishQuantityTour();
           else if (overlay) dismissOverlay();
           else if (moreOpen) { setMoreOpen(false); }
-          else close();
+          else if (append) setAppend(false);
+          else if (gesture.current) { gesture.current = null; setPreview(null); }
         },
         onClose: () => setOpened(false),
       },
