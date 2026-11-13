@@ -234,7 +234,44 @@ test('one entry shows both tabs and neither draft sees the other', () => {
     assert.ok(h.find((n) => n.props['data-tab'] === 'geometry'));
     assert.equal(h.find((n) => n.props['data-tab'] === 'geometry').props['aria-selected'], true);
     assert.equal(h.find((n) => n.props['data-tab'] === 'quantity').props['aria-selected'], false);
+    assert.equal(text(h.find((n) => n.props['data-tab'] === 'quantity')), '算数');
   }, { storage });
+});
+
+test('both docks share one toolbar, and return to chat closes the dialog from the quantity tab', () => {
+  const shared = [t('backToChat'), t('undo'), t('redo'), t('zoomOut'), t('fitView'), t('zoomIn'), t('moreActions'), t('insert')];
+  const labels = (h) => {
+    const dock = h.find((node) => node.props.className === 'eb-dock');
+    return walk(dock).filter((node) => node.type === 'button').map((node) => node.props['aria-label'] || text(node));
+  };
+  withMount((h) => {
+    const dialog = () => h.find((node) => node.type === 'dialog').props.ref.current;
+    h.click(t('title'));
+    assert.equal(dialog().open, true);
+    const quantity = labels(h);
+    for (const label of shared) assert.ok(quantity.includes(label), `quantity dock missing ${label}`);
+    assert.ok(quantity.some((label) => String(label).startsWith(`${t('note')} ·`)), 'quantity keeps the note control');
+    assert.ok(quantity.some((label) => String(label).startsWith(t('creationColor'))), 'quantity keeps creation colours');
+    assert.ok(quantity.includes(t('clear')));
+    assert.equal(quantity.includes(t('gridOff')), false);
+    assert.equal(quantity.includes(t('snapOn')), false);
+    h.click(t('backToChat'));
+    assert.equal(dialog().open, false, '返回对话 closes the shared dialog from the quantity tab');
+
+    h.click(t('title'));
+    h.tab('geometry');
+    const geometry = labels(h);
+    for (const label of shared) assert.ok(geometry.includes(label), `geometry dock missing ${label}`);
+    assert.ok(geometry.includes(t('note')));
+    assert.ok(geometry.includes(t('gridOff')));
+    assert.ok(geometry.includes(t('snapOn')));
+    assert.ok(geometry.includes(t('clearGeometry')));
+    assert.equal(geometry.some((label) => String(label).startsWith(t('creationColor'))), false);
+    assert.equal(geometry.includes(t('import')), false, 'open and save stay in the shared more menu');
+    assert.equal(geometry.includes(t('export')), false);
+    h.click(t('backToChat'));
+    assert.equal(dialog().open, false);
+  });
 });
 
 test('each tab keeps its own draft and undo history across a switch', () => {
@@ -300,6 +337,24 @@ test('dragging a free point commits one undo unit and previews before release', 
   });
 });
 
+test('the rectangle tool draws the sides when the third click is not a right angle', () => {
+  withMount((h) => {
+    h.tab('geometry');
+    h.tool('rectangle');
+    h.clickAt(120, 140);
+    h.clickAt(340, 160);
+    h.clickAt(360, 320);
+    const board = h.board();
+    assert.equal(board.elements.length, 1);
+    assert.equal(board.elements[0].type, 'rectangle');
+    assert.equal(board.points.length, 4, 'the fourth corner is drawn with the three clicks');
+    const polygon = h.find((node) => node.type === 'polygon');
+    assert.equal(String(polygon.props.points).trim().split(/\s+/).length, 4, 'the rectangle is a closed outline');
+    assert.equal(polygon.props.fill, 'none');
+    assert.ok(polygon.props.stroke);
+  });
+});
+
 test('rectangle corners keep right angles and the opposite corner stays put', () => {
   withMount((h) => {
     h.tab('geometry');
@@ -311,6 +366,31 @@ test('rectangle corners keep right angles and the opposite corner stays put', ()
     assert.equal(h.board().points.length, 4);
     const derived = h.board().points.find((p) => p.kind === 'derived');
     assert.ok(derived, 'the fourth corner is constructed');
+  });
+});
+
+test('rectangle third click on another shape vertex does not move that vertex', () => {
+  withMount((h) => {
+    h.tab('geometry');
+    h.tool('triangle');
+    h.clickAt(100, 100);
+    h.clickAt(300, 100);
+    h.clickAt(200, 250);
+    const before = h.board().points.find((p) => p.label === 'C');
+    assert.ok(before);
+    h.tool('rectangle');
+    h.clickAt(100, 100);
+    h.clickAt(300, 100);
+    h.clickAt(200, 250);
+    const board = h.board();
+    const shared = board.points.find((p) => p.id === before.id);
+    assert.deepEqual([shared.x, shared.y], [before.x, before.y], 'triangle vertex stays put');
+    const triangle = board.elements.find((e) => e.type === 'polygon');
+    assert.ok(triangle.points.includes(before.id));
+    const rect = board.elements.find((e) => e.type === 'rectangle');
+    assert.ok(rect);
+    assert.equal(rect.points.includes(before.id), false, 'rectangle does not reuse the off-corner vertex');
+    assert.equal(board.elements.length, 2);
   });
 });
 
@@ -486,12 +566,30 @@ test('a derived point is visible and selectable but never a snap target or drag 
   });
 });
 
+test('opening text matches the quantity canvas position and font', () => {
+  withMount((h) => {
+    const line = (root, copy) => walk(root).find((n) => n.type === 'text' && text(n) === copy);
+    const placed = (node) => ({
+      x: node.props.x, y: node.props.y, fontSize: node.props.fontSize,
+      fontWeight: node.props.fontWeight, fill: node.props.fill, textAnchor: node.props.textAnchor,
+    });
+    h.tab('quantity');
+    const quantity = h.find((n) => n.props.className === 'eb-artboard');
+    h.tab('geometry');
+    const geometry = h.find((n) => n.type === 'svg' && String(n.props.className || '').includes('eb-geometry'));
+    assert.deepEqual(placed(line(geometry, t('geometryEmpty'))), placed(line(quantity, t('canvasEmpty'))));
+    assert.deepEqual(placed(line(geometry, t('geometryEmptyHint'))), placed(line(quantity, t('canvasEmptyHint'))));
+  });
+});
+
 test('zoom magnifies the drawing and fit shows the whole board', () => {
   withMount((h) => {
     h.tab('geometry');
     const artboard = () => h.find((n) => n.type === 'svg' && String(n.props.className || '').includes('eb-geometry'));
     const before = artboard();
     assert.equal(before.props.viewBox, '0 0 800 600', 'fit-to-width frames the whole board');
+    assert.deepEqual(before.props.style, { width: '100%', height: 'auto', aspectRatio: '800 / 600' },
+      'fit keeps the full canvas width, so text stays at the original size');
     h.find((n) => n.type === 'button' && n.props['aria-label'] === t('zoomIn')).props.onClick();
     h.render();
     const zoomed = artboard();
@@ -503,6 +601,96 @@ test('zoom magnifies the drawing and fit shows the whole board', () => {
     h.render();
     const fitted = artboard();
     assert.equal(fitted.props.viewBox, '0 0 800 600');
+  });
+});
+
+test('midpoint marks the selected segment and stays idle until a segment is selected', () => {
+  withMount((h) => {
+    h.tab('geometry');
+    const midpoint = () => h.find((node) => node.type === 'button' && node.props['aria-label'] === t('midpoint'));
+    assert.equal(midpoint().props.disabled, true, 'midpoint is idle with nothing selected');
+    h.tool('point');
+    h.clickAt(100, 100);
+    h.clickAt(300, 200);
+    assert.equal(midpoint().props.disabled, true, 'two free points are not a segment');
+    h.tool('segment');
+    h.clickAt(100, 100);
+    h.clickAt(300, 200);
+    assert.equal(midpoint().props.disabled, false, 'the segment just drawn can take a midpoint');
+    const before = h.board().points.length;
+    h.click(t('midpoint'));
+    const board = h.board();
+    const derived = board.points.find((point) => point.kind === 'derived');
+    assert.equal(board.points.length, before + 1);
+    assert.equal(board.elements.length, 1, 'marking a midpoint does not add another shape');
+    assert.deepEqual(derived.construction, { op: 'midpoint', inputs: ['p-1', 'p-2'] });
+    assert.equal(derived.x, 200);
+    assert.equal(derived.y, 150);
+    assert.equal(midpoint().props.disabled, true, 'the new point is selected, so midpoint is idle again');
+    h.tool('select');
+    h.clickAt(150, 125);
+    assert.equal(midpoint().props.disabled, true, 'a segment that already has its midpoint stays idle');
+  });
+});
+
+test('the point tool is drawn as a filled circle', () => {
+  withMount((h) => {
+    h.tab('geometry');
+    const button = h.find((node) => node.type === 'button' && node.props['aria-label'] === t('point'));
+    const mark = walk(button).find((node) => node.type === 'circle');
+    assert.ok(mark, 'the point tool draws a circle');
+    assert.equal(mark.props.fill, 'currentColor');
+    assert.notEqual(mark.props.fill, 'none');
+  });
+});
+
+test('the midpoint tool shows a segment with a mark at its middle', () => {
+  withMount((h) => {
+    h.tab('geometry');
+    const button = h.find((node) => node.type === 'button' && node.props['aria-label'] === t('midpoint'));
+    const marks = walk(button);
+    assert.ok(marks.some((node) => node.type === 'path'), 'the icon includes the segment');
+    const dots = marks.filter((node) => node.type === 'circle' && node.props.fill === 'currentColor');
+    assert.ok(dots.length >= 1, 'the middle of the segment is a filled mark');
+  });
+});
+
+test('the triangle tool closes three points into a polygon', () => {
+  withMount((h) => {
+    h.tab('geometry');
+    h.tool('triangle');
+    h.clickAt(120, 80);
+    h.clickAt(360, 90);
+    h.clickAt(200, 320);
+    const board = h.board();
+    assert.equal(board.elements.length, 1);
+    assert.equal(board.elements[0].type, 'polygon');
+    assert.deepEqual(board.elements[0].points, ['p-1', 'p-2', 'p-3']);
+    assert.equal(board.points.length, 3, 'the third click closes the triangle');
+  });
+});
+
+test('auxiliary is a switch, and the next shape follows it', () => {
+  withMount((h) => {
+    h.tab('geometry');
+    const control = () => h.find((node) => node.type === 'button' && node.props.role === 'switch');
+    assert.equal(control().props['aria-label'], t('auxiliary'));
+    assert.equal(control().props['aria-checked'], false);
+    assert.equal(control().props['aria-pressed'], undefined, 'a switch is not a pressed tool');
+    h.click(t('auxiliary'));
+    assert.equal(control().props['aria-checked'], true);
+    h.tool('segment');
+    h.clickAt(80, 80);
+    h.clickAt(240, 80);
+    assert.equal(h.board().elements[0].role, 'auxiliary');
+    h.click(t('auxiliary'));
+    assert.equal(control().props['aria-checked'], false);
+    h.tool('triangle');
+    h.clickAt(80, 160);
+    h.clickAt(240, 160);
+    h.clickAt(160, 300);
+    assert.equal(h.board().elements[1].role, 'main');
+    assert.equal(h.board().elements[1].type, 'polygon');
   });
 });
 

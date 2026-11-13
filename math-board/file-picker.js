@@ -33,13 +33,14 @@ export const BOARD_ICONS = {
   library: 'M4 4h6v6H4zm10 0h6v6h-6zM4 14h6v6H4zm10 0h6v6h-6z',
   // Geometry page.
   select: 'M5 3l14 8-6 1.5L11 19z',
-  point: 'M12 8a4 4 0 1 1 0 8a4 4 0 1 1 0-8',
+  point: 'M12 6a6 6 0 1 0 .01 0',
   segment: 'M5 19 19 5',
+  triangle: 'M12 3 21 20H3z',
   polygon: 'M12 3 21 9.5 18 20H6L3 9.5z',
   circle: 'M12 4a8 8 0 1 1 0 16a8 8 0 1 1 0-16',
   parallelogram: 'M3 18 8 6h13l-5 12z',
   rectangle: 'M4 6h16v12H4z',
-  midpoint: 'M3 12h18M8 8v8M16 8v8',
+  midpoint: 'M5 17 19 7',
 };
 
 export function createBoardIcons(React, fallback = 'group') {
@@ -70,19 +71,31 @@ export function createBoardIcons(React, fallback = 'group') {
     insert: 'M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5',
     library: 'M4 4h6v6H4zm10 0h6v6h-6zM4 14h6v6H4zm10 0h6v6h-6z',
     select: 'M5 3l14 8-6 1.5L11 19z',
-    point: 'M12 8a4 4 0 1 1 0 8a4 4 0 1 1 0-8',
     segment: 'M5 19 19 5',
+    triangle: 'M12 3 21 20H3z',
     polygon: 'M12 3 21 9.5 18 20H6L3 9.5z',
     circle: 'M12 4a8 8 0 1 1 0 16a8 8 0 1 1 0-16',
     parallelogram: 'M3 18 8 6h13l-5 12z',
     rectangle: 'M4 6h16v12H4z',
-    midpoint: 'M3 12h18M8 8v8M16 8v8',
+  };
+  const frame = (size) => ({
+    width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor',
+    strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true,
+  });
+  // Point and midpoint are not single strokes: a point is a solid disc, and a midpoint
+  // is the segment itself with the middle marked, so the button reads as that action.
+  const marks = {
+    point: (size) => h('svg', { ...frame(size), fill: 'currentColor', stroke: 'none' },
+      h('circle', { cx: 12, cy: 12, r: 6, fill: 'currentColor', stroke: 'none' })),
+    midpoint: (size) => h('svg', frame(size),
+      h('path', { d: 'M5 17 19 7' }),
+      h('circle', { cx: 5, cy: 17, r: 1.6, fill: 'currentColor', stroke: 'none' }),
+      h('circle', { cx: 19, cy: 7, r: 1.6, fill: 'currentColor', stroke: 'none' }),
+      h('circle', { cx: 12, cy: 12, r: 3.2, fill: 'currentColor', stroke: 'none' })),
   };
   return function icon(name, size = 18) {
-    return h('svg', {
-      width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor',
-      strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true,
-    }, h('path', { d: paths[name] || paths[fallback] }));
+    if (marks[name]) return marks[name](size);
+    return h('svg', frame(size), h('path', { d: paths[name] || paths[fallback] }));
   };
 }
 

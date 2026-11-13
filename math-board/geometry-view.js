@@ -1,6 +1,6 @@
-// Geometry tab: a draw-only canvas with points, segments, polygons, circles, parallelograms
-// and rectangles. Embedded into client.js by build.mjs. Nothing here reads the quantity
-// board: no patterns, no values, no shared storage key, no shared undo history.
+// Geometry tab: a draw-only canvas with points, segments, triangles, polygons, circles,
+// parallelograms and rectangles. Embedded into client.js by build.mjs. Nothing here reads
+// the quantity board: no patterns, no values, no shared storage key, no shared undo history.
 
 /**
  * The geometry page. `shared` is required and carries the modules both tabs use
@@ -13,9 +13,13 @@ export function createGeometryPage(React, G, ctx, t, shared) {
   const STORAGE_PREFIX = 'dsh-edu-math-board:geometry:v1:';
   const HISTORY_LIMIT = 40;
   const SNAP_RADIUS = 12;
-  // The drawable library comes from the model so the two lists cannot drift;
-  // "select" and "midpoint" are tools, not shapes.
-  const TOOLS = ['select', ...G.shapeLibrary, 'midpoint'];
+  // The drawable library comes from the model so the two lists cannot drift.
+  // "select" is a tool, not a shape. A triangle is three clicks that close as a polygon,
+  // so it stays out of the snapshot's element types. Midpoint is an action on a selected
+  // segment, drawn beside these tools rather than as one of them.
+  const shapeTools = G.shapeLibrary.filter((name) => name !== 'point');
+  const polygonAt = shapeTools.indexOf('polygon');
+  const DRAW_TOOLS = ['select', 'point', ...shapeTools.slice(0, polygonAt), 'triangle', ...shapeTools.slice(polygonAt)];
   // Icons and the file pickers are shared with the quantity tab so the two tabs cannot
   // drift apart; only the per-tab callbacks below differ.
   const icon = shared.createBoardIcons(React);
@@ -36,6 +40,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     const [fit, setFit] = React.useState(true);
     const [grid, setGrid] = React.useState(false);
     const [snap, setSnap] = React.useState(true);
+    const [moreOpen, setMoreOpen] = React.useState(false);
     const [status, setStatus] = React.useState('');
     const [overlay, setOverlay] = React.useState(null);
     const [rename, setRename] = React.useState(null);
@@ -70,6 +75,14 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     React.useEffect(() => {
       if (overlay?.kind === 'note') noteRef.current?.focus();
     }, [overlay]);
+    React.useEffect(() => {
+      if (!moreOpen) return undefined;
+      const closeMenus = (event) => {
+        if (!event.target.closest?.('.eb-menu, .eb-menu-trigger')) setMoreOpen(false);
+      };
+      document.addEventListener('pointerdown', closeMenus);
+      return () => document.removeEventListener('pointerdown', closeMenus);
+    }, [moreOpen]);
 
     function publish(next) { boardRef.current = next; setBoard(next); }
     function action(a) {
@@ -161,17 +174,17 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     function chooseTool(name) { setTool(name); setPending([]); setSelection([]); }
     function finish(ids) {
       const before = boardRef.current;
-      let next = before;
-      if (tool === 'segment') next = G.reduce(before, { type: 'addElement', elementType: 'segment', points: ids, role: auxiliary ? 'auxiliary' : 'main' });
-      else if (tool === 'polygon') next = G.reduce(before, { type: 'addElement', elementType: 'polygon', points: ids, role: auxiliary ? 'auxiliary' : 'main' });
-      else if (tool === 'circle') next = G.reduce(before, { type: 'addElement', elementType: 'circle', centerPointId: ids[0], radiusPointId: ids[1], role: auxiliary ? 'auxiliary' : 'main' });
-      else if (tool === 'parallelogram' || tool === 'rectangle') next = G.reduce(before, { type: 'addElement', elementType: tool, points: ids, role: auxiliary ? 'auxiliary' : 'main' });
-      else if (tool === 'midpoint') next = G.reduce(before, { type: 'addMidpoint', a: ids[0], b: ids[1] });
-      if (JSON.stringify(next) !== JSON.stringify(before)) {
-        setHistory((old) => ({ past: [...old.past, before].slice(-HISTORY_LIMIT), future: [] }));
-        publish(next);
-      }
+      const role = auxiliary ? 'auxiliary' : 'main';
+      const spec = tool === 'segment' ? { type: 'addElement', elementType: 'segment', points: ids, role }
+        : tool === 'triangle' || tool === 'polygon' ? { type: 'addElement', elementType: 'polygon', points: ids, role }
+        : tool === 'circle' ? { type: 'addElement', elementType: 'circle', centerPointId: ids[0], radiusPointId: ids[1], role }
+        : tool === 'parallelogram' || tool === 'rectangle' ? { type: 'addElement', elementType: tool, points: ids, role }
+        : null;
+      // action reports a refusal instead of throwing out of the click, which used to
+      // leave the clicked corners on the board and never draw the shape.
+      const next = spec ? action(spec) : null;
       setPending([]);
+      if (!next) return;
       setTool('select');
       const created = next.elements.find((e) => !before.elements.some((old) => old.id === e.id));
       if (created) setSelection([created.id]);
@@ -183,22 +196,40 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     function usePoint(target, p) {
       // A derived point cannot be a construction input, so a click on it places a new free
       // point instead of silently reusing an id the model would reject.
-      const usable = target && boardRef.current.points.find((q) => q.id === target.id)?.kind === 'free' ? target : null;
+      let usable = target && boardRef.current.points.find((q) => q.id === target.id)?.kind === 'free' ? target : null;
+      let place = p;
+      if (tool === 'rectangle' && pending.length === 2) {
+        const [a, b] = pending.map((id) => boardRef.current.points.find((q) => q.id === id));
+        const draft = a && b ? G.rectangleAt(a, b, p) : null;
+        if (!draft) {
+          setStatus(`${t('failed')}: Degenerate element`);
+          return;
+        }
+        // Reuse a free hit only when it already lies on the right-angle corner; otherwise
+        // place a new point there so another shape that shares the hit is not warped.
+        const hit = usable && boardRef.current.points.find((q) => q.id === usable.id);
+        const onCorner = hit
+          && Math.hypot(hit.x - draft.third.x, hit.y - draft.third.y) <= G.bounds.epsilon;
+        if (!onCorner) {
+          place = draft.third;
+          usable = null;
+        }
+      }
       let chosen = usable;
       if (!chosen) {
-        const created = clickEmpty(p);
+        const created = clickEmpty(place);
         if (!created) return;
         chosen = { kind: 'point', id: created.id };
       }
       const ids = [...pending, chosen.id];
       if (tool === 'segment' && ids.length === 2) return finish(ids);
       if (tool === 'circle' && ids.length === 2) return finish(ids);
-      if (tool === 'midpoint' && ids.length === 2) return finish(ids);
+      if (tool === 'triangle' && ids.length === 3) return finish(ids);
       if (tool === 'parallelogram' && ids.length === 3) return finish(ids);
       if (tool === 'rectangle' && ids.length === 3) return finish(ids);
       if (tool === 'polygon') {
-        // Three points close a triangle; a larger ring closes when the first point is clicked
-        // again, and that click never reaches here because the pending list already holds it.
+        // The ring closes when the first point is clicked again; that repeat is dropped
+        // so the polygon keeps each vertex once.
         if (ids.length > 3 && chosen.id === ids[0]) return finish(ids.slice(0, -1));
         setPending(ids); return;
       }
@@ -336,8 +367,8 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     const report = (result) => {
       if (result?.message) setStatus(result.message);
     };
-    const saveFile = () => picker.saveFile().then(report);
-    const openFile = () => picker.openFile({ revision: revision.current }).then(report);
+    const saveFile = () => { setMoreOpen(false); return picker.saveFile().then(report); };
+    const openFile = () => { setMoreOpen(false); return picker.openFile({ revision: revision.current }).then(report); };
     const importInput = (event) => picker.importInput(event, { revision: revision.current }).then(report);
     function clearMode() {
       // Clearing this mode resets the geometry canvas and its undo history only.
@@ -412,16 +443,26 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       if (!points.length || !hover) return null;
       const last = points.at(-1);
       if (tool === 'circle') return h('circle', { cx: last.x, cy: last.y, r: Math.hypot(hover.x - last.x, hover.y - last.y), ...previewStyle });
-      if (tool === 'segment' || tool === 'polygon' || tool === 'parallelogram' || tool === 'rectangle' || tool === 'midpoint') {
+      if (tool === 'rectangle' && points.length >= 2) {
+        const draft = G.rectangleAt(points[0], points[1], hover);
+        if (!draft) return null;
+        const ring = [points[0], points[1], draft.third, draft.fourth];
+        return h('polygon', { points: ring.map((p) => `${p.x},${p.y}`).join(' '), ...previewStyle });
+      }
+      if (tool === 'triangle' && points.length >= 2) {
+        return h('polygon', { points: [...points, hover].map((p) => `${p.x},${p.y}`).join(' '), ...previewStyle });
+      }
+      if (tool === 'segment' || tool === 'triangle' || tool === 'polygon' || tool === 'parallelogram' || tool === 'rectangle') {
         return h('polyline', { points: [...points, hover].map((p) => `${p.x},${p.y}`).join(' '), ...previewStyle });
       }
       return null;
     }
     const previewStyle = { fill: 'none', stroke: '#93C5FD', strokeWidth: 2, strokeDasharray: '5 4', 'pointer-events': 'none' };
-    // Zoom is real: the viewBox narrows by the zoom factor while the SVG keeps its CSS size,
-    // so every stroke, label and point grows with it. Fit-to-width shows the whole board.
-    // `non-scaling-stroke` is deliberately not used: a magnified figure must look magnified,
-    // exactly as the quantity board's zoom scales its artwork.
+    // Zoom is real: the viewBox narrows by the zoom factor while the SVG keeps the full
+    // canvas width, so every stroke, label and point grows with it and fit never shrinks
+    // them to the viewport height. `non-scaling-stroke` is deliberately not used: a
+    // magnified figure must look magnified, exactly as the quantity board's zoom scales
+    // its artwork.
     const span = { width: width / (fit ? 1 : zoom), height: height / (fit ? 1 : zoom) };
     const origin = { x: (width - span.width) / 2, y: (height - span.height) / 2 };
     const canvas = h('div', { className: 'eb-canvas-scroll' },
@@ -444,20 +485,52 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       hintShape(),
       hover && !pending.length && tool !== 'select' && tool !== 'point'
         && h('circle', { cx: hover.x, cy: hover.y, r: 6, fill: '#BFDBFE', stroke: '#2563EB', strokeWidth: 1.5, 'pointer-events': 'none' }),
-      !board.points.length && !board.elements.length && h('g', { 'pointer-events': 'none' },
-        h('text', { x: width / 2, y: height / 2 - 12, textAnchor: 'middle', fill: '#64748B', fontSize: 17 }, t('geometryEmpty')),
-        h('text', { x: width / 2, y: height / 2 + 14, textAnchor: 'middle', fill: '#64748B', fontSize: 12 }, t('geometryEmptyHint')))));
+      // Same place and type as the quantity canvas: 17/500 at y=190, 12 at y=216.
+      !board.points.length && !board.elements.length && h('g', { pointerEvents: 'none' },
+        h('text', { x: 400, y: 190, textAnchor: 'middle', fill: '#64748B', fontSize: 17, fontWeight: 500 }, t('geometryEmpty')),
+        h('text', { x: 400, y: 216, textAnchor: 'middle', fill: '#64748B', fontSize: 12 }, t('geometryEmptyHint')))));
 
+    // Midpoint is an action on one selected segment, not a tool that drops new endpoints.
+    // It stays disabled until that segment's two free ends do not already have a midpoint.
+    function midpointTarget() {
+      if (selection.length !== 1) return null;
+      const element = board.elements.find((item) => item.id === selection[0]);
+      if (!element || element.type !== 'segment' || element.points.length !== 2) return null;
+      const [a, b] = element.points;
+      const ends = [a, b].map((id) => board.points.find((point) => point.id === id));
+      if (ends.some((point) => !point || point.kind !== 'free')) return null;
+      const taken = board.points.some((point) => point.construction?.op === 'midpoint'
+        && point.construction.inputs?.length === 2
+        && point.construction.inputs.includes(a) && point.construction.inputs.includes(b));
+      return taken ? null : element;
+    }
+    function markMidpoint() {
+      const element = midpointTarget();
+      if (!element) return;
+      const [a, b] = element.points;
+      const next = action({ type: 'addMidpoint', a, b });
+      if (!next) return;
+      const created = next.points.find((point) => point.construction?.op === 'midpoint'
+        && point.construction.inputs[0] === a && point.construction.inputs[1] === b
+        && !board.points.some((old) => old.id === point.id));
+      if (created) setSelection([created.id]);
+    }
     const toolButton = (name) => h('button', {
       key: name, type: 'button', className: 'eb-tool', title: t(name), 'aria-label': t(name),
       'aria-pressed': tool === name, onClick: () => chooseTool(name),
     }, icon(name));
     const tools = h('aside', { className: 'eb-palette eb-geometry-tools', 'aria-label': t('geometryTools') },
-      TOOLS.map(toolButton),
+      DRAW_TOOLS.map(toolButton),
       h('button', {
-        type: 'button', className: 'eb-tool', 'aria-pressed': auxiliary, onClick: () => setAuxiliary(!auxiliary),
-        title: t('auxiliary'), 'aria-label': t('auxiliary'),
-      }, icon('segment'), h('span', { className: 'eb-label' }, t('auxiliary'))));
+        type: 'button', className: 'eb-tool', title: t('midpoint'), 'aria-label': t('midpoint'),
+        disabled: !midpointTarget(), onClick: markMidpoint,
+      }, icon('midpoint')),
+      h('button', {
+        type: 'button', className: 'eb-tool eb-switch', role: 'switch', 'aria-checked': auxiliary,
+        title: t('auxiliary'), 'aria-label': t('auxiliary'), onClick: () => setAuxiliary((on) => !on),
+      }, h('span', { className: 'eb-switch-track', 'aria-hidden': true },
+        h('span', { className: 'eb-switch-knob' })),
+      h('span', { className: 'eb-label' }, t('auxiliary'))));
     const selectionBar = selection.length > 0 && h('div', { className: 'eb-floating', role: 'toolbar', 'aria-label': t('geometrySelectionActions') },
       h('small', null, `${t('selectedCount')} ${selection.length}`),
       singlePoint && h('button', { type: 'button', className: 'eb-context-action', onClick: () => setRename({ id: singlePoint.id, value: singlePoint.label }) }, t('renamePoint')),
@@ -466,32 +539,50 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     const stage = h('section', { className: 'eb-stage-wrap', 'aria-label': t('geometryCanvas') },
       props.question,
       h('div', { className: 'eb-stage-frame' }, canvas, selectionBar));
+    // Same helpers and the same dock order as the quantity tab. This tab drops creation
+    // colours and the trace checkbox, and keeps grid and snap in that slot.
+    function button(label, handler, extra = {}) { return h('button', { type: 'button', onClick: handler, ...extra }, label); }
+    function dockButton(name, handler, extra = {}) {
+      return button(icon(name), handler, { title: t(name), 'aria-label': t(name), className: 'eb-icon-button', ...extra });
+    }
+    function labelled(name, text, handler, extra = {}) {
+      const label = extra.title ?? text;
+      return button(h(React.Fragment, null, icon(name, 16), h('span', { className: 'eb-label' }, text)), handler,
+        { ...extra, title: label, 'aria-label': label });
+    }
+    const modeToggle = (pressed, onLabel, offLabel, handler) => button(pressed ? t(onLabel) : t(offLabel), handler, {
+      className: 'eb-mode-toggle', 'aria-pressed': pressed, title: pressed ? t(onLabel) : t(offLabel),
+      'aria-label': pressed ? t(onLabel) : t(offLabel),
+    });
+    const noteHasText = Boolean(noteValue);
+    const moreMenuNode = moreOpen && h('div', { className: 'eb-menu eb-more-menu', role: 'menu', 'aria-label': t('files') },
+      h('div', { className: 'eb-menu-head' }, t('files')),
+      button(h(React.Fragment, null, icon('open', 16), h('span', null, t('import'))), openFile, { role: 'menuitem' }),
+      button(h(React.Fragment, null, icon('save', 16), h('span', null, t('export'))), saveFile, { role: 'menuitem' }),
+      picker.fileNameState && h('p', { className: 'eb-menu-note' }, picker.fileNameState));
     const dock = h('nav', { className: 'eb-dock', 'aria-label': t('canvasTools') },
-      h('button', { type: 'button', className: 'eb-dock-return', onClick: props.close }, t('backToChat')),
+      labelled('back', t('backToChat'), () => props.close?.(), { className: 'eb-dock-return' }),
       h('span', { className: 'eb-divider' }),
-      h('button', { type: 'button', className: 'eb-icon-button', title: t('undo'), 'aria-label': t('undo'), disabled: !history.past.length, onClick: undo }, icon('undo', 18)),
-      h('button', { type: 'button', className: 'eb-icon-button', title: t('redo'), 'aria-label': t('redo'), disabled: !history.future.length, onClick: redo }, icon('redo', 18)),
+      dockButton('undo', undo, { disabled: !history.past.length }),
+      dockButton('redo', redo, { disabled: !history.future.length, className: 'eb-icon-button eb-redo', title: t('redo') }),
       h('span', { className: 'eb-divider' }),
-      h('button', { type: 'button', 'aria-pressed': grid, onClick: () => setGrid(!grid) }, grid ? t('gridOn') : t('gridOff')),
-      h('button', { type: 'button', 'aria-pressed': snap, onClick: () => setSnap(!snap) }, snap ? t('snapOn') : t('snapOff')),
+      modeToggle(grid, 'gridOn', 'gridOff', () => setGrid(!grid)),
+      modeToggle(snap, 'snapOn', 'snapOff', () => setSnap(!snap)),
       h('span', { className: 'eb-divider' }),
-      h('button', { type: 'button', className: 'eb-zoom-button', 'aria-label': t('zoomOut'), onClick: () => { setFit(false); setZoom(Math.max(0.5, zoom - 0.25)); } }, '−'),
-      h('button', { type: 'button', className: 'eb-zoom-label', 'aria-pressed': fit, onClick: () => setFit(!fit) }, fit ? t('fitView') : `${Math.round(zoom * 100)}%`),
-      h('button', { type: 'button', className: 'eb-zoom-button', 'aria-label': t('zoomIn'), onClick: () => { setFit(false); setZoom(Math.min(2, zoom + 0.25)); } }, '＋'),
+      button('−', () => { setFit(false); setZoom(Math.max(0.5, zoom - 0.25)); }, { className: 'eb-zoom-button eb-zoom-out', 'aria-label': t('zoomOut'), title: t('zoomOut') }),
+      button(fit ? t('fitView') : `${Math.round(zoom * 100)}%`, () => setFit(!fit), { className: 'eb-zoom-label', 'aria-label': t('fitView'), 'aria-pressed': fit, title: t('fitView') }),
+      button('＋', () => { setFit(false); setZoom(Math.min(2, zoom + 0.25)); }, { className: 'eb-zoom-button eb-zoom-in', 'aria-label': t('zoomIn'), title: t('zoomIn') }),
       h('span', { className: 'eb-grow' }),
-      h('button', {
-        type: 'button', className: `eb-note-button${noteTarget ? ' eb-contextual' : ''}`,
+      button(h(React.Fragment, null, icon('note', 19), noteHasText ? h('span', { className: 'eb-note-dot' }) : null), () => setOverlay({ kind: 'note' }), {
+        className: `eb-note-button${noteTarget ? ' eb-contextual' : ''}`,
         title: noteTarget ? `${t('note')} · ${noteTarget.label}` : `${t('note')} · ${t('noteGeneral')}`,
-        'aria-label': t('note'), onClick: () => setOverlay({ kind: 'note' }),
-      }, icon('note', 18)),
-      h('button', { type: 'button', className: 'eb-icon-button eb-danger', title: t('clearGeometry'), 'aria-label': t('clearGeometry'),
-        onClick: () => setOverlay({ kind: 'clear' }) }, icon('clear', 18)),
-      h('button', { type: 'button', title: t('export'), 'aria-label': t('export'), onClick: saveFile }, t('export')),
-      h('button', { type: 'button', title: t('import'), 'aria-label': t('import'), onClick: openFile }, t('import')),
-      h('button', {
-        type: 'button', className: 'eb-primary', title: t('insert'), disabled: phase !== 'plain' || (!board.points.length && !board.elements.length && !board.note),
-        onClick: () => insertGeometry(),
-      }, t('insert')));
+        'aria-label': t('note'),
+      }),
+      button(icon('clear', 19), () => setOverlay({ kind: 'clear' }), { className: 'eb-icon-button eb-danger', title: t('clearGeometry'), 'aria-label': t('clearGeometry') }),
+      button(icon('more', 19), () => setMoreOpen(!moreOpen), { className: 'eb-icon-button eb-menu-trigger', title: t('moreActions'), 'aria-label': t('moreActions'), 'aria-expanded': moreOpen }),
+      button(h(React.Fragment, null, icon('insert', 17), h('span', null, t('insert'))), () => insertGeometry(), {
+        className: 'eb-primary', title: t('insert'), disabled: phase !== 'plain' || (!board.points.length && !board.elements.length && !board.note),
+      }));
     const overlayNode = overlay && h('div', { className: 'eb-overlay', onPointerDown: (event) => { if (event.target === event.currentTarget) setOverlay(null); } },
       h('div', { className: `eb-overlay-card eb-overlay-${overlay.kind}`, role: 'dialog', 'aria-modal': 'true' },
         overlay.kind === 'note' && h(React.Fragment, null,
@@ -524,7 +615,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
         if (!(event.metaKey || event.ctrlKey)) return;
         if (event.key === 'z' || event.key === 'Z') { event.preventDefault(); if (event.shiftKey) redo(); else undo(); }
         if (event.key === 'y' || event.key === 'Y') { event.preventDefault(); redo(); }
-      } }, tools, stage, dock, statusNode, overlayNode, renameNode),
+      } }, tools, stage, dock, moreMenuNode, statusNode, overlayNode, renameNode),
       h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: fileInputRef, onChange: importInput }));
   };
 }

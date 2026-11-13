@@ -274,21 +274,24 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       const timer = setTimeout(() => setStatus(''), 5200);
       return () => clearTimeout(timer);
     }, [status]);
+    // In the shared dialog this page has no `opened` of its own: the shell already
+    // showed it, so menus must still dismiss. A standalone board waits until it opens.
+    const shown = Boolean(props.split) || opened;
     React.useEffect(() => {
-      if (!opened) return;
+      if (!shown) return;
       const closeMenus = (event) => {
         if (!event.target.closest?.('.eb-menu, .eb-menu-trigger')) { setMoreOpen(false); }
       };
       document.addEventListener('pointerdown', closeMenus);
       return () => document.removeEventListener('pointerdown', closeMenus);
-    }, [opened]);
+    }, [shown]);
     React.useEffect(() => {
       if (!overlay) return;
       const node = overlay.kind === 'note' ? noteRef.current : nameRef.current;
       if (node) { node.focus(); if (node.select) node.select(); }
     }, [overlay]);
     React.useEffect(() => {
-      if (!opened) return;
+      if (!shown) return;
       const onKey = (event) => {
         if (event.key !== 'Escape') return;
         if (overlay) { event.preventDefault(); setOverlay(null); }
@@ -297,7 +300,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       };
       document.addEventListener('keydown', onKey);
       return () => document.removeEventListener('keydown', onKey);
-    }, [opened, overlay, moreOpen]);
+    }, [shown, overlay, moreOpen]);
 
     function flushEditor() {
       const active = dialog.current?.ownerDocument.activeElement;
@@ -513,9 +516,13 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     }
     function close() {
       flushEditor(); gesture.current = null; setPreview(null); setOverlay(null);
-      setMoreOpen(false); setAppend(false); setOpened(false);
+      setMoreOpen(false); setAppend(false);
       // Persistent task notices are acknowledged once the student has seen them.
       if ([t('autoClearError'), t('autoClearSkipped'), t('autoClearDone')].includes(status)) setStatus('');
+      // The shell owns the only dialog. Closing this page's unused `opened` flag
+      // leaves that dialog up, so "返回对话" did nothing on the quantity tab.
+      if (props.split) props.close?.();
+      else setOpened(false);
     }
     function recoverDraft(next, nextTrace, message) {
       const version = revision.current;
@@ -795,6 +802,8 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       picker.fileNameState && h('p', { className: 'eb-menu-note' }, picker.fileNameState),
       h('div', { className: 'eb-menu-line' }),
       h('label', { className: 'eb-menu-check' }, h('input', { type: 'checkbox', checked: attachTrace, onChange: (event) => setAttachTrace(event.target.checked) }), h('span', null, t('traceAttach'))));
+    // One dock for both tabs, in this order. This tab keeps creation colours and the
+    // trace checkbox; the geometry tab keeps grid and snap in that same slot.
     const dock = h('nav', { className: 'eb-dock', 'aria-label': t('canvasTools') },
       labelled('back', t('backToChat'), close, { className: 'eb-dock-return' }),
       h('span', { className: 'eb-divider' }),

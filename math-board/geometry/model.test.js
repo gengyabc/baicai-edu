@@ -222,6 +222,54 @@ test('dragging any quadrilateral corner keeps its diagonal partner and every rig
   }
 });
 
+test('a rectangle click that misses the right angle still closes the rectangle', () => {
+  // A freehand third click is not an exact right angle. The first side stays put; a new
+  // free corner keeps only the perpendicular part of the click (the skewed seed point is
+  // left alone), and the fourth corner is derived so the shape is a rectangle.
+  let b = add(add(add(G.empty(), 120, 140), 340, 160), 360, 320);
+  b = shape(b, 'rectangle', ['p-1', 'p-2', 'p-3']);
+  assert.equal(b.elements.length, 1);
+  assert.equal(b.elements[0].type, 'rectangle');
+  assert.deepEqual(b.elements[0].points, ['p-1', 'p-2', 'p-4', 'p-5']);
+  assert.deepEqual([at(b, 'p-3').x, at(b, 'p-3').y], [360, 320], 'the skewed seed stays put');
+  const [a, corner, c, d] = ['p-1', 'p-2', 'p-4', 'p-5'].map((id) => at(b, id));
+  assert.deepEqual([a.x, a.y, corner.x, corner.y], [120, 140, 340, 160]);
+  const side = { x: a.x - corner.x, y: a.y - corner.y };
+  const leg = { x: c.x - corner.x, y: c.y - corner.y };
+  assert.ok(near(side.x * leg.x + side.y * leg.y, 0), 'the second corner stays a right angle');
+  assert.equal(c.kind, 'free');
+  assert.equal(d.kind, 'derived');
+  assert.ok(near(d.x, a.x + c.x - corner.x) && near(d.y, a.y + c.y - corner.y));
+  const click = { x: 360, y: 320 };
+  const nx = -side.y, ny = side.x;
+  const len2 = nx * nx + ny * ny;
+  const h = ((click.x - corner.x) * nx + (click.y - corner.y) * ny) / len2;
+  assert.ok(near(c.x, corner.x + h * nx) && near(c.y, corner.y + h * ny),
+    'the new third corner keeps the click height and drops the skew');
+  // A click with no height is still refused; it must not invent a flat rectangle.
+  const flat = add(add(add(G.empty(), 100, 100), 300, 100), 450, 100);
+  assert.throws(() => shape(flat, 'rectangle', ['p-1', 'p-2', 'p-3']), /Degenerate/);
+});
+
+test('a rectangle does not relocate a free vertex shared with another shape', () => {
+  // Triangle ABC, then a rectangle on AB whose third input names C off the perpendicular.
+  // C must stay put so the triangle is not warped; the rectangle gets its own third corner.
+  let b = add(add(add(G.empty(), 100, 100), 300, 100), 200, 250);
+  b = shape(b, 'polygon', ['p-1', 'p-2', 'p-3']);
+  const before = { x: at(b, 'p-3').x, y: at(b, 'p-3').y };
+  b = shape(b, 'rectangle', ['p-1', 'p-2', 'p-3']);
+  assert.deepEqual([at(b, 'p-3').x, at(b, 'p-3').y], [before.x, before.y], 'triangle vertex stays put');
+  const triangle = b.elements.find((e) => e.type === 'polygon');
+  assert.deepEqual(triangle.points, ['p-1', 'p-2', 'p-3']);
+  const rect = b.elements.find((e) => e.type === 'rectangle');
+  assert.ok(rect);
+  assert.notEqual(rect.points[2], 'p-3', 'rectangle owns a fresh third corner');
+  const [a, corner, c] = [rect.points[0], rect.points[1], rect.points[2]].map((id) => at(b, id));
+  const side = { x: a.x - corner.x, y: a.y - corner.y };
+  const leg = { x: c.x - corner.x, y: c.y - corner.y };
+  assert.ok(near(side.x * leg.x + side.y * leg.y, 0), 'rectangle keeps a right angle at P2');
+});
+
 test('a rectangle never degrades: an axis drag stops the shape from collapsing', () => {
   let b = add(add(add(G.empty(), 100, 100), 400, 100), 400, 300);
   b = shape(b, 'rectangle', ['p-1', 'p-2', 'p-3']);

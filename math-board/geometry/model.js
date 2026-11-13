@@ -41,6 +41,26 @@ export function createGeometryModel() {
   // so P2 and P4 are the diagonal pair for both families. Dragging a corner keeps its
   // diagonal partner and re-derives the other one from the two remaining corners.
   const fourthPoint = (a, b, c) => ({ x: a.x + c.x - b.x, y: a.y + c.y - b.y });
+  // A rectangle drawn from three clicks keeps the side P1 P2 and a right angle at P2.
+  // The third click is a height: P3 moves onto the perpendicular through P2, and only
+  // the part of the click perpendicular to P1 P2 is kept. An already-right corner is
+  // unchanged. No perpendicular height means there is no rectangle.
+  function rectangleThird(a, b, c) {
+    const vx = a.x - b.x, vy = a.y - b.y;
+    const nx = -vy, ny = vx;
+    const len2 = nx * nx + ny * ny;
+    if (!(len2 > EPSILON * EPSILON)) return null;
+    const h = ((c.x - b.x) * nx + (c.y - b.y) * ny) / len2;
+    const third = { x: b.x + h * nx, y: b.y + h * ny };
+    if (!(distance(third, b) > EPSILON)) return null;
+    return { third, fourth: fourthPoint(a, b, third) };
+  }
+  // Preview and placement: null when the rectangle would flatten or leave the board.
+  const rectangleAt = (a, b, c) => {
+    const placed = a && b && c ? rectangleThird(a, b, c) : null;
+    if (!placed || !inside(placed.third) || !inside(placed.fourth)) return null;
+    return placed;
+  };
   // A rectangle's three inputs P1 P2 P3 are perpendicular at their middle corner, so its
   // construction fixes all four right angles no matter which corner the student dragged.
   const rectangleValid = ([a, b, c]) => {
@@ -425,12 +445,33 @@ export function createGeometryModel() {
         orderedIds.forEach(pointById);
         if (action.elementType === 'parallelogram' || action.elementType === 'rectangle') {
           if (orderedIds.length !== 3) fail('This shape starts from three points');
-          const at = fourthPoint(...orderedIds.map(pointById));
+          let board = canonical;
+          if (action.elementType === 'rectangle') {
+            // The third click sets the height. Keep P1P2 and place P3 on the perpendicular
+            // through P2. Reuse the named third point only when it already sits within ε of
+            // that spot (tiny snap for an exact right angle); otherwise allocate a new free
+            // corner so a shared vertex of another shape is never relocated.
+            const [a, b, c] = orderedIds.map((ref) => board.points.find((p) => p.id === ref));
+            const placed = rectangleThird(a, b, c);
+            if (!placed) fail('Degenerate element');
+            if (!inside(placed.third) || !inside(placed.fourth)) fail('The fourth point would leave the board');
+            if (distance(c, placed.third) <= EPSILON) {
+              board = validate({ ...board, points: board.points.map((p) => p.id === c.id
+                ? { ...p, x: placed.third.x, y: placed.third.y } : p) });
+            } else {
+              const thirdId = nextId(board, 'p');
+              const thirdPoint = { id: thirdId, label: nextLabel(board, thirdId), kind: 'free',
+                x: placed.third.x, y: placed.third.y, construction: null, note: '' };
+              board = validate({ ...board, points: [...board.points, thirdPoint] });
+              orderedIds[2] = thirdId;
+            }
+          }
+          const at = fourthPoint(...orderedIds.map((ref) => board.points.find((p) => p.id === ref)));
           if (!inside(at)) fail('The fourth point would leave the board');
-          const derivedId = nextId(canonical, 'p');
-          const derived = { id: derivedId, label: nextLabel(canonical, derivedId), kind: 'derived', ...at,
+          const derivedId = nextId(board, 'p');
+          const derived = { id: derivedId, label: nextLabel(board, derivedId), kind: 'derived', ...at,
             construction: { op: action.elementType, inputs: orderedIds }, note: '' };
-          const candidate = validate({ ...canonical, points: [...canonical.points, derived] });
+          const candidate = validate({ ...board, points: [...board.points, derived] });
           const shape = { id, type: action.elementType, points: [...orderedIds, derivedId], role, note };
           return validate({ ...candidate, elements: [...candidate.elements, shape] });
         }
@@ -518,5 +559,5 @@ export function createGeometryModel() {
   const shapeLibrary = ['point', ...elementTypes];
   return { kind: KIND, coordinateSystem, shapeLibrary, elementTypes: [...elementTypes], roles: [...roles], operations: [...operations],
     bounds: { width: WIDTH, height: HEIGHT, margin: MARGIN, epsilon: EPSILON },
-    empty, validate, reduce, constrainedMove, dependents: (board, id) => dependents(cloneBoard(board), id), serialize };
+    empty, validate, reduce, constrainedMove, rectangleAt, dependents: (board, id) => dependents(cloneBoard(board), id), serialize };
 }

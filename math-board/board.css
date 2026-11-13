@@ -68,6 +68,7 @@
 .eb-dock .eb-zoom-label{min-width:46px;font-size:12px;color:#6E7C86;padding:7px 6px}
 .eb-dock .eb-zoom-button{width:36px;min-width:36px;padding:6px;font-size:16px;color:#65747E}
 .eb-dock .eb-color-button{min-width:82px;padding:6px 9px;gap:7px;border:1px solid #DCE4DF;background:#F9FCF7;border-radius:9px}
+.eb-dock .eb-mode-toggle{padding:6px 10px;border:1px solid #DCE4DF;background:#F9FCF7;border-radius:9px;font-size:12px}
 .eb-color-dot{display:inline-block;flex:none;width:19px;height:19px;border-radius:999px;border:1px solid #233A2626;box-shadow:inset 0 1px 1px #FFF6}
 .eb-color-value{font-size:12px;font-weight:650;min-width:24px;text-align:left}
 .eb-chevron{font-size:11px;color:#7C8C80;line-height:1}
@@ -202,6 +203,14 @@
 .eb-tool[aria-pressed=true]{background:#EAF4DE;border-color:#B8D898;color:#375F21}
 /* Geometry-only metrics: the quantity toolbar keeps the shared 40px button height. */
 .eb-tabpanel .eb-geometry-workspace .eb-geometry-tools .eb-tool{width:100%;min-height:44px;padding:6px}
+/* Auxiliary is a switch: the track shows off and on, and the button itself is not a pressed tool. */
+.eb-geometry-tools .eb-switch{flex-direction:column;gap:1px;color:#8A97A0}
+.eb-tabpanel .eb-geometry-workspace .eb-geometry-tools .eb-switch{min-height:52px;padding:4px 2px}
+.eb-switch-track{position:relative;display:block;width:28px;height:16px;border-radius:999px;background:#C9D3D8;flex:none}
+.eb-switch-knob{position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:999px;background:#fff;box-shadow:0 1px 2px #1e293b33;transition:transform .14s ease}
+.eb-switch[aria-checked=true]{color:#375F21}
+.eb-switch[aria-checked=true] .eb-switch-track{background:#70B337}
+.eb-switch[aria-checked=true] .eb-switch-knob{transform:translateX(12px)}
 .eb-tabpanel .eb-geometry-workspace .eb-geometry-tools .eb-label{font-size:9px;line-height:1.1;white-space:nowrap}
 .eb-geometry-workspace{position:absolute;inset:56px 0 0}
 .eb-artboard.eb-geometry,.eb-artboard.eb-grid{background-image:none}
