@@ -97,3 +97,11 @@ node --test scripts/*.test.mjs
 交互检查：新开会话输入 `/learn-start`，第一步应在输入区出现「数学」「语文」「英语」选项卡片；点选一个再按「提交」，模型才能收到回答。卡片也允许直接输入或跳过。
 
 入口保持 3 个纯用户入口（`learn-start`、`learn`、`learn-clean`）和 3 个双开入口（`learn-feynman`、`learn-profile`、`learn-save`）；内部增加 `learn-general-core`、`learn-general-session` 与 `learn-support`，实际技能数以静态检查输出为准。经验桥接由 `chinese-core` 按需定位参考文档，不再独立注册；数学诊断与练习保留独立调用；英语由 `english-session` 按条件加载方法 skill。
+
+## 许可证
+
+本项目采用 [GPL-3.0-or-later](./LICENSE)。每个包目录下各有同一份 `LICENSE` 副本，发布的 tarball 会带上它。修改后分发时，衍生作品同样需以 GPL-3.0 授权并提供源码；若要在不兼容 GPL 的专有产品中使用，请先确认许可兼容性。
+
+## 开发环境
+
+需要 Node.js 22 或更高版本（见 [.nvmrc](./.nvmrc)），无第三方依赖。CI 在每次推送和 PR 上运行静态检查、契约测试、画板构建可复现性检查和画板单元测试，配置见 [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)。

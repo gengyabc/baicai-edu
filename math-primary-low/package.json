@@ -3,6 +3,19 @@
   "version": "0.1.0",
   "type": "module",
   "description": "CGI-style primary math teaching skills for dsh-edu, focused on grades 1-3 (grade tunes language and representation, not what students may explore): adaptive turns, strategy diagnosis, targeted practice, and student-authored problem sessions.",
+  "license": "GPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gengyabc/dsh-edu.git",
+    "directory": "math-primary-low"
+  },
+  "homepage": "https://github.com/gengyabc/dsh-edu/tree/main/math-primary-low#readme",
+  "bugs": {
+    "url": "https://github.com/gengyabc/dsh-edu/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
   "dependencies": {
     "dsh-edu-learn": "^0.1.0",
     "dsh-edu-math": "^0.1.0",
@@ -11,12 +24,16 @@
   "files": [
     "cordis.patch.yml",
     "skills",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "dsh": {
     "manifestVersion": 1,
     "bundle": {
       "patch": "./cordis.patch.yml"
     }
+  },
+  "scripts": {
+    "test": "cd .. && node scripts/check-skills.mjs && node --test scripts/*.test.mjs"
   }
 }

@@ -49,8 +49,6 @@ docs/zoom-fiber-inspect.mjs
 # local.
 .scratch/*-profile/
 .scratch/packtest/
-.scratch/__pycache__/
-.scratch/deleted-docs-backup/
 .scratch/dsh-skill-provider/node_modules
 
 # Ad-hoc probes, test logs and browser repro harnesses used while debugging.

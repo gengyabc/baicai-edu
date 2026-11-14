@@ -1670,7 +1670,7 @@ test('batch sub-questions separate exploration distribution from one board for t
 
 test('high-grade methodology is kept as material and never registered as skills', () => {
   const manifest = JSON.parse(text('math-primary-high/package.json'))
-  assert.deepEqual(manifest.files, ['cordis.patch.yml', 'skills', 'README.md'])
+  assert.deepEqual(manifest.files, ['cordis.patch.yml', 'skills', 'README.md', 'LICENSE'])
   assert.ok(!manifest.files.includes('sources'))
   assert.deepEqual(manifest.dependencies, {
     'dsh-edu-learn': '^0.1.0',

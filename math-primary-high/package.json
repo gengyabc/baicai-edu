@@ -3,6 +3,19 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Task-driven upper-primary (grades 4-6) math teaching with multiple methods, evidence-based support, strategy diagnosis, practice, student-authored problems, and real-world modeling; the math board is optional.",
+  "license": "GPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gengyabc/dsh-edu.git",
+    "directory": "math-primary-high"
+  },
+  "homepage": "https://github.com/gengyabc/dsh-edu/tree/main/math-primary-high#readme",
+  "bugs": {
+    "url": "https://github.com/gengyabc/dsh-edu/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
   "dependencies": {
     "dsh-edu-learn": "^0.1.0",
     "dsh-edu-math": "^0.1.0"
@@ -10,12 +23,16 @@
   "files": [
     "cordis.patch.yml",
     "skills",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "dsh": {
     "manifestVersion": 1,
     "bundle": {
       "patch": "./cordis.patch.yml"
     }
+  },
+  "scripts": {
+    "test": "cd .. && node scripts/check-skills.mjs && node --test scripts/*.test.mjs"
   }
 }
