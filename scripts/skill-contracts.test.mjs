@@ -1800,7 +1800,7 @@ test('CGI early algebra is band-local, wired from band cores, and evidence-bound
   assert.match(highRef('progression-map'), /references\/early-algebra\.md/)
   assert.match(text('math-primary-low/tests/teaching-scenarios.md'), /## 等号与关系性思维/)
   assert.match(text('math-primary-high/tests/teaching-scenarios.md'), /## 早期代数/)
-  assert.ok(existsSync(join(root, 'docs/cgi-early-algebra.md')))
+  assert.ok(existsSync(join(root, 'docs/research/cgi-early-algebra.md')))
   for (const ref of [low, high]) assert.doesNotMatch(ref, /https?:\/\//)
 })
 

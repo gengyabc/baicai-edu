@@ -76,8 +76,11 @@ outputs/students/
 
 - [技能调用关系与使用场景](<docs/skill-map/call-graph.md>)（包依赖、调用面、Mermaid 调用图与场景时序）
 - [ADR-0001：共享数学契约与独立 band 实现](<docs/adr/0001-math-shared-contracts.md>)（共同契约唯一来源、载入链路与保留差异）
+- [教育依据总索引](<docs/education-foundations.md>)（三个层次的区分、文档地图与共同证据边界）
 - [支持方法来源核验](<docs/learn-support-evidence.md>)（维护者存档，运行时不加载）、[合成场景验收](<learn/tests/learning-support-scenarios.md>)与[支持性交流回放](<learn/tests/supportive-conversation-scenarios.md>)：全年龄、通用任务教学、五类支持、拒绝/退出与证据隔离。
-- [儿童数学教育 Skill 体系审核矩阵](<docs/math-skill-audit-matrix.md>)：对照 R1–R14 文献审视教学规则的教育学与认知科学依据，区分理论合理性、教学有效性与智能体执行可靠性。
+- [儿童数学教育 Skill 体系审核矩阵](<docs/research/math-skill-audit-matrix.md>)：对照 R1–R14 文献审视教学规则的教育学与认知科学依据，区分理论合理性、教学有效性与智能体执行可靠性。
+- [维护者研究笔记](<docs/research/>)：数学表征支架（`math-representation-scaffolding-research.md`）、CGI 早期代数来源与学段分工（`cgi-early-algebra.md`）、被动来学者的自主支持与儿童 AI 边界（`learning-support-autonomy-and-rapport.md`）。运行时不加载，研究引用与已安装规则分离。
+- [本地文献副本](<docs/refs/>)：公开全文 PDF 与来源清单 `SOURCES.txt`，编号对应审核矩阵 R1–R14；`.gitignore` 忽略了此目录，仅在本机保留。
 
 ## 验证
 

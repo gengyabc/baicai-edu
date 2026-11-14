@@ -16,7 +16,7 @@ DSH Web 输入框工具栏（模型选择按钮旁）的数学画板按钮；点
 - **最小图元**：`reference` 包含 `title`、`description`、`width`、`height`、`shapes`；只接受矩形、线段、圆和纯文本标注，不接收任意 SVG、HTML、图片或外部链接图元。描述用于无障碍文本替代；以标注/题目条件为准，不从图形比例自动测量。
 - **独立生命周期**：每个DSH会话只保留最新教师参考，切换题目文本下拉框不会切换示意图；标题应明确对应任务。换题、结束或旧图会泄露独立检查的方法时，由教学方隐藏/替换，不清学生画布。工具不可用时继续用文字或可选纸笔。
 
-教学依据、适用范围与产品推论见[研究笔记](<../docs/math-representation-scaffolding-research.md>)；共享决策规则见[表征契约](<../math-common/skills/math-common/references/representation-contract.md>)。只读参考隔离是证据与隐私边界设计，尚未通过学生实验验证其学习效果。
+教学依据、适用范围与产品推论见[研究笔记](<../docs/research/math-representation-scaffolding-research.md>)；共享决策规则见[表征契约](<../math-common/skills/math-common/references/representation-contract.md>)。只读参考隔离是证据与隐私边界设计，尚未通过学生实验验证其学习效果。
 
 ## 首次教程
 
