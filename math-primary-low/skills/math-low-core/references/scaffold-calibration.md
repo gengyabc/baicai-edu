@@ -4,7 +4,7 @@ Use when selecting support, including an agreed new-learning example, a concrete
 
 ## Choose Support by Evidence
 
-Support levels are options, not mandatory steps or a required sequence of failures:
+Support levels are options, not mandatory steps or a required sequence of failures. An explicit new-learning goal with a stated or evidenced new relation can start with teaching before the student attempts a problem. Session owns that `micro_lesson` branch and loads its contract through `math-common`; ordinary local help on a pending problem stays a scaffold, not automatic new learning:
 
 | Current evidence | Suitable support |
 |---|---|

@@ -4,6 +4,8 @@ Read when a route-critical tool gap is confirmed, a tool-learning child task rev
 
 ## 1. Identify the next dependency
 
+Ordinary agreed new learning, including session's `micro_lesson`, does not by itself create `learning_plan`. Build a child only for an evidenced necessary dependency under this protocol; a ready existing child may use the same micro-lesson act without changing owner or bypassing its independent return condition.
+
 Reuse demonstrated / self-reported / unknown tool evidence with support conditions. Unknown is not missing: ask a minimal discriminating task only if it changes the next action. A self-report may be tried provisionally without confirming mastery. A student's question about why a method helps usually concerns selection, not inability to execute it. Do not diagnose a tool gap from one wrong answer, unfamiliar terminology, grade, silence, or no ideas alone.
 
 When a necessary tool is genuinely missing, enter a tool-learning child task instead of explaining that tool inside the parent and calling the gap repaired. Choose only the nearest useful dependency; do not prescribe a chapter or test the whole prerequisite graph. Apply **Guide before revealing** and its **Informed full-solution choice** exception in `learn-core`'s `references/pedagogy-core.md` to parent and child tasks alike. Informed full-solution choice is not conditional on completing prerequisite study; it does not establish tool readiness or repair a gap. Respect pause/end without a compulsory recursive lesson or invented performance.

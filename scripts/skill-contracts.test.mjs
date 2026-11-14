@@ -56,8 +56,8 @@ test('student-authored problems wire the shared answerer role into the upper-pri
   hasAll(supplement, ['decline', 'No prior lesson', 'Composition', 'Solving', 'Grading', 'Transfer',
     'not the student\'s independent solving', 'one thing', 'nod at it as theirs',
     'no warning and no extra', 'teacher-led oral quiz', 'confirms returning',
-    'An affirming grade is enough to wrap up', 'never recorded as a student difficulty',
-    'not generalized to the student\'s homework or ordinary requests', '## Teacher-only checked cases',
+    'An affirming grade is enough to wrap up', 'never the AI\'s ordinary answer or a student difficulty',
+    'when the student is learning from a teacher\'s problem', '## Teacher-only checked cases',
     '(64−40)/3 = 8', '8 dearer and 12 cheap', '25/3', 'respect that intent',
     'no nonnegative whole-number solution'])
   // The band keeps local additions: the shared body stays in math-common alone.
@@ -849,16 +849,81 @@ test('math session exclusively dispatches leaves and owns waiting recovery', () 
   assert.match(session, /Hand back to lifecycle's end judgment and finalize; do not save on its own/)
 })
 
+test('math new-learning examples preserve learner-owned gates without requiring failure', () => {
+  const gate = text('learn/skills/learn-core/references/pedagogy-core.md')
+  hasAll(gate, ['## Agreed new learning', 'agreed new-learning goal',
+    'learner report or observed evidence', 'brief, verified, labeled teaching example',
+    'no failed attempt is required', 'use a separate item', 'answer and decisive inference private',
+    'Independent assessment, agreed discovery', 'same-task full-solution requests',
+    'Other subjects keep their default guidance', 'teacher output alone is not student performance'])
+  for (const band of ['low', 'high']) {
+    const base = `math-primary-${band}/skills/math-${band}-core/`
+    for (const file of ['SKILL.md', 'references/math-teaching-core.md', 'references/scaffold-calibration.md']) {
+      assert.match(text(base + file), /new.learning/i, `${band}: ${file}`)
+    }
+  }
+})
+
+test('math evidence separates fluency, support, transfer and observed retention', () => {
+  const confirm = text('learn/skills/learn-core/references/confirm-before-accept.md')
+  hasAll(confirm, ['drawing, action, written relation, or explanation', 'procedural fluency',
+    'Declining oral explanation is not an error', 'executing a supplied method',
+    'selecting it independently', 'geometry-board snapshot'])
+  const practice = sharedMathRef('practice-evidence-contract')
+  hasAll(practice, ['Consolidate / Revisit (not a Tier)', 'one item at a time',
+    'next_step_candidate', 'without repeating the method first',
+    'only when it actually occurs', 'not a scheduled review',
+    'each type is already basically usable', 'renaming people alone does not qualify',
+    'strategy_summary', 'no new required fields or composite score',
+    'Teacher examples, process choices, and review suggestions alone create no performance segment'])
+  const labels = text('learn/skills/learn-core/references/feynman-skill-whitelist.md')
+  hasAll(labels, ['workflow labels', 'No recorded error is not a new success', 'observed later attempt'])
+  assert.match(dataRef('profile-schema'), /absence of recorded errors is not a new success/)
+})
+
+test('consolidation remains reachable through both practice leaves and session dispatch', () => {
+  for (const band of ['low', 'high']) {
+    for (const role of ['session', 'practice']) {
+      const source = text(skillPath(`math-primary-${band}`, `math-${band}-${role}`))
+      assert.match(source, /consolidate\s*\/\s*revisit/i, `${band}: ${role}`)
+    }
+  }
+  const acts = highRef('learn-act-allocation')
+  hasAll(acts, ['qualifying new-learning example', 'teacher output alone supplies no performance evidence',
+    'including Consolidate / Revisit', 'an error is not required for entry'])
+})
+
+test('ordinary math answerer never disguises an intentional error as its own answer', () => {
+  const contract = sharedMathRef('student-problem-contract')
+  hasAll(contract, ['Never submit a deliberately wrong result as the AI\'s own answer',
+    'including on confirmed skills', 'separate contrast activity', 'After the student agrees',
+    'clearly labeled claim to check', 'Clarify the correct relation when closing',
+    'clearly labeled hypothetical confusion', 'Before the current reply ends',
+    'not independent error detection', 'Legacy recovery only',
+    'New ordinary turns do not create this state'])
+  assert.doesNotMatch(contract, /Restricted deliberate error|hand over only the wrong idea|Do not self-correct/)
+  const whitelist = text('learn/skills/learn-core/references/feynman-skill-whitelist.md')
+  assert.doesNotMatch(whitelist, /allows first submitting a deliberately wrong answer/)
+  assert.match(whitelist, /same reply/)
+})
+
+test('ambiguous handwritten symbols cannot create mathematical error or diagnosis claims', () => {
+  const reading = sharedMathRef('handwritten-work-contract')
+  hasAll(reading, ['ambiguity changes the mathematical judgment',
+    'confirm only that token', 'before making an error or cognitive-diagnosis claim',
+    'unrelated unambiguous steps may still be checked', 'deterministic arithmetic checks'])
+})
+
 test('student problem keeps the author in control after grading', () => {
   const leaf = text(skillPath('math-primary-low', 'math-low-student-problem'))
   const design = sharedMathRef('student-problem-contract')
   const scenarios = text('math-primary-low/tests/teaching-scenarios.md')
   assert.match(leaf, /follow the "Role Boundary and Evidence" section of the shared student-problem contract/)
-  assert.match(leaf, /handing the answer to the student to grade, without attaching questions that ask the student to prove understanding/)
+  assert.match(leaf, /handing the answer to the student to grade without an understanding test/)
   assert.match(leaf, /asks for help and confirms returning to the teaching assistant's guidance/)
   assert.doesNotMatch(leaf, /仅“对\/错”：开放问依据|按共享无响应协议降低负担|只补一个数量关系细节|ask an open question for the basis when only "right\/wrong"/i)
   hasAll(design, ['The problem-maker leads', 'the student makes the problem and grades it; the AI is the answerer',
-    'when there is no deliberate error this turn, wrap up directly',
+    'wrap up directly without an acceptance quiz',
     'The default exit after grading is wrap-up', 'independent verification is not presumed',
     'is not a reason for further questioning', 'When resuming an old acceptance-style follow-up'])
   for (const input of ['你算的是对的', '我的办法跟你一样', '学生点评中有明确矛盾',
@@ -1068,7 +1133,7 @@ test('board modification evidence stays optional, bounded and distinct from mast
   assert.match(drawing, /write no operation counts to the student profile/)
   assert.match(drawing, /never alone support an error type, learning difficulty, or mastery conclusion/)
   assert.match(text('math-primary-low/skills/math-low-core/references/scaffold-calibration.md'),
-    /keep changing representations[\s\S]*counts and undos alone do not make a difficulty conclusion/i)
+    /ask about the meaning of changed representations rather than inferring difficulty from counts or undos/i)
 })
 
 test('math board protocol is shared and bands keep clear, teaching and batch differences', () => {
@@ -1111,12 +1176,13 @@ test('posing a math problem stops at the question', () => {
   assert.match(teaching, /The previous session's stem/)
   for (const band of ['math-primary-low', 'math-primary-high']) {
     const supplement = text(`${band}/skills/math-${band.endsWith('high') ? 'high' : 'low'}-core/references/structured-drawing.md`)
-    assert.match(supplement, /this session's `session_id`/, band)
-    assert.match(supplement, /a new learning session does not read snapshots or histories sent in a previous one/, band)
+    assert.match(supplement, /this session/, band)
+    assert.match(supplement, /a new learning session does not read snapshots or histories sent in a previous one/i, band)
   }
-  assert.match(scaffold, /an attempt plus a local request to see a method does not alone justify solving the task/)
-  assert.match(teaching, /Ordinary explanation or local-help requests remain guided/)
-  assert.match(teaching, /Explicit complete-solution requests use that shared choice/)
+  assert.match(scaffold, /An attempt plus a local request alone does not justify solving the learner-owned task/)
+  hasAll(teaching, ['Choose guided work, a labeled separate new-learning example',
+    'Assessment and agreed discovery retain their existing boundaries',
+    'explicit complete-solution requests use **Informed full-solution choice**'])
   assert.match(scenarios, /停在问句/)
   assert.match(scenarios, /两堆合起来是多少/)
 })
@@ -1170,8 +1236,9 @@ test('math variation separates number-structure evidence from context transfer',
   const scenarios = text('math-primary-low/tests/teaching-scenarios.md')
   assert.match(design, /a change in number structure also counts as variation/)
   assert.match(design, /may deliberately repeat numbers or results/)
-  assert.match(design, /Change the scene only when testing context transfer/)
-  assert.match(teaching, /change the scene only when testing context transfer/)
+  hasAll(design, ['scene change that clarifies meaning or reduces language load is instruction',
+    'Renaming alone is not a new context', 'without a revealing cue'])
+  assert.match(teaching, /distinguish instructional context changes from transfer checks/)
   assert.match(practice, /if the goal is context transfer, evidence after changing the scene is needed/)
   assert.match(personal, /the next problem is chosen for the purpose in `references\/problem-design\.md`/)
   assert.match(scenarios, /60\+20、60\+25、65\+20/)
@@ -1202,7 +1269,7 @@ test('practice evidence contract is shared and bands keep design, scaffold and g
     'if the cap is reached and it is still unknown', 'evidence after changing the scene is needed',
     'does not substitute for transfer evidence', "the current provider's scaffold rule"])
   for (const [band, local] of [
-    ['math-primary-low', ['new story', 'problem-design.md', 'scaffold-calibration.md']],
+    ['math-primary-low', ['fresh item directly', 'problem-design.md', 'scaffold-calibration.md']],
     ['math-primary-high', ['fresh task in the format suited to its purpose', 'Grade 4–6 Notes',
       'batch-board-boundary.md', 'math-teaching-core.md']],
   ]) {
@@ -1390,7 +1457,7 @@ test('shared math contract is a rule source, never a teaching implementation', (
 
 test('shared math contract replay scenarios live in one checklist', () => {
   const scenarios = text('math-common/tests/teaching-scenarios.md')
-  for (const input of ['只批改「对」或「一样」', '故意错答', '费曼模式提出错误想法',
+  for (const input of ['只批改「对」或「一样」', '故意错答', '费曼数学出题分支提出错误想法',
     '题量上限', '每个图案代表 2', '两份修改记录', '不做诊断', 'SVG']) {
     assert.ok(scenarios.includes(input), input)
   }
@@ -1505,7 +1572,8 @@ test('upper-primary session is the sole dispatcher of four leaves and owns waiti
 test('adaptive thresholds keep promotion, backtracking and method switching evidence-gated', () => {
   const thresholds = highRef('adaptive-thresholds')
   hasAll(thresholds, ['A **single wrong answer** triggers neither a knowledge-point backtrack nor a level change',
-    'Correct but unable to explain** does not promote the level automatically',
+    'Unwillingness to speak is not evidence of misunderstanding',
+    'not a mastery or transfer claim', 'accurate unprompted execution',
     'Supported correctness is not independent success',
     'Adjust in this order', 'Grade and speed are never evidence of ability',
     'At most one knowledge-map edge back per adjustment',
@@ -1608,12 +1676,12 @@ test('upper-primary methods are task-selected from the opening and retain eviden
   hasAll(teaching, ['methods are available from the opening',
     'Concrete–pictorial–abstract (CPA)', 'Explicit instruction', 'Pólya problem solving',
     'Variation and contrast', 'Inquiry and proof', 'Mathematical modeling',
-    'Formative assessment and reflection', 'reuse that evidence rather than forcing new failed attempts',
+    'Formative assessment and reflection', 'Reuse existing readiness and obstacle evidence',
     'student-as-presenter, AI-as-listener', 'fresh independent work'])
   assert.doesNotMatch(teaching, /all judged per CGI|Only after representation adjustments have failed/)
   hasAll(highRef('problem-design'), ['direct computation for procedure practice',
     'Stories are useful when context matters', 'claim for reasoning or proof'])
-  assert.match(highRef('scaffold-calibration'), /avoid fixed failure quotas/)
+  assert.match(highRef('scaffold-calibration'), /neither hints nor failed attempts are quotas/)
   assert.match(highRef('progression-map'), /preserve record compatibility/)
 })
 
@@ -1643,7 +1711,7 @@ test('subject judges package fit while learn owns confirmation and new-task reso
 
 test('installed upper-primary teaching steps and prerequisites do not require source-only material', () => {
   const map = highRef('topic-map')
-  hasAll(map, ['equivalent-fractions', 'ratio-rate', 'area-perimeter', 'two contrasting probes'])
+  hasAll(map, ['equivalent-fractions', 'ratio-rate', 'area-perimeter', 'minimal discriminating contrast'])
   for (const name of ['math-high-diagnose', 'math-high-application-modeling']) {
     assert.doesNotMatch(text(skillPath('math-primary-high', name)), /`sources\//)
   }
@@ -1680,7 +1748,7 @@ test('CGI early algebra is band-local, wired from band cores, and evidence-bound
   assert.match(lowCore, /references\/relational-thinking\.md/)
   assert.match(highCore, /references\/early-algebra\.md/)
   const low = text('math-primary-low/skills/math-low-core/references/relational-thinking.md')
-  hasAll(low, ['`strategy_summary`', 'two contrasting items', 'not a goal', 'stop at the question'])
+  hasAll(low, ['`strategy_summary`', 'minimal discriminating-evidence rule', 'rather than requiring a fixed two-item sequence', 'not a goal', 'stop at the question'])
   assert.doesNotMatch(low, /symbolic_strategy_stage/)
   const high = highRef('early-algebra')
   hasAll(high, ['`arithmetic_only`', '`relational_unknown`', '`generalized_structure`',

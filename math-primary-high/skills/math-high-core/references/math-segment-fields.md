@@ -16,6 +16,12 @@ Merge rules:
 
 `focus` records the focus actually used this turn; while waiting for the student's next answer, record only the evidence already observed, and leave later demonstrations, judgments, and mastery state to later turns. Posing a problem is not itself student-performance evidence.
 
+## Micro-Lesson Evidence and Continuation
+
+A teacher-only explanation or example, recommendation selection, or activity choice has `session_segment: null`. A student's actual guided action is supported evidence, even when its arithmetic execution is theirs; distinguish teacher-selected method from student execution. A fresh appropriate item without a method cue can show independent selection/use only for the relation actually tested; one item does not establish durable mastery. A lesson ending without a check leaves independence unknown and does not count as failure.
+
+Continuation remains ordinary `mode: learn`, `context.activity: teaching`, `submode: learn`. Optional `turn_state.active_act: micro_lesson` and `turn_state.micro_lesson` (`goal`, `phase: example | guided | independent`, `exposed_support`) are local recovery state, not segment/profile evidence. Reuse existing task/answer/pending fields. Session supplies state and hint consumption to lifecycle in one successful opening context write; `math_opening_hint` never enters long-term summaries, ability evidence, or profiles. Clear lesson markers on completion/authorized exit, and merge any real performance once by the existing rules.
+
 ## Field Semantics
 
 | Field | Math convention |

@@ -6,6 +6,8 @@ Before producing a math learning record or merging internal sub-flow evidence, f
 
 Only `math-low-session` produces this turn's single `session_segment`; the three leaves only return evidence, control signals, and awaiting state for session to merge. Signals are not segment fields. Lifecycle appends the log, and the shared flow writes the profile and finalize.
 
+A pure AI demonstration, recommendation display/selection, activity choice, or unanswered opening produces `session_segment: null`, while lifecycle still records the current task, pending question, and presented support. If student work already occurred earlier this turn, keep that evidence in the single segment; a later demonstration adds no performance of its own.
+
 Merge rules:
 
 - `mode` is inherited from the caller; in Feynman, `submode: feynman`; in ordinary learning, choose the submode by the main task the student actually answered this turn: `practice` for practice, `student_problem` for the student making/checking problems, `review` for diagnosis and error correction, and `learn` for everything else. With multiple branches, prefer the last task that has student-performance evidence; a newly posed unanswered question does not override the earlier task; with no answer evidence, record by the current task but do not presume performance.
@@ -15,6 +17,16 @@ Merge rules:
 - `next_step_candidate` is one concrete next step chosen by session; suggestions awaiting execution, unanswered problems, and AI demonstrations do not count as student performance.
 
 `focus` records the focus actually used this turn; while waiting for the student's next answer, record only the evidence already observed, and leave later demonstrations, judgments, and mastery state to later turns. Posing a problem is not itself student-performance evidence.
+
+## Micro-Lesson Evidence
+
+Micro-lessons retain `mode: learn`, `context.activity: teaching`, and `submode: learn`; `turn_state.active_act: micro_lesson` and optional `micro_lesson {goal, phase, exposed_support}` are resumable context only, never performance fields or profile additions. The temporary opening hint is consumed by lifecycle's successful opening-context write, not copied into evidence.
+
+- `example`: AI exposition and a student's activity choice supply no mathematical performance. “懂了” alone does not show independent understanding.
+- `guided`: record the student's actual decision, representation, relation, or calculation as supported, specifying what was already exposed. Correctly executing an AI-selected method does not show independent selection.
+- `independent`: only the actual response to a fresh, unhinted item can support independent evidence for the observed relation or strategy. If support is later supplied, retain the supported condition; elapsed turns do not erase exposure. A single success is local evidence, not stable mastery, retention, or general transfer.
+
+Use existing `strategy_summary` and other fields below; add no micro-lesson score, stage, or long-term recommendation database. Leaving after the explanation or declining a check creates no error or stage downgrade. When actual student work supports a segment but independent evidence is absent, its `next_step_candidate` may conservatively propose an unhinted check; pure exposition still returns no segment.
 
 ## Field Semantics
 

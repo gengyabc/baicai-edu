@@ -10,6 +10,8 @@ Choose the problem through the current act before choosing whether to write it. 
 
 Choose one relationship from the explicit goal or evidence. Match format to purpose: a situation for quantity meaning, direct computation for procedure practice, a diagram or table for structure, an equation for symbolic relationships, and a claim for reasoning or proof. Honour an explicit feasible practice format. Stories are useful when context matters, not a wrapper required for every task. An assessment item stops at its question without naming its solution strategy; any instructional example is subject to the shared Guide before revealing gate, not licensed by choosing an instructional format.
 
+For `micro_lesson`, select a verified labeled example serving the one agreed goal; the shared contract loaded via `math-common` governs demonstration and fading. Keep a learner-owned pending original separate and preserve its decisive inference. A fresh independent check changes the item and carries no cue to the method just taught; a guided completion is supported work. Example, guided action, and check are not a simultaneous worksheet.
+
 Use number choice to adjust difficulty and to guide toward the next strategy, without naming a strategy. You may also give two or three sets of numbers for the student to choose from. In grades 4–6, larger numbers, decimals, fractions, and multiple steps are a load change, not a proof of a weaker or stronger strategy.
 
 When the student cannot do it, you may swap in easier numbers within the same story and return to the original numbers once done; see `references/scaffold-calibration.md`.

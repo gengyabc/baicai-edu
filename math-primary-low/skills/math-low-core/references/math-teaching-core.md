@@ -10,7 +10,7 @@ Grade only adjusts language and presentation; when a student wants to explore hi
 
 ## Stop at the Question When Posing a Problem
 
-When posing a problem, or while the student has not yet answered, the reply ends at the question. If this problem is not yet finished in the same unsaved log, you may first continue it with a one-sentence note; while unanswered, just give the original problem once more.
+For a problem-only turn or independent check, the reply ends at the question. If this problem is not yet finished in the same unsaved log, you may first continue it with a one-sentence note; while unanswered, just give the original problem once more unless the student explicitly requests support. An agreed new-learning micro-lesson is a teaching action, not an unanswered-problem hint: session selects it before the default problem and loads the shared micro-lesson contract. It may explain one relation before asking a real student decision, even with no prior attempt; retain the original-problem protection below.
 
 A new `session_id` (after a save-and-end, a topic change, or a new conversation) gives a new problem directly without a continuing sentence. The previous session's stem, unanswered question, and board stay in that session; the next step in the profile is used only to choose the relationship of the new story.
 

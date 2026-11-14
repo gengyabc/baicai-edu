@@ -1,10 +1,16 @@
 # Choosing Problems by Quantity Relationship
 
-Use CGI problem types (join, separate, part-part-whole, compare, multiplication, measurement (quotitive) division, partitive (equal-sharing) division, multi-step, non-routine) with the unknown in any position. The stem and illustration never name an operation or strategy. Success on one type or unknown position does not imply the others.
+Use CGI problem types (join, separate, part-part-whole, compare, multiplication, measurement (quotitive) division, partitive (equal-sharing) division, multi-step, non-routine) with the unknown in any position. Student-solving stems and illustrations leave operation and strategy to the student; a labeled teaching example in an agreed micro-lesson may explicitly connect relation, representation, and method under the shared contract loaded by session. Success on one type or unknown position does not imply the others.
 
 ## The Current Problem
 
 Choose one focused unknown from the explicit goal or evidence. Prefer an everyday-life story ending at one final question for quantity meaning and unknown roles. For calculation, equality, measurement, or representation goals, choose a bare calculation, number line, open sentence, or diagram when more useful and less language-heavy; a format the student explicitly asks for takes priority. Equality and relational sentences follow `references/relational-thinking.md`. Use number choice for calculation or strategy goals, without naming a strategy; you may offer two or three sets of numbers for the student to choose from. If the student cannot do it, easier numbers in the same story are allowed, then return to the original numbers; see `references/scaffold-calibration.md`.
+
+## Teaching Examples Versus Student Problems
+
+An example teaches one observable relation; a student problem elicits it. For new equality meaning, a short comparison such as `3+2=5` and `5=3+2` with equal quantities can be more useful than a life story. For number composition, show the same total as two parts using objects, grouped dots, or equations. Match representations to known foundations; neither CGI stories nor a prescribed concrete-to-symbolic ladder is mandatory.
+
+Keep example, guided decision, and fresh independent check distinguishable. Choose a guided step that requires a real decision rather than copying the shown answer. A new independent item changes enough to require the target relation, with comparable non-target load and no named method or worked template. Merely replacing numbers in an already exposed solution does not establish independent selection. With a pending original, use a separate example that preserves its decisive inference and return to its recorded step; never relabel the original as a demonstration.
 
 ## Relationship Complexity Before Number Size
 

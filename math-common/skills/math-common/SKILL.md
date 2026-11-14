@@ -1,6 +1,6 @@
 ---
 name: math-common
-description: Shared math rules for both primary bands. Load from a math band skill when it handles a student-made problem, plans practice evidence, or reads or writes the math board; returns rules only.
+description: Shared math rules for both primary bands. Load from a math band skill for an agreed micro-lesson, a student-made problem, practice evidence, or reading or writing the math board; returns rules only.
 user-invocable: false
 ---
 
@@ -16,6 +16,7 @@ Loading this skill returns its base directory. Read only the one matching refere
 
 | When the band needs | Read | The band keeps |
 |---|---|---|
+| An agreed new-learning micro-lesson | `references/micro-lesson-contract.md` | Entry decision, method selection, teaching execution, and local activity state |
 | A student-authored problem | `references/student-problem-contract.md` | Multi-part grading, problem-type range, invented-versus-real quantities |
 | Practice evidence | `references/practice-evidence-contract.md` | Problem design, methods and scaffolds, batch attribution |
 | The math board | `references/board-contract.md` | Clear authorization, teaching use, sub-question attribution |

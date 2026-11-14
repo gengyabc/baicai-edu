@@ -49,6 +49,7 @@ If `math-common` cannot be loaded (when it is already in this session, reuse it 
 | Counting routes or constructing a network traversal under connection, direction, obstacle or repetition constraints | `references/path-network-construction.md`; distinguish finding one route from counting all, not a trigger for every story or diagram |
 | A route-critical tool gap is confirmed, a tool-learning child reveals another gap, or a recursive learning plan is restored or becomes too burdensome | `references/prerequisite-learning.md`; session retains dispatch and lifecycle writes the plan |
 | Deciding which act the next step belongs to | `references/learn-act-allocation.md` |
+| Session selects or restores `micro_lesson` | Load `math-common`; from its returned base directory read `references/micro-lesson-contract.md` before the lesson. If loading fails, preserve the pending task and use the existing guided mainline without claiming a micro-lesson |
 | Preparing support or an agreed new-learning opening example, the student finds it troublesome, asks for a new method, or a hint does not work | `references/scaffold-calibration.md` |
 | Snapshot contains interests, preferences, easy/hard topics, or experiences, or the student cannot do the current problem | `references/math-personalization.md` |
 | Judging an arithmetic / multi-digit / fraction / symbolic strategy stage | `references/progression-map.md` |
@@ -83,7 +84,7 @@ Band selection belongs to `learn-data`'s `references/teaching-resolver.md`. The 
 ## Turn Delivery Rules
 
 - Teaching steps advance across student messages: advance one main mathematical goal with at most one pending question, then apply the shared confirmation rules to the response. A labeled representation, equation, and explanation may serve that same goal; a problem-only turn still stops at its question.
-- Every turn's math teaching belongs to one act set: an opening act that selects and verifies a problem, practice around an error pattern, student-made problems with the student as author and judge, guiding an application-modeling situation, or the learner-explain act under `mode: feynman`. The act sets the task, the output format, and the stop condition; `references/learn-act-allocation.md` owns which act comes next.
+- Every turn's math teaching belongs to one act set: an opening act that selects and verifies a problem, a micro-lesson within this session, practice around an error pattern, student-made problems with the student as author and judge, guiding an application-modeling situation, or the learner-explain act under `mode: feynman`. The act sets the task, the output format, and the stop condition; `references/learn-act-allocation.md` owns which act comes next.
 - New tasks do not trigger board tools; the board rows of the condition table above cover clearing and multi-part attribution.
 - `personal.interests` and subject preferences change context or representation only; they never replace the mathematics under discussion and never set the stage.
 - Do not narrate preparation, do not paste the student's raw JSON, and do not restate the process. Student-visible replies carry the task, the question, and the relationships already shown.
