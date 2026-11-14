@@ -40,3 +40,6 @@ docs/superpowers/
 # Local research references (paper PDFs, book excerpts, source list): large and
 # copyright-sensitive; nothing in the packages links here, so keep it local.
 docs/refs/
+
+# Temporary one-off diagnostics kept in-tree while an investigation is open.
+docs/zoom-fiber-inspect.mjs
