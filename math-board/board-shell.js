@@ -1,22 +1,30 @@
-// One entry with two tabs. The quantity page and the geometry page keep their own
-// canvases, draft keys, undo histories, selections and viewports; they share only this
-// dialog frame, the question strip and the "add to answer" button, and each tab attaches
-// its own file.
+// One entry with three tabs. The quantity page and the geometry page keep their own
+// canvases, draft keys, undo histories, selections and viewports. The teacher demo page is
+// a read-only geometry figure. They share this dialog frame, the question strip and the
+// close gesture: the tab bar, 返回对话 on every page and a press on the dimmed area around
+// the dialog all end in the shell's own `setOpened(false)`.
+// Each student tab attaches only its own file.
 import { boardQuestionReferences } from './question-reference.js';
 
 /**
- * Build the tabbed board. Both pages are created once and stay mounted while the dialog
- * is open, so switching tabs never resets a draft or a history.
+ * Build the tabbed board.
  *
- * The shell draws the chrome both pages used to draw for themselves (launcher, dialog,
- * brand mark, title). It still has no quantity-board knowledge: the quantity page passes
- * its `mark(size)` in, so the shell paints the same level-coloured mark without knowing
- * what a level is.
+ * `pages` names the three pages instead of listing them by position: `quantity`, and the
+ * optional `geometry` and `demo` pages, plus `mark`, which paints the level-coloured
+ * brand. Keyed arguments replaced a long positional list because one omitted argument
+ * (the demo page never received `close`) silently left a control doing nothing.
+ *
+ * Every page sits inside the shell's staged frame, so it draws only its own workspace:
+ * 返回对话, a press outside the dialog, and the note or menu on the visible tab all go
+ * through `stage`. The pages never own a dialog of their own.
  */
-export function createTabbedBoardView(React, t, css, quantityPage, geometryPage, mark) {
+export function createTabbedBoardView(React, t, css, pages, readDemo) {
   const h = React.createElement;
+  const { quantity: quantityPage, geometry: geometryPage, demo: demoPage, mark } = pages;
   const QuantityPage = quantityPage();
   const GeometryPage = geometryPage ? geometryPage() : null;
+  const DemoPage = demoPage ? demoPage() : null;
+  const DEMO_SEEN = 'dsh-edu-math-board:geometry-demo-seen:';
   return function TabbedBoard(props) {
     const [tab, setTab] = React.useState('quantity');
     const [opened, setOpened] = React.useState(false);
@@ -39,8 +47,28 @@ export function createTabbedBoardView(React, t, css, quantityPage, geometryPage,
       if (!opened && node && node.open) node.close();
     }, [opened]);
     React.useEffect(() => () => { if (dialog.current?.open) dialog.current.close(); }, []);
-
-    const question = h('aside', { className: 'eb-question', 'aria-label': t('questionTeacher') },
+    // This projection contains teacher material only; never pass it into a student model.
+    const demoProjection = props.useProjection?.('eduBoardGeometryDemo');
+    const demo = typeof readDemo === 'function' ? readDemo(demoProjection) : null;
+    const demoRevision = demo?.revision ?? 0;
+    const demoHasFigure = Boolean(demo?.figure);
+    // A newly shown figure opens on this tab. A hide, a figure the student already
+    // saw, and a refresh with nothing unseen leave the tab alone.
+    React.useEffect(() => {
+      if (!opened || !demoHasFigure) return undefined;
+      const key = `${DEMO_SEEN}${props.sessionId}`;
+      let seen = 0;
+      try {
+        const raw = globalThis.localStorage?.getItem(key);
+        const parsed = Number(raw);
+        if (Number.isSafeInteger(parsed) && parsed >= 0) seen = parsed;
+      } catch { /* storage may be blocked */ }
+      if (demoRevision <= seen) return undefined;
+      setTab('demo');
+      try { globalThis.localStorage?.setItem(key, String(demoRevision)); } catch { /* ignore */ }
+      return undefined;
+    }, [opened, demoRevision, demoHasFigure, props.sessionId]);
+    const questionText = h('aside', { className: 'eb-question', 'aria-label': t('questionTeacher') },
       reference ? h('div', { id: `eb-question-${props.sessionId}`, className: `eb-question-text${questionExpanded ? '' : ' eb-collapsed'}` },
         props.renderFactorySlot?.('conversation.chat.reasoning.content', { text: reference.text, running: false }) ?? reference.text)
         : h('p', { className: 'eb-question-empty' }, t('questionEmpty')),
@@ -54,14 +82,22 @@ export function createTabbedBoardView(React, t, css, quantityPage, geometryPage,
           type: 'button', className: 'eb-question-toggle', 'aria-expanded': questionExpanded,
           'aria-controls': `eb-question-${props.sessionId}`, onClick: () => setQuestionExpanded(!questionExpanded),
         }, questionExpanded ? t('questionCollapse') : t('questionExpand'))));
+    const question = () => h('div', { className: 'eb-reference-stack' }, questionText);
     const brand = (size) => (typeof mark === 'function' ? mark(size) : null);
-    // Each page registers the same close 返回对话 uses. A backdrop press calls the
+    // Each student page registers the same close 返回对话 uses. A backdrop press calls the
     // visible tab's close, so a note or menu on that tab is put away with the dialog.
     const closers = React.useRef({});
     function requestClose() {
       const closePage = closers.current[tab];
       if (closePage) closePage();
       else setOpened(false);
+    }
+    function copyToGeometry(board) {
+      const append = closers.current.geometryAppend;
+      if (typeof append !== 'function') return { ok: false, reason: 'full' };
+      const result = append(board);
+      if (result?.ok) setTab('geometry');
+      return result || { ok: false, reason: 'full' };
     }
     // The backdrop hit is delivered to the dialog element, with a point outside its box.
     // A press that starts on the board keeps the dialog up, even if it later ends outside.
@@ -75,7 +111,7 @@ export function createTabbedBoardView(React, t, css, quantityPage, geometryPage,
       if (!inside) requestClose();
     }
     const tabs = h('div', { className: 'eb-tabs', role: 'tablist', 'aria-label': t('tabs') },
-      [['quantity', 'tabQuantity'], ['geometry', 'tabGeometry']].map(([name, label]) => h('button', {
+      [['quantity', 'tabQuantity'], ['geometry', 'tabGeometry'], ['demo', 'tabDemo']].map(([name, label]) => h('button', {
         key: name, type: 'button', role: 'tab', id: `eb-tab-${name}`, className: 'eb-tab', 'data-tab': name,
         'aria-selected': tab === name, 'aria-controls': `eb-tabpanel-${name}`,
         onClick: () => setTab(name),
@@ -86,6 +122,10 @@ export function createTabbedBoardView(React, t, css, quantityPage, geometryPage,
       id: `eb-tabpanel-${name}`, role: 'tabpanel', 'aria-labelledby': `eb-tab-${name}`,
       className: 'eb-tabpanel', hidden: tab !== name,
     }, node);
+    // What every page is given. A page cannot forget to wire 返回对话: `close` and
+    // `bindClose` are handed to each page from this one object.
+    const close = () => setOpened(false);
+    const stage = { split: true, close, question: question() };
     return h(React.Fragment, null,
       h('style', null, css),
       h('button', {
@@ -106,14 +146,18 @@ export function createTabbedBoardView(React, t, css, quantityPage, geometryPage,
         // so the shell's bar keeps that one and hides the page's own copy.
         h('header', { className: 'eb-topbar' }, brand(27), h('span', null, t('title')), tabs, h('span', { className: 'eb-grow' })),
         panel('quantity', h(QuantityPage, {
-          ...props, split: true, question, close: () => setOpened(false),
+          ...props, ...stage,
           bindClose: (fn) => { closers.current.quantity = fn; },
           tabActive: opened && tab === 'quantity',
         })),
         GeometryPage && panel('geometry', h(GeometryPage, {
-          ...props, split: true, question, close: () => setOpened(false),
+          ...props, ...stage,
           bindClose: (fn) => { closers.current.geometry = fn; },
+          bindAppend: (fn) => { closers.current.geometryAppend = fn; },
           tabActive: opened && tab === 'geometry',
+        })),
+        DemoPage && panel('demo', h(DemoPage, {
+          ...stage, sessionId: props.sessionId, question: questionText, figure: demo?.figure ?? null, onCopy: copyToGeometry,
         })))));
   };
 }

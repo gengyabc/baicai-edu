@@ -6,6 +6,10 @@ Choose the current problem by mathematical purpose and structure. For quantity s
 
 Choose the problem through the current act before choosing whether to write it. When the current problem makes the student the problem-maker (they ask to invent problems, quiz the AI, or chose that activity to test what they learned), read `references/math-student-problem-design.md` and follow it after the shared student-problem contract it names instead of composing the problem. Composing stays the teacher's role in the other acts: the student's authored problem is their evidence-bearing work, and a teacher-composed problem whose correct version the student merely agrees with is not that same work.
 
+## Representation Ownership
+
+For geometry-related teaching or a geometry problem, including given geometric shapes and dimensions, or before deciding whether the teacher supplies a diagram or the student draws, load `math-common` and read its `references/representation-contract.md`. Call `geometry_board_draw` so the related figure is on the Teacher demo tab, and apply its construction-goal exceptions within the current reveal gate and activity.
+
 ## The Current Problem
 
 Choose one relationship from the explicit goal or evidence. Match format to purpose: a situation for quantity meaning, direct computation for procedure practice, a diagram or table for structure, an equation for symbolic relationships, and a claim for reasoning or proof. Honour an explicit feasible practice format. Stories are useful when context matters, not a wrapper required for every task. An assessment item stops at its question without naming its solution strategy; any instructional example is subject to the shared Guide before revealing gate, not licensed by choosing an instructional format.

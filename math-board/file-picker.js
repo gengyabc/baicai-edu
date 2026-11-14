@@ -77,6 +77,9 @@ export function createBoardIcons(React, fallback = 'group') {
     circle: 'M12 4a8 8 0 1 1 0 16a8 8 0 1 1 0-16',
     parallelogram: 'M3 18 8 6h13l-5 12z',
     rectangle: 'M4 6h16v12H4z',
+    // A big A is the whole of the text tool: it names writing, not a shape.
+    text: 'M5 20 12 4l7 16M8 14h8',
+    edit: 'm4 20 1-5L16 4l4 4L9 19Z',
   };
   const frame = (size) => ({
     width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor',

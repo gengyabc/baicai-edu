@@ -30,7 +30,7 @@ For a confirmed missing tool, a nested gap, or a restored/overburdened learning 
 
 ### Entry Events
 
-New problems, activities, topics, and leaf dispatches do not trigger board tools. On a topic change, lifecycle first finalizes the old topic before starting the new one. Read `math-high-core`'s `references/board-task-boundary.md` only for an explicit student clear request or when reusing a submitted representation; read `references/batch-board-boundary.md` for multi-part answer attribution. A board attachment does not authorize clearing.
+New problems, activities, topics, and leaf dispatches do not trigger board tools. That ban covers `math_board_clear` and reads of an unsent student draft. It does not block `geometry_board_draw`: geometry-related teaching and geometry problems call that tool so the related figure is on the Teacher demo tab, without clearing or writing the student draft. On a topic change, lifecycle first finalizes the old topic before starting the new one. Read `math-high-core`'s `references/board-task-boundary.md` only for an explicit student clear request or when reusing a submitted representation; read `references/batch-board-boundary.md` for multi-part answer attribution. A board attachment does not authorize clearing.
 
 ### Micro-Lesson in This Session
 

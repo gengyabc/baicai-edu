@@ -1,13 +1,12 @@
 {
   "name": "dsh-edu-math-primary-low",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "CGI-style primary math teaching skills for dsh-edu, focused on grades 1-3 (grade tunes language and representation, not what students may explore): adaptive turns, strategy diagnosis, targeted practice, and student-authored problem sessions.",
   "dependencies": {
-    "dsh-edu-learn": "file:../learn",
-    "dsh-edu-math": "file:../math-common",
-    "dsh-edu-math-board": "file:../math-board"
+    "dsh-edu-learn": "^0.1.0",
+    "dsh-edu-math": "^0.1.0",
+    "dsh-edu-math-board": "^0.6.0"
   },
   "files": [
     "cordis.patch.yml",

@@ -17,13 +17,16 @@ export function createGeometryPage(React, G, ctx, t, shared) {
   // "select" is a tool, not a shape. A triangle is three clicks that close as a polygon,
   // so it stays out of the snapshot's element types. Polygon sits after rectangle.
   // Midpoint is an action on one selected side, drawn beside these tools rather than as one of them.
-  const shapeTools = G.shapeLibrary.filter((name) => name !== 'point' && name !== 'polygon');
+  // The text tool has its own rail position below, so the library keeps it out of the
+  // shape run that follows the segment tool.
+  const shapeTools = G.shapeLibrary.filter((name) => name !== 'point' && name !== 'polygon' && name !== 'text');
   const segmentAt = shapeTools.indexOf('segment');
   const DRAW_TOOLS = [
     'select', 'point',
     ...shapeTools.slice(0, segmentAt + 1),
     'triangle',
     ...shapeTools.slice(segmentAt + 1),
+    'text',
     'polygon',
   ];
   // Box geometry for marquee selection. A point counts when it lies inside; a shape counts
@@ -58,6 +61,10 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     return corners.some((corner, i) => segmentsCross(a, b, corner, corners[(i + 1) % 4]));
   }
   function edgeKey(id, index) { return `${id}#${index}`; }
+  // A student's writing is drawn at the model's own size, so the box the model measures is
+  // the box the page draws, selects and hit-tests.
+  const textMetrics = G.textMetrics();
+  const TEXT_SIZE = textMetrics.size;
   const closedShape = (type) => type === 'polygon' || type === 'rectangle' || type === 'parallelogram';
   function circleHitsBox(center, radius, box) {
     const nearestX = Math.max(box.x0, Math.min(center.x, box.x1));
@@ -69,24 +76,14 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     );
     return nearest <= radius + 0.5 && far + 0.5 >= radius;
   }
-  // A rim point that no other shape and no construction uses is only the circle's radius
-  // handle. It stays in the snapshot so the radius is defined, and it is not drawn.
-  function exclusiveRimIds(state) {
-    const used = new Set();
-    for (const e of state.elements) {
-      if (e.type === 'circle') used.add(e.centerPointId);
-      else for (const id of e.points) used.add(id);
-    }
-    for (const p of state.points) for (const input of p.construction?.inputs || []) used.add(input);
-    const hidden = new Set();
-    for (const e of state.elements) {
-      if (e.type === 'circle' && e.radiusPointId && !used.has(e.radiusPointId)) hidden.add(e.radiusPointId);
-    }
-    return hidden;
-  }
-  // Icons and the file pickers are shared with the quantity tab so the two tabs cannot
-  // drift apart; only the per-tab callbacks below differ.
+  // A circle's unused rim point stays in the snapshot so the radius is defined, and it is
+  // not drawn. The demo page hides the same points with the same rule.
+  const exclusiveRimIds = (state) => shared.geometryHiddenPoints(state);
+  // Icons, dock controls, the caption and label placement, the stroke and the file pickers
+  // are shared with the other pages so the three tabs cannot drift apart; only the
+  // per-tab callbacks below differ.
   const icon = shared.createBoardIcons(React);
+  const controls = shared.createBoardControls(React, t);
   return function GeometryPage(props) {
     const key = `${STORAGE_PREFIX}${props.sessionId}`;
     const [ready, setReady] = React.useState(false);
@@ -98,8 +95,10 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     const [pending, setPending] = React.useState([]);
     const [selection, setSelection] = React.useState([]);
     const [hover, setHover] = React.useState(null);
+    const [hit, setHit] = React.useState(null);
     const [marquee, setMarquee] = React.useState(null);
     const [preview, setPreview] = React.useState(null);
+    // How far the canvas is enlarged over the fit, like the quantity board's zoom.
     const [zoom, setZoom] = React.useState(1);
     const [fit, setFit] = React.useState(true);
     const [grid, setGrid] = React.useState(false);
@@ -108,6 +107,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     const [status, setStatus] = React.useState('');
     const [overlay, setOverlay] = React.useState(null);
     const [rename, setRename] = React.useState(null);
+    const [writing, setWriting] = React.useState(null);
     const [tour, setTour] = React.useState(null);
     const [tourHole, setTourHole] = React.useState(null);
     const workspaceRef = React.useRef(null);
@@ -118,11 +118,27 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     // points the student had already placed.
     const constructionPoints = React.useRef([]);
     const svgRef = React.useRef(null);
+    const canvasRef = React.useRef(null);
     const noteRef = React.useRef(null), nameRef = React.useRef(null);
     // An open that arrives after this tab's draft changed must not overwrite it.
     const revision = React.useRef(0);
     const phase = props.useInput((s) => s.phase);
     const width = G.bounds.width, height = G.bounds.height;
+    // The area the canvas really has. A fit is sized against it, so a short window never
+    // crops the bottom of the board.
+    const [viewport, setViewport] = React.useState({ width: 1280, height: 640 });
+    React.useEffect(() => {
+      const node = canvasRef.current;
+      if (!node || typeof ResizeObserver === 'undefined') return undefined;
+      const measure = () => {
+        const next = { width: Math.max(160, node.clientWidth), height: Math.max(160, node.clientHeight) };
+        setViewport((old) => (old.width === next.width && old.height === next.height ? old : next));
+      };
+      measure();
+      const observer = new ResizeObserver(measure);
+      observer.observe(node);
+      return () => observer.disconnect();
+    }, []);
 
     React.useEffect(() => {
       try {
@@ -147,6 +163,13 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     React.useEffect(() => {
       if (overlay?.kind === 'note') noteRef.current?.focus();
     }, [overlay]);
+    const textRef = React.useRef(null);
+    React.useEffect(() => {
+      if (!writing) return;
+      const node = textRef.current;
+      node?.focus();
+      node?.select?.();
+    }, [writing?.id]);
     React.useEffect(() => {
       if (!moreOpen) return undefined;
       const closeMenus = (event) => {
@@ -233,6 +256,48 @@ export function createGeometryPage(React, G, ctx, t, shared) {
         return next;
       } catch (error) { setStatus(`${t('failed')}: ${error.message}`); return null; }
     }
+    function appendFigure(figureBoard) {
+      // Only a real placement failure may reach the demo's "make room" message; a draft
+      // that has not loaded yet or a missing module is not the student's canvas being full.
+      if (!ready) return { ok: false, reason: 'not-ready' };
+      if (typeof shared.placeFigure !== 'function') return { ok: false, reason: 'failed' };
+      const placed = shared.placeFigure(G, boardRef.current, figureBoard);
+      if (!placed?.ok) return placed || { ok: false, reason: 'full' };
+      // The figure was drawn on the teacher's own board, so its ids repeat a draft's
+      // naming (`e-1`, `p-1`), and a second copy repeats the first copy's. Every arrival
+      // keeps only ids that nothing else on this draft already uses.
+      const arrivals = new Set(placed.elementIds);
+      const used = new Set(placed.board.elements.filter((e) => !arrivals.has(e.id)).map((e) => e.id));
+      const renamed = [];
+      const elements = placed.board.elements.map((e) => {
+        if (!arrivals.has(e.id) || !used.has(e.id)) { used.add(e.id); return e; }
+        const id = freshElementId(used);
+        used.add(id);
+        renamed.push(id);
+        return { ...e, id };
+      });
+      let next;
+      try { next = G.validate({ ...placed.board, elements }); } catch { return { ok: false, reason: 'failed' }; }
+      setHistory((old) => ({ past: [...old.past, boardRef.current].slice(-HISTORY_LIMIT), future: [] }));
+      forgetConstruction();
+      publish(next);
+      setSelection([...placed.elementIds.filter((id) => !renamed.includes(id)), ...renamed]);
+      setPending([]);
+      setStatus(t('demoCopyDone'));
+      return { ok: true };
+    }
+    // The next free element id this draft has never used, in the board's own `e-<n>` form.
+    function freshElementId(used) {
+      let max = 0;
+      const pattern = /^e-(\d+)$/;
+      for (const id of [...used, ...boardRef.current.elements.map((e) => e.id)]) {
+        const match = pattern.exec(String(id));
+        if (match && Number.isSafeInteger(Number(match[1]))) max = Math.max(max, Number(match[1]));
+      }
+      let next = max + 1;
+      while (used.has(`e-${next}`)) next += 1;
+      return `e-${next}`;
+    }
     function forgetConstruction() { constructionPoints.current = []; }
     function undo() {
       const prev = history.past.at(-1); if (!prev) return;
@@ -249,11 +314,39 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     const selectedElements = selection.map((id) => board.elements.find((e) => e.id === id)).filter(Boolean);
     const singlePoint = selection.length === 1 && selectedPoints.length === 1 ? selectedPoints[0] : null;
     const singleElement = selection.length === 1 && selectedElements.length === 1 ? selectedElements[0] : null;
-    const noteTarget = singlePoint
-      ? { kind: 'point', id: singlePoint.id, label: singlePoint.label }
-      : singleElement ? { kind: 'element', id: singleElement.id, label: t(singleElement.type) } : null;
+    const singleText = singleElement?.type === 'text' ? singleElement : null;
+    // Short element notes are drawn as a caption beside the shape, and that caption is a
+    // pick target in its own right: the writing the student sees must be the writing the
+    // note control rewrites. Point labels are hit as points and keep their own rename.
+    const captionOf = (e) => (!e || e.type === 'text') ? null : shared.captionPosition?.(e, (id) => {
+      const q = pointById(id);
+      return q ? { x: q.x, y: q.y } : null;
+    }, { width, height }) || null;
+    const captionTarget = (() => {
+      if (hit?.kind === 'caption') {
+        const element = board.elements.find((e) => e.id === hit.id);
+        const caption = captionOf(element);
+        if (caption) return { element, caption };
+      }
+      // A selected shape with a caption keeps the note control pointed at that caption.
+      // The whole-board note still has its own copy in the toolbar, as on the quantity tab.
+      if (singleElement && captionOf(singleElement)) return { element: singleElement, caption: captionOf(singleElement) };
+      return null;
+    })();
+    const noteTarget = captionTarget
+      ? { kind: 'element', id: captionTarget.element.id, label: `${t(captionTarget.element.type)} · ${t('hasNote')}` }
+      : singlePoint
+        ? { kind: 'point', id: singlePoint.id, label: singlePoint.label }
+        : singleElement ? { kind: 'element', id: singleElement.id, label: t(singleElement.type) } : null;
     const noteValue = !noteTarget ? board.note
       : noteTarget.kind === 'point' ? pointById(noteTarget.id)?.note || '' : board.elements.find((e) => e.id === noteTarget.id)?.note || '';
+    // A card opened from a caption holds that caption's target, live with the current
+    // selection, so the words it shows are always the words it will rewrite.
+    const noteCardTarget = overlay?.kind === 'note'
+      ? (overlay.target ? { kind: 'element', id: overlay.target.id, label: overlay.target.label } : noteTarget)
+      : null;
+    const noteCardValue = !noteCardTarget ? board.note
+      : noteCardTarget.kind === 'point' ? pointById(noteCardTarget.id)?.note || '' : board.elements.find((e) => e.id === noteCardTarget.id)?.note || '';
 
     function localPoint(event) {
       const svg = svgRef.current;
@@ -291,7 +384,30 @@ export function createGeometryPage(React, G, ctx, t, shared) {
         if (hidden.has(q.id)) continue;
         if (Math.hypot(q.x - p.x, q.y - p.y) <= 10) return { kind: 'point', id: q.id };
       }
+      // A text is hit by its own writing box, above the shapes it sits over.
       for (const e of [...state.elements].reverse()) {
+        if (e.type !== 'text') continue;
+        const box = G.textBox(e.text.split('\n'));
+        if (p.x >= e.x - 6 && p.x <= e.x + box.width + 2 && p.y >= e.y - TEXT_SIZE - 4 && p.y <= e.y + box.height - TEXT_SIZE) {
+          return { kind: 'text', id: e.id };
+        }
+      }
+      // A short element note is drawn beside the shape; that writing is a target of its
+      // own, so pressing it opens the note that produced it instead of selecting the shape.
+      for (const e of [...state.elements].reverse()) {
+        if (e.type === 'text') continue;
+        const caption = shared.captionPosition?.(e, (id) => {
+          const q = pointById(id);
+          return q ? { x: q.x, y: q.y } : null;
+        }, { width, height });
+        if (!caption) continue;
+        const box = G.textBox([caption.text]);
+        const half = box.width / 2;
+        if (p.x >= caption.x - half - 4 && p.x <= caption.x + half + 4
+          && p.y >= caption.y - 17 && p.y <= caption.y + 5) return { kind: 'caption', id: e.id };
+      }
+      for (const e of [...state.elements].reverse()) {
+        if (e.type === 'text') continue;
         const ids = e.type === 'circle' ? [e.centerPointId, e.radiusPointId] : e.points;
         const pts = ids.map(pointById).filter(Boolean);
         if (e.type === 'circle') {
@@ -405,6 +521,15 @@ export function createGeometryPage(React, G, ctx, t, shared) {
         if (!hidden.has(q.id) && pointInBox(q, box)) ids.push(q.id);
       }
       for (const e of state.elements) {
+        // A text is one whole object, not a set of sides: the box takes it when the box
+        // touches the writing, and deleting it removes the writing only.
+        if (e.type === 'text') {
+          const boxOf = G.textBox(e.text.split('\n'));
+          const w0 = e.x - 6, w1 = e.x + boxOf.width + 2;
+          const h0 = e.y - TEXT_SIZE - 4, h1 = e.y + boxOf.height - TEXT_SIZE;
+          if (w0 <= box.x1 && w1 >= box.x0 && h0 <= box.y1 && h1 >= box.y0) ids.push(e.id);
+          continue;
+        }
         if (e.type === 'circle') {
           const center = state.points.find((item) => item.id === e.centerPointId);
           const rim = state.points.find((item) => item.id === e.radiusPointId);
@@ -481,7 +606,38 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       const p = localPoint(event);
       const target = hitTest(p);
       const pointId = event.target.closest?.('[data-point]')?.getAttribute('data-point');
+      if (tool === 'text') {
+        // Clicking a text with the text tool edits it; clicking empty canvas starts a
+        // new one whose left baseline sits at the click.
+        if (target?.kind === 'text') { setSelection([target.id]); openText(target.id); }
+        else openText(null, { x: Math.max(24, Math.min(width - 24, p.x)), y: Math.max(G.bounds.margin + TEXT_SIZE, p.y) });
+        event.preventDefault();
+        return;
+      }
       if (tool === 'select') {
+        if (target?.kind === 'caption') {
+          // The note card opens for this shape; select it when the card closes so the
+          // selection bar still means "the selected shape".
+          const shape = board.elements.find((e) => e.id === target.id);
+          requestOverlay({
+            kind: 'note', selectOnClose: target.id,
+            target: shape ? { id: shape.id, label: `${t(shape.type)} · ${t('hasNote')}` } : null,
+          });
+          setHit(null);
+          event.preventDefault();
+          return;
+        }
+        if (target?.kind === 'text') {
+          const item = boardRef.current.elements.find((e) => e.id === target.id);
+          if (item) {
+            setSelection([item.id]);
+            gesture.current = { kind: 'text', id: item.id, start: p, base: { x: item.x, y: item.y }, pointer: event.pointerId, moved: false };
+            setPreview({ text: { id: item.id, x: item.x, y: item.y } });
+            setMarquee(null);
+            event.preventDefault(); event.currentTarget.setPointerCapture?.(event.pointerId);
+            return;
+          }
+        }
         const hidden = exclusiveRimIds(boardRef.current);
         const q = pointId && !hidden.has(pointId) ? pointById(pointId) : null;
         if (q) {
@@ -584,11 +740,26 @@ export function createGeometryPage(React, G, ctx, t, shared) {
           if (accepted) setPreview({ corners: accepted.corners, rims: accepted.rims });
           return;
         }
+        if (g.kind === 'text') {
+          // The text follows the pointer, clamped to the board: no geometry depends on it.
+          const x = Math.max(0, Math.min(width, g.base.x + p.x - g.start.x));
+          const y = Math.max(G.bounds.margin + 16, Math.min(height - G.bounds.margin, g.base.y + p.y - g.start.y));
+          setPreview({ text: { id: g.id, x, y } });
+          return;
+        }
         const accepted = G.constrainedMove(g.base, g.id, p.x, p.y);
         if (accepted) setPreview({ id: g.id, ...accepted });
         return;
       }
       if (tool !== 'select') setHover(snapTo(p));
+      // Only a caption needs a live hit for its hover colour; shapes already highlight
+      // through their own pressed state.
+      if (tool === 'select') {
+        const next = hitTest(p);
+        setHit((old) => (next?.kind === 'caption'
+          ? (old?.kind === 'caption' && old.id === next.id ? old : next)
+          : null));
+      }
     }
     function pointerEnd(event, cancelled = false) {
       const g = gesture.current;
@@ -609,6 +780,13 @@ export function createGeometryPage(React, G, ctx, t, shared) {
         }
         if (g.kind === 'translate') action({ type: 'translate', ids: g.ids, dx: end.x - g.start.x, dy: end.y - g.start.y });
         else action({ type: 'moveEdge', id: g.id, index: g.index, dx: end.x - g.start.x, dy: end.y - g.start.y });
+        return;
+      }
+      if (g.kind === 'text') {
+        const placed = preview?.text;
+        setPreview(null);
+        if (cancelled || !g.moved || !placed) return;
+        action({ type: 'moveText', id: g.id, x: placed.x, y: placed.y });
         return;
       }
       const shown = preview;
@@ -632,6 +810,8 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       setOverlay(next);
     }
     function dismissOverlay() {
+      const seq = overlay?.selectOnClose;
+      if (seq) setSelection([seq]);
       requestOverlay(null);
     }
     function cancelDrawing() {
@@ -651,8 +831,9 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     React.useEffect(() => {
       if (!tabActive) return undefined;
       const onKey = (event) => {
+        if (event.target?.closest?.('.eb-teacher-reference')) return;
         if (event.key === 'Delete' || event.key === 'Backspace') {
-          if (!selection.length || overlay || rename || tour) return;
+          if (!selection.length || overlay || rename || writing || tour) return;
           const tag = event.target?.tagName;
           if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || event.target?.isContentEditable) return;
           event.preventDefault();
@@ -665,8 +846,9 @@ export function createGeometryPage(React, G, ctx, t, shared) {
         const noteHeld = overlay?.kind === 'note' && shared.tourHoldsNotePanel?.(tour);
         if (overlay && !noteHeld) { event.preventDefault(); dismissOverlay(); }
         if (rename) { event.preventDefault(); setRename(null); }
+        if (writing) { event.preventDefault(); setWriting(null); }
         if (moreOpen) { event.preventDefault(); setMoreOpen(false); }
-        if (noteHeld || overlay || rename || moreOpen) return;
+        if (noteHeld || overlay || rename || writing || moreOpen) return;
         if (gesture.current) {
           event.preventDefault();
           gesture.current = null;
@@ -682,11 +864,13 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       };
       document.addEventListener('keydown', onKey);
       return () => document.removeEventListener('keydown', onKey);
-    }, [tabActive, overlay, rename, moreOpen, tour, pending, tool, selection]);
+    }, [tabActive, overlay, rename, writing, moreOpen, tour, pending, tool, selection]);
     function applyNote() {
       const value = noteRef.current?.value ?? '';
-      if (noteTarget) action({ type: 'annotate', target: noteTarget.kind, id: noteTarget.id, value });
+      const target = noteCardTarget;
+      if (target) action({ type: 'annotate', target: target.kind, id: target.id, value });
       else action({ type: 'note', value });
+      if (overlay?.selectOnClose) setSelection([overlay.selectOnClose]);
       setOverlay(null);
       signalTour('geometry-note-save');
     }
@@ -694,6 +878,24 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       const value = nameRef.current?.value ?? '';
       if (rename) action({ type: 'renamePoint', id: rename.id, label: value });
       setRename(null);
+    }
+    // Writing is the one editor a text has: a new one is created on save, an existing
+    // one is rewritten in place. An empty save adds nothing and changes nothing.
+    function openText(id = null, at = null) {
+      const item = id ? boardRef.current.elements.find((e) => e.id === id) : null;
+      setWriting({ id: item ? item.id : null, value: item ? item.text : '', x: at?.x, y: at?.y });
+    }
+    function applyText() {
+      const value = (textRef.current?.value ?? '').trim();
+      if (!value) { setWriting(null); return; }
+      if (writing?.id) action({ type: 'editText', id: writing.id, text: value });
+      else if (writing) {
+        const next = action({ type: 'addText', x: writing.x, y: writing.y, text: value });
+        const created = next?.elements.filter((e) => e.type === 'text').at(-1);
+        if (created) setSelection([created.id]);
+      }
+      setWriting(null);
+      setTool('select');
     }
     // "Add to answer" places only the geometry snapshot and the student's own words.
     // The composer keeps whatever it already held, and a failed insert leaves nothing behind.
@@ -804,14 +1006,42 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       }
       return indexes;
     }
+    // A text is written, not drawn: its anchor is its left baseline and it takes no
+    // part in point snapping or edge selection. The model owns the box estimate.
+    const TEXT_LINE = 20;
+    function renderText(e) {
+      const anchor = { x: e.x, y: e.y };
+      const drag = preview?.text?.id === e.id ? preview.text : anchor;
+      const picked = selection.includes(e.id);
+      const lines = e.text.split('\n');
+      const box = G.textBox(lines);
+      return h('g', {
+        key: e.id, 'data-element': e.id, 'data-text': e.id, role: 'button', tabIndex: 0,
+        'aria-label': `${t('text')}: ${e.text}`, 'aria-pressed': picked,
+        style: { cursor: 'move' },
+        onKeyDown: (event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          setSelection([e.id]);
+        },
+      },
+      picked && h('rect', {
+        x: drag.x - 4, y: drag.y - TEXT_SIZE - 3, width: box.width, height: box.height,
+        rx: 5, fill: '#2563EB14', stroke: controls.selection,
+        strokeWidth: 1, strokeDasharray: '4 3', pointerEvents: 'none',
+      }),
+      h('text', {
+        x: drag.x, y: drag.y, fontSize: TEXT_SIZE, fill: picked ? controls.selection : controls.ink,
+        stroke: '#FFFFFF', strokeWidth: 3, paintOrder: 'stroke', pointerEvents: 'none',
+      }, lines.map((line, index) => h('tspan', {
+        key: index, x: drag.x, dy: index === 0 ? 0 : TEXT_LINE,
+      }, line))));
+    }
     function renderElement(e) {
+      if (e.type === 'text') return renderText(e);
       const picked = selection.includes(e.id);
       const edgeIndexes = selectedEdgeIndexes(e.id);
-      const stroke = {
-        stroke: picked ? '#2563EB' : '#1E293B', strokeWidth: picked ? 3 : 1.8, fill: 'none',
-        strokeLinejoin: 'round', strokeLinecap: 'round',
-        strokeDasharray: e.role === 'auxiliary' ? '7 5' : undefined,
-      };
+      const stroke = shared.geometryStroke(e, controls, { active: picked });
       const label = `${t(e.type)}${e.role === 'auxiliary' ? ` · ${t('auxiliary')}` : ''}${e.note ? ` · ${t('hasNote')}` : ''}`;
       const group = {
         key: e.id, 'data-element': e.id, role: 'button', tabIndex: 0, 'aria-label': label,
@@ -826,22 +1056,30 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       if (e.type === 'circle') {
         const center = at(e.centerPointId), rim = at(e.radiusPointId);
         if (!center || !rim) return null;
-        return h('g', group, h('circle', { cx: center.x, cy: center.y, r: Math.hypot(rim.x - center.x, rim.y - center.y), ...stroke }));
+        const caption = shared.captionPosition?.(e, at, { width, height });
+        const captionNode = caption && h('text', shared.geometryCaptionLabel(caption, controls, {
+          active: hit?.kind === 'caption' && hit.id === e.id, pickable: tool === 'select',
+        }), caption.text);
+        return h('g', group, h('circle', { cx: center.x, cy: center.y, r: Math.hypot(rim.x - center.x, rim.y - center.y), ...stroke }), captionNode);
       }
       const points = e.points.map(at);
       if (points.some((point) => !point) || points.length < 2) return null;
+      const caption = shared.captionPosition?.(e, at, { width, height });
+      const captionNode = caption && h('text', shared.geometryCaptionLabel(caption, controls, {
+        active: hit?.kind === 'caption' && hit.id === e.id, pickable: tool === 'select',
+      }), caption.text);
       if (e.type === 'segment') {
-        return h('g', group, h('line', { x1: points[0].x, y1: points[0].y, x2: points[1].x, y2: points[1].y, ...stroke }));
+        return h('g', group, h('line', { x1: points[0].x, y1: points[0].y, x2: points[1].x, y2: points[1].y, ...stroke }), captionNode);
       }
       const highlighted = edgeIndexes.map((index) => {
         const a = points[index], b = points[(index + 1) % points.length];
         if (!a || !b) return null;
         return h('line', {
           key: `edge-${index}`, x1: a.x, y1: a.y, x2: b.x, y2: b.y,
-          stroke: '#2563EB', strokeWidth: 3, strokeLinecap: 'round', pointerEvents: 'none',
+          stroke: controls.selection, strokeWidth: 3, strokeLinecap: 'round', pointerEvents: 'none',
         });
       }).filter(Boolean);
-      return h('g', group, h('polygon', { points: points.map((p) => `${p.x},${p.y}`).join(' '), ...stroke }), ...highlighted);
+      return h('g', group, h('polygon', { points: points.map((p) => `${p.x},${p.y}`).join(' '), ...stroke }), ...highlighted, captionNode);
     }
     function renderPoint(q) {
       const shown = at(q.id) || q;
@@ -863,15 +1101,10 @@ export function createGeometryPage(React, G, ctx, t, shared) {
         },
       },
       h('circle', { cx: shown.x, cy: shown.y, r: 11, fill: 'transparent' }),
-      h('circle', {
-        cx: shown.x, cy: shown.y, r: staged ? 6 : picked ? 5.5 : 4,
-        fill: picked || staged ? '#2563EB' : q.kind === 'derived' ? '#475569' : '#1E293B',
-        stroke: '#FFFFFF', strokeWidth: 1.5,
-      }),
-      h('text', {
-        x: shown.x + 9, y: shown.y - 9, fontSize: 13, fontWeight: 600,
-        fill: picked ? '#2563EB' : '#1E293B', stroke: '#FFFFFF', strokeWidth: 3.5, paintOrder: 'stroke', 'pointer-events': 'none',
-      }, q.label));
+      h('circle', { cx: shown.x, cy: shown.y, ...shared.geometryPointDot(q, controls, {
+        radius: staged ? 6 : picked ? 5.5 : 4, active: picked || staged,
+      }) }),
+      h('text', shared.geometryPointLabel({ x: shown.x, y: shown.y }, controls, { active: picked }), q.label));
     }
     function hintShape() {
       if (!pending.length) return null;
@@ -893,40 +1126,56 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       }
       return null;
     }
-    const previewStyle = { fill: 'none', stroke: '#93C5FD', strokeWidth: 2, strokeDasharray: '5 4', 'pointer-events': 'none' };
-    // Zoom is real: the viewBox narrows by the zoom factor while the SVG keeps the full
-    // canvas width, so every stroke, label and point grows with it and fit never shrinks
-    // them to the viewport height. `non-scaling-stroke` is deliberately not used: a
-    // magnified figure must look magnified, exactly as the quantity board's zoom scales
-    // its artwork.
+    const previewStyle = { fill: 'none', stroke: controls.preview, strokeWidth: 2, strokeDasharray: '5 4', 'pointer-events': 'none' };
     const hiddenRims = exclusiveRimIds(board);
-    const span = { width: width / (fit ? 1 : zoom), height: height / (fit ? 1 : zoom) };
-    const origin = { x: (width - span.width) / 2, y: (height - span.height) / 2 };
-    const canvas = h('div', { className: 'eb-canvas-scroll', 'data-tour-id': 'geometry-canvas' },
+    // The canvas is framed once for the whole board, and a full view keeps a reserve on
+    // each side for what the drawing puts past the board: point labels, captions and the
+    // student's writing. `geometryFrame` owns that rule so the demo page shares it.
+    const frame = shared.geometryFrame({
+      width, height, board,
+      caption: (element) => shared.captionPosition?.(element, at, { width, height }) || null,
+      textBoxes: board.elements.filter((e) => e.type === 'text').map((e) => {
+        const lines = e.text.split('\n');
+        const box = textMetrics.box(lines);
+        const overflow = shared.geometryTextOverflow(lines, textMetrics);
+        return {
+          x: e.x - overflow.left, y: e.y - overflow.top,
+          width: box.width + overflow.left + overflow.right, height: box.height + overflow.top + overflow.bottom,
+        };
+      }),
+      emptyText: [],
+    }, viewport, { value: zoom, fit });
+    const origin = frame.origin;
+    // Zoom is real: the canvas grows with the zoom and the frame scrolls to the rest of
+    // the drawing, so nothing is cropped; a fit puts the whole board, reserve included,
+    // inside the frame. `non-scaling-stroke` is deliberately not used: a magnified figure
+    // must look magnified, exactly as the quantity board's zoom scales its artwork.
+    const canvas = h('div', { ref: canvasRef, className: 'eb-canvas-scroll', 'data-tour-id': 'geometry-canvas' },
       h('svg', {
         ref: svgRef, className: `eb-artboard eb-geometry${grid ? ' eb-grid' : ''}`,
-        style: { width: '100%', height: fit ? 'auto' : '100%', aspectRatio: `${width} / ${height}` },
-        viewBox: `${origin.x} ${origin.y} ${span.width} ${span.height}`,
-        preserveAspectRatio: fit ? 'xMidYMid meet' : 'xMidYMid slice',
+        style: { width: frame.box.width, height: frame.box.height },
+        viewBox: `${origin.x} ${origin.y} ${frame.span.width} ${frame.span.height}`,
+        preserveAspectRatio: 'xMidYMid meet',
         role: 'group', 'aria-label': t('geometryCanvas'),
         onPointerDown: pointerDown, onPointerMove: pointerMove,
         onPointerUp: (event) => pointerEnd(event), onPointerCancel: (event) => pointerEnd(event, true),
-        onMouseLeave: () => setHover(null),
+        onMouseLeave: () => { setHover(null); setHit(null); },
       },
-      h('rect', { x: origin.x, y: origin.y, width: span.width, height: span.height, fill: '#FFFFFF' }),
+      h('rect', { x: origin.x, y: origin.y, width: frame.span.width, height: frame.span.height, fill: '#FFFFFF' }),
       grid && h('g', { 'pointer-events': 'none' },
         Array.from({ length: Math.floor(width / 40) + 1 }, (_, i) => h('line', { key: `v${i}`, x1: i * 40, y1: 0, x2: i * 40, y2: height, stroke: '#EEF2F4' })),
         Array.from({ length: Math.floor(height / 40) + 1 }, (_, i) => h('line', { key: `h${i}`, x1: 0, y1: i * 40, x2: width, y2: i * 40, stroke: '#EEF2F4' }))),
-      board.elements.map(renderElement),
+      board.elements.filter((e) => e.type !== 'text').map(renderElement),
+      board.elements.filter((e) => e.type === 'text').map(renderText),
       board.points.filter((q) => !hiddenRims.has(q.id)).map(renderPoint),
       marquee && h('rect', {
         x: Math.min(marquee.x1, marquee.x2), y: Math.min(marquee.y1, marquee.y2),
         width: Math.abs(marquee.x2 - marquee.x1), height: Math.abs(marquee.y2 - marquee.y1),
-        fill: '#2563EB22', stroke: '#2563EB', strokeWidth: 1, strokeDasharray: '4 3', pointerEvents: 'none',
+        fill: '#2563EB22', stroke: controls.selection, strokeWidth: 1, strokeDasharray: '4 3', pointerEvents: 'none',
       }),
       hintShape(),
       hover && !pending.length && tool !== 'select' && tool !== 'point'
-        && h('circle', { cx: hover.x, cy: hover.y, r: 6, fill: '#BFDBFE', stroke: '#2563EB', strokeWidth: 1.5, 'pointer-events': 'none' }),
+        && h('circle', { cx: hover.x, cy: hover.y, r: 6, fill: '#BFDBFE', stroke: controls.selection, strokeWidth: 1.5, 'pointer-events': 'none' }),
       // Same place and type as the quantity canvas: 17/500 at y=190, 12 at y=216.
       !board.points.length && !board.elements.length && h('g', { pointerEvents: 'none' },
         h('text', { x: 400, y: 190, textAnchor: 'middle', fill: '#64748B', fontSize: 17, fontWeight: 500 }, t('geometryEmpty')),
@@ -997,48 +1246,52 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     const selectionBar = selection.length > 0 && h('div', { className: 'eb-floating', role: 'toolbar', 'aria-label': t('geometrySelectionActions') },
       h('small', null, `${t('selectedCount')} ${selection.length}`),
       singlePoint && h('button', { type: 'button', className: 'eb-context-action', onClick: () => setRename({ id: singlePoint.id, value: singlePoint.label }) }, t('renamePoint')),
+      singleText && h('button', { type: 'button', className: 'eb-context-action', onClick: () => openText(singleText.id) }, icon('edit', 16), t('editText')),
       h('button', { type: 'button', className: 'eb-danger', onClick: deleteSelection }, icon('trash', 16), t('trash')));
     const stage = h('section', { className: 'eb-stage-wrap', 'aria-label': t('geometryCanvas') },
       props.question,
       h('div', { className: 'eb-stage-frame' }, canvas, selectionBar));
-    // Same helpers and the same dock order as the quantity tab. This tab drops creation
+    // Same controls and the same dock order as the quantity tab. This tab drops creation
     // colours and the trace checkbox, and keeps grid and snap in that slot.
-    function button(label, handler, extra = {}) { return h('button', { type: 'button', onClick: handler, ...extra }, label); }
+    const button = controls.button;
+    // An icon button whose accessible name is the tool's own; the note and clear controls
+    // pass their own words instead.
     function dockButton(name, handler, extra = {}) {
-      return button(icon(name), handler, { title: t(name), 'aria-label': t(name), className: 'eb-icon-button', ...extra });
-    }
-    function labelled(name, text, handler, extra = {}) {
-      const label = extra.title ?? text;
-      return button(h(React.Fragment, null, icon(name, 16), h('span', { className: 'eb-label' }, text)), handler,
-        { ...extra, title: label, 'aria-label': label });
+      return controls.iconButton(handler, extra.title ?? t(name), { title: t(name), ...extra });
     }
     const modeToggle = (pressed, onLabel, offLabel, handler) => button(pressed ? t(onLabel) : t(offLabel), handler, {
       className: 'eb-mode-toggle', 'aria-pressed': pressed, title: pressed ? t(onLabel) : t(offLabel),
       'aria-label': pressed ? t(onLabel) : t(offLabel),
     });
     const noteHasText = Boolean(noteValue);
+    const noteTitleTarget = overlay?.kind === 'note' ? noteCardTarget : noteTarget;
     const moreMenuNode = moreOpen && h('div', { className: 'eb-menu eb-more-menu', role: 'menu', 'aria-label': t('files') },
       h('div', { className: 'eb-menu-head' }, t('files')),
-      button(h(React.Fragment, null, icon('open', 16), h('span', null, t('import'))), openFile, { role: 'menuitem' }),
-      button(h(React.Fragment, null, icon('save', 16), h('span', null, t('export'))), saveFile, { role: 'menuitem' }),
+      controls.menuItem(icon('open'), t('import'), openFile),
+      controls.menuItem(icon('save'), t('export'), saveFile),
       picker.fileNameState && h('p', { className: 'eb-menu-note' }, picker.fileNameState),
       TutorialOverlay && h(React.Fragment, null,
         h('div', { className: 'eb-menu-line' }),
-        button(h('span', null, t('tutorialReplay')), () => startGeometryTour(), { role: 'menuitem' })));
+        controls.menuItem(null, t('tutorialReplay'), () => startGeometryTour())));
+    // The student dock, in the same order as the quantity tab: the one shared 返回对话,
+    // the shared undo/redo icons, the tab's own toggles, the shared zoom pair, then the
+    // note, clear, more and insert controls this tab owns.
     const dock = h('nav', { className: 'eb-dock', 'aria-label': t('canvasTools') },
-      labelled('back', t('backToChat'), () => props.close?.(), { className: 'eb-dock-return' }),
-      h('span', { className: 'eb-divider' }),
+      controls.backButton(() => props.close?.(), { icon }),
+      controls.divider(),
       dockButton('undo', undo, { disabled: !history.past.length }),
       dockButton('redo', redo, { disabled: !history.future.length, className: 'eb-icon-button eb-redo', title: t('redo') }),
-      h('span', { className: 'eb-divider' }),
+      controls.divider(),
       modeToggle(grid, 'gridOn', 'gridOff', () => setGrid(!grid)),
       modeToggle(snap, 'snapOn', 'snapOff', () => setSnap(!snap)),
-      h('span', { className: 'eb-divider' }),
-      button('−', () => { setFit(false); setZoom(Math.max(0.5, zoom - 0.25)); }, { className: 'eb-zoom-button eb-zoom-out', 'aria-label': t('zoomOut'), title: t('zoomOut') }),
+      controls.divider(),
+      // A − or ＋ press is a request to enlarge or shrink what is on screen, so it leaves
+      // the fit; 适应宽度 returns to it. The quantity board's zoom pair works the same way.
+      button('−', () => { setFit(false); setZoom(Math.max(1, zoom - 0.25)); }, { className: 'eb-zoom-button eb-zoom-out', 'aria-label': t('zoomOut'), title: t('zoomOut'), disabled: zoom <= 1 }),
       button(fit ? t('fitView') : `${Math.round(zoom * 100)}%`, () => setFit(!fit), { className: 'eb-zoom-label', 'aria-label': t('fitView'), 'aria-pressed': fit, title: t('fitView') }),
-      button('＋', () => { setFit(false); setZoom(Math.min(2, zoom + 0.25)); }, { className: 'eb-zoom-button eb-zoom-in', 'aria-label': t('zoomIn'), title: t('zoomIn') }),
+      button('＋', () => { setFit(false); setZoom(Math.min(4, zoom + 0.25)); }, { className: 'eb-zoom-button eb-zoom-in', 'aria-label': t('zoomIn'), title: t('zoomIn'), disabled: zoom >= 4 }),
       h('span', { className: 'eb-grow' }),
-      button(h(React.Fragment, null, icon('note', 19), noteHasText ? h('span', { className: 'eb-note-dot' }) : null), () => {
+      controls.button(h(React.Fragment, null, icon('note', 19), noteHasText ? h('span', { className: 'eb-note-dot' }) : null), () => {
         requestOverlay({ kind: 'note' });
         signalTour('geometry-note-open');
       }, {
@@ -1046,10 +1299,10 @@ export function createGeometryPage(React, G, ctx, t, shared) {
         title: noteTarget ? `${t('note')} · ${noteTarget.label}` : `${t('note')} · ${t('noteGeneral')}`,
         'aria-label': t('note'), 'data-tour-id': 'geometry-note',
       }),
-      button(icon('clear', 19), () => requestOverlay({ kind: 'clear' }), { className: 'eb-icon-button eb-danger', title: t('clearGeometry'), 'aria-label': t('clearGeometry') }),
-      button(icon('more', 19), () => setMoreOpen(!moreOpen), { className: 'eb-icon-button eb-menu-trigger', title: t('moreActions'), 'aria-label': t('moreActions'), 'aria-expanded': moreOpen }),
+      dockButton('clear', () => requestOverlay({ kind: 'clear' }), { className: 'eb-icon-button eb-danger', title: t('clearGeometry') }),
+      controls.moreMenu(moreOpen, () => setMoreOpen(!moreOpen)),
       button(h(React.Fragment, null, icon('insert', 17), h('span', null, t('insert'))), () => insertGeometry(), {
-        className: 'eb-primary', title: t('insert'), 'data-tour-id': 'geometry-insert',
+        className: 'eb-primary', title: t('insert'), 'aria-label': t('insert'), 'data-tour-id': 'geometry-insert',
         disabled: phase !== 'plain'
           || shared.tourInsertMode?.(tour) === 'block'
           || (!tour && !board.points.length && !board.elements.length && !board.note),
@@ -1061,8 +1314,8 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       },
         overlay.kind === 'note' && h(React.Fragment, null,
           h('h2', null, t('note')),
-          h('p', { className: 'eb-overlay-context' }, noteTarget ? `${t('noteAbout')} ${noteTarget.label}` : t('noteGeneral')),
-          h('textarea', { ref: noteRef, maxLength: 500, defaultValue: noteValue, placeholder: t('noteHint') }),
+          h('p', { className: 'eb-overlay-context' }, noteTitleTarget ? `${t('noteAbout')} ${noteTitleTarget.label}` : t('noteGeneral')),
+          h('textarea', { ref: noteRef, maxLength: 500, defaultValue: noteCardValue, placeholder: t('noteHint') }),
           h('div', { className: 'eb-overlay-actions' },
             h('button', { type: 'button', onClick: dismissOverlay }, t('cancel')),
             h('button', { type: 'button', className: 'eb-primary', onClick: applyNote }, t('save')))),
@@ -1080,25 +1333,40 @@ export function createGeometryPage(React, G, ctx, t, shared) {
         h('div', { className: 'eb-overlay-actions' },
           h('button', { type: 'button', onClick: () => setRename(null) }, t('cancel')),
           h('button', { type: 'button', className: 'eb-primary', onClick: applyRename }, t('apply')))));
-    const statusNode = status && h('div', { className: 'eb-status-toast', role: 'status', 'aria-live': 'polite' }, status);
+    const writingNode = writing && h('div', { className: 'eb-overlay' },
+      h('div', { className: 'eb-overlay-card eb-overlay-text', role: 'dialog', 'aria-modal': 'true', 'aria-label': writing.id ? t('editText') : t('addText') },
+        h('h2', null, writing.id ? t('editText') : t('addText')),
+        h('textarea', {
+          ref: textRef, maxLength: G.TEXT_MAX, defaultValue: writing.value, placeholder: t('textHint'),
+          rows: 3,
+          onKeyDown: (event) => {
+            // Enter writes a new line; the buttons save, so a text can carry two lines.
+            if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) { event.preventDefault(); applyText(); }
+          },
+        }),
+        h('div', { className: 'eb-overlay-actions' },
+          h('button', { type: 'button', onClick: () => { setWriting(null); setTool('select'); } }, t('cancel')),
+          h('button', { type: 'button', className: 'eb-primary', onClick: applyText }, t('save')))));
+    const statusNode = controls.status(status);
     const tourNode = tour && TutorialOverlay && h(TutorialOverlay, {
       step: tour.steps[tour.index], stepIndex: tour.index, stepCount: tour.steps.length,
       t, hole: tourHole, onSkip: finishGeometryTour,
     });
     // A press outside the shared dialog uses the same close as 返回对话.
     if (props.bindClose) props.bindClose(() => props.close?.());
+    if (props.bindAppend) props.bindAppend(appendFigure);
     return h(React.Fragment, null,
       h('div', {
         className: 'eb-workspace eb-geometry-workspace', ref: workspaceRef,
         onKeyDown: (event) => {
           // An open overlay owns the keyboard, so the shortcuts below never fire under it.
-          if (overlay || tour) return;
+          if (overlay || writing || tour) return;
           // Undo/redo shortcuts work from anywhere inside the geometry tab.
           if (!(event.metaKey || event.ctrlKey)) return;
           if (event.key === 'z' || event.key === 'Z') { event.preventDefault(); if (event.shiftKey) redo(); else undo(); }
           if (event.key === 'y' || event.key === 'Y') { event.preventDefault(); redo(); }
         },
-      }, tools, stage, dock, moreMenuNode, statusNode, overlayNode, renameNode, tourNode),
+      }, tools, stage, dock, moreMenuNode, statusNode, overlayNode, renameNode, writingNode, tourNode),
       h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: fileInputRef, onChange: importInput }));
   };
 }

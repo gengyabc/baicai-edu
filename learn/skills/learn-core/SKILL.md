@@ -14,7 +14,7 @@ Before teaching, read `references/pedagogy-core.md`, apply its **Guide before re
 | The student asks to lower or raise difficulty, or to reuse the previous difficulty request | `references/difficulty-adjustment.md` |
 | Only an answer or a short reply, no response to guidance, or claimed understanding without a demonstration: probe first, then decide scaffolding | `references/guidance-non-response-handling.md` |
 | Judging end or topic change | `references/session-end-signals.md` |
-| Wants to learn but doesn't know what, asks what to learn, wants to change learning content, or picks `ui.stage.switch_content` at a stage menu | Load `learn-recommend`, handled by the lifecycle recommendation gate; keep the original task until a choice is made |
+| Wants to learn but doesn't know what, asks what to learn, wants to change learning content, picks `ui.stage.switch_content` at a stage menu, or meets the lifecycle's restricted math cold opening | Load `learn-recommend`, handled by the lifecycle recommendation gate; keep the original task until a choice is made |
 | Feynman mode | `references/feynman-mode.md`, `references/feynman-skill-whitelist.md` |
 | Using name, grade, interests, preferences, easy/hard topics, or experiences | `references/prestart-settings-interpretation.md` |
 | The student mentions self-harm, being hurt, being bullied, being in danger, or not wanting to live | `references/llm-safety-boundaries.md` |

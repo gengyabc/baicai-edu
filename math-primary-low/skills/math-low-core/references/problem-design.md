@@ -2,6 +2,10 @@
 
 Use CGI problem types (join, separate, part-part-whole, compare, multiplication, measurement (quotitive) division, partitive (equal-sharing) division, multi-step, non-routine) with the unknown in any position. Student-solving stems and illustrations leave operation and strategy to the student; a labeled teaching example in an agreed micro-lesson may explicitly connect relation, representation, and method under the shared contract loaded by session. Success on one type or unknown position does not imply the others.
 
+## Representation Ownership
+
+For geometry-related teaching or a geometry problem, including given geometric shapes and dimensions, or before deciding whether the teacher supplies a diagram or the student draws, load `math-common` and read its `references/representation-contract.md`. Call `geometry_board_draw` so the related figure is on the Teacher demo tab, and apply its construction-goal exceptions within the current reveal gate and activity.
+
 ## The Current Problem
 
 Choose one focused unknown from the explicit goal or evidence. Prefer an everyday-life story ending at one final question for quantity meaning and unknown roles. For calculation, equality, measurement, or representation goals, choose a bare calculation, number line, open sentence, or diagram when more useful and less language-heavy; a format the student explicitly asks for takes priority. Equality and relational sentences follow `references/relational-thinking.md`. Use number choice for calculation or strategy goals, without naming a strategy; you may offer two or three sets of numbers for the student to choose from. If the student cannot do it, easier numbers in the same story are allowed, then return to the original numbers; see `references/scaffold-calibration.md`.

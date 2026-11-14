@@ -34,6 +34,14 @@ Each teaching turn needs only this file: the structure of the log and segments. 
 - `finalize_plan` is defined only by `references/finalize-session.md`. While a plan is incomplete, finish the save first, then teach, edit profiles, or write error items.
 - `/learn` and `/learn-feynman` both go through `references/session-lifecycle.md` to append the single subject segment and update context. Append only for actual student performance; in other turns the segment is null and only context is written. After Finalize commits the four subject files, segments, context, and plan are then cleared.
 
+## Optional math micro-lesson state
+
+An agreed math micro-lesson remains `mode: learn`, `context.activity: teaching`, and performance `submode: learn`. The math owner may set `context.turn_state.active_act: micro_lesson`. Only if the existing task and pending-point fields are insufficient to restore it, add `turn_state.micro_lesson`: `{ "goal": "one observable relation", "phase": "example", "exposed_support": ["teacher-provided method or representation"] }`. Phase is `example` / `guided` / `independent`; support records only what is needed to attribute the student's next work honestly. Original task, received response, and pending question remain in the existing fields, not duplicated in this block. A single-turn analogy protecting a pending original needs no second pending task or nested lesson.
+
+Restore the same identity, scope, activity, and pending point without replaying the example. Clear local markers on leaving the micro-lesson for another activity; pause/chat preserves the restore point, and end or target change follows lifecycle save rules. Absent fields in an old log imply no prior agreement and need no migration. Teacher demonstration or recommendation selection returns a null segment; guided mathematical work may produce supported evidence, and a fresh unhinted answer may produce independent evidence under its actual conditions. Student execution and AI-selected strategy are distinct; one immediate success is not durable mastery.
+
+The temporary `target_context.math_opening_hint` shape and consumption are defined only in `references/target-parsing.md`. Its removal and the actual opening/pending point share one successful context write. It is not a field in a performance segment, durable summary, profile, or finalize plan; the existing `next_step_candidate` remains the path for grounded later advice.
+
 ## Prerequisite learning plans
 
 Optional `context.learning_plan` follows `references/learning-plan.md`: versioned local task frames, one active projection, stable root scope/teaching, and evidence-based single-parent returns. Read that reference before creating/changing/restoring a plan; the current teaching owner owns subject semantics. Its durable snapshot is `current_state.learning_plan`, separate from support_events and performance memory. Old logs without it keep the single-task flow.

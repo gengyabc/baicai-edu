@@ -5,6 +5,7 @@ import { composerNote, createShapeArt, colorIndexForValue, createBoardView } fro
 import { createBoardModel } from './model.js';
 import { createBoardTrace } from './trace.js';
 import { createBoardFilePicker, createBoardIcons } from './file-picker.js';
+import { createBoardControls } from './board-kit.js';
 
 const M = createBoardModel();
 const React = { createElement(type, props, ...children) { return { type, props: props || {}, children }; } };
@@ -28,7 +29,7 @@ test('creation colour defaults to 1 and synchronizes previews and new objects', 
   const text = (node) => typeof node === 'string' || typeof node === 'number' ? String(node)
     : node && typeof node === 'object' ? (node.children || []).flat(Infinity).map(text).join('') : '';
   try {
-    const Board = createBoardView(hooks, M, {}, t, '', art, () => null, createBoardTrace(M), { createBoardFilePicker, createBoardIcons });
+    const Board = createBoardView(hooks, M, {}, t, '', art, () => null, createBoardTrace(M), { createBoardFilePicker, createBoardIcons, createBoardControls });
     const render = () => {
       cursor = 0;
       const tree = Board({ sessionId: 'test', useProjection: () => null, useInput: () => 'plain' });

@@ -22,7 +22,7 @@ const serialized = (board) => JSON.parse(G.serialize(board));
 test('a snapshot carries only its own kind, v1 shape and no quantity fields', () => {
   assert.equal(G.kind, 'geometry-board');
   assert.deepEqual(G.coordinateSystem, { type: 'cartesian-2d', units: 'board-unit' });
-  assert.deepEqual(G.shapeLibrary, ['point', 'segment', 'polygon', 'circle', 'parallelogram', 'rectangle']);
+  assert.deepEqual(G.shapeLibrary, ['point', 'segment', 'polygon', 'circle', 'parallelogram', 'rectangle', 'text']);
   assert.deepEqual(clone(G.empty()), { schemaVersion: 1, points: [], elements: [], note: '' });
   const wire = serialized(rectangle());
   assert.deepEqual(Object.keys(wire).sort(), ['elements', 'kind', 'note', 'points', 'schemaVersion']);
@@ -324,6 +324,24 @@ test('derived positions are recomputed, not persisted, and never imported as aut
   const constructionless = serialized(b);
   delete constructionless.points.find((p) => p.kind === 'derived').construction;
   assert.throws(() => G.validate(constructionless));
+});
+
+test('four free corners and a misplaced derived point get different refusals', () => {
+  // A rectangle drawn by hand from four free corners is a polygon. The remedy is a
+  // different element type, so the refusal must not talk about point order.
+  const square = shape(add(add(add(add(G.empty(), 100, 100), 300, 100), 300, 300), 100, 300), 'polygon',
+    ['p-1', 'p-2', 'p-3', 'p-4']);
+  const allFree = serialized(square);
+  allFree.elements[0].type = 'rectangle';
+  assert.throws(() => G.validate(allFree), /Four free points are a polygon/);
+  assert.throws(() => G.validate(allFree), (error) => !/fourth point last/.test(error.message));
+  // A derived fourth corner that is simply not last keeps the ordering refusal.
+  const b = rectangle();
+  const reordered = serialized(b);
+  const derivedId = reordered.elements[0].points[3];
+  reordered.elements[0].points = [reordered.elements[0].points[0], derivedId,
+    ...reordered.elements[0].points.slice(1, 3)];
+  assert.throws(() => G.validate(reordered), /names its derived fourth point last/);
 });
 
 test('deleting a point removes every downstream element and construction in one action', () => {
@@ -690,4 +708,53 @@ test('a drag preview carries the corner moves and rim translations the model com
   assert.deepEqual(moved.corners, [], 'the rim is previewed as a rim, not as a corner');
   const released = G.reduce(circle, { type: 'movePoint', id: 'p-1', x: 230, y: 240 });
   assert.deepEqual([at(released, 'p-2').x, at(released, 'p-2').y], [330, 240], 'the preview matches the release');
+});
+
+test('a text is written by the student, kept in the snapshot, and never borrowed from a point', () => {
+  const b = G.reduce(G.empty(), { type: 'addText', x: 120, y: 160, text: '  面积 = 长 × 宽 ' });
+  assert.deepEqual(b.elements, [{ id: 'e-1', type: 'text', role: 'main', note: '', x: 120, y: 160, text: '面积 = 长 × 宽' }]);
+  // The wire form carries the writing itself, so a reopened file keeps the student's words.
+  const wire = serialized(b);
+  assert.deepEqual(wire.elements[0], { id: 'e-1', type: 'text', role: 'main', note: '', x: 120, y: 160, text: '面积 = 长 × 宽' });
+  assert.deepEqual(G.validate(wire), G.validate(b));
+  // Writing more lines is the student's own line break, not layout.
+  const two = G.reduce(b, { type: 'editText', id: 'e-1', text: '长 6\n宽 4' });
+  assert.equal(two.elements[0].text, '长 6\n宽 4');
+  // The box estimate is one place for drawing and clicking: two lines, widest 3 characters.
+  assert.deepEqual(G.textBox(two.elements[0].text.split('\n')), { width: 3 * 16 * 0.62 + 8, height: 2 * 20 + 2 });
+  // A blank text would be an invisible object: it is refused rather than stored.
+  assert.throws(() => G.reduce(G.empty(), { type: 'addText', x: 1, y: 1, text: '   ' }), /Invalid text/);
+  assert.throws(() => G.reduce(b, { type: 'editText', id: 'e-1', text: '' }), /Invalid text/);
+  assert.throws(() => G.reduce(G.empty(), { type: 'addText', x: 1, y: 1, text: '字'.repeat(G.TEXT_MAX + 1) }), /Invalid text/);
+  // It is neither a point nor a construction input and cannot move a shape.
+  assert.deepEqual(b.points, []);
+  assert.throws(() => G.reduce(b, { type: 'translate', ids: ['e-1'], dx: 5, dy: 5 }), /Unknown point/);
+  assert.throws(() => G.reduce(b, { type: 'movePoint', id: 'e-1', x: 1, y: 1 }), /Unknown point/);
+  assert.throws(() => G.reduce(b, { type: 'addElement', elementType: 'segment', points: ['e-1', 'e-1'] }));
+});
+
+test('a text moves by its own anchor and stays reachable on the board', () => {
+  const b = G.reduce(G.empty(), { type: 'addText', x: 100, y: 100, text: '周长' });
+  const moved = G.reduce(b, { type: 'moveText', id: 'e-1', x: 640, y: 420 });
+  assert.deepEqual([moved.elements[0].x, moved.elements[0].y], [640, 420]);
+  // A drag beyond the board stops at the board instead of storing an unreachable anchor.
+  const pinned = G.reduce(b, { type: 'moveText', id: 'e-1', x: 9999, y: -50 });
+  assert.deepEqual([pinned.elements[0].x, pinned.elements[0].y], [G.bounds.width, G.bounds.margin]);
+  assert.throws(() => G.reduce(b, { type: 'moveText', id: 'e-1', x: NaN, y: 1 }));
+  // Deleting removes only the writing; shapes and points beside it stay.
+  const withShape = G.reduce(shape(add(add(G.empty(), 200, 200), 300, 300), 'segment', ['p-1', 'p-2']),
+    { type: 'addText', x: 50, y: 50, text: '边 AB' });
+  const deleted = G.reduce(withShape, { type: 'delete', ids: ['e-2'] });
+  assert.deepEqual(deleted.points.map((p) => p.id), ['p-1', 'p-2']);
+  assert.deepEqual(deleted.elements.map((e) => e.id), ['e-1']);
+});
+
+test('a board file with the wrong text shape is refused instead of guessed', () => {
+  const wire = (element) => ({ kind: 'geometry-board', schemaVersion: 1, points: [], elements: [element], note: '' });
+  assert.throws(() => G.validate(wire({ id: 'e-1', type: 'text', role: 'main', note: '', x: 10, y: 10, text: '' })), /Invalid text/);
+  // A text names no point: a stale point list is a broken file, not an anchor.
+  assert.throws(() => G.validate(wire({ id: 'e-1', type: 'text', role: 'main', note: '', x: 10, y: 10, text: 'a', points: ['p-1'] })), /references no point/);
+  assert.throws(() => G.validate(wire({ id: 'e-1', type: 'text', role: 'main', note: '', x: 900, y: 10, text: 'a' })), /Invalid text/);
+  // A closed shape may not borrow the text's own fields.
+  assert.throws(() => G.validate(wire({ id: 'e-1', type: 'segment', role: 'main', note: '', x: 1, y: 1, points: ['p-1', 'p-2'] })), /Unknown point|own position/);
 });

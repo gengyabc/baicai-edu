@@ -1,6 +1,6 @@
 ---
 name: math-common
-description: Shared math rules for both primary bands. Load from a math band skill for an agreed micro-lesson, a student-made problem, practice evidence, or reading or writing the math board; returns rules only.
+description: Shared math rules for both primary bands. Load from a math band skill for an agreed micro-lesson, a student-made problem, practice evidence, a geometry figure on the Teacher demo tab, or reading or writing the math board; returns rules only.
 user-invocable: false
 ---
 
@@ -12,14 +12,15 @@ The math rules both primary bands must change together. This is not a teaching i
 
 The caller is the current math band, which already holds the current provider, `mode` and confirmed-skill evidence, the current problem and pending step, the practice purpose, and the evidence and signal to return. When an input a rule depends on is missing, take that rule's most conservative branch (no confirmed skill means always answer correctly).
 
-Loading this skill returns its base directory. Read only the one matching reference, do not pre-load the others, and reuse a contract already read this session instead of reading it again; do not invent a contract that is missing.
+Loading this skill returns its base directory. Read only the references required by the current branch, and reuse contracts already read this session. Teacher geometry needs both representation ownership and the board tool-call recipe; do not pre-load unrelated contracts or invent one that is missing.
 
 | When the band needs | Read | The band keeps |
 |---|---|---|
 | An agreed new-learning micro-lesson | `references/micro-lesson-contract.md` | Entry decision, method selection, teaching execution, and local activity state |
 | A student-authored problem | `references/student-problem-contract.md` | Multi-part grading, problem-type range, invented-versus-real quantities |
 | Practice evidence | `references/practice-evidence-contract.md` | Problem design, methods and scaffolds, batch attribution |
-| The math board | `references/board-contract.md` | Clear authorization, teaching use, sub-question attribution |
+| Choosing teacher-supplied diagrams, student-generated representations, or fading support; geometry-related teaching or a geometry problem | `references/representation-contract.md` | Learning goal, method, activity, pending task, and evidence attribution. Call `geometry_board_draw` for a drawable figure; that call is teacher material, not a student draft |
+| The math board, including an explicit request for the teacher to draw or a missing teacher figure | `references/board-contract.md` | Clear authorization, teaching use, sub-question attribution; Tool Dispatch and executable geometry-call recipe |
 | The student's handwritten work, a math diagram, or a printed math page | `references/handwritten-work-contract.md` | Diagnosis, scaffolds and the next teaching move; the contract supplies reading hints and step-check facts only |
 
 ## Boundary

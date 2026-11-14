@@ -4,6 +4,11 @@
     "description": "用图案与可命名分组表达数量想法，量级颜色由学生自己设定，并把画板文件放进回答。"
   },
   "title": "数学画板",
+  "teacherReference": "老师示意图",
+  "teacherReferenceHint": "只读参考，不是你的作答，不会放入回答。图形不作为测量依据，以标注和题目条件为准。",
+  "teacherReferenceShow": "显示示意图",
+  "teacherReferenceHide": "收起示意图",
+  "teacherReferenceScroll": "示意图，可滚动查看",
   "workspaceSubtitle": "摆图形 · 圈一组 · 自己说数量",
   "toolbox": "工具箱",
   "tapToAdd": "点一下放到画布；也可以拖进来",
@@ -201,6 +206,12 @@
   "tabs": "模式",
   "tabQuantity": "算数",
   "tabGeometry": "几何",
+  "tabDemo": "教师演示",
+  "demoEmpty": "老师还没有在这里放图",
+  "demoCopy": "放到我的几何画板",
+  "demoCopyDone": "已放到几何画板",
+  "demoCopyFull": "几何画布太满，先挪出空位再放",
+  "demoCanvas": "教师演示画布",
   "geometryCanvas": "几何画布",
   "geometryEmpty": "选一个工具，在画布上点一下开始画",
   "geometryEmptyHint": "点 · 线段 · 三角形 · 圆 · 平行四边形 · 矩形 · 多边形",
@@ -256,5 +267,9 @@
   "tutorialGNoteSaveTitle": "保存说明",
   "tutorialGNoteSaveBody": "写好后点「保存」。",
   "tutorialGInsertTitle": "放入回答",
-  "tutorialGInsertBody": "点这里附上几何画板。教程里点一下即可，不会真的放入。"
+  "tutorialGInsertBody": "点这里附上几何画板。教程里点一下即可，不会真的放入。",
+  "text": "文字",
+  "addText": "写下文字",
+  "editText": "修改文字",
+  "textHint": "例如：面积 = 长 × 宽（点“保存”写下；Esc 取消）"
 }

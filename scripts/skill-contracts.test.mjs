@@ -1049,7 +1049,8 @@ test('structured drawing guidance is conditionally discoverable in band cores on
   for (const pointer of pointers) {
     const drawingRow = pointer.content.split('\n').find((line) => line.includes(reference))
     assert.match(drawingRow, /board attachment/)
-    assert.match(drawingRow, /or the student asks how to use the board/)
+    assert.match(drawingRow, /the student asks how to use the board/)
+    assert.match(drawingRow, /the teacher will supply a board reference/)
     assert.doesNotMatch(drawingRow, /need(?:s)? to guide (?:the )?board|需引导画板/)
   }
   assert.match(text('math-primary-low/README.md'), /skills\/math-low-core\/references\/structured-drawing\.md/)
@@ -1449,9 +1450,9 @@ test('shared math contract is a rule source, never a teaching implementation', (
   }
   const manifest = JSON.parse(text('math-common/package.json'))
   assert.equal(manifest.name, 'dsh-edu-math')
-  assert.deepEqual(manifest.dependencies, { 'dsh-edu-learn': 'file:../learn' })
+  assert.deepEqual(manifest.dependencies, { 'dsh-edu-learn': '^0.1.0' })
   for (const band of ['math-primary-low', 'math-primary-high']) {
-    assert.equal(JSON.parse(text(`${band}/package.json`)).dependencies['dsh-edu-math'], 'file:../math-common', band)
+    assert.equal(JSON.parse(text(`${band}/package.json`)).dependencies['dsh-edu-math'], '^0.1.0', band)
   }
 })
 
@@ -1463,14 +1464,16 @@ test('shared math contract replay scenarios live in one checklist', () => {
   }
 })
 
-test('shared math interface returns one contract at a time and leaves bands their differences', () => {
+test('shared math interface loads branch-required contracts and leaves bands their differences', () => {
   for (const contract of ['student-problem-contract', 'practice-evidence-contract', 'board-contract',
     'handwritten-work-contract']) {
     assert.ok(sharedMathSkill.includes(`references/${contract}.md`), contract)
     assert.ok(existsSync(join(root, sharedMathRoot, 'references', `${contract}.md`)), contract)
   }
   assert.match(sharedMathSkill, /returns its base directory/)
-  assert.match(sharedMathSkill, /one matching reference/i)
+  assert.match(sharedMathSkill, /only the references required by the current branch/i)
+  assert.match(sharedMathSkill, /Teacher geometry needs both representation ownership and the board tool-call recipe/)
+  assert.match(sharedMathSkill, /do not pre-load unrelated contracts/)
   assert.match(sharedMathSkill, /the current provider's rule/)
   for (const local of ['Clear authorization', 'stage fit', 'method selection', 'batch tracking']) {
     assert.ok(sharedMathSkill.includes(local), local)
@@ -1632,8 +1635,8 @@ test('high-grade methodology is kept as material and never registered as skills'
   assert.deepEqual(manifest.files, ['cordis.patch.yml', 'skills', 'README.md'])
   assert.ok(!manifest.files.includes('sources'))
   assert.deepEqual(manifest.dependencies, {
-    'dsh-edu-learn': 'file:../learn',
-    'dsh-edu-math': 'file:../math-common',
+    'dsh-edu-learn': '^0.1.0',
+    'dsh-edu-math': '^0.1.0',
   })
   const installed = readdirSync(join(root, 'math-primary-high', 'skills')).sort()
   assert.deepEqual(installed, ['math-high-application-modeling', 'math-high-core', 'math-high-diagnose',
@@ -1693,6 +1696,8 @@ test('upper-primary optional board has no automatic clear authorization', () => 
     '`ui.board.clear_failed_hint`'])
   const session = text(skillPath('math-primary-high', 'math-high-session'))
   assert.match(session, /New problems, activities, topics, and leaf dispatches do not trigger board tools/)
+  assert.match(session, /does not block `geometry_board_draw`/)
+  assert.match(highCore, /still call `geometry_board_draw`/)
   assert.doesNotMatch(session + highCore, /even with no board attachment|applies even without a board attachment/)
   assert.doesNotMatch(highRef('batch-board-boundary'), /call `math_board_clear`|clear once before/)
   assert.match(highRef('structured-drawing'), /fractional values are not native primitives/)

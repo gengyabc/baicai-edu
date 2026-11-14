@@ -27,7 +27,7 @@ function checkFixture(duplicate) {
     }
     for (const bundle of ['math-primary-low', 'math-primary-high']) {
       writeFileSync(join(root, bundle, 'package.json'), JSON.stringify({
-        dependencies: { 'dsh-edu-math': 'file:../math-common' },
+        dependencies: { 'dsh-edu-math': '^0.1.0' },
       }))
     }
     return spawnSync(process.execPath, [join(root, 'scripts/check-skills.mjs')], { encoding: 'utf8' })

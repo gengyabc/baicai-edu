@@ -1,7 +1,6 @@
 {
   "name": "dsh-edu-math-board",
   "version": "0.6.0",
-  "private": true,
   "type": "module",
   "description": "表达型数学工作台：数量画板（预设颜色创建图案、可命名分组与同形合并）与几何画板（点、线段、多边形、圆、平行四边形、矩形）并列两个 tab；以只读快照和学生自述提交。",
   "exports": {
@@ -19,9 +18,22 @@
     "view.js",
     "view-component.js",
     "question-reference.js",
+    "reference-model.js",
+    "board-schema.js",
+    "board-kit.js",
+    "capabilities.js",
+    "reference-bridge.js",
+    "reference-view.js",
     "file-picker.js",
     "geometry/model.js",
+    "geometry/demo-model.js",
+    "geometry/place-figure.js",
+    "geometry/caption.js",
+    "geometry/draw.js",
+    "geometry/frame.js",
     "geometry-view.js",
+    "geometry-demo-view.js",
+    "geometry-demo-bridge.js",
     "tutorial.js",
     "board-shell.js",
     "board.css",
@@ -35,7 +47,7 @@
   ],
   "scripts": {
     "build": "node build.mjs",
-    "test": "node --test *.test.js geometry/model.test.js",
+    "test": "node --test *.test.js geometry/*.test.js",
     "preview": "node preview.mjs"
   },
   "dsh": {

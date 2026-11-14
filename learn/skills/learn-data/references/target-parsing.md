@@ -25,6 +25,27 @@ The `target_context` shape shared by `/learn`, `/learn-feynman`, and the restore
 2. Has a path -> `type: error_files`; first handled by `learn-errors`, then handed off per the subject target classification.
 3. Other text goes to the current subject's target classification. When it can't be judged, ask only one short question and do not guess the material.
 
+## Optional math opening advice
+
+A mathematics recommendation candidate and its selected session target_context may carry `math_opening_hint`: `micro_lesson` / `practice` / `probe` / `challenge`. It suggests only the first action: teach a supported new relation, check/consolidate on a fresh item, distinguish an uncertain cause, or offer an unhinted transfer/structural variation. The math session owns the decision and honors the latest explicit request and pending work. It is not a global mode, target-switch authorization, or proof of readiness.
+
+Keep topic and action separate: topic preserves the student's meaningful subject wording, not a graph ID or a generated “teach me” prefix. `intent` may preserve an explicit new-learning request verbatim where the existing classifier runs; do not overwrite intent from file/error processing with generated recommendation reasons. Ordinary same-target replies and restored sessions do not rerun classification or allocate a new scope_id.
+
+The hint lives only in temporary recommendation candidates and the selected current context. Consume it with the first actual opening's successful context write alongside the advanced pending point; a failed write keeps the persisted retry position. Later restore follows recorded activity, never reopens from the hint. Same-target continuation does not overwrite a pending question. Old candidates without it follow the original rules; an unknown value is ignored, not interpreted as authorization. Keep it out of segments, long-term recommendation summaries, profiles, ability evidence, and general-subject records.
+
+### Selected opening expectation
+
+For newly generated math candidates, pair the visible “goal · how we begin” description with the matching `math_opening_hint` whenever a fresh opening is proposed. Keep the description in the candidate's `reason`, not in student-authored `intent`. On selection, the hint carries that opening expectation into the target context:
+
+- `micro_lesson`: an explained example of one new relation, then a reachable student step. Selecting a candidate explicitly offering this sequence agrees to that new-learning activity; it does not establish mastery or authorize solving a pending original. Apply the shared new-learning gate and separate-example protection.
+- `practice`: a fresh independent check/consolidation item before hints; describe it as checking or practice, not first teaching new knowledge.
+- `challenge`: student-led investigation or transfer with the key inference left to the student.
+- `probe`: one brief exploration of a specific uncertainty; describe that uncertainty honestly rather than promising a demonstration first.
+
+An unfinished-task candidate is labeled as continuation, carries its existing scope/teaching, and resumes the pending point without a fresh opening hint. History being unfinished is a reason to offer continuation, not permission to start it before selection.
+
+The session fulfills the offered first activity. If the latest explicit request, conflicting evidence, protected pending work, or an unavailable contract requires a different opening, briefly explain the change before proceeding under the existing gates. Unknown readiness alone does not silently replace an agreed, supported new-learning example with an assessment item. After the opening, evidence guides support and any later independent check; an independent check is not a compulsory exit test. Old candidates without hints keep the original restore behavior; this contract creates no new mode or performance evidence.
+
 ## After File Processing
 
 The entry calls `learn-errors` only once, and after obtaining the extracted material, the student's answers, the diagnosis, and the current extracted path:

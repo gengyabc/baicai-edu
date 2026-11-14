@@ -1,6 +1,46 @@
 # 教育包依赖与安装
 
-## 一条命令，补齐依赖
+## 两种安装来源
+
+- **registry 发布**：每个包声明发布版本范围（如 `"dsh-edu-learn": "^0.1.0"`），不声明 `"private": true`。接收方只需装 **DSH**，用自己的 dsh 命令按包名安装；不需要你的 checkout、profile 或任何本机路径。
+- **本地 checkout**：`scripts/install.mjs` 按 `package.json` 的必需依赖遍历同仓库 bundle，兼容发布版本范围与 `file:` 声明，再把依赖闭包全部以 `link:` 路径一次交给 `dsh`。技能后续加载可读到本地修改；宿主代码修改仍按 DSH 重载或重启诊断生效。
+
+## 接收方怎么装（DSH 已装好）
+
+```bash
+# 当前 DSH 不自动启用间接依赖；把必需 bundle 一起列为顶层选择。
+dsh plugin --profile web add dsh-edu-learn dsh-edu-math dsh-edu-math-board dsh-edu-math-primary-low
+dsh plugin --profile web add dsh-edu-learn dsh-edu-math dsh-edu-math-primary-high
+# 高年级画板可选：另加 dsh-edu-math-board。
+dsh plugin --profile web add dsh-edu-learn dsh-edu-chinese-reading
+dsh plugin --profile web add dsh-edu-learn dsh-edu-english
+```
+
+装完按 DSH 的提示重启或刷新 Web 页面即可，**不需要再配置模型**：插件不注册、不改写任何模型 provider，会话继续使用接收方 DSH 里已经选好的模型与凭据。插件本身也不发网络请求、不带 API key。要求 DSH 的模型路由已能在接收方机器上正常对话（这与插件无关）。
+
+本仓库的安装器在两种模式下都显式展开必需 bundle；`--from registry` 用发布包名代替本地链接（预览不修改 profile）：
+
+```bash
+node scripts/install.mjs all --profile web --from registry --dry-run
+```
+
+（该入口仅在本仓库内可用，接收方直接执行上面的 `dsh plugin ... add`。）
+
+## 发布者侧
+
+```bash
+npm publish ./learn ./math-common ./math-board          # 共享包先发
+npm publish ./math-primary-low ./math-primary-high ./chinese-reading ./english
+```
+
+**当前发布阻断项（方案 B 待落地）**：技能条目的路径解析只在开发机成立，接收方会静默失配。
+
+- 各包 `cordis.patch.yml` 的技能注册是 `@deepseek-ai/dsh-skill-filesystem` + `bundledSkillDir: !!js ...createRequire(baseUrl).resolve('<包名>/package.json')...`。`baseUrl` 是**接收方 profile 目录**；开发机上能解析，是因为那里 `node_modules/dsh-edu-*` 是 `link:` 指向本仓库，而发布出去后是真实安装目录。
+- 实测：把 profile 路径换成干净目录（`/tmp/fakeprofile/`）后，同一表达式返回 `MODULE_NOT_FOUND`。技能不会注册，patch 也不会报错，只会静默少一批技能。插件同时改了技能目录或 `providerName` 后，旧引用不再命中。
+- 发布前必须把技能注册改为**不依赖 `baseUrl` 解析**的形式（如随包自带的 provider 插件），并把「发布物实跑一遍、确认 43 个技能全部注册」加入发布检查；在此之前不要 `npm publish`。
+- 接收方侧的前置条件只有 DSH 与可用模型路由；插件的 `dsh-edu-learn: ^0.1.0` 等范围由 npm 自动满足。
+
+## 本地 checkout 安装
 
 在此仓库中运行（需要 Node.js、可用的 `dsh` 及其 pnpm）：
 
@@ -46,12 +86,14 @@ node scripts/install.mjs math-primary-low --profile web --dry-run
 
 `learn` 自带 `learn-general-core`、`learn-general-session` 与 `learn-support`，单独安装即可使用通用任务教学和五类支持；不按年龄另装包，不反向安装所有学科。专门包仍提供各自教学方法，缺包不妨碍通用路径。此源码变更本身不表示正在使用的 profile 已更新或启用。
 
-依赖只声明在各包的 `package.json` → `dependencies`。所有包目前都是私有的相邻目录包，使用 `file:../learn`、`file:../math-common`、`file:../math-board`；这不是可直接发布到 registry 的版本依赖。未来发布前必须替换为已发布版本并重新验证安装，不要把带相邻目录依赖的单独 tarball 当成自包含发行物。
+依赖只声明在各包的 `package.json` → `dependencies`：`dsh-edu-math`、两个 band、语文学科与英语声明 `dsh-edu-learn: ^0.1.0`，两个 band 另外声明 `dsh-edu-math: ^0.1.0`（低年级数学另加 `dsh-edu-math-board: ^0.6.0`）。任何包都不再声明 `"private": true`，因为 npm 会拒绝发布私有包，而 DSH 的官方 bundle 校验也按“公开 bundle”读取。
 
 安装器从这些声明递归生成依赖优先、按包去重的闭包，然后执行**一次**：
 
 ```bash
 dsh plugin --profile web add link:<checkout>/learn link:<checkout>/math-common link:<checkout>/math-board link:<checkout>/math-primary-low [link:<checkout>/math-primary-high]
+# 或由统一入口按 manifest 的必需依赖生成（版本范围与 file: 都会展开）：
+node scripts/install.mjs math-primary-low --profile web
 ```
 
 每个 bundle 成为 profile 的顶层依赖，由 DSH 原生处理安装与启用。各包仍只注册自己的技能或插件；学科 patch 不复制共享规则，不重复插入画板。`all` 只是三个已交付学科（数学两个年级段包）的快捷选择，不扫描实验目录为新学科。两个数学包互不依赖：科目 id 都是 `math`，使用唯一技能名 `math-low-*` / `math-high-*`，由[教学解析](../learn/skills/learn-data/references/teaching-resolver.md)统一选择：已知 1–3 年级优先 low、4–6 年级优先 high，缺年级默认 low；优先级不是内容门槛，low 也可教高阶内容，已安装但未被选中的包不影响正在进行的任务。共享数学契约由 `dsh-edu-math` 提供，闭包中只出现一次；它不含 band 的 core / session 教学技能，不会被解析成第三个数学实现。

@@ -134,7 +134,7 @@ check('C1: row count changes only the initial state and final size', () => {
   return `T(1..10) = ${Array.from({ length: 10 }, (_, i) => triangular(i + 1)).join(', ')}`
 })
 
-check('C2: adding a constant k=6 per row changes the recurrence but not the pairing argument', () => {
+check('C2: row k has 6k dots; the recurrence changes but the pairing argument survives', () => {
   const sixRows = Array.from({ length: 6 }, (_, i) => 6 * (i + 1))
   const sum = sixRows.reduce((a, b) => a + b, 0)
   assert.equal(sum, 6 * 21)
@@ -163,8 +163,8 @@ check('D1: 20 tickets of 2 and 5 reaching 64 with a uniform gap', () => {
 })
 
 check('D2: a changed price table has a direct answer the gradient rule never reaches', () => {
-  // Same 20 tickets. Price table: the dear ticket costs 5 yuan for any one of the first 10
-  // tickets issued, and 6 yuan for each dear ticket after that.
+  // Same 20 tickets. Cheap tickets always cost 2 yuan. The first 10 dear tickets
+  // cost 5 yuan each; each additional dear ticket costs 6, regardless of sale order.
   const total = (dear) => (dear <= 10
     ? (20 - dear) * 2 + dear * 5
     : (20 - dear) * 2 + 10 * 5 + (dear - 10) * 6)
@@ -179,6 +179,21 @@ check('D2: a changed price table has a direct answer the gradient rule never rea
   // Above the boundary each extra dear ticket adds 4 yuan (6 - 2), not 3.
   assert.equal(total(12), (20 - 12) * 2 + 10 * 5 + 2 * 6)
   assert.equal(total(12), 78)
+  // Charge the stated rule ticket by ticket. Cheap sales never consume the dear tier.
+  const charge = (sales) => {
+    let dearSold = 0
+    return sales.reduce((sum, dear) => {
+      if (!dear) return sum + 2
+      dearSold += 1
+      return sum + (dearSold <= 10 ? 5 : 6)
+    }, 0)
+  }
+  for (let dear = 0; dear <= 20; dear += 1) {
+    const cheapFirst = [...Array(20 - dear).fill(false), ...Array(dear).fill(true)]
+    assert.equal(charge(cheapFirst), total(dear))
+    assert.equal(charge([...cheapFirst].reverse()), total(dear))
+  }
+  assert.equal(charge([...Array(8).fill(false), ...Array(12).fill(true)]), 78)
   assert.equal(total(14), (20 - 14) * 2 + 10 * 5 + 4 * 6)
   assert.equal(total(14), 86)
   // The old uniform-gradient tactic assumes a 3-yuan gap for every dear ticket. On 78 it

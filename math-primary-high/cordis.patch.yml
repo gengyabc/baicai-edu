@@ -2,7 +2,7 @@
 #
 # Roots are resolved from the installed package location (baseUrl = the profile
 # dir), so link:, file: and git installs all behave the same. Registry publish
-# additionally requires removing "private": true from package.json.
+# ships without "private": true.
 - insert:
     - id: edu-math-primary-high-skills
       name: '@deepseek-ai/dsh-skill-filesystem'

@@ -7,41 +7,71 @@ import { test } from 'node:test';
 import { install, planInstallation } from './install.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
+const subjectPackages = {
+  learn: 'dsh-edu-learn', 'math-common': 'dsh-edu-math', 'math-board': 'dsh-edu-math-board',
+  'math-primary-low': 'dsh-edu-math-primary-low', 'math-primary-high': 'dsh-edu-math-primary-high',
+  'chinese-reading': 'dsh-edu-chinese-reading', english: 'dsh-edu-english',
+};
 const plan = (...args) => planInstallation(args);
 
-test('math installs shared learning, shared math rules, and the board before its own bundle', () => {
+// DSH activates new top-level bundles only, not npm's transitive packages.
+// Exercise the real manifests (currently registry ranges), in both modes.
+test('a low-band install explicitly selects its required bundle closure', () => {
+  for (const mode of [[], ['--from', 'registry']]) {
+    const result = plan('math-primary-low', ...mode);
+    assert.deepEqual(result.packages, ['learn', 'math-common', 'math-board', 'math-primary-low']);
+    assert.deepEqual(result.names, ['dsh-edu-learn', 'dsh-edu-math', 'dsh-edu-math-board', 'dsh-edu-math-primary-low']);
+  }
+});
+
+test('registry installs explicitly select dependencies before their consumers', () => {
+  const result = plan('math-primary-low', '--from', 'registry');
+  assert.deepEqual(result.packages, ['learn', 'math-common', 'math-board', 'math-primary-low']);
+  assert.deepEqual(result.names, ['dsh-edu-learn', 'dsh-edu-math', 'dsh-edu-math-board', 'dsh-edu-math-primary-low']);
+  assert.deepEqual(result.args, ['plugin', '--profile', 'web', 'add', ...result.names]);
+  assert.deepEqual(plan('all', '--from', 'registry').args, ['plugin', '--profile', 'web', 'add',
+    'dsh-edu-learn', 'dsh-edu-math', 'dsh-edu-math-board', 'dsh-edu-math-primary-low',
+    'dsh-edu-math-primary-high', 'dsh-edu-chinese-reading', 'dsh-edu-english']);
+  // A bare subject installs alone too: the shared bundles are their own opt-in.
+  assert.deepEqual(plan('learn', '--from', 'registry').names, ['dsh-edu-learn']);
+});
+
+test('local checkouts link required bundles even when manifests declare registry ranges', () => {
   const result = plan('math-primary-low');
   assert.deepEqual(result.packages, ['learn', 'math-common', 'math-board', 'math-primary-low']);
   assert.deepEqual(result.args, ['plugin', '--profile', 'web', 'add',
-    ...['learn', 'math-common', 'math-board', 'math-primary-low'].map(key => `link:${resolve(root, key)}`)]);
+    ...result.packages.map(key => `link:${resolve(root, key)}`)]);
+  assert.deepEqual(plan('math-common', 'math-board').packages, ['learn', 'math-common', 'math-board']);
 });
 
 for (const subject of ['chinese-reading', 'english']) {
-  test(`${subject} installs shared learning but not the board`, () => {
-    assert.deepEqual(plan(subject).packages, ['learn', subject]);
+  test(`${subject} is its own bundle and never the board`, () => {
+    assert.deepEqual(plan(subject, '--from', 'registry').names, ['dsh-edu-learn', `dsh-edu-${subject}`]);
+    assert.ok(!plan(subject, '--from', 'registry').names.includes('dsh-edu-math-board'));
   });
 }
 
 // The resolver picks one math band per session; neither depends on the other.
-test('upper-primary math requires only shared rules, with an optional board', () => {
-  assert.deepEqual(plan('math-primary-high').packages, ['learn', 'math-common', 'math-primary-high']);
-  assert.deepEqual(plan('math-primary-high', 'math-board', 'math-board').packages,
-    ['learn', 'math-common', 'math-primary-high', 'math-board']);
-  assert.deepEqual(plan('math-board', 'math-primary-high').packages,
-    ['math-board', 'learn', 'math-common', 'math-primary-high']);
-  // Low still brings its required board, without duplicating either shared bundle.
-  assert.deepEqual(plan('math-primary-high', 'math-primary-low').packages,
-    ['learn', 'math-common', 'math-primary-high', 'math-board', 'math-primary-low']);
+test('upper-primary math never implies the optional board', () => {
+  assert.deepEqual(plan('math-primary-high', '--from', 'registry').names,
+    ['dsh-edu-learn', 'dsh-edu-math', 'dsh-edu-math-primary-high']);
+  assert.deepEqual(plan('math-primary-high', 'math-board', 'math-board', '--from', 'registry').names,
+    ['dsh-edu-learn', 'dsh-edu-math', 'dsh-edu-math-primary-high', 'dsh-edu-math-board']);
+  assert.deepEqual(plan('math-board', 'math-primary-high', '--from', 'registry').names,
+    ['dsh-edu-math-board', 'dsh-edu-learn', 'dsh-edu-math', 'dsh-edu-math-primary-high']);
+  const high = JSON.parse(readFileSync(join(root, 'math-primary-high', 'package.json'), 'utf8'));
+  assert.deepEqual(Object.keys(high.dependencies).sort(), ['dsh-edu-learn', 'dsh-edu-math']);
+  const low = JSON.parse(readFileSync(join(root, 'math-primary-low', 'package.json'), 'utf8'));
+  assert.deepEqual(Object.keys(low.dependencies).sort(),
+    ['dsh-edu-learn', 'dsh-edu-math', 'dsh-edu-math-board']);
 });
 
 test('the shared math contract is never a teaching implementation', () => {
-  // It is a rule source with its own bundle, so it is installable and appears
-  // exactly once; installing it alone never pulls in a band.
-  assert.deepEqual(plan('math-common').packages, ['learn', 'math-common']);
-  const all = plan('all').packages;
-  assert.equal(all.filter(key => key === 'math-common').length, 1);
-  // The upper-primary band never drags in the optional board.
-  assert.ok(!plan('math-primary-high').packages.includes('math-board'));
+  // It brings in the shared learning protocol, never a teaching band or board.
+  assert.deepEqual(plan('math-common', '--from', 'registry').names, ['dsh-edu-learn', 'dsh-edu-math']);
+  const all = plan('all', '--from', 'registry').names;
+  assert.equal(all.filter(name => name === 'dsh-edu-math').length, 1);
+  assert.ok(!plan('math-primary-high', '--from', 'registry').names.includes('dsh-edu-math-board'));
 });
 
 for (const independent of ['learn', 'math-board']) {
@@ -51,14 +81,18 @@ for (const independent of ['learn', 'math-board']) {
 }
 
 test('all subjects and repeated requests share one copy of each bundle', () => {
-  assert.deepEqual(plan('all', 'math-primary-low', 'learn', 'all').packages,
-    ['learn', 'math-common', 'math-board', 'math-primary-low', 'math-primary-high', 'chinese-reading', 'english']);
-  assert.deepEqual(plan('english', 'chinese-reading', 'math-primary-high').packages,
-    ['learn', 'english', 'chinese-reading', 'math-common', 'math-primary-high']);
+  assert.deepEqual(plan('all', 'math-primary-low', 'learn', 'all', '--from', 'registry').names, [
+    'dsh-edu-learn', 'dsh-edu-math', 'dsh-edu-math-board', 'dsh-edu-math-primary-low',
+    'dsh-edu-math-primary-high', 'dsh-edu-chinese-reading', 'dsh-edu-english',
+  ]);
+  assert.deepEqual(plan('english', 'chinese-reading', 'math-primary-high', '--from', 'registry').names,
+    ['dsh-edu-learn', 'dsh-edu-english', 'dsh-edu-chinese-reading', 'dsh-edu-math', 'dsh-edu-math-primary-high']);
+  // Package names and directory names select the same bundle.
+  assert.deepEqual(plan('dsh-edu-learn', 'learn', '--from', 'registry').names, ['dsh-edu-learn']);
 });
 
 test('profile and preview are explicit; no machine-specific path is stored', () => {
-  const result = plan('--profile', 'edu-test', 'math-primary-low', '--dry-run');
+  const result = plan('--profile', 'edu-test', 'math-primary-low', '--dry-run', '--from', 'registry');
   assert.equal(result.profile, 'edu-test');
   assert.equal(result.dryRun, true);
   assert.deepEqual(result.args.slice(0, 4), ['plugin', '--profile', 'edu-test', 'add']);
@@ -115,28 +149,51 @@ function fixture(packages) {
 test('cycles, missing packages, mismatched names, and unsupported specs fail closed', () => {
   for (const packages of [
     { a: { 'dsh-edu-b': 'file:../b' }, b: { 'dsh-edu-a': 'file:../a' } },
+    { a: { 'dsh-edu-b': '^0.1.0' }, b: { 'dsh-edu-a': '^0.1.0' } },
+    { a: { 'dsh-edu-b': 'workspace:*' }, b: {} },
     { a: { 'dsh-edu-b': 'file:../missing' } },
     { a: { 'dsh-edu-wrong': 'file:../b' }, b: {} },
-    { a: { 'dsh-edu-b': '^1.0.0' } },
+    { a: { 'dsh-edu-learn': 'file:../learn' } },
+    { learn: {} },
   ]) {
     const sandbox = fixture(packages);
     try {
-      assert.throws(() => planInstallation(['a'], sandbox.path), /dependency/);
+      assert.throws(() => planInstallation(['a'], sandbox.path), /dependency|Unknown package/);
     } finally {
       sandbox.cleanup();
     }
   }
 });
 
+test('dependency closure comes from manifests and excludes external npm libraries', () => {
+  const sandbox = fixture({ a: { 'dsh-edu-b': '^0.1.0', react: '^19.0.0' }, b: {} });
+  try {
+    for (const mode of [[], ['--from', 'registry']]) {
+      assert.deepEqual(planInstallation(['a', ...mode], sandbox.path).packages, ['b', 'a']);
+    }
+  } finally { sandbox.cleanup(); }
+});
+
 test('dependency declarations are the only graph and patch registrations stay unique', () => {
   const seenIds = new Set();
-  for (const key of plan('all').packages) {
+  assert.equal(plan('all', '--from', 'registry').names.length, 7);
+  for (const key of Object.keys(subjectPackages)) {
     const manifest = JSON.parse(readFileSync(join(root, key, 'package.json'), 'utf8'));
-    assert.equal(manifest.private, true, 'file: dependencies are a private-checkout contract');
+    // Published packages must be installable from a registry (npm refuses
+    // "private": true) while still keeping their adjacent-directory graph for
+    // local link: checkouts, so both modes resolve the same closure.
+    // Every dependency names a bundle in this repository, by its published
+    // range; a local file: reference, when present, must point at that bundle.
     for (const [name, spec] of Object.entries(manifest.dependencies ?? {})) {
-      assert.ok(spec.startsWith('file:'));
-      const dependency = JSON.parse(readFileSync(resolve(root, key, spec.slice(5), 'package.json'), 'utf8'));
-      assert.equal(dependency.name, name);
+      const directory = Object.entries(subjectPackages).find(([, packageName]) => packageName === name)?.[0];
+      assert.ok(directory, `${key}: unknown dsh-edu dependency ${name}`);
+      if (spec.startsWith('file:')) {
+        assert.equal(resolve(root, key, spec.slice(5)), resolve(root, directory), `${key}: ${name}`);
+      } else {
+        const range = JSON.parse(readFileSync(resolve(root, directory, 'package.json'), 'utf8'));
+        assert.match(spec, /^\^\d+\.\d+\.\d+$/, `${key}: ${name} (${spec})`);
+        assert.ok(range.version.startsWith('0.') ? spec.startsWith('^0.') : true);
+      }
     }
     const patch = readFileSync(join(root, key, manifest.dsh.bundle.patch), 'utf8');
     for (const [, id] of patch.matchAll(/- id: ([\w-]+)/g)) {

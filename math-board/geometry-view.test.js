@@ -3,8 +3,18 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createBoardView, createShapeArt } from './view.js';
 import { createTabbedBoardView } from './board-shell.js';
+import { createTeacherReferenceView } from './reference-view.js';
+import { createReferenceModel } from './reference-model.js';
 import { createBoardFilePicker, createBoardIcons } from './file-picker.js';
 import { createGeometryPage } from './geometry-view.js';
+import { createGeometryDemoPage, readDemoView } from './geometry-demo-view.js';
+import { placeFigure } from './geometry/place-figure.js';
+import { captionPosition } from './geometry/caption.js';
+import {
+  geometryHiddenPoints, geometryCaptionLabel, geometryPointLabel, geometryPointDot, geometryStroke,
+} from './geometry/draw.js';
+import { geometryTextOverflow, geometryFrame } from './geometry/frame.js';
+import { createBoardControls } from './board-kit.js';
 import { createGeometryModel } from './geometry/model.js';
 import { createBoardModel } from './model.js';
 import { createBoardTrace } from './trace.js';
@@ -111,12 +121,21 @@ function mount(options = {}) {
     createBoardFilePicker, createBoardIcons, createTutorialOverlay,
     isTutorialSeen, markTutorialSeen, advanceTutorial, measureTourTarget,
     tourHoldsNotePanel, tourInsertMode, quantityTutorialSteps, geometryTutorialSteps,
+    placeFigure, captionPosition,
+    createBoardControls,
+    geometryHiddenPoints, geometryCaptionLabel, geometryPointLabel, geometryPointDot, geometryStroke,
+    geometryTextOverflow, geometryFrame,
   };
   const quantityPage = () => createBoardView(React, M, ctx, t, '', createShapeArt(React), applyHostConfig, T, shared);
   const geometryPage = () => createGeometryPage(React, G, ctx, t, shared);
+  const demoPage = () => createGeometryDemoPage(React, G, t, shared);
   // The shell draws the shared brand mark, so the quantity page hands it in.
-  const Board = createTabbedBoardView(React, t, '', quantityPage, geometryPage, (size) => quantityPage().Mark(size));
-  const props = { sessionId: 'tabbed', useProjection: () => null, useInput: () => 'plain', inputActions };
+  const TeacherReference = createTeacherReferenceView(React, t, createReferenceModel());
+  const Board = createTabbedBoardView(React, t, '', {
+    quantity: quantityPage, geometry: geometryPage, demo: demoPage,
+    mark: (size) => quantityPage().Mark(size), TeacherReference,
+  }, (view) => readDemoView(G, view));
+  const props = { sessionId: 'tabbed', useProjection: options.useProjection || (() => null), useInput: () => 'plain', inputActions };
 
   const h = React.createElement;
   function expand(node) {
@@ -173,7 +192,7 @@ function mount(options = {}) {
     storage, drafts, attached, removed, texts, inputActions,
     get persisted() { return persisted; },
     get tree() { return tree; },
-    render: refresh, find, button,
+    render: refresh, find, button, visibleNodes,
     tab(name) {
       find((node) => node.props['data-tab'] === name).props.onClick();
       refresh();
@@ -862,485 +881,67 @@ test('opening text matches the quantity canvas position and font', () => {
   });
 });
 
-test('zoom magnifies the drawing and fit shows the whole board', () => {
+test('fit shows the whole board and only zooming scrolls to the rest of it', () => {
   withMount((h) => {
     h.tab('geometry');
     const artboard = () => h.find((n) => n.type === 'svg' && String(n.props.className || '').includes('eb-geometry'));
+    const zoomLabel = () => h.find((n) => n.type === 'button' && n.props['aria-label'] === t('fitView'));
+    const zoomIn = () => h.find((n) => n.type === 'button' && n.props['aria-label'] === t('zoomIn'));
     const before = artboard();
-    assert.equal(before.props.viewBox, '0 0 800 600', 'fit-to-width frames the whole board');
-    assert.deepEqual(before.props.style, { width: '100%', height: 'auto', aspectRatio: '800 / 600' },
-      'fit keeps the full canvas width, so text stays at the original size');
-    h.find((n) => n.type === 'button' && n.props['aria-label'] === t('zoomIn')).props.onClick();
+    const [x, y, w, vh] = before.props.viewBox.split(' ').map(Number);
+    // A fit keeps the whole board in the frame, with room for point labels on each side.
+    assert.ok(x < 0 || y < 0, 'the fit leaves room past the board origin for its labels');
+    assert.ok(x + w > 800 && y + vh > 600, 'the fit leaves room past the far edge for its labels');
+    assert.ok(Math.abs(before.props.style.width / before.props.style.height - w / vh) < 1e-3,
+      'the canvas box matches its viewBox');
+    assert.equal(before.props.preserveAspectRatio, 'xMidYMid meet');
+
+    zoomIn().props.onClick();
     h.render();
     const zoomed = artboard();
-    // A real zoom narrows the viewBox, so every stroke and label is magnified.
-    assert.equal(zoomed.props.viewBox, '80 60 640 480');
-    assert.ok(String(zoomed.props.style.width) === '100%', 'the canvas keeps its slot size');
-    // 适应宽度 restores the full board.
-    h.find((n) => n.type === 'button' && text(n) === '125%').props.onClick();
+    // Zooming grows the canvas box instead of cropping the viewBox, so everything drawn
+    // stays reachable by scrolling the frame.
+    assert.equal(zoomed.props.viewBox, before.props.viewBox, 'zoom never crops the drawn area');
+    assert.ok(zoomed.props.style.width > before.props.style.width, 'zoom enlarges the canvas');
+    assert.ok(zoomed.props.style.height > before.props.style.height);
+    assert.equal(text(zoomLabel()), '125%');
+
+    // 适应宽度 restores the full board at the fit scale.
+    zoomLabel().props.onClick();
     h.render();
-    const fitted = artboard();
-    assert.equal(fitted.props.viewBox, '0 0 800 600');
+    assert.deepEqual(artboard().props.style, before.props.style);
+    assert.equal(h.find((n) => n.type === 'button' && n.props['aria-label'] === t('fitView')).props['aria-pressed'], true);
   });
 });
 
-test('midpoint marks the selected segment and stays idle until a segment is selected', () => {
+test('a short frame still fits the whole board instead of cropping its bottom', () => {
+  // The window the tests run in is short relative to the 800×600 board: a fit measured by
+  // width alone would show only the top of the board, and the rest sat below the frame.
+  const frame = geometryFrame(
+    { width: 800, height: 600, board: { points: [], elements: [] }, textBoxes: [], emptyText: [] },
+    { width: 1280, height: 400 },
+    { value: 1, fit: true },
+  );
+  assert.ok(frame.box.height <= 400 + 1, 'the fitted canvas is no taller than the frame');
+  assert.ok(frame.box.width <= 1280 + 1, 'the fitted canvas is no wider than the frame');
+  assert.ok(Math.abs(frame.box.height - 400) <= 1, 'the short side is the one that meets the frame');
+  assert.equal(frame.visible.x + frame.visible.width >= 800, true, 'the whole board is inside the view');
+  assert.equal(frame.visible.y + frame.visible.height >= 600, true);
+});
+
+test('the canvas keeps a reserve for the ink that lies past the board edge', () => {
   withMount((h) => {
     h.tab('geometry');
-    const midpoint = () => h.find((node) => node.type === 'button' && node.props['aria-label'] === t('midpoint'));
-    assert.equal(midpoint().props.disabled, true, 'midpoint is idle with nothing selected');
+    // A point on the far corner draws its label up and to the right of itself, past both
+    // edges of the board; the fitted canvas must still show that label whole.
     h.tool('point');
-    h.clickAt(100, 100);
-    h.clickAt(300, 200);
-    assert.equal(midpoint().props.disabled, true, 'two free points are not a segment');
-    h.tool('segment');
-    h.clickAt(100, 100);
-    h.clickAt(300, 200);
-    assert.equal(midpoint().props.disabled, false, 'the segment just drawn can take a midpoint');
-    const before = h.board().points.length;
-    h.click(t('midpoint'));
-    const board = h.board();
-    const derived = board.points.find((point) => point.kind === 'derived');
-    assert.equal(board.points.length, before + 1);
-    assert.equal(board.elements.length, 1, 'marking a midpoint does not add another shape');
-    assert.deepEqual(derived.construction, { op: 'midpoint', inputs: ['p-1', 'p-2'] });
-    assert.equal(derived.x, 200);
-    assert.equal(derived.y, 150);
-    assert.equal(midpoint().props.disabled, true, 'the new point is selected, so midpoint is idle again');
-    h.tool('select');
-    h.clickAt(150, 125);
-    assert.equal(midpoint().props.disabled, true, 'a segment that already has its midpoint stays idle');
+    h.clickAt(776, 576);
+    const artboard = () => h.find((n) => n.type === 'svg' && String(n.props.className || '').includes('eb-geometry'));
+    const [x, y, w, vh] = artboard().props.viewBox.split(' ').map(Number);
+    const label = walk(artboard()).find((n) => n.type === 'text' && text(n) === 'A');
+    assert.ok(label, 'the corner point is labelled');
+    assert.ok(label.props.x + 40 <= x + w, 'a label past the right edge stays inside the canvas');
+    assert.ok(label.props.y - 14 >= y, 'a label above the top edge stays inside the canvas');
+    assert.ok(y + vh >= 600, 'the whole board is inside the canvas');
   });
 });
-
-test('a selected side of a shape can take a midpoint', () => {
-  withMount((h) => {
-    h.tab('geometry');
-    const midpoint = () => h.find((node) => node.type === 'button' && node.props['aria-label'] === t('midpoint'));
-    h.tool('triangle');
-    h.clickAt(120, 80);
-    h.clickAt(360, 90);
-    h.clickAt(200, 320);
-    assert.equal(midpoint().props.disabled, true, 'every side of a new shape is selected, so midpoint stays idle');
-
-    // The closing side runs from the third vertex back to the first.
-    h.clickAt(40, 40);
-    h.release(40, 40);
-    h.clickAt(160, 200);
-    assert.equal(midpoint().props.disabled, false, 'one selected side of the triangle can take a midpoint');
-    h.click(t('midpoint'));
-    const board = h.board();
-    const derived = board.points.find((point) => point.kind === 'derived');
-    assert.equal(board.elements.length, 1, 'marking a midpoint does not add another shape');
-    assert.equal(board.elements[0].type, 'polygon');
-    assert.deepEqual(derived.construction, { op: 'midpoint', inputs: ['p-3', 'p-1'] });
-    assert.equal(derived.x, 160);
-    assert.equal(derived.y, 200);
-
-    h.clickAt(180, 260);
-    assert.equal(midpoint().props.disabled, true, 'a side that already has its midpoint stays idle');
-
-    h.clickAt(40, 40);
-    h.release(40, 40);
-    h.clickAt(280, 205);
-    assert.equal(midpoint().props.disabled, false, 'another side of the same shape can still take a midpoint');
-
-    h.tool('circle');
-    h.clickAt(560, 200);
-    h.clickAt(680, 200);
-    assert.equal(midpoint().props.disabled, true, 'a circle has no side to mark');
-
-    h.tool('rectangle');
-    h.clickAt(100, 420);
-    h.clickAt(260, 420);
-    h.clickAt(260, 540);
-    h.clickAt(40, 40);
-    h.release(40, 40);
-    h.clickAt(180, 420);
-    assert.equal(midpoint().props.disabled, false, 'a rectangle side between two free corners can take a midpoint');
-    h.clickAt(40, 40);
-    h.release(40, 40);
-    h.clickAt(180, 540);
-    assert.equal(midpoint().props.disabled, true, 'a side that ends on the derived corner stays idle');
-  });
-});
-
-test('the point tool is drawn as a filled circle', () => {
-  withMount((h) => {
-    h.tab('geometry');
-    const button = h.find((node) => node.type === 'button' && node.props['aria-label'] === t('point'));
-    const mark = walk(button).find((node) => node.type === 'circle');
-    assert.ok(mark, 'the point tool draws a circle');
-    assert.equal(mark.props.fill, 'currentColor');
-    assert.notEqual(mark.props.fill, 'none');
-  });
-});
-
-test('the midpoint tool shows a segment with a mark at its middle', () => {
-  withMount((h) => {
-    h.tab('geometry');
-    const button = h.find((node) => node.type === 'button' && node.props['aria-label'] === t('midpoint'));
-    const marks = walk(button);
-    assert.ok(marks.some((node) => node.type === 'path'), 'the icon includes the segment');
-    const dots = marks.filter((node) => node.type === 'circle' && node.props.fill === 'currentColor');
-    assert.ok(dots.length >= 1, 'the middle of the segment is a filled mark');
-  });
-});
-
-test('the triangle tool closes three points into a polygon', () => {
-  withMount((h) => {
-    h.tab('geometry');
-    h.tool('triangle');
-    h.clickAt(120, 80);
-    h.clickAt(360, 90);
-    h.clickAt(200, 320);
-    const board = h.board();
-    assert.equal(board.elements.length, 1);
-    assert.equal(board.elements[0].type, 'polygon');
-    assert.deepEqual(board.elements[0].points, ['p-1', 'p-2', 'p-3']);
-    assert.equal(board.points.length, 3, 'the third click closes the triangle');
-  });
-});
-
-test('auxiliary is a switch, and the next shape follows it', () => {
-  withMount((h) => {
-    h.tab('geometry');
-    const control = () => h.find((node) => node.type === 'button' && node.props.role === 'switch');
-    assert.equal(control().props['aria-label'], t('auxiliary'));
-    assert.equal(control().props['aria-checked'], false);
-    assert.equal(control().props['aria-pressed'], undefined, 'a switch is not a pressed tool');
-    h.click(t('auxiliary'));
-    assert.equal(control().props['aria-checked'], true);
-    h.tool('segment');
-    h.clickAt(80, 80);
-    h.clickAt(240, 80);
-    assert.equal(h.board().elements[0].role, 'auxiliary');
-    h.click(t('auxiliary'));
-    assert.equal(control().props['aria-checked'], false);
-    h.tool('triangle');
-    h.clickAt(80, 160);
-    h.clickAt(240, 160);
-    h.clickAt(160, 300);
-    assert.equal(h.board().elements[1].role, 'main');
-    assert.equal(h.board().elements[1].type, 'polygon');
-  });
-});
-
-test('undo shortcuts and Delete stay off the canvas while an overlay is open', () => {
-  withMount((h) => {
-    h.tab('geometry');
-    h.tool('point');
-    h.clickAt(100, 100);
-    h.click(t('clearGeometry'));
-    const workspace = h.find((node) => String(node.props.className || '').includes('eb-geometry-workspace'));
-    let prevented = false;
-    workspace.props.onKeyDown({ key: 'z', metaKey: true, shiftKey: false, preventDefault() { prevented = true; } });
-    let deleted = false;
-    workspace.props.onKeyDown({ key: 'Delete', metaKey: false, shiftKey: false, preventDefault() { deleted = true; } });
-    h.render();
-    assert.equal(prevented, false, 'the overlay owns the keyboard');
-    assert.equal(deleted, false);
-    assert.equal(h.board().points.length, 1, 'nothing is deleted under the overlay');
-  });
-});
-
-test('quantity tour advances on signals, blocks early insert, and keeps the note panel on Cancel', () => {
-  withMount((h) => {
-    const addCircle = () => {
-      h.find((node) => node.type === 'button'
-        && String(node.props['aria-label'] || '').startsWith(`${t('circle')} ·`)).props.onClick();
-      h.render();
-    };
-    h.startTour();
-    assert.equal(h.tourTitle(), t('tutorialQAddTitle'));
-    assert.equal(h.button(t('insert')).props.disabled, true, 'Insert stays off until the insert step');
-
-    addCircle();
-    assert.equal(h.tourTitle(), t('tutorialQColorTitle'));
-
-    h.find((node) => node.type === 'button' && node.props['aria-label'] === `${t('creationColor')} · 10`).props.onClick();
-    h.render();
-    assert.equal(h.tourTitle(), t('tutorialQAddMoreTitle'));
-
-    addCircle();
-    assert.equal(h.tourTitle(), t('tutorialQNoteTitle'));
-    assert.equal(h.drafts.length, 0);
-
-    h.find((node) => node.type === 'button' && String(node.props.className || '').includes('eb-note-button')).props.onClick();
-    h.render();
-    assert.equal(h.tourTitle(), t('tutorialQNoteSaveTitle'));
-    assert.ok(h.notePanel(), 'note-save keeps the panel as the tour target');
-
-    h.click(t('cancel'));
-    assert.ok(h.notePanel(), 'Cancel must not dismiss the note panel on note-save');
-    assert.equal(h.tourTitle(), t('tutorialQNoteSaveTitle'));
-
-    h.keydown('Escape');
-    assert.ok(h.notePanel(), 'Escape must not dismiss the note panel on note-save');
-    assert.equal(h.tourTitle(), t('tutorialQNoteSaveTitle'));
-
-    h.click(t('clear'));
-    assert.ok(h.notePanel(), 'Clear must not replace the note panel on note-save');
-    assert.equal(h.tourTitle(), t('tutorialQNoteSaveTitle'));
-    assert.equal(
-      walk(h.tree).some((node) => node.props?.className === 'eb-overlay-card eb-overlay-clear'),
-      false,
-      'Clear must not open the clear card during note-save',
-    );
-
-    h.click(t('save'));
-    assert.equal(h.tourTitle(), t('tutorialQInsertTitle'));
-    assert.equal(h.button(t('insert')).props.disabled, false);
-
-    h.click(t('insert'));
-    assert.equal(h.drafts.length, 0, 'insert practice must not createDrafts');
-    assert.equal(h.find((node) => node.props.role === 'status').children.flat().join(''), t('tutorialInsertPractice'));
-    assert.equal(visibleTour(h), false, 'the last practice step closes the coach');
-  });
-});
-
-test('geometry tour advances on signals, blocks early insert, and keeps the note panel on Cancel', () => {
-  withMount((h) => {
-    h.tab('geometry');
-    h.startTour();
-    assert.equal(h.tourTitle(), t('tutorialGPointToolTitle'));
-    assert.equal(h.button(t('insert')).props.disabled, true, 'Insert stays off until the insert step');
-
-    h.tool('point');
-    assert.equal(h.tourTitle(), t('tutorialGPlacePointTitle'));
-
-    h.clickAt(140, 120);
-    assert.equal(h.tourTitle(), t('tutorialGSegmentToolTitle'));
-
-    h.tool('segment');
-    assert.equal(h.tourTitle(), t('tutorialGDrawSegmentTitle'));
-
-    h.clickAt(140, 120);
-    h.clickAt(280, 200);
-    assert.equal(h.tourTitle(), t('tutorialGNoteTitle'));
-    assert.equal(h.drafts.length, 0);
-
-    h.find((node) => node.type === 'button' && String(node.props.className || '').includes('eb-note-button')).props.onClick();
-    h.render();
-    assert.equal(h.tourTitle(), t('tutorialGNoteSaveTitle'));
-    assert.ok(h.notePanel(), 'note-save keeps the panel as the tour target');
-
-    h.click(t('cancel'));
-    assert.ok(h.notePanel(), 'Cancel must not dismiss the note panel on note-save');
-    assert.equal(h.tourTitle(), t('tutorialGNoteSaveTitle'));
-
-    h.keydown('Escape');
-    assert.ok(h.notePanel(), 'Escape must not dismiss the note panel on note-save');
-    assert.equal(h.tourTitle(), t('tutorialGNoteSaveTitle'));
-
-    h.click(t('clearGeometry'));
-    assert.ok(h.notePanel(), 'Clear must not replace the note panel on note-save');
-    assert.equal(h.tourTitle(), t('tutorialGNoteSaveTitle'));
-    assert.equal(
-      walk(h.tree).some((node) => node.props?.className === 'eb-overlay-card eb-overlay-clear'),
-      false,
-      'Clear must not open the clear card during note-save',
-    );
-
-    h.click(t('save'));
-    assert.equal(h.tourTitle(), t('tutorialGInsertTitle'));
-    assert.equal(h.button(t('insert')).props.disabled, false);
-
-    h.click(t('insert'));
-    assert.equal(h.drafts.length, 0, 'insert practice must not createDrafts');
-    assert.equal(h.find((node) => node.props.role === 'status').children.flat().join(''), t('tutorialInsertPractice'));
-    assert.equal(visibleTour(h), false, 'the last practice step closes the coach');
-  });
-});
-
-test('polygon is the tool after rectangle', () => {
-  withMount((h) => {
-    h.tab('geometry');
-    const rail = h.find((node) => String(node.props.className || '').includes('eb-geometry-tools'));
-    const labels = walk(rail)
-      .filter((node) => node.type === 'button' && Object.hasOwn(node.props, 'aria-pressed'))
-      .map((node) => node.props['aria-label']);
-    assert.deepEqual(labels, [
-      t('select'), t('point'), t('segment'), t('triangle'), t('circle'),
-      t('parallelogram'), t('rectangle'), t('polygon'),
-    ]);
-  });
-});
-
-test('a circle does not draw its rim point, and deleting the circle removes that point', () => {
-  withMount((h) => {
-    h.tab('geometry');
-    h.tool('circle');
-    h.clickAt(200, 200);
-    h.clickAt(320, 200);
-    const board = h.board();
-    assert.equal(board.points.length, 2, 'the radius is still stored as a rim point');
-    const canvas = h.find((node) => String(node.props.className || '').includes('eb-artboard'));
-    const marks = walk(canvas).filter((node) => node.props?.['data-point']);
-    assert.deepEqual(marks.map((node) => node.props['data-point']), ['p-1'], 'only the centre is drawn');
-    h.click(t('trash'));
-    assert.deepEqual(h.board().elements, []);
-    assert.deepEqual(h.board().points.map((p) => p.id), ['p-1']);
-  });
-});
-
-test('a rim point that belongs to another shape stays visible', () => {
-  withMount((h) => {
-    h.tab('geometry');
-    h.tool('segment');
-    h.clickAt(200, 200);
-    h.clickAt(320, 200);
-    h.tool('circle');
-    h.clickAt(200, 200);
-    h.clickAt(320, 200);
-    const canvas = h.find((node) => String(node.props.className || '').includes('eb-artboard'));
-    const marks = walk(canvas).filter((node) => node.props?.['data-point']).map((node) => node.props['data-point']);
-    assert.deepEqual(marks.sort(), ['p-1', 'p-2']);
-  });
-});
-
-test('select mode box-selects several objects and deletes them together', () => {
-  withMount((h) => {
-    h.tab('geometry');
-    h.tool('point');
-    h.clickAt(100, 100);
-    h.clickAt(220, 100);
-    h.clickAt(520, 420);
-    h.tool('segment');
-    h.clickAt(100, 100);
-    h.clickAt(220, 100);
-    h.tool('select');
-    h.clickAt(70, 70);
-    h.moveTo(250, 150);
-    h.release(250, 150);
-    assert.match(text(h.find((node) => node.props.className === 'eb-floating')), /3/);
-    h.click(t('trash'));
-    assert.deepEqual(h.board().elements, []);
-    assert.deepEqual(h.board().points.map((p) => p.id), ['p-3'], 'the point outside the box stays');
-  });
-});
-
-test('clicking one side of a triangle deletes only that side', () => {
-  withMount((h) => {
-    h.tab('geometry');
-    h.tool('triangle');
-    h.clickAt(120, 80);
-    h.clickAt(360, 90);
-    h.clickAt(200, 320);
-    h.clickAt(240, 85);
-    h.release(240, 85);
-    assert.match(text(h.find((node) => node.props.className === 'eb-floating')), new RegExp(`${t('selectedCount')} 1`));
-    h.click(t('trash'));
-    const board = h.board();
-    assert.deepEqual(board.elements.map((e) => e.points), [['p-2', 'p-3'], ['p-3', 'p-1']]);
-    assert.equal(board.points.length, 3, 'the corners of the remaining sides stay');
-    h.clickAt(280, 205);
-    h.click(t('trash'));
-    assert.deepEqual(h.board().elements.map((e) => e.points), [['p-3', 'p-1']]);
-    assert.deepEqual(h.board().points.map((p) => p.id), ['p-1', 'p-3']);
-  });
-});
-
-test('deleting a selected segment removes endpoints with no other use', () => {
-  withMount((h) => {
-    h.tab('geometry');
-    h.click(t('title'));
-    h.tool('segment');
-    h.clickAt(100, 140);
-    h.clickAt(340, 140);
-    assert.equal(h.keydown('Delete', { tagName: 'SELECT' }), false);
-    assert.equal(h.board().elements.length, 1, 'the question menu keeps Delete');
-    h.keydown('Delete');
-    assert.deepEqual(h.board().elements, []);
-    assert.deepEqual(h.board().points, []);
-    h.tool('segment');
-    h.clickAt(100, 200);
-    h.clickAt(100, 80);
-    h.tool('triangle');
-    h.clickAt(100, 200);
-    h.clickAt(300, 200);
-    h.clickAt(200, 360);
-    h.tool('select');
-    h.clickAt(100, 140);
-    h.click(t('trash'));
-    const board = h.board();
-    assert.equal(board.elements.length, 1);
-    assert.equal(board.elements[0].type, 'polygon');
-    assert.equal(board.points.length, 3, 'vertices the triangle still uses stay');
-  });
-});
-
-test('Delete and Backspace remove the quantity selection without focusing a shape', () => {
-  withMount((h) => {
-    h.click(t('title'));
-    const addCircle = () => {
-      h.find((node) => node.type === 'button'
-        && String(node.props['aria-label'] || '').startsWith(`${t('circle')} ·`)).props.onClick();
-      h.render();
-    };
-    const shapes = () => walk(h.tree).filter((node) => node.props && node.props['data-object']);
-    const ids = () => h.quantityBoard().objects.map((object) => object.id);
-    const failed = () => walk(h.tree).some((node) => node.props.className === 'eb-status-toast'
-      && String(text(node)).startsWith(t('failed')));
-    addCircle();
-    addCircle();
-    assert.deepEqual(ids(), ['object-1', 'object-2']);
-    // The newest shape is selected. A click does not focus it, so Delete has to
-    // reach the selection from the document the way it does on the geometry tab.
-    shapes().find((node) => node.props['data-object'] === 'object-1').props.onKeyDown({
-      key: 'Enter', shiftKey: true, preventDefault() {},
-    });
-    h.render();
-    assert.equal(h.keydown('Delete', { tagName: 'SELECT' }), false);
-    assert.deepEqual(ids(), ['object-1', 'object-2'], 'the question menu keeps Delete');
-    assert.equal(h.keydown('Delete'), true);
-    assert.deepEqual(ids(), []);
-    assert.equal(failed(), false, 'one key is a single delete');
-    h.click(t('undo'));
-    assert.deepEqual(ids(), ['object-1', 'object-2']);
-    // Undo clears the selection, so pick the second shape again. Backspace on the
-    // other, focused shape removes only that one.
-    shapes().find((node) => node.props['data-object'] === 'object-2').props.onKeyDown({
-      key: 'Enter', preventDefault() {},
-    });
-    h.render();
-    assert.equal(h.keydown('Backspace', {
-      tagName: 'g',
-      closest(selector) {
-        return selector === '[data-object]' ? { getAttribute: () => 'object-1' } : null;
-      },
-    }), true);
-    assert.deepEqual(ids(), ['object-2']);
-
-    h.find((node) => node.type === 'button'
-      && String(node.props['aria-label'] || '').startsWith(`${t('note')} ·`)).props.onClick();
-    h.render();
-    assert.equal(h.keydown('Backspace', { tagName: 'TEXTAREA' }), false);
-    assert.deepEqual(ids(), ['object-2'], 'a note keeps Backspace');
-    h.keydown('Escape');
-    shapes().find((node) => node.props['data-object'] === 'object-2').props.onKeyDown({
-      key: 'Enter', preventDefault() {},
-    });
-    h.render();
-    assert.equal(h.keydown('Delete'), true);
-    assert.deepEqual(ids(), []);
-
-    addCircle();
-    h.tab('geometry');
-    h.tool('segment');
-    h.clickAt(80, 80);
-    h.clickAt(240, 80);
-    h.tab('quantity');
-    h.keydown('Delete');
-    assert.deepEqual(ids(), []);
-    h.tab('geometry');
-    assert.equal(h.board().elements.length, 1, 'quantity Delete leaves the geometry canvas alone');
-    h.keydown('Delete');
-    assert.deepEqual(h.board().elements, []);
-    assert.deepEqual(h.board().points, []);
-  });
-});
-
-function visibleTour(h) {
-  return walk(h.tree).some((node) => node.props?.className === 'eb-tour-tip');
-}

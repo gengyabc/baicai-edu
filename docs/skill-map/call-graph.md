@@ -684,9 +684,9 @@ flowchart LR
 
 ## 6. 调用纪律速查
 
-1. **入口先底座**：`learn-core` + `learn-data`（若尚未加载）。
-2. **一会话不重复加载**同一 skill；复用已有 `<skill_content>`。
-3. **学科入口集中调度**：lifecycle 只加载解析结果中的实际 `session_skill`；`chinese-session` 每轮只选一个子 skill；仅 `english-session` 选择/加载英语方法，每轮一个主方法（可补一个辅助），方法不互调、coach 只给计划，选择表与公共规则见 §3.5；数学统一 → `math-{low,high}-session` → leaf，含 transfer 恢复。数学等待与同轮最多二次 leaf 加载的条件见 §3.2，leaf 只回证据与信号，由 session 合唯一 segment；结束请求经 session 回 lifecycle。
+1. **入口先底座**：`learn-core` + `learn-data`（只补尚未加载的，已加载的直接复用）。
+2. **一会话不重复加载**同一 skill；复用已有 `<skill_content>`。**reference 同理**：同一 reference 在本会话读过一次就留在上下文，后续命令不再 `read`；只有不在上下文、文件已被改写或学生明确要求重读时才重读。规则唯一维护在 [`learn-core`](<../../learn/skills/learn-core/SKILL.md>) 的「Load Once, Reuse After」，各入口与学科 skill 只引用，不各写一套。
+3. **学科入口集中调度**：lifecycle 只加载解析结果中的实际 `session_skill`（已在上下文就复用）；`chinese-session` 每轮只选一个子 skill；仅 `english-session` 选择/加载英语方法，每轮一个主方法（可补一个辅助），方法不互调、coach 只给计划，选择表与公共规则见 §3.5；数学统一 → `math-{low,high}-session` → leaf，含 transfer 恢复。数学等待与同轮最多二次 leaf 加载的条件见 §3.2，leaf 只回证据与信号，由 session 合唯一 segment；结束请求经 session 回 lifecycle。
 4. **跨包只按名**：写「加载 `learn-core`」，不写相对路径或 `@.pi/...`。
 5. **reference 相对 skill base directory**：先 `skill` 拿到目录，再 `read <base>/references/...`；生命周期 / next-step / target-parsing / session-schema 在 `learn-data/references/`。
 6. **内部 skill 保持模型可调用**：只用 `user-invocable: false`，不用 `disable-model-invocation`。

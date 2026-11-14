@@ -1,27 +1,65 @@
 #!/usr/bin/env node
-// Keep dependency knowledge in package.json, not in a second installer graph.
+// Both installation modes explicitly select the bundle dependency closure:
+// npm installs transitive code, but DSH activates only selected top-level bundles.
+// package.json is the dependency graph; local mode links sibling bundles and
+// registry mode installs the same bundle selection by published package name.
 import { readFileSync, readdirSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { resolve, relative } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
-const allSubjects = ['math-primary-low', 'math-primary-high', 'chinese-reading', 'english'];
-const usage = `Usage: node scripts/install.mjs <package...|all> [--profile <name>] [--dry-run]
+const allSubjects = ['learn', 'math-common', 'math-board', 'math-primary-low', 'math-primary-high', 'chinese-reading', 'english'];
+const usage = `Usage: node scripts/install.mjs <package...|all> [--profile <name>] [--from registry] [--dry-run]
 
 Packages: learn, math-common, math-board, math-primary-low, math-primary-high, chinese-reading, english
 Default profile: web
-Dependencies are included automatically. --dry-run only prints the command.
-Example: node scripts/install.mjs math-primary-low --profile web`;
+Required bundles are selected explicitly; --from registry installs published bundle names instead of link: paths.
+--dry-run only prints the command.
+Example: node scripts/install.mjs math-primary-low --profile web
+Example: node scripts/install.mjs all --profile web --from registry`;
 
 function readManifest(directory) {
   return JSON.parse(readFileSync(resolve(directory, 'package.json'), 'utf8'));
 }
 
-/** Plan the complete bundle selection without touching a DSH profile. */
+const subjectPackages = {
+  learn: 'dsh-edu-learn',
+  'math-common': 'dsh-edu-math',
+  'math-board': 'dsh-edu-math-board',
+  'math-primary-low': 'dsh-edu-math-primary-low',
+  'math-primary-high': 'dsh-edu-math-primary-high',
+  'chinese-reading': 'dsh-edu-chinese-reading',
+  english: 'dsh-edu-english',
+};
+const subjectKeys = Object.fromEntries(Object.entries(subjectPackages).map(([subject, name]) => [name, subject]));
+
+function readBundledManifest(root, subject) {
+  try {
+    return readManifest(resolve(root, subject));
+  } catch (error) {
+    if (error.code === 'ENOENT') return undefined;
+    throw error;
+  }
+}
+
+/**
+ * Resolve an argument that may be a subject (`learn`), a package name
+ * (`dsh-edu-learn`), or a directory name, to the checkout's bundle subject.
+ */
+export function resolvePackageKey(name) {
+  return subjectKeys[name] ?? name;
+}
+
+/**
+ * Plan the complete bundle selection without touching a DSH profile.
+ * Both modes walk declared sibling bundle dependencies, whether their specs
+ * are file: references or published ranges. Third-party npm deps stay with npm.
+ */
 export function planInstallation(argv, root = repositoryRoot) {
   const requested = [];
   let profile = 'web';
+  let from = 'local';
   let dryRun = false;
   let help = false;
   for (let index = 0; index < argv.length; index++) {
@@ -31,6 +69,9 @@ export function planInstallation(argv, root = repositoryRoot) {
       if (!profile || profile.startsWith('-') || !/^[\w.-]+$/.test(profile) || profile === '.' || profile === '..') {
         throw new Error('--profile requires a profile name (letters, digits, _, - or .).');
       }
+    } else if (arg === '--from') {
+      from = argv[++index];
+      if (from !== 'registry' && from !== 'local') throw new Error('--from must be registry or local.');
     } else if (arg === '--dry-run') {
       dryRun = true;
     } else if (arg === '--help' || arg === '-h') {
@@ -44,51 +85,55 @@ export function planInstallation(argv, root = repositoryRoot) {
   if (help) return { help: true };
   if (!requested.length) throw new Error('Choose a package or all. Use --help for usage.');
 
-  const bundles = new Map();
-  for (const entry of readdirSync(root, { withFileTypes: true })) {
-    if (!entry.isDirectory()) continue;
-    const directory = resolve(root, entry.name);
-    let manifest;
-    try {
-      manifest = readManifest(directory);
-    } catch (error) {
-      if (error.code === 'ENOENT') continue;
-      throw error;
-    }
-    if (manifest.dsh?.bundle) bundles.set(entry.name, { directory, manifest, key: entry.name });
+  const bundledNames = new Map();
+  for (const directory of readdirSync(root, { withFileTypes: true })) {
+    if (!directory.isDirectory()) continue;
+    const manifest = readBundledManifest(root, directory.name);
+    if (!manifest?.dsh?.bundle) continue;
+    if (bundledNames.has(manifest.name)) throw new Error(`Duplicate bundle package: ${manifest.name}`);
+    bundledNames.set(manifest.name, directory.name);
   }
-
   const ordered = [];
   const visited = new Set();
   const visiting = new Set();
-  function visit(key) {
-    const bundle = bundles.get(key);
-    if (!bundle) throw new Error(`Unknown package: ${key}`);
+  function visit(name) {
+    const key = resolvePackageKey(name);
+    const manifest = readBundledManifest(root, key);
+    if (!manifest?.dsh?.bundle) throw new Error(`Unknown package: ${key}`);
     if (visiting.has(key)) throw new Error(`Circular bundle dependency: ${[...visiting, key].join(' -> ')}`);
     if (visited.has(key)) return;
     visiting.add(key);
-    for (const [name, spec] of Object.entries(bundle.manifest.dependencies ?? {})) {
-      if (!spec.startsWith('file:')) {
-        throw new Error(`${key}: unsupported dependency ${name} (${spec}); expected a local file: bundle.`);
+    for (const [dependencyName, spec] of Object.entries(manifest.dependencies ?? {})) {
+      const dependencyKey = bundledNames.get(dependencyName);
+      // External runtime libraries are npm's responsibility, not DSH bundles.
+      if (!dependencyKey && !dependencyName.startsWith('dsh-edu-')) continue;
+      if (!dependencyKey || typeof spec !== 'string') {
+        throw new Error(`${key}: missing or mismatched bundle dependency ${dependencyName} (${spec}).`);
       }
-      const directory = resolve(bundle.directory, spec.slice(5));
-      const dependency = [...bundles.values()].find(candidate => candidate.directory === directory);
-      if (!dependency || dependency.manifest.name !== name) {
-        throw new Error(`${key}: missing or mismatched bundle dependency ${name} (${spec}).`);
+      if (spec.startsWith('file:')) {
+        const targetKey = relative(resolve(root), resolve(root, key, spec.slice(5)));
+        if (targetKey !== dependencyKey) {
+          throw new Error(`${key}: mismatched bundle dependency ${dependencyName} (${spec}).`);
+        }
+      } else if (!/^[~^]?\d+\.\d+\.\d+(?:-[\w.-]+)?$/.test(spec)) {
+        throw new Error(`${key}: unsupported bundle dependency ${dependencyName} (${spec}).`);
       }
-      visit(dependency.key);
+      visit(dependencyKey);
     }
     visiting.delete(key);
     visited.add(key);
-    ordered.push(bundle);
+    ordered.push({ key, name: manifest.name });
   }
-  for (const key of requested.flatMap(key => key === 'all' ? allSubjects : [key])) visit(key);
+  for (const name of requested.flatMap(name => name === 'all' ? allSubjects : [name])) visit(name);
 
   return {
     profile,
+    from,
     dryRun,
     packages: ordered.map(bundle => bundle.key),
-    args: ['plugin', '--profile', profile, 'add', ...ordered.map(bundle => `link:${bundle.directory}`)],
+    names: ordered.map(bundle => bundle.name),
+    args: ['plugin', '--profile', profile, 'add', ...ordered.map(bundle =>
+      from === 'registry' ? bundle.name : `link:${resolve(root, bundle.key)}`)],
   };
 }
 

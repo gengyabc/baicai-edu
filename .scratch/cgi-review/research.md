@@ -31,9 +31,9 @@ Reviewed 2026-11-08: `git diff HEAD -- math-primary-low` (17 changed files), fol
 
 ## Retrieval limits
 
-Earlier web PDF excerpts failed extraction. **2026-11-09 follow-up:** verified against local Markdown refs only (no PDFs): `math-primary-low/refs/Childrens-Mathematics-1.md` (Carpenter et al.) and `Childrens-Mathematics-2.md` (Empson & Levi).
+Earlier web PDF excerpts failed extraction. **2026-11-09 follow-up:** verified against local Markdown refs only (no PDFs): `docs/refs/Childrens-Mathematics-1.md` (Carpenter et al.) and `docs/refs/Childrens-Mathematics-2.md` (Empson & Levi).
 
-## Book verification (refs/)
+## Book verification (docs/refs/)
 
 ### Arithmetic number-fact stage — confirmed local aggregate, keep recall/derivation split
 

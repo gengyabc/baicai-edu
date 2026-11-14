@@ -95,6 +95,59 @@ test('the generated bundle registers and its pages construct without a missing b
   assert.ok(ctx.locale.bind()('title'), 'the locale must be registered by the bundle');
 });
 
+test('shipped teacher reference factories render validated shapes without module closures', () => {
+  const model = extractFactory(bundle, 'createReferenceModel')();
+  const ctx = makeHost(react);
+  const View = extractFactory(bundle, 'createTeacherReferenceView')(ctx.React, key => key, model);
+  const tree = View({ sessionId: 'smoke', view: { revision: 1, reference: {
+    title: 'Given sides', description: '9 cm and 1 cm', width: 300, height: 100,
+    shapes: [{ type: 'rect', x: 20, y: 40, width: 180, height: 20 }],
+  } } });
+  const walk = node => !node || typeof node !== 'object' ? [] : [node, ...node.children.flat(Infinity).flatMap(walk)];
+  assert.equal(walk(tree).filter(node => node.type === 'rect').length, 1);
+  assert.equal(walk(tree).filter(node => node.type === 'svg')[0].props.role, 'img');
+  assert.equal(View({ sessionId: 'smoke', view: { revision: 2, reference: null } }), null);
+});
+
+test('shipped teacher demo renders a labeled rectangle without losing the launcher', () => {
+  const mod = loadBundle();
+  const ctx = makeHost(react);
+  let component;
+  ctx.slots = { inject: (_name, fn) => fn(), register: (_options, view) => { component = view; } };
+  mod.factory(id => id === 'react' ? ctx.React : undefined).apply(ctx);
+  const projection = { revision: 1, figure: {
+    title: '周长相同，面积会怎样？', description: '周长24厘米',
+    board: { schemaVersion: 1, points: [
+      { id: 'a', label: 'A', kind: 'free', x: 180, y: 180, note: '' },
+      { id: 'b', label: 'B', kind: 'free', x: 600, y: 180, note: '' },
+      { id: 'c', label: 'C', kind: 'free', x: 600, y: 420, note: '' },
+      { id: 'd', label: 'D', kind: 'derived', x: 180, y: 420, note: '', construction: { op: 'rectangle', inputs: ['a', 'b', 'c'] } },
+      { id: 'o', label: 'O', kind: 'free', x: 100, y: 100, note: '' },
+      { id: 'r', label: 'R', kind: 'free', x: 140, y: 100, note: '' },
+    ], elements: [
+      { id: 'rect', type: 'rectangle', role: 'main', note: '周长24厘米', points: ['a', 'b', 'c', 'd'] },
+      { id: 'line', type: 'segment', role: 'auxiliary', note: '边长待选', points: ['a', 'b'] },
+      { id: 'circle', type: 'circle', role: 'main', note: '圆', centerPointId: 'o', radiusPointId: 'r' },
+    ], note: '' },
+  } };
+  const nodes = [];
+  function render(node) {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) { node.forEach(render); return; }
+    if (typeof node.type === 'function') { render(node.type(node.props)); return; }
+    nodes.push(node);
+    node.children?.flat(Infinity).forEach(render);
+  }
+  render(component({ sessionId: 'smoke',
+    useProjection: key => key === 'eduBoardGeometryDemo' ? projection : undefined,
+    useInput: selector => selector({ phase: 'idle' }),
+  }));
+  assert.equal(nodes.filter(node => node.props?.className === 'edu-board-launch').length, 1);
+  for (const caption of ['周长24厘米', '边长待选', '圆']) {
+    assert.ok(nodes.some(node => node.type === 'text' && node.children.includes(caption)), caption);
+  }
+});
+
 test('the picker and icon factories the pages receive are callable', () => {
   const mod = loadBundle();
   const ctx = makeHost(react);
@@ -168,8 +221,11 @@ test('no inlined factory reads a name it does not declare itself', () => {
   // evaluated and so not reported; the render smoke test above covers that wiring.
   const hostGlobals = new Set(['React', 'require', 'M', 'T', 'createArt', 'composerNote',
     'colorIndexForValue', 'applyHostConfig', 'boardQuestionReferences', 'createView', 'createTabs',
-    'createGeometry', 'createGeoModel', 'createFilePicker', 'createIcons', 'art', 'G', 'dictionaries',
+    'createGeometry', 'createGeoModel', 'createDemoModel', 'readDemoView', 'createGeometryDemo',
+    'placeFigure', 'captionPosition', 'createFilePicker', 'createIcons', 'art', 'G', 'dictionaries',
     'Browser', 'View', 'Board', 'SessionBoard', 'JSON', 'Math', 'Object', 'Array', 'Error', 'String',
+    'geometryHiddenPoints', 'geometryCaptionLabel', 'geometryPointLabel', 'geometryPointDot', 'geometryStroke',
+    'geometryTextOverflow', 'geometryFrame',
     'Number', 'Set', 'Map', 'WeakMap', 'Promise', 'RegExp', 'Date', 'URL', 'Blob', 'File', 'indexedDB',
     'window', 'document', 'globalThis', 'localStorage', 'navigator', 'console', 'undefined', 'NaN',
     'Infinity', 'isFinite', 'parseInt', 'parseFloat', 'setTimeout', 'clearTimeout',
@@ -184,6 +240,12 @@ test('no inlined factory reads a name it does not declare itself', () => {
     applyHostConfig: 'applyHostConfig', boardQuestionReferences: 'boardQuestionReferences',
     createView: 'createBoardView', createTabs: 'createTabbedBoardView',
     createGeometry: 'createGeometryPage', createGeoModel: 'createGeometryModel',
+    createDemoModel: 'createDemoModel', readDemoView: 'readDemoView',
+    createGeometryDemo: 'createGeometryDemoPage', placeFigure: 'placeFigure', captionPosition: 'captionPosition',
+    createBoardControls: 'createBoardControls', geometryHiddenPoints: 'geometryHiddenPoints',
+    geometryCaptionLabel: 'geometryCaptionLabel', geometryPointLabel: 'geometryPointLabel',
+    geometryPointDot: 'geometryPointDot', geometryStroke: 'geometryStroke',
+    geometryTextOverflow: 'geometryTextOverflow', geometryFrame: 'geometryFrame',
     createFilePicker: 'createBoardFilePicker', createIcons: 'createBoardIcons',
     tutorialStorageKey: 'tutorialStorageKey', isTutorialSeen: 'isTutorialSeen',
     markTutorialSeen: 'markTutorialSeen', createTutorialOverlay: 'createTutorialOverlay',
@@ -197,7 +259,18 @@ test('no inlined factory reads a name it does not declare itself', () => {
   hostGlobals.add('tutorialStorageKey');
   hostGlobals.add('TUTORIAL_VERSION');
   hostGlobals.add('tourMaskPads');
+  // Arguments answer every property read with themselves, so a factory body runs past
+  // its first guard and keeps resolving free names instead of throwing on `undefined`.
+  const inert = (() => {
+    const stub = new Proxy(function () {}, {
+      get: (_target, key) => (key === Symbol.toPrimitive ? () => 0 : stub),
+      apply: () => stub,
+      construct: () => stub,
+    });
+    return stub;
+  })();
   // Names the factories are bound to in client.js; each maps to its source function name.
+  let exercised = 0;
   for (const name of Object.keys(INLINED)) {
     const hits = new Set();
     const trap = new Proxy({}, {
@@ -207,11 +280,47 @@ test('no inlined factory reads a name it does not declare itself', () => {
     let factory;
     try { factory = new Function('scope', 'with (scope) { return (' + INLINED[name] + '); }')(trap); }
     catch { continue; } // not inlined under this name
-    try { factory(STUB_ARGS); } catch { /* the body ran far enough to resolve its names */ }
+    exercised += 1;
+    // A call that throws still resolved every name it reached; the audit continues.
+    try { factory(inert, inert, inert, inert, inert); } catch { /* names above the throw are recorded */ }
     for (const key of hits) {
       // The factory's own binding and its function name are not outer references.
       if (hostGlobals.has(key) || key === name || key === INLINED[name]) continue;
       assert.ok(false, `client.js inlines ${name}, which reads "${key}" without declaring it`);
     }
   }
+  assert.ok(exercised > 0, 'the outer-scope audit must actually call the inlined factories');
+});
+
+test('the inlined placeFigure places a teacher figure on an empty and an occupied draft', async () => {
+  // The demo copy button calls this exact inlined function. Exercising the bundle's own
+  // copy is the only way to catch a helper that toString() left behind in the module:
+  // node-side imports of geometry/place-figure.js would still see it.
+  const { createGeometryModel } = await import('./geometry/model.js');
+  const G = createGeometryModel();
+  const placeFigure = extractFactory(bundle, 'placeFigure');
+  const figure = G.validate({
+    schemaVersion: 1, note: '',
+    points: [
+      { id: 'a', label: 'A', kind: 'free', x: 200, y: 400, note: '' },
+      { id: 'b', label: 'B', kind: 'free', x: 500, y: 400, note: '' },
+    ],
+    elements: [{ id: 'e', type: 'segment', role: 'main', note: '9 cm', points: ['a', 'b'] }],
+  });
+  const empty = placeFigure(G, G.empty(), figure);
+  assert.equal(empty.ok, true, 'an empty draft must accept the figure, not report it full');
+  assert.equal(empty.board.elements.length, 1);
+  assert.equal(empty.board.elements[0].note, '9 cm');
+  const occupied = placeFigure(G, G.reduce(G.empty(), { type: 'addPoint', x: 100, y: 120, label: 'A' }), figure);
+  assert.equal(occupied.ok, true);
+  assert.equal(occupied.board.points.length, 3);
+  assert.deepEqual(occupied.board.points.slice(1).map((point) => point.label), ['B', 'C']);
+  // Truly full boards still report `full`, so the demo keeps its one "make room" message.
+  let crammed = G.empty();
+  for (const [x, y, label] of [[24, 24, 'A'], [776, 24, 'B'], [24, 576, 'C'], [776, 576, 'D']]) {
+    crammed = G.reduce(crammed, { type: 'addPoint', x, y, label });
+  }
+  const full = placeFigure(G, crammed, figure);
+  assert.equal(full.ok, false);
+  assert.equal(full.reason, 'full');
 });

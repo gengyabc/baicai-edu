@@ -13,6 +13,11 @@ export function createGeometryModel() {
   // Corner drags stop just before a degenerate shape instead of refusing the whole drag.
   const EPSILON = 0.5;
   const elementTypes = ['segment', 'polygon', 'circle', 'parallelogram', 'rectangle'];
+  // A text element is a line of student writing placed on the board. It is not a point,
+  // not a shape, and its position is its own anchor; it never references geometry.
+  const textTypes = ['text'];
+  const commonTypes = [...elementTypes, ...textTypes];
+  const TEXT_MAX = 200;
   const roles = ['main', 'auxiliary'];
   const operations = ['midpoint', 'parallelogram', 'rectangle'];
   const fail = (message) => { throw new Error(message); };
@@ -112,6 +117,11 @@ export function createGeometryModel() {
     return { op: construction.op, inputs: [...construction.inputs] };
   }
   const empty = () => ({ schemaVersion: 1, points: [], elements: [], note: '' });
+  // Text words are free student writing: no control characters, no blank line, and at
+  // least one visible character. The stored value is trimmed at both ends.
+  const words = (v) => typeof v === 'string' && chars(v).length <= TEXT_MAX
+    && !/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/.test(v);
+  const emptyText = (v) => !chars(v).some((ch) => !/\s/.test(ch));
   /** Return detached canonical state; a snapshot only carries its own kind. */
   function validate(input) {
     if (record(input) && Object.hasOwn(input, 'kind') && input.kind !== KIND) fail('Another board kind');
@@ -143,10 +153,21 @@ export function createGeometryModel() {
       pointMap.set(p.id, { id: p.id, label: p.label, kind: 'derived', ...at, construction, note: p.note ?? '' });
     }
     const elements = input.elements.map((e) => {
-      keys(e, ['id', 'type', 'role', 'note'], ['points', 'centerPointId', 'radiusPointId']);
-      if (!idValid(e.id) || ids.has(e.id) || !elementTypes.includes(e.type) || !roles.includes(e.role) || !text(e.note ?? '', 500)) fail('Invalid element');
+      keys(e, ['id', 'type', 'role', 'note'], ['points', 'centerPointId', 'radiusPointId', 'x', 'y', 'text']);
+      if (!idValid(e.id) || ids.has(e.id) || !commonTypes.includes(e.type) || !roles.includes(e.role) || !text(e.note ?? '', 500)) fail('Invalid element');
       ids.add(e.id);
       const point = (ref) => pointMap.get(ref) || fail('Element references an unknown point');
+      if (e.type === 'text') {
+        // A text names no point: its anchor is its own position, and it lives only from
+        // one edge of the board to the other.
+        for (const key of ['points', 'centerPointId', 'radiusPointId']) {
+          if (Object.hasOwn(e, key)) fail('A text references no point');
+        }
+        if (!words(e.text) || emptyText(e.text) || !finite(e.x) || !finite(e.y)
+          || e.x < 0 || e.x > WIDTH || e.y < 0 || e.y > HEIGHT) fail('Invalid text');
+        return { id: e.id, type: 'text', role: e.role, note: e.note ?? '', x: e.x, y: e.y, text: e.text.trim() };
+      }
+      if (Object.hasOwn(e, 'x') || Object.hasOwn(e, 'y') || Object.hasOwn(e, 'text')) fail('Only a text has its own position');
       if (e.type === 'circle') {
         if (Object.hasOwn(e, 'points')) fail('A circle does not use a point list');
         const center = point(e.centerPointId), rim = point(e.radiusPointId);
@@ -165,6 +186,11 @@ export function createGeometryModel() {
       if (e.type === 'parallelogram' || e.type === 'rectangle') {
         const ids = e.points;
         const derived = pointMap.get(ids[ids.length - 1]);
+        // Four free corners are a different shape, not a misplaced derived point: say so,
+        // because the remedy (use a polygon) differs from ordering the point list.
+        if (ids.every((ref) => pointMap.get(ref).kind === 'free')) {
+          fail('Four free points are a polygon; a rectangle or parallelogram names a derived fourth point');
+        }
         if (!derived || derived.kind !== 'derived' || derived.construction?.op !== e.type || !sameData(derived.construction.inputs, ids.slice(0, 3))) {
           fail('A quadrilateral names its derived fourth point last');
         }
@@ -427,7 +453,7 @@ export function createGeometryModel() {
     }
     return result;
   }
-  const elementPoints = (e) => e.type === 'circle' ? [e.centerPointId, e.radiusPointId] : e.points;
+  const elementPoints = (e) => e.type === 'circle' ? [e.centerPointId, e.radiusPointId] : e.type === 'text' ? [] : e.points;
   // True when some element outside `skip`, or some construction, still names this point.
   function pointReferenced(canonical, id, skip = new Set()) {
     if (!id) return false;
@@ -555,8 +581,7 @@ export function createGeometryModel() {
       board = orphans.length ? deleteIds(validate(draft), orphans) : validate(draft);
     }
     return board;
-  }
-  function nextId(canonical, prefix) {
+  }  function nextId(canonical, prefix) {
     let max = 0;
     const pattern = new RegExp(`^${prefix}-(\\d+)$`);
     const inspect = (id) => {
@@ -719,6 +744,32 @@ export function createGeometryModel() {
         return validate({ ...canonical, elements: canonical.elements.map((e) => e.id === action.id ? { ...e, note: value } : e) });
       }
       case 'note': if (!text(action.value, 500)) fail('Note exceeds 500 characters'); return validate({ ...canonical, note: action.value });
+      case 'addText': {
+        if (canonical.elements.length >= 300) fail('Element limit exceeded');
+        if (typeof action.text !== 'string' || !words(action.text) || emptyText(action.text)) fail('Invalid text');
+        const role = action.role ?? 'main';
+        if (!roles.includes(role)) fail('Unknown element type');
+        const anchor = { x: action.x, y: action.y };
+        if (!finite(anchor.x) || !finite(anchor.y)) fail('Invalid coordinate');
+        // A new text is placed from its left edge; only its anchor has to reach the board.
+        if (anchor.x < 0 || anchor.x > WIDTH - 24 || anchor.y < MARGIN || anchor.y > HEIGHT - MARGIN) fail('Invalid coordinate');
+        return validate({ ...canonical, elements: [...canonical.elements,
+          { id: nextId(canonical, 'e'), type: 'text', role, note: '', x: anchor.x, y: anchor.y, text: action.text.trim() }] });
+      }
+      case 'moveText': {
+        const item = elementById(action.id);
+        if (item.type !== 'text') fail('Only a text can move');
+        if (!finite(action.x) || !finite(action.y)) fail('Invalid coordinate');
+        // The drag answers where the anchor may go: clamped to the board on release.
+        const to = { x: Math.max(0, Math.min(WIDTH, action.x)), y: Math.max(MARGIN, Math.min(HEIGHT - MARGIN, action.y)) };
+        return validate({ ...canonical, elements: canonical.elements.map((e) => e.id === item.id ? { ...e, x: to.x, y: to.y } : e) });
+      }
+      case 'editText': {
+        const item = elementById(action.id);
+        if (item.type !== 'text') fail('Only a text can be edited');
+        if (typeof action.text !== 'string' || !words(action.text) || emptyText(action.text)) fail('Invalid text');
+        return validate({ ...canonical, elements: canonical.elements.map((e) => e.id === item.id ? { ...e, text: action.text.trim() } : e) });
+      }
       case 'delete': {
         if (!Array.isArray(action.ids) || !action.ids.length || action.ids.length > 300 || new Set(action.ids).size !== action.ids.length) fail('Select distinct points or shapes');
         const pointIds = [];
@@ -812,8 +863,26 @@ export function createGeometryModel() {
     return { x: dx, y: dy, rims: {}, corners };
   };;
   // The drawable library, in toolbox order. A point is a point; the rest are elements.
-  const shapeLibrary = ['point', ...elementTypes];
+  const shapeLibrary = ['point', ...elementTypes, ...textTypes];
+  // One estimate of a rendered text's box, shared by the student page's selection frame
+  // and hit test so the drawn writing and the clickable writing cannot drift apart.
+  const TEXT_SIZE = 16;
+  const TEXT_LINE = 20;
+  const textBox = (lines) => ({
+    width: Math.max(28, Math.max(...lines.map((line) => chars(line).length)) * TEXT_SIZE * 0.62 + 8),
+    height: lines.length * TEXT_LINE + 2,
+  });
+  // The writing chart a view draws on one canvas: its anchor is its left baseline and each
+  // line drops by TEXT_LINE. `scale` is a text drawn larger (the teacher demo page draws
+  // every text one size bigger, so the same writing measures proportionally).
+  const textMetrics = (scale = 1) => ({
+    size: TEXT_SIZE * scale, line: TEXT_LINE * scale,
+    box: (lines) => { const measured = textBox(lines.length ? lines : ['']); return { width: measured.width * scale, height: measured.height * scale }; },
+  });
   return { kind: KIND, coordinateSystem, shapeLibrary, elementTypes: [...elementTypes], roles: [...roles], operations: [...operations],
     bounds: { width: WIDTH, height: HEIGHT, margin: MARGIN, epsilon: EPSILON },
-    empty, validate, reduce, constrainedMove, constrainedEdgeMove, constrainedTranslate, rectangleAt, dependents: (board, id) => dependents(cloneBoard(board), id), serialize };
+    // A view that draws text at another size measures it here, so the drawing and the
+    // space reserved around it can never disagree.
+    empty, validate, reduce, TEXT_MAX, textBox: (lines) => textBox(lines.length ? lines : ['']), textMetrics,
+    constrainedMove, constrainedEdgeMove, constrainedTranslate, rectangleAt, dependents: (board, id) => dependents(cloneBoard(board), id), serialize };
 }

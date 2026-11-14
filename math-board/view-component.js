@@ -12,6 +12,9 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
   const h = React.createElement;
   const paletteColor = (index) => M.color(index);
   const icon = shared.createBoardIcons(React);
+  // The dock's 返回对话, menu rows, more-actions trigger, status line and the board's
+  // colours are shared with the geometry and demo pages.
+  const controls = shared.createBoardControls(React, t);
   const sameIds = (a, b) => a.length === b.length && a.every((id, index) => id === b[index]);
   const sorted = (ids) => [...ids].sort();
   function swatch(shape, colorIndex, size = 30) {
@@ -375,6 +378,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       // Only the visible tab hears Escape, so a hidden page cannot cancel the other one.
       if (!tabActive) return undefined;
       const onKey = (event) => {
+        if (event.target?.closest?.('.eb-teacher-reference')) return;
         if (event.key === 'Delete' || event.key === 'Backspace') {
           // An overlay or the tour owns the keyboard. A text field or the question
           // menu keeps the key. A focused shape outside the selection is removed on
@@ -504,13 +508,8 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       const recorded = recordChange(boardRef.current, next, { type: 'redo' });
       publish(next); selectIds([]); setAppend(false); if (recorded) setStatus('');
     }
-    function button(label, handler, extra = {}) { return h('button', { type: 'button', onClick: handler, ...extra }, label); }
+    const button = controls.button;
     function toolButton(name, handler, extra = {}) { return button(icon(name), handler, { title: t(name), 'aria-label': t(name), className: 'eb-icon-button', ...extra }); }
-    function labelled(name, text, handler, extra = {}) {
-      const label = extra.title ?? text;
-      return button(h(React.Fragment, null, icon(name, 16), h('span', { className: 'eb-label' }, text)), handler,
-        { ...extra, title: label, 'aria-label': label });
-    }
 
     function creationLevel(shape) {
       if (toolValue !== null && levels.some((level) => level.value === toolValue)) return toolLevel;
@@ -810,7 +809,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       const common = { fill, stroke: '#1E293B', strokeWidth: 1.2 };
       return h('g', { key: o.id, 'data-object': o.id, transform: `translate(${o.x + dx} ${o.y + dy})`, role: 'button', tabIndex: 0, 'aria-label': label, 'aria-pressed': picked, onKeyDown: (e) => objectKey(e, o) },
         h('title', null, label),
-        h('rect', { className: 'eb-focus-ring', x: -r - 6, y: -r - 6, width: r * 2 + 12, height: r * 2 + 12, rx: 8, fill: picked ? '#2563EB12' : 'transparent', stroke: picked ? '#2563EB' : 'transparent', strokeWidth: 2.5 }),
+        h('rect', { className: 'eb-focus-ring', x: -r - 6, y: -r - 6, width: r * 2 + 12, height: r * 2 + 12, rx: 8, fill: picked ? '#2563EB12' : 'transparent', stroke: picked ? controls.selection : 'transparent', strokeWidth: 2.5 }),
         h('g', { opacity: o.removed ? 0.35 : 1 },
           art.node(o.shape, r, common),
           valueBadge(o.value, r)),
@@ -887,7 +886,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
         h('text', { x: 400, y: 216, textAnchor: 'middle', fill: '#64748B', fontSize: 12 }, t('canvasEmptyHint'))),
       preview && preview.kind === 'lasso' && h('rect', {
         x: preview.x, y: preview.y, width: preview.w, height: preview.h,
-        fill: '#2563EB18', stroke: '#2563EB', strokeWidth: 1.5, pointerEvents: 'none',
+        fill: '#2563EB18', stroke: controls.selection, strokeWidth: 1.5, pointerEvents: 'none',
       })));
     const selectionBar = selected.length > 0 && h('div', { className: 'eb-floating', role: 'toolbar', 'aria-label': t('selectionActions') },
       h('small', null, `${t('selectedCount')} ${selected.length}`),
@@ -931,24 +930,24 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       })));
     const moreMenuNode = moreOpen && h('div', { className: 'eb-menu eb-more-menu', role: 'menu', 'aria-label': t('files') },
       h('div', { className: 'eb-menu-head' }, t('files')),
-      button(h(React.Fragment, null, icon('open', 16), h('span', null, t('import'))), openFile, { role: 'menuitem' }),
-      button(h(React.Fragment, null, icon('save', 16), h('span', null, t('export'))), saveFile, { role: 'menuitem' }),
+      controls.menuItem(icon('open'), t('import'), openFile),
+      controls.menuItem(icon('save'), t('export'), saveFile),
       picker.fileNameState && h('p', { className: 'eb-menu-note' }, picker.fileNameState),
       h('div', { className: 'eb-menu-line' }),
       h('label', { className: 'eb-menu-check' }, h('input', { type: 'checkbox', checked: attachTrace, onChange: (event) => setAttachTrace(event.target.checked) }), h('span', null, t('traceAttach'))),
       TutorialOverlay && h(React.Fragment, null,
         h('div', { className: 'eb-menu-line' }),
-        button(h('span', null, t('tutorialReplay')), () => startQuantityTour(), { role: 'menuitem' })));
+        controls.menuItem(null, t('tutorialReplay'), () => startQuantityTour())));
     // One dock for both tabs, in this order. This tab keeps creation colours and the
     // trace checkbox; the geometry tab keeps grid and snap in that same slot.
     const dock = h('nav', { className: 'eb-dock', 'aria-label': t('canvasTools') },
-      labelled('back', t('backToChat'), close, { className: 'eb-dock-return' }),
-      h('span', { className: 'eb-divider' }),
+      controls.backButton(close, { icon }),
+      controls.divider(),
       toolButton('undo', undo, { disabled: !history.past.length }),
       toolButton('redo', redo, { disabled: !history.future.length, className: 'eb-icon-button eb-redo', title: t('redo') }),
-      h('span', { className: 'eb-divider' }),
+      controls.divider(),
       colorChoices,
-      h('span', { className: 'eb-divider' }),
+      controls.divider(),
       button('−', () => { setFit(false); setZoom(Math.max(0.75, zoom - 0.25)); }, { className: 'eb-zoom-button eb-zoom-out', 'aria-label': t('zoomOut'), title: t('zoomOut') }),
       button(fit ? t('fitView') : `${Math.round(zoom * 100)}%`, () => setFit(!fit), { className: 'eb-zoom-label', 'aria-label': t('fitView'), 'aria-pressed': fit, title: t('fitView') }),
       button('＋', () => { setFit(false); setZoom(Math.min(2, zoom + 0.25)); }, { className: 'eb-zoom-button eb-zoom-in', 'aria-label': t('zoomIn'), title: t('zoomIn') }),
@@ -959,7 +958,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
         'data-tour-id': 'quantity-note',
       }),
       button(icon('clear', 19), () => requestOverlay({ kind: 'clear' }), { className: 'eb-icon-button eb-danger', title: t('clear'), 'aria-label': t('clear') }),
-      button(icon('more', 19), () => { setMoreOpen(!moreOpen); }, { className: 'eb-icon-button eb-menu-trigger', title: t('moreActions'), 'aria-label': t('moreActions'), 'aria-expanded': moreOpen }),
+      controls.moreMenu(moreOpen, () => setMoreOpen(!moreOpen)),
       button(h(React.Fragment, null, icon('insert', 17), h('span', null, t('insert'))), insert, {
         className: 'eb-primary', title: t('insert'), 'data-tour-id': 'quantity-insert',
         disabled: (shared.tourInsertMode?.(tour) === 'block'
@@ -1002,7 +1001,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
           h('div', { className: 'eb-overlay-actions' },
             button(t('cancel'), dismissOverlay),
             button(t('confirmClear'), confirmClearBoard, { className: 'eb-primary eb-danger-solid' })))));
-    const statusNode = status && h('div', { className: 'eb-status-toast', role: 'status', 'aria-live': 'polite' }, status);
+    const statusNode = controls.status(status);
     const tourNode = tour && TutorialOverlay && h(TutorialOverlay, {
       step: tour.steps[tour.index], stepIndex: tour.index, stepCount: tour.steps.length,
       t, hole: tourHole, onSkip: finishQuantityTour,
