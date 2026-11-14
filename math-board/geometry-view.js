@@ -29,6 +29,10 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     'text',
     'polygon',
   ];
+  // One way to write a run of points for an SVG line or polygon.
+  const pathOf = (points) => points.map((point) => `${point.x},${point.y}`).join(' ');
+  // A tool that draws several points in a row before it closes.
+  const drawnInRun = (name) => ['segment', 'triangle', 'polygon', 'parallelogram', 'rectangle'].includes(name);
   // Box geometry for marquee selection. A point counts when it lies inside; a shape counts
   // when its stroke meets the rectangle.
   function boxFrom(a, b) {
@@ -60,11 +64,20 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     ];
     return corners.some((corner, i) => segmentsCross(a, b, corner, corners[(i + 1) % 4]));
   }
-  function edgeKey(id, index) { return `${id}#${index}`; }
+  // Edge identity, edge lookup and the text metrics are the model's, so this page never
+  // keeps a second rule for the same thing.
+  const edgeKey = G.edgeKey;
   // A student's writing is drawn at the model's own size, so the box the model measures is
-  // the box the page draws, selects and hit-tests.
+  // the box the page draws, selects and hit-tests. One box serves the hit test, the marquee
+  // and the selection frame; none of them estimates the writing again.
   const textMetrics = G.textMetrics();
   const TEXT_SIZE = textMetrics.size;
+  const TEXT_LINE = textMetrics.line;
+  function textBoxOf(e) {
+    const box = G.textBox(e.text.split('\n'));
+    return { x0: e.x - 6, y0: e.y - TEXT_SIZE - 4, x1: e.x + box.width + 2, y1: e.y + box.height - TEXT_SIZE };
+  }
+  const boxesMeet = (a, b) => a.x0 <= b.x1 && a.x1 >= b.x0 && a.y0 <= b.y1 && a.y1 >= b.y0;
   const closedShape = (type) => type === 'polygon' || type === 'rectangle' || type === 'parallelogram';
   function circleHitsBox(center, radius, box) {
     const nearestX = Math.max(box.x0, Math.min(center.x, box.x1));
@@ -387,10 +400,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       // A text is hit by its own writing box, above the shapes it sits over.
       for (const e of [...state.elements].reverse()) {
         if (e.type !== 'text') continue;
-        const box = G.textBox(e.text.split('\n'));
-        if (p.x >= e.x - 6 && p.x <= e.x + box.width + 2 && p.y >= e.y - TEXT_SIZE - 4 && p.y <= e.y + box.height - TEXT_SIZE) {
-          return { kind: 'text', id: e.id };
-        }
+        if (pointInBox(p, textBoxOf(e))) return { kind: 'text', id: e.id };
       }
       // A short element note is drawn beside the shape; that writing is a target of its
       // own, so pressing it opens the note that produced it instead of selecting the shape.
@@ -401,10 +411,10 @@ export function createGeometryPage(React, G, ctx, t, shared) {
           return q ? { x: q.x, y: q.y } : null;
         }, { width, height });
         if (!caption) continue;
-        const box = G.textBox([caption.text]);
-        const half = box.width / 2;
-        if (p.x >= caption.x - half - 4 && p.x <= caption.x + half + 4
-          && p.y >= caption.y - 17 && p.y <= caption.y + 5) return { kind: 'caption', id: e.id };
+        // The click target is the writing the page draws, box and all: both come from the
+        // same measured caption, never from a second estimate of how wide it looks.
+        const box = shared.captionBox?.(caption);
+        if (box && p.x >= box.x0 && p.x <= box.x1 && p.y >= box.y0 && p.y <= box.y1) return { kind: 'caption', id: e.id };
       }
       for (const e of [...state.elements].reverse()) {
         if (e.type === 'text') continue;
@@ -478,20 +488,16 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       let place = p;
       if (tool === 'rectangle' && pending.length === 2) {
         const [a, b] = pending.map((id) => boardRef.current.points.find((q) => q.id === id));
-        const draft = a && b ? G.rectangleAt(a, b, p) : null;
-        if (!draft) {
+        // The model decides where the right-angle corner goes and which click points it
+        // keeps, so the preview, this click and the committed shape are one rule.
+        const hit = usable ? boardRef.current.points.find((q) => q.id === usable.id) : null;
+        const placement = a && b ? G.rectanglePlacement(a, b, p, hit) : null;
+        if (!placement) {
           setStatus(`${t('failed')}: Degenerate element`);
           return;
         }
-        // Reuse a free hit only when it already lies on the right-angle corner; otherwise
-        // place a new point there so another shape that shares the hit is not warped.
-        const hit = usable && boardRef.current.points.find((q) => q.id === usable.id);
-        const onCorner = hit
-          && Math.hypot(hit.x - draft.third.x, hit.y - draft.third.y) <= G.bounds.epsilon;
-        if (!onCorner) {
-          place = draft.third;
-          usable = null;
-        }
+        if (usable && usable.id !== placement.keepId) usable = null;
+        place = placement.third;
       }
       let chosen = usable;
       if (!chosen) {
@@ -524,10 +530,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
         // A text is one whole object, not a set of sides: the box takes it when the box
         // touches the writing, and deleting it removes the writing only.
         if (e.type === 'text') {
-          const boxOf = G.textBox(e.text.split('\n'));
-          const w0 = e.x - 6, w1 = e.x + boxOf.width + 2;
-          const h0 = e.y - TEXT_SIZE - 4, h1 = e.y + boxOf.height - TEXT_SIZE;
-          if (w0 <= box.x1 && w1 >= box.x0 && h0 <= box.y1 && h1 >= box.y0) ids.push(e.id);
+          if (boxesMeet(textBoxOf(e), box)) ids.push(e.id);
           continue;
         }
         if (e.type === 'circle') {
@@ -572,16 +575,9 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       }
       return ids;
     }
-    function edgeOf(target) {
-      if (target?.kind !== 'edge') return null;
-      const mark = target.id.lastIndexOf('#');
-      if (mark <= 0) return null;
-      const id = target.id.slice(0, mark);
-      const index = Number(target.id.slice(mark + 1));
-      const element = boardRef.current.elements.find((e) => e.id === id);
-      if (!element || !Number.isInteger(index)) return null;
-      return { id, index, element };
-    }
+    // The model parses an edge key, so a selection this page drew and a deletion the model
+    // runs can never disagree about which side was meant.
+    const edgeOf = (target) => (target?.kind === 'edge' ? G.parseEdgeKey(boardRef.current, target.id) : null);
     // One selected edge resizes. The whole shape, once every edge is selected, does not.
     function resizeHandle(target) {
       if (!target || target.kind === 'point') return null;
@@ -589,7 +585,9 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       const edge = edgeOf(target);
       if (edge) {
         if (!selection.includes(target.id) || shapeFullySelected(edge.element)) return null;
-        return { kind: 'edge', id: edge.id, index: edge.index, selectionId: target.id };
+        // The gesture keeps the selection key the student pressed: the model parses it back
+        // into the same element and side, so the view never rebuilds an id of its own.
+        return { kind: 'edge', id: target.id, index: edge.index, selectionId: target.id };
       }
       const element = state.elements.find((e) => e.id === target.id);
       if (!element || !selection.includes(element.id)) return null;
@@ -598,7 +596,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
         if (!rim || rim.kind !== 'free') return null;
         return { kind: 'radius', id: rim.id, selectionId: element.id };
       }
-      if (element.type === 'segment') return { kind: 'edge', id: element.id, index: 0, selectionId: element.id };
+      if (element.type === 'segment') return { kind: 'edge', id: target.id, index: 0, selectionId: element.id };
       return null;
     }
     function pointerDown(event) {
@@ -737,7 +735,13 @@ export function createGeometryPage(React, G, ctx, t, shared) {
           const accepted = g.kind === 'translate'
             ? G.constrainedTranslate(g.base, g.ids, p.x - g.start.x, p.y - g.start.y)
             : G.constrainedEdgeMove(g.base, g.id, g.index, p.x - g.start.x, p.y - g.start.y);
-          if (accepted) setPreview({ corners: accepted.corners, rims: accepted.rims });
+          if (accepted) {
+            // The model stops an edge short of a degenerate shape. Release commits where
+            // the drag actually got to, not the pointer, so the shape does not jump past
+            // the stop it was just held at.
+            g.accepted = accepted.landed;
+            setPreview({ corners: accepted.corners, rims: accepted.rims });
+          }
           return;
         }
         if (g.kind === 'text') {
@@ -779,7 +783,10 @@ export function createGeometryPage(React, G, ctx, t, shared) {
           return;
         }
         if (g.kind === 'translate') action({ type: 'translate', ids: g.ids, dx: end.x - g.start.x, dy: end.y - g.start.y });
-        else action({ type: 'moveEdge', id: g.id, index: g.index, dx: end.x - g.start.x, dy: end.y - g.start.y });
+        else {
+          const landed = g.accepted || { dx: end.x - g.start.x, dy: end.y - g.start.y };
+          action({ type: 'moveEdge', id: g.id, index: g.index, dx: landed.dx, dy: landed.dy });
+        }
         return;
       }
       if (g.kind === 'text') {
@@ -908,7 +915,8 @@ export function createGeometryPage(React, G, ctx, t, shared) {
         setStatus(t('tutorialInsertPractice'));
         return;
       }
-      if (insertMode === 'block') return;
+      // A press under the mask is reached by keyboard: say why nothing was attached.
+      if (insertMode === 'block') { setStatus(t('tutorialInsertLater')); return; }
       const conversation = ctx.get('conversation');
       let drafts = [];
       const discard = () => {
@@ -999,16 +1007,13 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     function selectedEdgeIndexes(elementId) {
       const indexes = [];
       for (const item of selection) {
-        const mark = String(item).lastIndexOf('#');
-        if (mark <= 0 || item.slice(0, mark) !== elementId) continue;
-        const index = Number(item.slice(mark + 1));
-        if (Number.isInteger(index)) indexes.push(index);
+        const edge = G.parseEdgeKey(boardRef.current, item);
+        if (edge?.element.id === elementId) indexes.push(edge.index);
       }
       return indexes;
     }
     // A text is written, not drawn: its anchor is its left baseline and it takes no
     // part in point snapping or edge selection. The model owns the box estimate.
-    const TEXT_LINE = 20;
     function renderText(e) {
       const anchor = { x: e.x, y: e.y };
       const drag = preview?.text?.id === e.id ? preview.text : anchor;
@@ -1037,12 +1042,26 @@ export function createGeometryPage(React, G, ctx, t, shared) {
         key: index, x: drag.x, dy: index === 0 ? 0 : TEXT_LINE,
       }, line))));
     }
+    // The sides of a selected shape, drawn over its own outline.
+    function highlightedEdges(e, indexes) {
+      const points = e.points.map(at);
+      return indexes.map((index) => {
+        const a = points[index], b = points[(index + 1) % points.length];
+        if (!a || !b) return null;
+        return h('line', {
+          key: `edge-${index}`, x1: a.x, y1: a.y, x2: b.x, y2: b.y,
+          stroke: controls.selection, strokeWidth: 3, strokeLinecap: 'round', pointerEvents: 'none',
+        });
+      }).filter(Boolean);
+    }
     function renderElement(e) {
       if (e.type === 'text') return renderText(e);
       const picked = selection.includes(e.id);
       const edgeIndexes = selectedEdgeIndexes(e.id);
-      const stroke = shared.geometryStroke(e, controls, { active: picked });
-      const label = `${t(e.type)}${e.role === 'auxiliary' ? ` · ${t('auxiliary')}` : ''}${e.note ? ` · ${t('hasNote')}` : ''}`;
+      // A note longer than a caption is not drawn beside the shape, so the shape does not
+      // claim one; the note card still holds it.
+      const caption = shared.captionPosition?.(e, at, { width, height }) || null;
+      const label = `${t(e.type)}${e.role === 'auxiliary' ? ` · ${t('auxiliary')}` : ''}${caption ? ` · ${t('hasNote')}` : ''}`;
       const group = {
         key: e.id, 'data-element': e.id, role: 'button', tabIndex: 0, 'aria-label': label,
         'aria-pressed': picked || edgeIndexes.length > 0,
@@ -1053,33 +1072,18 @@ export function createGeometryPage(React, G, ctx, t, shared) {
           else setSelection([e.id]);
         },
       };
-      if (e.type === 'circle') {
-        const center = at(e.centerPointId), rim = at(e.radiusPointId);
-        if (!center || !rim) return null;
-        const caption = shared.captionPosition?.(e, at, { width, height });
-        const captionNode = caption && h('text', shared.geometryCaptionLabel(caption, controls, {
-          active: hit?.kind === 'caption' && hit.id === e.id, pickable: tool === 'select',
-        }), caption.text);
-        return h('g', group, h('circle', { cx: center.x, cy: center.y, r: Math.hypot(rim.x - center.x, rim.y - center.y), ...stroke }), captionNode);
-      }
-      const points = e.points.map(at);
-      if (points.some((point) => !point) || points.length < 2) return null;
-      const caption = shared.captionPosition?.(e, at, { width, height });
-      const captionNode = caption && h('text', shared.geometryCaptionLabel(caption, controls, {
-        active: hit?.kind === 'caption' && hit.id === e.id, pickable: tool === 'select',
-      }), caption.text);
-      if (e.type === 'segment') {
-        return h('g', group, h('line', { x1: points[0].x, y1: points[0].y, x2: points[1].x, y2: points[1].y, ...stroke }), captionNode);
-      }
-      const highlighted = edgeIndexes.map((index) => {
-        const a = points[index], b = points[(index + 1) % points.length];
-        if (!a || !b) return null;
-        return h('line', {
-          key: `edge-${index}`, x1: a.x, y1: a.y, x2: b.x, y2: b.y,
-          stroke: controls.selection, strokeWidth: 3, strokeLinecap: 'round', pointerEvents: 'none',
-        });
-      }).filter(Boolean);
-      return h('g', group, h('polygon', { points: points.map((p) => `${p.x},${p.y}`).join(' '), ...stroke }), ...highlighted, captionNode);
+      // The shape and its caption are drawn once, by the shared node, from the same caption
+      // box the hit test uses; this page only adds what belongs to it: the group and the
+      // highlighted sides of a selection.
+      const shape = shared.geometryShapeNode(h, e, at, controls, {
+        stroke: { active: picked }, caption, captionBox: shared.captionBox?.(caption) ?? null,
+        captionProps: { active: hit?.kind === 'caption' && hit.id === e.id, pickable: tool === 'select' },
+      });
+      if (!shape) return null;
+      if (shape.shape !== 'polygon' || !edgeIndexes.length) return h('g', group, shape.node);
+      // A polygon with highlighted sides: the outline, the tinted sides over it, and the
+      // caption on top.
+      return h('g', group, shape.primary, ...highlightedEdges(e, edgeIndexes), shape.caption);
     }
     function renderPoint(q) {
       const shown = at(q.id) || q;
@@ -1111,40 +1115,28 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       const points = pending.map(at).filter(Boolean);
       if (!points.length || !hover) return null;
       const last = points.at(-1);
-      if (tool === 'circle') return h('circle', { cx: last.x, cy: last.y, r: Math.hypot(hover.x - last.x, hover.y - last.y), ...previewStyle });
+      if (tool === 'circle') return h('circle', { cx: last.x, cy: last.y, r: Math.hypot(hover.x - last.x, hover.y - last.y), ...previewStroke });
       if (tool === 'rectangle' && points.length >= 2) {
-        const draft = G.rectangleAt(points[0], points[1], hover);
+        const draft = G.rectanglePlacement(points[0], points[1], hover);
         if (!draft) return null;
         const ring = [points[0], points[1], draft.third, draft.fourth];
-        return h('polygon', { points: ring.map((p) => `${p.x},${p.y}`).join(' '), ...previewStyle });
+        return h('polygon', { points: pathOf(ring), ...previewStroke });
       }
-      if (tool === 'triangle' && points.length >= 2) {
-        return h('polygon', { points: [...points, hover].map((p) => `${p.x},${p.y}`).join(' '), ...previewStyle });
-      }
-      if (tool === 'segment' || tool === 'triangle' || tool === 'polygon' || tool === 'parallelogram' || tool === 'rectangle') {
-        return h('polyline', { points: [...points, hover].map((p) => `${p.x},${p.y}`).join(' '), ...previewStyle });
-      }
+      if (drawnInRun(tool)) return h('polyline', { points: pathOf([...points, hover]), ...previewStroke });
       return null;
     }
-    const previewStyle = { fill: 'none', stroke: controls.preview, strokeWidth: 2, strokeDasharray: '5 4', 'pointer-events': 'none' };
+    // The preview stroke is the drawing's own stroke, told to look unfinished, so a new
+    // shape and the parked one it becomes cannot be styled two different ways.
+    const previewStroke = { ...shared.geometryStroke(null, controls), stroke: controls.preview, strokeWidth: 2, strokeDasharray: '5 4', 'pointer-events': 'none' };
     const hiddenRims = exclusiveRimIds(board);
     // The canvas is framed once for the whole board, and a full view keeps a reserve on
     // each side for what the drawing puts past the board: point labels, captions and the
     // student's writing. `geometryFrame` owns that rule so the demo page shares it.
-    const frame = shared.geometryFrame({
+    const frame = shared.geometryFrame(shared.geometryFrameInputs({
       width, height, board,
-      caption: (element) => shared.captionPosition?.(element, at, { width, height }) || null,
-      textBoxes: board.elements.filter((e) => e.type === 'text').map((e) => {
-        const lines = e.text.split('\n');
-        const box = textMetrics.box(lines);
-        const overflow = shared.geometryTextOverflow(lines, textMetrics);
-        return {
-          x: e.x - overflow.left, y: e.y - overflow.top,
-          width: box.width + overflow.left + overflow.right, height: box.height + overflow.top + overflow.bottom,
-        };
-      }),
-      emptyText: [],
-    }, viewport, { value: zoom, fit });
+      captionOf: (element) => shared.captionPosition?.(element, at, { width, height }) || null,
+      textBox: (element) => shared.geometryTextBox(element.text.split('\n'), textMetrics),
+    }), viewport, { value: zoom, fit });
     const origin = frame.origin;
     // Zoom is real: the canvas grows with the zoom and the frame scrolls to the rest of
     // the drawing, so nothing is cropped; a fit puts the whole board, reserve included,
@@ -1185,24 +1177,17 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     // A segment is that side. A polygon, rectangle, or parallelogram is selected one
     // edge at a time; a circle has none. The control stays disabled until that side's
     // two free ends do not already have a midpoint.
+    // One side's two ends. A segment is its own single side; any other shape is selected one
+    // edge at a time, and the trailing index names that edge.
     function sideEnds(key) {
-      const mark = typeof key === 'string' ? key.lastIndexOf('#') : -1;
-      if (mark > 0) {
-        const id = key.slice(0, mark);
-        const indexText = key.slice(mark + 1);
-        const index = Number(indexText);
-        if (!Number.isInteger(index) || String(index) !== indexText) return null;
-        const element = board.elements.find((item) => item.id === id);
-        if (!element || !closedShape(element.type) || !Array.isArray(element.points)) return null;
-        if (index < 0 || index >= element.points.length) return null;
-        const a = element.points[index];
-        const b = element.points[(index + 1) % element.points.length];
-        return a && b && a !== b ? [a, b] : null;
-      }
+      const edge = G.parseEdgeKey(board, key);
+      if (edge) return edge.points[0] !== edge.points[1] ? edge.points : null;
       const element = board.elements.find((item) => item.id === key);
       if (!element || element.type !== 'segment' || element.points.length !== 2) return null;
       return element.points;
     }
+    // The model owns the two rules: the ends must be free points, and a side carries one
+    // midpoint. The control only asks.
     function midpointTarget() {
       if (selection.length !== 1) return null;
       const ends = sideEnds(selection[0]);
@@ -1210,10 +1195,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       const [a, b] = ends;
       const points = [a, b].map((id) => board.points.find((point) => point.id === id));
       if (points.some((point) => !point || point.kind !== 'free')) return null;
-      const taken = board.points.some((point) => point.construction?.op === 'midpoint'
-        && point.construction.inputs?.length === 2
-        && point.construction.inputs.includes(a) && point.construction.inputs.includes(b));
-      return taken ? null : { a, b };
+      return G.midpointOf(board, a, b) ? null : { a, b };
     }
     function markMidpoint() {
       const target = midpointTarget();
@@ -1286,10 +1268,8 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       modeToggle(snap, 'snapOn', 'snapOff', () => setSnap(!snap)),
       controls.divider(),
       // A − or ＋ press is a request to enlarge or shrink what is on screen, so it leaves
-      // the fit; 适应宽度 returns to it. The quantity board's zoom pair works the same way.
-      button('−', () => { setFit(false); setZoom(Math.max(1, zoom - 0.25)); }, { className: 'eb-zoom-button eb-zoom-out', 'aria-label': t('zoomOut'), title: t('zoomOut'), disabled: zoom <= 1 }),
-      button(fit ? t('fitView') : `${Math.round(zoom * 100)}%`, () => setFit(!fit), { className: 'eb-zoom-label', 'aria-label': t('fitView'), 'aria-pressed': fit, title: t('fitView') }),
-      button('＋', () => { setFit(false); setZoom(Math.min(4, zoom + 0.25)); }, { className: 'eb-zoom-button eb-zoom-in', 'aria-label': t('zoomIn'), title: t('zoomIn'), disabled: zoom >= 4 }),
+      // the fit; 适应宽度 returns to it. Every page docks the same pair, from board-kit.
+      ...controls.zoomPair({ zoom, fit, setFit: (nextFit, nextZoom) => { setFit(nextFit); if (nextZoom !== undefined) setZoom(nextZoom); } }, { min: 1, max: 4 }),
       h('span', { className: 'eb-grow' }),
       controls.button(h(React.Fragment, null, icon('note', 19), noteHasText ? h('span', { className: 'eb-note-dot' }) : null), () => {
         requestOverlay({ kind: 'note' });

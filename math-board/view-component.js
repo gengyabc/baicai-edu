@@ -668,7 +668,8 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
         setStatus(t('tutorialInsertPractice'));
         return;
       }
-      if (insertMode === 'block') return;
+      // A press under the mask is reached by keyboard: say why nothing was attached.
+      if (insertMode === 'block') { setStatus(t('tutorialInsertLater')); return; }
       flushEditor();
       const conversation = ctx.get('conversation');
       let drafts = [];

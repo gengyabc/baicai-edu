@@ -1,10 +1,40 @@
-/** Where a short element note sits on the geometry canvas. y grows downward. */
+// Where a short element note sits on the geometry canvas, y growing downward, and how big
+// its writing is. The student page and the teacher demo both draw a caption through
+// draw.js's `geometryCaptionLabel`; that label derives its size, anchor and halo from the
+// box returned here, so the writing a student sees is the writing they can click.
+//
+// build.mjs inlines these with toString(), so they use only their own arguments.
+
+/**
+ * The writing a caption draws, trimmed, or null when the note is too short or too long to be
+ * drawn beside the shape. This is the one statement of how long a caption may be: a longer
+ * note stays in the note card and is never claimed as drawn beside its shape.
+ *
+ * The bound is declared inside the function because build.mjs inlines only function
+ * sources; a module-level constant would be missing from client.js.
+ */
 export function visibleCaption(note) {
+  const CAPTION_MAX = 20;
   if (typeof note !== 'string') return null;
   const text = note.trim();
   const chars = [...text];
-  if (chars.length < 1 || chars.length > 20) return null;
+  if (chars.length < 1 || chars.length > CAPTION_MAX) return null;
   return text;
+}
+
+/**
+ * The box a caption's writing fills: one line of text, centred on `x` and sitting on the
+ * baseline `y`. Both pages draw at this size and hit-test against this box.
+ */
+export function captionBox(caption) {
+  if (!caption) return null;
+  const size = 13, pad = 4;
+  const width = [...caption.text].length * size * 0.62;
+  return {
+    x0: caption.x - width / 2 - pad, x1: caption.x + width / 2 + pad,
+    y0: caption.y - size - pad, y1: caption.y + pad,
+    size, anchor: 'middle',
+  };
 }
 
 /**

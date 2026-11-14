@@ -242,6 +242,7 @@
   "tutorialProgress": "第 {step} / {total} 步",
   "tutorialDone": "教程结束。练习留下的笔迹可用撤销去掉。",
   "tutorialInsertPractice": "练习到这里：真正作答时再点「放入回答」，检查后自己发送。",
+  "tutorialInsertLater": "先完成这一步教程：教程结束后就能「放入回答」。",
   "tutorialQAddTitle": "放一个图案",
   "tutorialQAddBody": "点左侧任意图案，放到画布上。",
   "tutorialQColorTitle": "选创建颜色",

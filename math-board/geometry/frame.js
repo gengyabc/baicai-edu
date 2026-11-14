@@ -25,6 +25,34 @@ export function geometryTextOverflow(lines, metrics) {
 }
 
 /**
+/**
+ * Everything `geometryFrame` needs besides the viewport and the zoom: the board, each
+ * shape's caption, and the box of every text the page writes. Both pages build the same
+ * argument object here, from the same metrics they draw with, so the fit cannot depend on
+ * which page asked for it.
+ *
+ * `captionOf(element)` places a shape's short note; it comes from caption.js, which owns
+ * that rule. `textBox(element)` measures one text with the page's own metrics.
+ */
+export function geometryFrameInputs(options) {
+  const { board, captionOf, textBox } = options;
+  const { width, height } = options;
+  return {
+    width, height, board,
+    caption: (element) => (element && element.type !== 'text' ? captionOf(element) : null),
+    textBoxes: (board?.elements || []).filter((e) => e.type === 'text').map((e) => anchoredTextBox(e, textBox(e))),
+    emptyText: [],
+  };
+
+  // A page measures the writing from its own anchor; the frame wants the box in board
+  // coordinates, so the anchor is added here once instead of on every page.
+  function anchoredTextBox(element, box) {
+    return { x: element.x + box.x, y: element.y + box.y, width: box.width, height: box.height };
+  }
+}
+
+
+/**
  * Frame the board. `viewport` is the area the canvas really has; `zoom` is `{ value, fit }`.
  * Returns the fit scale, the scrollable canvas box, the viewBox that shows it, and the
  * board rectangle a complete view of the drawing must keep reachable.

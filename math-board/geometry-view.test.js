@@ -3,21 +3,20 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createBoardView, createShapeArt } from './view.js';
 import { createTabbedBoardView } from './board-shell.js';
-import { createTeacherReferenceView } from './reference-view.js';
-import { createReferenceModel } from './reference-model.js';
 import { createBoardFilePicker, createBoardIcons } from './file-picker.js';
 import { createGeometryPage } from './geometry-view.js';
 import { createGeometryDemoPage, readDemoView } from './geometry-demo-view.js';
 import { placeFigure } from './geometry/place-figure.js';
-import { captionPosition } from './geometry/caption.js';
+import { captionBox, captionPosition, visibleCaption } from './geometry/caption.js';
 import {
-  geometryHiddenPoints, geometryCaptionLabel, geometryPointLabel, geometryPointDot, geometryStroke,
+  geometryHiddenPoints, geometryCaptionLabel, geometryPointLabel, geometryPointDot, geometryShapeNode, geometryStroke,
 } from './geometry/draw.js';
-import { geometryTextOverflow, geometryFrame } from './geometry/frame.js';
+import { geometryFrameInputs, geometryTextOverflow, geometryFrame } from './geometry/frame.js';
 import { createBoardControls } from './board-kit.js';
 import { createGeometryModel } from './geometry/model.js';
 import { createBoardModel } from './model.js';
 import { createBoardTrace } from './trace.js';
+import { createHooks, installBrowser, text, walk } from './test-harness.js';
 import { applyHostConfig } from './config-bridge.js';
 import {
   advanceTutorial, createTutorialOverlay, geometryTutorialSteps, isTutorialSeen,
@@ -25,6 +24,11 @@ import {
   tourInsertMode, tutorialStorageKey,
 } from './tutorial.js';
 
+// The radius the geometry page uses to decide a press landed on a point.
+const POINT_HIT_RADIUS = Number(/Math\.hypot\(q\.x - p\.x, q\.y - p\.y\) <= (\d+)/.exec(
+  await readFile(new URL('./geometry-view.js', import.meta.url), 'utf8'),
+)?.[1]);
+if (!Number.isFinite(POINT_HIT_RADIUS)) throw new Error('The geometry page no longer states its point hit radius');
 const M = createBoardModel();
 const G = createGeometryModel();
 const T = createBoardTrace(M);
@@ -36,71 +40,15 @@ const t = (key, params = {}) => {
 };
 const QUANTITY_KEY = 'dsh-edu-math-board:v4:tabbed';
 const GEOMETRY_KEY = `dsh-edu-math-board:geometry:v1:tabbed`;
-const walk = (node) => !node || typeof node !== 'object' ? []
-  : [node, ...(node.children || []).flat(Infinity).flatMap(walk)];
-const text = (node) => typeof node === 'string' || typeof node === 'number' ? String(node)
-  : node && typeof node === 'object' ? (node.children || []).flat(Infinity).map(text).join('') : '';
 
 /** Stateful hooks: persistent slots, dependency-aware effects and explicit rendering. */
 function mount(options = {}) {
   const storage = options.storage || new Map();
-  const old = { window: globalThis.window, navigator: Object.getOwnPropertyDescriptor(globalThis, 'navigator'),
-    localStorage: globalThis.localStorage, document: globalThis.document };
-  globalThis.window = {
-    matchMedia: () => ({ matches: true }), location: { hostname: '127.0.0.1' },
-    addEventListener() {}, removeEventListener() {},
-  };
-  const documentListeners = new Map();
-  globalThis.document = {
-    addEventListener(type, handler) {
-      const list = documentListeners.get(type) || [];
-      list.push(handler);
-      documentListeners.set(type, list);
-    },
-    removeEventListener(type, handler) {
-      const list = documentListeners.get(type) || [];
-      documentListeners.set(type, list.filter((item) => item !== handler));
-    },
-  };
-  Object.defineProperty(globalThis, 'navigator', { configurable: true, value: {
-    locks: { request(_key, _options, task) { task(); return Promise.resolve(); } },
-  } });
-  globalThis.localStorage = {
-    getItem: (name) => storage.get(name) ?? null,
-    setItem: (name, value) => storage.set(name, String(value)),
-  };
-  // Each component type owns its hook slots, so nested pages keep independent state
-  // exactly as React does; the harness expands function components into their trees.
-  const stores = new Map(); const dom = new Map(); const effects = [];
-  let active = null; let dirty = false; let tree;
-  const storeFor = (type) => {
-    if (!stores.has(type)) stores.set(type, { slots: [] });
-    return stores.get(type);
-  };
-  const React = {
-    Fragment: Symbol('Fragment'),
-    createElement: (type, props, ...children) => ({ type, props: props || {}, children }),
-    useSyncExternalStore() {},
-    useState(initial) {
-      const store = active; const index = store.cursor++;
-      if (!(index in store.slots)) store.slots[index] = { value: typeof initial === 'function' ? initial() : initial };
-      return [store.slots[index].value, (next) => {
-        const value = typeof next === 'function' ? next(store.slots[index].value) : next;
-        if (!Object.is(value, store.slots[index].value)) { store.slots[index].value = value; dirty = true; }
-      }];
-    },
-    useRef(current) { const store = active; const index = store.cursor++; return store.slots[index] ||= { current }; },
-    useEffect(callback, deps) {
-      const store = active; const index = store.cursor++;
-      const previous = store.slots[index];
-      if (!previous || !deps || deps.some((v, i) => !Object.is(v, previous.deps?.[i]))) {
-        store.effects.push(() => {
-          previous?.cleanup?.();
-          store.slots[index] = { deps, cleanup: callback() };
-        });
-      }
-    },
-  };
+  const browser = installBrowser({ storage });
+  const { React, storeFor, hooks, render: renderTree, refresh: refreshTree, unmount: unmountPages } = createHooks();
+  const { documentListeners, key: pressKey } = browser;
+  const dom = new Map();
+  let tree;
   const drafts = []; const attached = new Map(); const removed = []; const texts = []; let persisted = 0;
   const inputActions = {
     captureInsertion: () => ({ offset: 0 }),
@@ -121,44 +69,40 @@ function mount(options = {}) {
     createBoardFilePicker, createBoardIcons, createTutorialOverlay,
     isTutorialSeen, markTutorialSeen, advanceTutorial, measureTourTarget,
     tourHoldsNotePanel, tourInsertMode, quantityTutorialSteps, geometryTutorialSteps,
-    placeFigure, captionPosition,
+    placeFigure, captionPosition, captionBox, visibleCaption,
     createBoardControls,
-    geometryHiddenPoints, geometryCaptionLabel, geometryPointLabel, geometryPointDot, geometryStroke,
-    geometryTextOverflow, geometryFrame,
+    geometryHiddenPoints, geometryCaptionLabel, geometryPointLabel, geometryPointDot, geometryShapeNode, geometryStroke,
+    geometryTextOverflow, geometryFrame, geometryFrameInputs,
   };
   const quantityPage = () => createBoardView(React, M, ctx, t, '', createShapeArt(React), applyHostConfig, T, shared);
   const geometryPage = () => createGeometryPage(React, G, ctx, t, shared);
   const demoPage = () => createGeometryDemoPage(React, G, t, shared);
   // The shell draws the shared brand mark, so the quantity page hands it in.
-  const TeacherReference = createTeacherReferenceView(React, t, createReferenceModel());
   const Board = createTabbedBoardView(React, t, '', {
     quantity: quantityPage, geometry: geometryPage, demo: demoPage,
-    mark: (size) => quantityPage().Mark(size), TeacherReference,
+    mark: (size) => quantityPage().Mark(size)
   }, (view) => readDemoView(G, view));
   const props = { sessionId: 'tabbed', useProjection: options.useProjection || (() => null), useInput: () => 'plain', inputActions };
 
   const h = React.createElement;
+  // A function component becomes its output; its hooks run against its own slots.
   function expand(node) {
     if (!node || typeof node !== 'object') return node;
     if (typeof node.type === 'function') {
-      const store = storeFor(node.type);
-      const previous = active; const previousEffects = store.effects;
-      active = store; store.cursor = 0; store.effects = [];
-      let output;
-      try { output = node.type(node.props); } finally {
-        effects.push(...store.effects);
-        store.effects = previousEffects;
-        active = previous;
-      }
-      return expand(output);
+      const previous = hooks.current;
+      hooks.current = storeFor(node.type);
+      try { return expand(node.type(node.props)); } finally { hooks.current = previous; }
     }
     return { ...node, children: (node.children || []).flat(Infinity).map(expand) };
   }
+  // The tree the harness renders: the shell, with every page expanded into plain nodes.
+  // The shared hooks re-render a tree through this same function, so effects queue where
+  // each component's own slots live and settle before a test looks at the result.
+  const build = () => buildTree();
+  function buildTree() { return expand(h(Board, props)); }
   function render() {
-    dirty = false;
-    effects.length = 0;
-    tree = expand(h(Board, props));
-    for (const node of walk(tree)) if (node.props.ref && typeof node.props.ref === 'object') {
+    const rendered = renderTree(build);
+    for (const node of walk(rendered)) if (node.props.ref && typeof node.props.ref === 'object') {
       const ref = node.props.ref;
       if (!dom.has(ref)) dom.set(ref, {
         open: false, ownerDocument: { activeElement: null }, href: '',
@@ -167,11 +111,22 @@ function mount(options = {}) {
       });
       ref.current = dom.get(ref);
     }
-    effects.splice(0).forEach((effect) => effect());
+    tree = rendered;
+    return tree;
   }
   function refresh() {
-    let iterations = 0;
-    do { render(); assert.ok(++iterations < 20, 'Effects should settle'); } while (dirty);
+    const rendered = refreshTree(build);
+    for (const node of walk(rendered)) if (node.props.ref && typeof node.props.ref === 'object') {
+      const ref = node.props.ref;
+      if (!dom.has(ref)) dom.set(ref, {
+        open: false, ownerDocument: { activeElement: null }, href: '',
+        showModal() { this.open = true; }, close() { this.open = false; },
+        contains: () => false, focus() {}, select() {}, click() {},
+      });
+      ref.current = dom.get(ref);
+    }
+    tree = rendered;
+    return tree;
   }
   // Both tabs stay mounted; queries see only the visible panel so each tab's own
   // controls are unambiguous (the hidden tab is a separate canvas and toolbar).
@@ -268,14 +223,13 @@ function mount(options = {}) {
     keydown(key, target) {
       let prevented = false;
       const event = { key, target, preventDefault() { prevented = true; } };
-      for (const handler of documentListeners.get('keydown') || []) handler(event);
+      pressKey(key, { target });
       refresh();
       return prevented;
     },
     // Browser order: keydown, then the dialog's cancel event.
     escape() {
-      const event = { key: 'Escape', preventDefault() {} };
-      for (const handler of documentListeners.get('keydown') || []) handler(event);
+      pressKey('Escape');
       find((node) => node.type === 'dialog').props.onCancel?.({ preventDefault() {} });
       refresh();
     },
@@ -283,18 +237,16 @@ function mount(options = {}) {
       return find((node) => node.type === 'dialog').props.ref.current.open;
     },
     unmount() {
-      for (const store of stores.values()) for (const slot of store.slots) slot?.cleanup?.();
-      globalThis.window = old.window; globalThis.localStorage = old.localStorage;
-      globalThis.document = old.document;
-      if (old.navigator) Object.defineProperty(globalThis, 'navigator', old.navigator);
-      else delete globalThis.navigator;
+      unmountPages();
+      browser.restore();
     },
   };
-  // Hit testing mirrors the view: points within 10 units, then element proximity.
+  // Hit testing mirrors the view's own point radius; it is read from the page source so the
+  // double cannot drift away from the code it stands in for.
   function hitNode(selector, x, y) {
     if (!String(selector).includes('data-point')) return null;
     const state = api.board();
-    const hit = state.points.find((point) => Math.hypot(point.x - x, point.y - y) <= 11);
+    const hit = state.points.find((point) => Math.hypot(point.x - x, point.y - y) <= POINT_HIT_RADIUS);
     return hit ? { getAttribute: () => hit.id } : null;
   }
   try { refresh(); } catch (error) { api.unmount(); throw error; }
@@ -536,8 +488,9 @@ test('a selected edge or circle stroke resizes the shape, and the first press on
     h.clickAt(200, 100);
     h.moveTo(240, 150);
     assert.equal(h.board().points.find((p) => p.id === 'p-1').y, 100, 'the drag is only a preview');
-    assert.match(String(h.find((node) => node.type === 'polygon').props.points), /140,150/);
-    assert.match(String(h.find((node) => node.type === 'polygon').props.points), /340,350/);
+    const preview = h.visibleNodes().filter((node) => node.type === 'polygon' && node.props.points?.includes('140,150'));
+    assert.equal(preview.length, 1, 'the moved rectangle is previewed where the model put it');
+    assert.match(String(preview[0].props.points), /340,350/);
     h.release(240, 150);
     assert.deepEqual(h.board().points.map((p) => [p.id, p.x, p.y]), [
       ['p-1', 140, 150], ['p-2', 340, 150], ['p-3', 340, 350], ['p-4', 140, 350],
@@ -646,8 +599,13 @@ test('the rectangle tool draws the sides when the third click is not a right ang
     const board = h.board();
     assert.equal(board.elements.length, 1);
     assert.equal(board.elements[0].type, 'rectangle');
-    assert.equal(board.points.length, 4, 'the fourth corner is drawn with the three clicks');
-    const polygon = h.find((node) => node.type === 'polygon');
+    assert.equal(board.points.length, 4, 'the three corners plus the derived fourth');
+    // The crooked click was only a height, so it is not left behind as a stray dot.
+    assert.equal(board.points.filter((point) => point.kind === 'free').length, 3);
+    assert.ok(!board.points.some((point) => point.x === 360 && point.y === 320));
+    const polygons = h.visibleNodes().filter((node) => node.type === 'polygon');
+    assert.equal(polygons.length, 1, 'one closed outline is drawn for the rectangle');
+    const [polygon] = polygons;
     assert.equal(String(polygon.props.points).trim().split(/\s+/).length, 4, 'the rectangle is a closed outline');
     assert.equal(polygon.props.fill, 'none');
     assert.ok(polygon.props.stroke);

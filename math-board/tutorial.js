@@ -30,6 +30,8 @@ export function tourHoldsNotePanel(tour) {
 /**
  * Insert under an active tour: `practice` advances without attaching, `block` ignores
  * the click (including keyboard activation under the mask), `null` allows a real insert.
+ * The button is hidden by the mask on every earlier step, so a blocked press is only the
+ * keyboard path; the insert step itself never attaches a file.
  */
 export function tourInsertMode(tour) {
   if (!tour?.steps || tour.index < 0 || tour.index >= tour.steps.length) return null;

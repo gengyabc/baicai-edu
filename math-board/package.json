@@ -21,6 +21,7 @@
     "reference-model.js",
     "board-schema.js",
     "board-kit.js",
+    "tool-projection.js",
     "capabilities.js",
     "reference-bridge.js",
     "reference-view.js",

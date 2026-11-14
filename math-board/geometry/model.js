@@ -60,12 +60,16 @@ export function createGeometryModel() {
     if (!(distance(third, b) > EPSILON)) return null;
     return { third, fourth: fourthPoint(a, b, third) };
   }
-  // Preview and placement: null when the rectangle would flatten or leave the board.
-  const rectangleAt = (a, b, c) => {
-    const placed = a && b && c ? rectangleThird(a, b, c) : null;
-    if (!placed || !inside(placed.third) || !inside(placed.fourth)) return null;
-    return placed;
-  };
+  // What a third click means to a rectangle, in one place: where its right-angle corner
+  // goes, and whether the clicked point is that corner. `keepId` is the clicked free point
+  // when it already sits on the corner, so a shared vertex is never relocated; otherwise the
+  // shape takes a new corner and the click point is not part of it.
+  function rectanglePlacement(a, b, click, hit = null) {
+    const placed = a && b && click ? rectangleThird(a, b, click) : null;
+    if (!placed) return null;
+    const keep = hit && distance(hit, placed.third) <= EPSILON ? hit.id : null;
+    return { third: placed.third, fourth: placed.fourth, keepId: keep };
+  }
   // A rectangle's three inputs P1 P2 P3 are perpendicular at their middle corner, so its
   // construction fixes all four right angles no matter which corner the student dragged.
   const rectangleValid = ([a, b, c]) => {
@@ -86,6 +90,15 @@ export function createGeometryModel() {
     parallelogram: parallelogramValid,
     rectangle: rectangleValid,
   };
+  // Two segments cross or touch where they overlap, which a simple ring never allows. A
+  // corner a segment merely sits on counts as well: the ring passes through it.
+  const segmentsMeet = (a, b, c, d) => cross(a, b, c) * cross(a, b, d) <= 0 && cross(c, d, a) * cross(c, d, b) <= 0;
+  // Two shapes may not overlap, but one touching the other is a shared vertex, not a clash.
+  const segmentsCrowd = (a, b, c, d) => {
+    if (!segmentsMeet(a, b, c, d)) return false;
+    const same = (p, q) => Math.abs(p.x - q.x) <= EPSILON && Math.abs(p.y - q.y) <= EPSILON;
+    return !((same(a, c) || same(a, d) || same(b, c) || same(b, d)));
+  };
   // A polygon must be a simple ring: adjacent vertices apart, and no two edges crossing.
   const polygonDegenerate = (points) => {
     const ring = [...points, points[0]];
@@ -99,7 +112,7 @@ export function createGeometryModel() {
       for (let j = i + 2; j < edges.length; j++) {
         if (i === 0 && j === edges.length - 1) continue;
         const [a, b] = edges[i], [c, d] = edges[j];
-        if (cross(a, b, c) * cross(a, b, d) <= 0 && cross(c, d, a) * cross(c, d, b) <= 0) return true;
+        if (segmentsMeet(a, b, c, d)) return true;
       }
     }
     return false;
@@ -230,6 +243,78 @@ export function createGeometryModel() {
     }
     return good;
   }
+  // The same walk along a fraction of one requested move: try the whole move, then halve
+  // until the last accepted fraction is found. `placed(t)` answers the legal board at
+  // fraction `t`, or null when the model cannot place it there.
+  function lastLegalFraction(placed, fallback) {
+    const direct = placed(1);
+    if (direct) return direct;
+    let best = placed(0) || fallback();
+    let lo = 0, hi = 1;
+    for (let step = 0; step < 40; step++) {
+      const mid = (lo + hi) / 2;
+      const got = placed(mid);
+      if (got) { best = got; lo = mid; } else hi = mid;
+    }
+    return best;
+  }
+  const isPointIdle = (canonical, id) => !pointReferenced(canonical, id);
+  function makeIdle(canonical) {
+    const spare = new Set();
+    let board = canonical;
+    for (const point of canonical.points) {
+      if (isPointIdle(board, point.id)) { spare.add(point.id); continue; }
+      const moved = { ...point, x: -1000 - (spare.size + 1) * 10, y: -1000 };
+      try { board = validate({ ...board, points: board.points.map((p) => (p.id === point.id ? moved : p)) }); spare.add(point.id); }
+      catch { /* keep it where it is; the shape test below still runs */ }
+    }
+    return { board, spare };
+  }
+  function restoreIdle(from, board, spare) {
+    const back = new Map(from.points.map((p) => [p.id, p]));
+    return validate({ ...board, points: board.points.map((p) => (spare.has(p.id) && back.has(p.id)
+      ? { ...p, x: back.get(p.id).x, y: back.get(p.id).y } : p)) });
+  }
+  // Whether a drag is legal: a shape must stay simple, so a polygon may not cross itself and
+  // no two shapes may overlap. Points that take no part in any shape step aside for the
+  // test, so a lone dot inside a triangle is never mistaken for a crossing.
+  function layoutHolds(canonical, next) {
+    const { board, spare } = makeIdle(next);
+    const shapes = board.elements.filter((e) => e.type !== 'text');
+    for (const element of shapes) {
+      if (element.type === 'circle') continue;
+      const ring = (element.points || []).map((id) => board.points.find((p) => p.id === id)).filter(Boolean);
+      if (element.type === 'polygon' && ring.length >= 3 && polygonDegenerate(ring)) return false;
+      const edges = shapeEdges(element).map(([a, b]) => [board.points.find((p) => p.id === a), board.points.find((p) => p.id === b)]);
+      if (edges.some(([a, b]) => !a || !b)) return false;
+      // A ring also stays simple: four corners cannot fold onto one line or across their
+      // own edges, however far one side is dragged toward the other.
+      if (element.type !== 'segment' && edges.some(([a, b]) => distance(a, b) <= EPSILON)) return false;
+      // A ring keeps its own order: no side may fold over another, which is what happens
+      // when one side is pushed past the side next to it.
+      for (let i = 0; i < edges.length && element.type !== 'segment'; i++) {
+        for (let j = i + 2; j < edges.length; j++) {
+          if (i === 0 && j === edges.length - 1) continue;
+          const [a, b] = edges[i], [c, d] = edges[j];
+          if (segmentsMeet(a, b, c, d)) return false;
+        }
+      }
+    }
+    // Then no two shapes may cross each other. Only sharing a corner is allowed, so the
+    // same shape compared with itself is skipped and shared vertices do not count.
+    const segments = shapes.map((element) => ({
+      id: element.id,
+      edges: shapeEdges(element).map(([a, b]) => [board.points.find((p) => p.id === a), board.points.find((p) => p.id === b)]),
+    }));
+    for (let i = 0; i < segments.length; i++) {
+      for (let j = i + 1; j < segments.length; j++) {
+        for (const [a, b] of segments[i].edges) {
+          for (const [c, d] of segments[j].edges) if (segmentsCrowd(a, b, c, d)) return false;
+        }
+      }
+    }
+    return Boolean(restoreIdle(canonical, board, spare));
+  }
   // A drag on a quadrilateral corner holds the diagonally opposite corner still (spec §3).
   // The dragged corner follows the pointer, its opposite corner stays, and the other two
   // corners are recomputed about the shared diagonal midpoint. That is the same rule for a
@@ -270,12 +355,13 @@ export function createGeometryModel() {
       const placed = new Map([[id, t],
         [turning[0].id, { x: m.x + (same ? turned.x : -turned.x), y: m.y + (same ? turned.y : -turned.y) }],
         [turning[1].id, { x: m.x - (same ? turned.x : -turned.x), y: m.y - (same ? turned.y : -turned.y) }]]);
-      return validate({ ...canonical, points: canonical.points.map((p) => {
+      const tried = { ...canonical, points: canonical.points.map((p) => {
         const at = placed.get(p.id);
         if (!at) return p;
         // Free corners only move inside the board; the derived corner is checked there too.
         return inside(at) ? { ...p, x: at.x, y: at.y } : fail('Invalid coordinate');
-      }) });
+      }) };
+      return layoutHolds(canonical, tried) ? validate(tried) : fail('Invalid coordinate');
     };
     const start = { x: owner.x, y: owner.y };
     const legal = (t) => {
@@ -297,8 +383,15 @@ export function createGeometryModel() {
     const diagonal = diagonalMove(canonical, id, target);
     if (diagonal) return diagonal;
     const at = ({ x, y }) => ({ ...point, x, y });
-    const shapeAt = (coordinate) => validate({ ...canonical, points: canonical.points.map((p) => p.id === id ? at(coordinate) : p) });
-    const legal = ({ x, y }) => allowed(canonical, id, at({ x, y }));
+    const shapeAt = (coordinate) => {
+      const next = validate({ ...canonical, points: canonical.points.map((p) => p.id === id ? at(coordinate) : p) });
+      if (!layoutHolds(canonical, next)) fail('Invalid coordinate');
+      return next;
+    };
+    // A lone point that a shape still uses may not be dragged across another shape, so the
+    // legal test is the shape test, not just the coordinate.
+    const legal = ({ x, y }) => allowed(canonical, id, at({ x, y })) && layoutHolds(canonical,
+      validate({ ...canonical, points: canonical.points.map((p) => p.id === id ? at({ x, y }) : p) }));
     const clamped = { x: Math.max(MARGIN, Math.min(WIDTH - MARGIN, target.x)),
       y: Math.max(MARGIN, Math.min(HEIGHT - MARGIN, target.y)) };
     if (legal(clamped)) return shapeAt(clamped);
@@ -355,26 +448,20 @@ export function createGeometryModel() {
         shifts.set(rim.id, { x: rim.x + dx, y: rim.y + dy });
       }
     }
-    return validate({ ...canonical, points: canonical.points.map((p) => {
+    const next = validate({ ...canonical, points: canonical.points.map((p) => {
       const at = shifts.get(p.id);
       return at ? { ...p, x: at.x, y: at.y } : p;
     }) });
+    // A translate may not step one shape across another either.
+    if (!layoutHolds(canonical, next)) fail('The shape cannot move there');
+    return next;
   }
   const placeEdge = (canonical, aId, bId, vector) => shiftFree(canonical, [aId, bId], vector);
   function slide(canonical, ids, vector) {
     const placed = (t) => {
       try { return shiftFree(canonical, ids, { x: vector.x * t, y: vector.y * t }); } catch { return null; }
     };
-    const direct = placed(1);
-    if (direct) return direct;
-    let best = placed(0) || validate(canonical);
-    let lo = 0, hi = 1;
-    for (let step = 0; step < 40; step++) {
-      const mid = (lo + hi) / 2;
-      const got = placed(mid);
-      if (got) { best = got; lo = mid; } else hi = mid;
-    }
-    return best;
+    return lastLegalFraction(placed, () => validate(canonical));
   }
   function translatePoints(canonical, action) {
     if (!Array.isArray(action.ids) || !action.ids.length || action.ids.length > 300 || new Set(action.ids).size !== action.ids.length) {
@@ -384,35 +471,11 @@ export function createGeometryModel() {
     for (const id of action.ids) canonical.points.find((p) => p.id === id) || fail('Unknown point');
     return slide(canonical, action.ids, { x: action.dx, y: action.dy });
   }
-  // Shoelace sum. Its sign is the ring's winding; a resize must not flip the shape
-  // through its opposite side, and no side may shrink to the degenerate threshold.
-  function signedArea(points) {
-    let sum = 0;
-    for (let i = 0; i < points.length; i++) {
-      const p = points[i], q = points[(i + 1) % points.length];
-      sum += p.x * q.y - q.x * p.y;
-    }
-    return sum;
-  }
-  function edgeHolds(canonical, next, elementId) {
-    const element = next.elements.find((e) => e.id === elementId);
-    if (!element?.points || element.type === 'segment') return true;
-    const ring = (board, item) => item.points.map((id) => board.points.find((p) => p.id === id));
-    const before = ring(canonical, canonical.elements.find((e) => e.id === elementId));
-    const after = ring(next, element);
-    const start = signedArea(before);
-    if (start * signedArea(after) <= 0) return false;
-    for (let i = 0; i < after.length; i++) {
-      if (distance(after[i], after[(i + 1) % after.length]) <= EPSILON) return false;
-    }
-    return true;
-  }
   function moveEdge(canonical, action) {
-    const element = canonical.elements.find((e) => e.id === action.id) || fail('Unknown element');
-    const edges = shapeEdges(element);
-    if (!Number.isInteger(action.index) || action.index < 0 || action.index >= edges.length) fail('Unknown element');
+    const edge = edgeAt(canonical, action);
+    const { element, index } = edge;
     if (!finite(action.dx) || !finite(action.dy)) fail('Invalid coordinate');
-    const [aId, bId] = edges[action.index];
+    const [aId, bId] = shapeEdges(element)[index];
     const a = canonical.points.find((p) => p.id === aId);
     const b = canonical.points.find((p) => p.id === bId);
     let vector = { x: action.dx, y: action.dy };
@@ -424,23 +487,27 @@ export function createGeometryModel() {
       const along = vector.x * nx + vector.y * ny;
       vector = { x: along * nx, y: along * ny };
     }
+    // A drag on a side moves both of its ends. The side may not come closer than the
+    // degenerate threshold to the other sides it touches: that is the size limit the
+    // student can see, and it is the same threshold every other drag stops at.
+    const apart = (next) => {
+      const [aId2, bId2] = shapeEdges(element)[index];
+      const ends = [aId2, bId2].map((id) => next.points.find((p) => p.id === id));
+      const others = next.points.filter((p) => p.id !== aId2 && p.id !== bId2
+        && (element.points || []).includes(p.id));
+      return ends.every((end) => others.every((other) => distance(end, other) > EPSILON));
+    };
     const placed = (t) => {
       try {
         const next = placeEdge(canonical, aId, bId, { x: vector.x * t, y: vector.y * t });
-        return edgeHolds(canonical, next, element.id) ? next : null;
+        const ok = apart(next) && layoutHolds(canonical, next);
+        return ok ? next : null;
       } catch { return null; }
     };
     const direct = placed(1);
     if (direct) return direct;
     // The pointer asked for a size the shape cannot take. Stop at the last legal fraction.
-    let best = placed(0) || validate(canonical);
-    let lo = 0, hi = 1;
-    for (let step = 0; step < 40; step++) {
-      const mid = (lo + hi) / 2;
-      const got = placed(mid);
-      if (got) { best = got; lo = mid; } else hi = mid;
-    }
-    return best;
+    return lastLegalFraction(placed, () => validate(canonical));
   }
   function dependents(canonical, id) {
     const result = [];
@@ -463,14 +530,16 @@ export function createGeometryModel() {
     }
     return canonical.points.some((p) => p.id !== id && p.construction?.inputs.includes(id));
   }
-  /** Every point and element which disappears when `ids` are deleted, then all elements losing a point. */
+  // Every point and element which disappears when `ids` are deleted, then everything that
+  // depended on what went: a construction loses its input, an element loses a point, and a
+  // quadrilateral's derived corner loses the shape it was only there to make.
   function cascade(canonical, ids) {
     const removed = new Set(ids);
     const queue = [...ids];
     while (queue.length) {
       const current = queue.shift();
-      for (const p of canonical.points) {
-        if (p.construction?.inputs.includes(current) && !removed.has(p.id)) { removed.add(p.id); queue.push(p.id); }
+      for (const id of dependents(canonical, current)) {
+        if (!removed.has(id)) { removed.add(id); queue.push(id); }
       }
     }
     let elements = canonical.elements;
@@ -483,18 +552,16 @@ export function createGeometryModel() {
       // already took every construction that lost an input.
       for (const p of canonical.points) if (p.construction?.op === 'rectangle'
         || p.construction?.op === 'parallelogram') {
-        if (!removed.has(p.id) && !keep.some((e) => elementPoints(e).includes(p.id))) removed.add(p.id);
+        if (!removed.has(p.id) && !keep.some((e) => elementPoints(e).includes(p.id))) {
+          removed.add(p.id);
+          for (const id of dependents(canonical, p.id)) if (!removed.has(id)) removed.add(id);
+        }
       }
       elements = keep;
     }
-    // A circle that disappeared takes a rim point nothing else uses. That point is only
-    // the radius handle, so leaving it would show a dot the circle no longer explains.
-    const live = new Set(elements.map((e) => e.id));
-    const gone = new Set(canonical.elements.filter((e) => !live.has(e.id)).map((e) => e.id));
-    for (const e of canonical.elements) {
-      if (e.type !== 'circle' || live.has(e.id) || !e.radiusPointId || removed.has(e.radiusPointId)) continue;
-      if (!pointReferenced(canonical, e.radiusPointId, gone)) removed.add(e.radiusPointId);
-    }
+    // Deletion never removes geometry the student still has: a point that the remaining
+    // shapes and constructions do not use stays on the board, whether it was a circle's rim
+    // handle or a dot placed by hand. Only the cascade above takes points away.
     return { points: canonical.points.filter((p) => !removed.has(p.id)), elements, removedPoints: removed };
   }
   function deleteIds(canonical, ids) {
@@ -531,9 +598,9 @@ export function createGeometryModel() {
     return deleteIds(next, ids);
   }
   // A closed shape is a ring of edges. Index i joins point i to the next point, and the
-  // last index closes the ring. A segment is its single edge.
+  // last index closes the ring. A segment is its single edge. A circle has no edge.
   function shapeEdges(element) {
-    const ids = element.points;
+    const ids = element?.points;
     if (!ids || ids.length < 2) return [];
     if (element.type === 'segment') return [[ids[0], ids[1]]];
     if (element.type === 'circle') return [];
@@ -541,6 +608,39 @@ export function createGeometryModel() {
     for (let i = 0; i < ids.length; i++) edges.push([ids[i], ids[(i + 1) % ids.length]]);
     return edges;
   }
+  // One edge's selection key. The model owns it, so the view, the delete action and the
+  // resize gesture cannot resolve the same selection differently.
+  const edgeKey = (id, index) => `${id}#${index}`;
+  // The element and edge index a selection key names, or null when it names no live edge.
+  function parseEdgeKey(canonical, key) {
+    if (typeof key !== 'string') return null;
+    const mark = key.lastIndexOf('#');
+    if (mark <= 0) return null;
+    const elementId = key.slice(0, mark);
+    const indexText = key.slice(mark + 1);
+    const index = Number(indexText);
+    // Only the canonical spelling names an edge: "e-1#2.0" is not the key the view makes.
+    if (!Number.isInteger(index) || String(index) !== indexText) return null;
+    const element = canonical.elements.find((e) => e.id === elementId);
+    if (!element) return null;
+    const edges = shapeEdges(element);
+    if (index < 0 || index >= edges.length) return null;
+    return { element, index, points: edges[index] };
+  }
+  // One action may name an edge by its selection key ("e-1#2", as the view stores it) or by
+  // an element id plus an index; both resolve through the same parser.
+  const edgeAt = (canonical, action) => {
+    const byKey = typeof action.id === 'string' ? parseEdgeKey(canonical, action.id) : null;
+    if (byKey && (!Number.isInteger(action.index) || byKey.index === action.index)) return byKey;
+    const edge = Number.isInteger(action.index) && typeof action.id === 'string'
+      ? parseEdgeKey(canonical, edgeKey(action.id, action.index)) : null;
+    return edge || fail('Unknown element');
+  };
+  // The midpoint a side already carries, or null. One side has one midpoint, and both the
+  // button that offers the action and the model that accepts it read this rule here.
+  const midpointOf = (canonical, a, b) => canonical.points.find((p) => p.construction?.op === 'midpoint'
+    && p.construction.inputs.length === 2
+    && p.construction.inputs.includes(a) && p.construction.inputs.includes(b)) || null;
   const sameSegment = (element, a, b) => element.type === 'segment'
     && ((element.points[0] === a && element.points[1] === b) || (element.points[0] === b && element.points[1] === a));
   // Drop the named edges. Every other side of that shape becomes its own segment, and a
@@ -581,7 +681,8 @@ export function createGeometryModel() {
       board = orphans.length ? deleteIds(validate(draft), orphans) : validate(draft);
     }
     return board;
-  }  function nextId(canonical, prefix) {
+  }
+  function nextId(canonical, prefix) {
     let max = 0;
     const pattern = new RegExp(`^${prefix}-(\\d+)$`);
     const inspect = (id) => {
@@ -680,9 +781,9 @@ export function createGeometryModel() {
           let board = canonical;
           if (action.elementType === 'rectangle') {
             // The third click sets the height. Keep P1P2 and place P3 on the perpendicular
-            // through P2. Reuse the named third point only when it already sits within ε of
-            // that spot (tiny snap for an exact right angle); otherwise allocate a new free
-            // corner so a shared vertex of another shape is never relocated.
+            // through P2. The click itself is not a corner: it only asks which side and how
+            // far, so the third point is placed on the right-angle corner and the click's
+            // own point never becomes part of the shape, exactly as the preview shows.
             const [a, b, c] = orderedIds.map((ref) => board.points.find((p) => p.id === ref));
             const placed = rectangleThird(a, b, c);
             if (!placed) fail('Degenerate element');
@@ -696,6 +797,11 @@ export function createGeometryModel() {
                 x: placed.third.x, y: placed.third.y, construction: null, note: '' };
               board = validate({ ...board, points: [...board.points, thirdPoint] });
               orderedIds[2] = thirdId;
+              // The click point made for this shape, and nothing else, is no longer part of
+              // the board: leaving it behind would show a stray corner the student never drew.
+              if (isPointIdle(board, c.id)) {
+                board = validate({ ...board, points: board.points.filter((p) => p.id !== c.id) });
+              }
             }
           }
           const at = fourthPoint(...orderedIds.map((ref) => board.points.find((p) => p.id === ref)));
@@ -723,6 +829,9 @@ export function createGeometryModel() {
       case 'addMidpoint': {
         const [a, b] = [pointById(action.a), pointById(action.b)];
         if (action.a === action.b) fail('A midpoint needs two different points');
+        // A side has one midpoint. The control that offers the action is disabled when one
+        // exists, but the model is what makes it true, so a second request is refused here.
+        if (midpointOf(canonical, action.a, action.b)) fail('This side already has its midpoint');
         const at = midpoint(a, b);
         if (!inside(at)) fail('The midpoint would leave the board');
         const id = nextId(canonical, 'p');
@@ -835,8 +944,25 @@ export function createGeometryModel() {
     const dragged = next.points.find((p) => p.id === id);
     return { x: dragged.x, y: dragged.y, rims, corners };
   };
-  // Edge-drag preview. `x` and `y` are the pointer delta the student asked for;
-  // `corners` is every point the model actually moved, including a carried rim.
+  // The delta a drag actually landed, read back from the board the model returned. An edge
+  // drag is answered with the same delta when it goes through and with a shorter one when
+  // the model stopped it at a degenerate shape, so the release can commit the landing.
+  function landedDelta(canonical, next, ids) {
+    const moved = new Map(next.points.map((p) => [p.id, p]));
+    const pairs = ids
+      .map((id) => [canonical.points.find((q) => q.id === id), moved.get(id)])
+      .filter(([before, after]) => before && after);
+    if (!pairs.length) return null;
+    // The drag's own direction, read off the average motion: an edge that may only move
+    // along one axis keeps its full component there instead of averaging a zero in.
+    const moved0 = pairs[0][1].x - pairs[0][0].x, moved1 = pairs[0][1].y - pairs[0][0].y;
+    const along = Math.hypot(moved0, moved1) || 1;
+    const dx = pairs.reduce((sum, [before, after]) => sum + (after.x - before.x), 0) / pairs.length;
+    const dy = pairs.reduce((sum, [before, after]) => sum + (after.y - before.y), 0) / pairs.length;
+    return { dx: (dx * moved0 + dy * moved1) / along * (moved0 / along), dy: (dx * moved0 + dy * moved1) / along * (moved1 / along) };
+  }
+  // Edge-drag preview. `x` and `y` are the delta the student asked for; `landed` is the
+  // delta the model accepted; `corners` is every point the model actually moved.
   const constrainedEdgeMove = (board, id, index, dx, dy) => {
     const canonical = cloneBoard(board);
     let next;
@@ -847,7 +973,8 @@ export function createGeometryModel() {
         return before && (before.x !== p.x || before.y !== p.y);
       })
       .map((p) => ({ id: p.id, x: p.x, y: p.y }));
-    return { x: dx, y: dy, rims: {}, corners };
+    const delta = landedDelta(canonical, next, corners.map((c) => c.id)) || { dx: 0, dy: 0 };
+    return { x: dx, y: dy, rims: {}, corners, landed: delta };
   };
   // Whole-shape drag. Same preview shape as an edge drag: every point that actually moved.
   const constrainedTranslate = (board, ids, dx, dy) => {
@@ -884,5 +1011,9 @@ export function createGeometryModel() {
     // A view that draws text at another size measures it here, so the drawing and the
     // space reserved around it can never disagree.
     empty, validate, reduce, TEXT_MAX, textBox: (lines) => textBox(lines.length ? lines : ['']), textMetrics,
-    constrainedMove, constrainedEdgeMove, constrainedTranslate, rectangleAt, dependents: (board, id) => dependents(cloneBoard(board), id), serialize };
+    constrainedMove, constrainedEdgeMove, constrainedTranslate, serialize,
+    // Edge identity and edge lookups are the model's, so every page reads a selection the
+    // same way the actions behind it do.
+    shapeEdges, edgeKey, parseEdgeKey, edgeAt, midpointOf, rectanglePlacement,
+    dependents: (board, id) => dependents(cloneBoard(board), id) };
 }

@@ -14,7 +14,7 @@
  *
  * @returns {{
  *   button: function, iconButton: function, backButton: function, divider: function,
- *   menuItem: function, moreMenu: function, status: function, colors: object,
+ *   menuItem: function, moreMenu: function, zoomPair: function, status: function, colors: object,
  * }}
  */
 export function createBoardControls(React, t) {
@@ -63,9 +63,32 @@ export function createBoardControls(React, t) {
       className: 'eb-icon-button eb-menu-trigger', 'aria-expanded': open, title: t('moreActions'), 'aria-label': t('moreActions'),
     });
   }
+  /**
+   * The zoom pair every page docks: − , the fit label, ＋ . A press leaves the fit and steps
+   * the zoom inside [min, max]; the label returns to the fit. The step is fixed here so the
+   * three pages cannot drift apart, while each page passes the range its canvas supports.
+   */
+  function zoomPair(state, options = {}) {
+    const { min = 1, max = 4, step = 0.25 } = options;
+    const { zoom, fit } = state;
+    return [
+      button('−', () => state.setFit(false, Math.max(min, zoom - step)), {
+        className: 'eb-zoom-button eb-zoom-out', 'aria-label': t('zoomOut'), title: t('zoomOut'),
+        disabled: zoom <= min,
+      }),
+      button(fit ? t('fitView') : `${Math.round(zoom * 100)}%`, () => state.setFit(!fit), {
+        className: 'eb-zoom-label', 'aria-label': t('fitView'), 'aria-pressed': fit, title: t('fitView'),
+      }),
+      button('＋', () => state.setFit(false, Math.min(max, zoom + step)), {
+        className: 'eb-zoom-button eb-zoom-in', 'aria-label': t('zoomIn'), title: t('zoomIn'),
+        disabled: zoom >= max,
+      }),
+    ];
+  }
+
   /** The status line every page shows for the same few seconds. */
   function status(text) {
     return text ? h('div', { className: 'eb-status-toast', role: 'status', 'aria-live': 'polite' }, text) : null;
   }
-  return { ...BOARD_COLORS, colors: BOARD_COLORS, button, iconButton, backButton, divider, menuItem, moreMenu, status };
+  return { ...BOARD_COLORS, colors: BOARD_COLORS, button, iconButton, backButton, divider, menuItem, moreMenu, zoomPair, status };
 }

@@ -230,8 +230,10 @@ test('a rectangle click that misses the right angle still closes the rectangle',
   b = shape(b, 'rectangle', ['p-1', 'p-2', 'p-3']);
   assert.equal(b.elements.length, 1);
   assert.equal(b.elements[0].type, 'rectangle');
+  // The click itself was never a corner of the rectangle, so it does not survive as a stray
+  // point beside it: the click point made only for this shape is dropped with the skew.
   assert.deepEqual(b.elements[0].points, ['p-1', 'p-2', 'p-4', 'p-5']);
-  assert.deepEqual([at(b, 'p-3').x, at(b, 'p-3').y], [360, 320], 'the skewed seed stays put');
+  assert.equal(at(b, 'p-3'), undefined, 'the crooked click point does not stay behind');
   const [a, corner, c, d] = ['p-1', 'p-2', 'p-4', 'p-5'].map((id) => at(b, id));
   assert.deepEqual([a.x, a.y, corner.x, corner.y], [120, 140, 340, 160]);
   const side = { x: a.x - corner.x, y: a.y - corner.y };
@@ -408,6 +410,50 @@ test('deleting a circle drops a rim point that only defined the radius', () => {
   assert.deepEqual(circleGone.points.map((p) => p.id), ['p-1', 'p-2']);
 });
 
+test('deleting a circle never takes a dot the student placed by hand', () => {
+  // Both handles were drawn as free points; the rim one is not a hidden radius handle of
+  // anything else, but it is still the student's dot and only the deletion may remove it.
+  const circle = shape(add(add(G.empty(), 200, 200), 320, 200), 'circle', [], { centerPointId: 'p-1', radiusPointId: 'p-2' });
+  const removed = G.reduce(circle, { type: 'deleteElement', id: 'e-1' });
+  assert.deepEqual(removed.elements, []);
+  assert.deepEqual(removed.points.map((p) => p.id), ['p-1'], 'the rim point went only because the circle owned it');
+  const kept = G.reduce(circle, { type: 'delete', ids: ['p-1'] });
+  assert.deepEqual(kept.points.map((p) => p.id), ['p-2'], 'the rim dot the student placed stays on the board');
+});
+
+test('deleting a segment takes a midpoint that only named its ends, never a free dot', () => {
+  const alone = shape(add(add(G.empty(), 100, 100), 300, 160), 'segment', ['p-1', 'p-2']);
+  const withLone = G.reduce(alone, { type: 'addPoint', x: 420, y: 90 });
+  const removed = G.reduce(withLone, { type: 'delete', ids: ['e-1'] });
+  assert.deepEqual(removed.points.map((p) => p.id), ['p-3'], 'an unrelated dot is not swept up with the shape');
+  // A midpoint is a construction on the segment's ends: losing the segment does not lose
+  // it, because its own two inputs are still on the board.
+  let mid = G.reduce(shape(add(add(G.empty(), 100, 100), 300, 160), 'segment', ['p-1', 'p-2']),
+    { type: 'addMidpoint', a: 'p-1', b: 'p-2' });
+  mid = G.reduce(mid, { type: 'deleteElement', id: 'e-1' });
+  assert.deepEqual(mid.points.map((p) => p.id).sort(), ['p-1', 'p-2', 'p-3']);
+});
+
+test('a side has one midpoint, and the model is what refuses the second', () => {
+  const b = shape(add(add(G.empty(), 100, 100), 300, 160), 'segment', ['p-1', 'p-2']);
+  const once = G.reduce(b, { type: 'addMidpoint', a: 'p-1', b: 'p-2' });
+  assert.ok(G.midpointOf(once, 'p-1', 'p-2'));
+  assert.ok(G.midpointOf(once, 'p-2', 'p-1'), 'the two ends name the same side');
+  assert.throws(() => G.reduce(once, { type: 'addMidpoint', a: 'p-1', b: 'p-2' }), /already has its midpoint/);
+  assert.throws(() => G.reduce(once, { type: 'addMidpoint', a: 'p-2', b: 'p-1' }), /already has its midpoint/);
+  assert.equal(G.midpointOf(b, 'p-1', 'p-2'), null);
+});
+
+test('edge keys are parsed the way the view writes them', () => {
+  const rect = rectangle();
+  assert.deepEqual(G.shapeEdges(rect.elements[0]), [['p-1', 'p-2'], ['p-2', 'p-3'], ['p-3', 'p-4'], ['p-4', 'p-1']]);
+  assert.equal(G.edgeKey('e-1', 2), 'e-1#2');
+  assert.deepEqual(G.parseEdgeKey(rect, 'e-1#2').points, ['p-3', 'p-4']);
+  for (const bad of ['e-1#2.0', 'e-1#-1', 'e-1#4', 'e-9#0', 'e-1', '#1', undefined]) {
+    assert.equal(G.parseEdgeKey(rect, bad), null, `${bad} names no live edge`);
+  }
+});
+
 test('construction DAGs reject cycles, missing inputs and non-free inputs', () => {
   const base = add(add(add(G.empty(), 100, 100), 300, 200), 500, 300);
   // A point may not construct itself from itself.
@@ -582,7 +628,12 @@ test('dragging an edge resizes that side and leaves the opposite side fixed', ()
     assert.ok(near(dot(ring[o], ring[u], ring[v]), 0), 'every corner stays right-angled');
   }
   // Pulling the same edge through the opposite side stops short of a flat rectangle.
-  const flat = G.reduce(rect, { type: 'moveEdge', id: 'e-1', index: 0, dx: 0, dy: 400 });
+  // A pull reaches the last legal position before the board edge.
+  const offBoard = G.reduce(rect, { type: 'moveEdge', id: 'e-1', index: 0, dx: 0, dy: 400 });
+  assert.ok(at(offBoard, 'p-1').y > 300 && at(offBoard, 'p-1').y < 600 - 24 + 1);
+  assert.equal(at(offBoard, 'p-3').y, 300, 'the opposite edge stays');
+  // Within the board, the side stops at the degenerate threshold and never folds over.
+  const flat = G.reduce(rect, { type: 'moveEdge', id: 'e-1', index: 0, dx: 0, dy: 200 });
   const height = at(flat, 'p-3').y - at(flat, 'p-1').y;
   assert.ok(height > 0.4 && height < 2, 'the drag stops at the threshold');
   assert.equal(at(flat, 'p-3').y, 300);
@@ -682,11 +733,30 @@ test('a derived corner outside the free-point box stops at the margin', () => {
 test('an edge-drag preview matches the board the release commits', () => {
   const rect = rectangle();
   const preview = G.constrainedEdgeMove(rect, 'e-1', 0, 40, 50);
-  assert.deepEqual(Object.keys(preview).sort(), ['corners', 'rims', 'x', 'y']);
+  assert.deepEqual(Object.keys(preview).sort(), ['corners', 'landed', 'rims', 'x', 'y']);
   const committed = G.reduce(rect, { type: 'moveEdge', id: 'e-1', index: 0, dx: 40, dy: 50 });
   assert.deepEqual(preview.corners.map((c) => c.id).sort(), ['p-1', 'p-2']);
   for (const corner of preview.corners) {
     assert.deepEqual([corner.x, corner.y], [at(committed, corner.id).x, at(committed, corner.id).y]);
+  }
+  // A rectangle's side may only move along its own normal, so the free 40 across the side
+  // is dropped: the landing is the height it actually changed.
+  assert.deepEqual([preview.landed.dx, preview.landed.dy], [0, 50]);
+});
+
+test('a stopped edge drag reports the delta it actually landed, not the pointer', () => {
+  const rect = rectangle();
+  // Growing the left side upward would push the derived corner past the top of the board;
+  // the model stops the drag short of that.
+  const asked = 400;
+  const preview = G.constrainedEdgeMove(rect, 'e-1', 0, 0, -asked);
+  assert.ok(preview.landed.dy < 0 && preview.landed.dy > -asked, 'the landing is shorter than the request');
+  // Releasing with the landed delta reproduces the position the student was shown.
+  const committed = G.reduce(rect, { type: 'moveEdge', id: 'e-1', index: 0, dx: preview.landed.dx, dy: preview.landed.dy });
+  for (const corner of preview.corners) {
+    const landed = at(committed, corner.id);
+    assert.ok(Math.abs(landed.x - corner.x) < 1e-6 && Math.abs(landed.y - corner.y) < 1e-6,
+      `${corner.id} is where the preview showed it`);
   }
 });
 
@@ -757,4 +827,24 @@ test('a board file with the wrong text shape is refused instead of guessed', () 
   assert.throws(() => G.validate(wire({ id: 'e-1', type: 'text', role: 'main', note: '', x: 900, y: 10, text: 'a' })), /Invalid text/);
   // A closed shape may not borrow the text's own fields.
   assert.throws(() => G.validate(wire({ id: 'e-1', type: 'segment', role: 'main', note: '', x: 1, y: 1, points: ['p-1', 'p-2'] })), /Unknown point|own position/);
+});
+
+test('a shape may not be dragged across another, and a shared corner is not a crossing', () => {
+  const crossing = () => {
+    let b = G.empty();
+    for (const [x, y] of [[100, 100], [400, 100], [100, 300], [400, 300]]) b = add(b, x, y);
+    b = shape(b, 'segment', ['p-1', 'p-2']);
+    return shape(b, 'segment', ['p-3', 'p-4']);
+  };
+  // Dragging C up through AB would cross it; the drag stops at the crossing.
+  const stopped = G.constrainedMove(crossing(), 'p-3', 150, 50);
+  assert.ok(Math.round(stopped.y) === 100 && stopped.x < 200, 'the moving side stops at the one it meets');
+  // A polygon and a segment that share a vertex are two shapes, not a clash.
+  let shared = G.empty();
+  for (const [x, y] of [[100, 100], [300, 100], [100, 300]]) shared = add(shared, x, y);
+  shared = shape(shared, 'polygon', ['p-1', 'p-2', 'p-3']);
+  assert.equal(shape(shared, 'segment', ['p-1', 'p-2']).elements.length, 2);
+  // A dot that no shape uses is not in the way of a corner drag.
+  const dotted = add(shape(shared, 'polygon', ['p-1', 'p-2', 'p-3']), 200, 200);
+  assert.ok(G.constrainedMove(dotted, 'p-1', 120, 120));
 });

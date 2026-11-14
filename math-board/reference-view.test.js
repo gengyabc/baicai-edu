@@ -74,16 +74,16 @@ test('student can collapse a reference locally and newer references reappear wit
 
 test('shell shows no teacher diagram on the quantity or geometry tab', () => {
   const React = harness(), projectionReads = [];
-  function TeacherReference() {}
   function Quantity() {}
   function Geometry() {}
   const Shell = createTabbedBoardView(React, k => k, '', {
-    quantity: () => Quantity, geometry: () => Geometry, mark: () => null, TeacherReference,
+    quantity: () => Quantity, geometry: () => Geometry, mark: () => null
   });
   const tree = Shell({ sessionId: 's', useProjection: key => { projectionReads.push(key); return { revision: 1, reference }; } });
   assert.deepEqual(projectionReads, ['eduBoardGeometryDemo']);
   const pages = nodes(tree, n => n.type === Quantity || n.type === Geometry);
-  assert.equal(pages.flatMap(page => nodes(page.props.question, n => n.type === TeacherReference)).length, 0);
+  // No page receives a teacher diagram at all: the shell has no such prop to hand out.
+  assert.equal(pages.flatMap((page) => nodes(page.props.question, (n) => n.type?.name === 'TeacherReference')).length, 0);
   assert.ok(pages.every(page => !('reference' in page.props)), 'teacher reference never becomes student model input');
 });
 

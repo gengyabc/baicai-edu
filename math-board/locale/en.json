@@ -242,6 +242,7 @@
   "tutorialProgress": "Step {step} / {total}",
   "tutorialDone": "Tutorial finished. Use undo to remove practice marks.",
   "tutorialInsertPractice": "Practice only: when you really answer, tap Add to answer, then review and send yourself.",
+  "tutorialInsertLater": "Finish this tutorial step first; Add to answer works once the tour ends.",
   "tutorialQAddTitle": "Place a pattern",
   "tutorialQAddBody": "Tap any pattern on the left to put it on the canvas.",
   "tutorialQColorTitle": "Choose a creation colour",
