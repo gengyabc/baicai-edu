@@ -202,7 +202,7 @@ flowchart LR
 
 五类支持只返回 action / observe / exit / support_update，当前专门会话或通用会话仍是唯一主导者。支持可叠加当前任务；无任务时 activity 为 support，不补造表现。真实教学每轮至多一段；仅示范、支持或选择时可为 null。纯支持计划明确要求保存后进入 support_events，与 general_progress、专门掌握分开处理；三者仍走同一四镜像 finalize 和 marker-last 重放。
 
-细则见[支持技能](<../../learn/skills/learn-support/SKILL.md>)、[会话结构](<../../learn/skills/learn-data/references/session-schema.md>)和[保存协议](<../../learn/skills/learn-data/references/finalize-session.md>)。场景见[验收清单](<../../learn/tests/learning-support-scenarios.md>)、[历史支持性交流回放](<../../learn/tests/supportive-conversation-scenarios.md>)与[当前 T01–T14 评审样例](<../../learn/tests/support-understanding-cases.json>)；本轮实际验证范围见[实施报告](<../learn-support-implementation-report.md>)。静态守卫和历史合成回放不代表当前真实 Web 对话或长期效果已验证。
+细则见[支持技能](<../../learn/skills/learn-support/SKILL.md>)、[会话结构](<../../learn/skills/learn-data/references/session-schema.md>)和[保存协议](<../../learn/skills/learn-data/references/finalize-session.md>)。场景见[验收清单](<../../learn/tests/learning-support-scenarios.md>)、[历史支持性交流回放](<../../learn/tests/supportive-conversation-scenarios.md>)与[当前 T01–T14 评审样例](<../../learn/tests/support-understanding-cases.json>)。静态守卫和历史合成回放不代表当前真实 Web 对话或长期效果已验证。
 
 ### 3.2 数学调用子图
 

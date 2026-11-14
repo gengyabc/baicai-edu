@@ -2,7 +2,7 @@
 
 标签：`synthetic-agent-replay`（2026-11-09）。这不是已执行的真实学生实验，也不是独立 DSH Web 模型会话录屏。
 
-**历史基线，不是当前版本验收**：2026-11-10 的改造针对这里未充分检验的附和、连续周边追问和实际帮助缺口；保留以下输出与当时 PASS/FAIL 以便追溯，不将旧结论沿用到新规则。当前评审输入见 [T01–T14 样例](support-understanding-cases.json)，当前执行范围及待验收项目见 [实施报告](../../docs/learn-support-implementation-report.md)。
+**历史基线，不是当前版本验收**：2026-11-10 的改造针对这里未充分检验的附和、连续周边追问和实际帮助缺口；保留以下输出与当时 PASS/FAIL 以便追溯，不将旧结论沿用到新规则。当前评审输入见 [T01–T14 样例](support-understanding-cases.json)。
 
 ## 执行方式与边界
 

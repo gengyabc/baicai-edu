@@ -100,6 +100,6 @@ node scripts/install.mjs math-primary-high --profile web
 - `math-primary-low`、`math-primary-high`、`chinese-reading` 与 `english` 的 skill 会按名称加载 `learn-core`、`learn-data`、`learn-errors`。
 - 单独安装本包也能使用通用任务教学及五类支持；安装适用学科包后可使用专门教学，不自动重解释旧通用证据或热替换未完成任务。
 - 教育阶段、年级和情境可选；旧小学档案无需迁移，成人不强填小学年级。纯支持讨论可恢复；学生明确要求保存的中性计划与学科表现分开保存，仍走同一 finalize。
-- 设计与完整验收见[总体设计](<../docs/learn-support-design.md>)、[学习支持验收](<tests/learning-support-scenarios.md>)与[支持性交流回放](<tests/supportive-conversation-scenarios.md>)；静态检查与合成回放不代表真实模型教学、故障注入或纵向成效已验证。
+- 完整验收见[学习支持验收](<tests/learning-support-scenarios.md>)与[支持性交流回放](<tests/supportive-conversation-scenarios.md>)；静态检查与合成回放不代表真实模型教学、故障注入或纵向成效已验证。
 - 接入新学科：学科包提供 `<subject>-session` 与带「学科契约」节的 `<subject>-core`，再在 `learn-start` 的科目表登记；其他入口无需修改。同一学科可提供多个按年级段适配的包（数学即 `math-primary-low` 与 `math-primary-high`），由教学解析按明确年级选带（1–3 → low，4–6 → high，无明确年级回落 low），并用唯一技能名（`math-low-*` / `math-high-*`）载入和恢复，科目 id 不变。现有学科包有 `math-primary-low`、`math-primary-high`、`chinese-reading`、`english`。
 - `personal.interests` 是跨学科个性化字段，各学科 skill 都会读取；具体用法在学科包里。
