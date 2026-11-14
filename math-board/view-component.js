@@ -15,6 +15,8 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
   // The dock's 返回对话, menu rows, more-actions trigger, status line and the board's
   // colours are shared with the geometry and demo pages.
   const controls = shared.createBoardControls(React, t);
+  const useTutorial = shared.createTutorialController(React, shared);
+  const TutorialOverlay = shared.createTutorialOverlay?.(React);
   const sameIds = (a, b) => a.length === b.length && a.every((id, index) => id === b[index]);
   const sorted = (ids) => [...ids].sort();
   function swatch(shape, colorIndex, size = 30) {
@@ -66,11 +68,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     const [moreOpen, setMoreOpen] = React.useState(false);
     const [append, setAppend] = React.useState(false);
     const [dragShape, setDragShape] = React.useState(null);
-    const [tour, setTour] = React.useState(null);
-    const [tourHole, setTourHole] = React.useState(null);
     const workspaceRef = React.useRef(null);
-    const tourSpotlightRef = React.useRef(null);
-    const TutorialOverlay = shared.createTutorialOverlay?.(React);
     const toolLevel = board.settings.levels.find((level) => level.value === toolValue)
       || board.settings.levels.find((level) => level.value === 1) || board.settings.levels[0];
     const config = props.useProjection('eduBoardConfig');
@@ -127,69 +125,13 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     const reference = references.find((item) => item.key === questionKey) || references.at(-1);
     React.useEffect(() => { setQuestionExpanded(false); }, [reference?.key]);
 
-    function startQuantityTour() {
-      if (!shared.quantityTutorialSteps || !TutorialOverlay) return;
-      setMoreOpen(false);
-      setOverlay(null);
-      setTour({ mode: 'quantity', index: 0, steps: shared.quantityTutorialSteps() });
-    }
-    function finishQuantityTour() {
-      shared.markTutorialSeen?.('quantity');
-      if (tourSpotlightRef.current) {
-        tourSpotlightRef.current.classList.remove('eb-tour-spotlight');
-        tourSpotlightRef.current = null;
-      }
-      setTour(null);
-      setTourHole(null);
-      setStatus(t('tutorialDone'));
-    }
-    function signalTour(signal) {
-      if (!tour || !shared.advanceTutorial) return;
-      const next = shared.advanceTutorial(tour, signal);
-      if (next === tour) return;
-      if (next.index >= next.steps.length) finishQuantityTour();
-      else setTour(next);
-    }
     const tabActive = props.split ? props.tabActive === true : opened;
-    React.useEffect(() => {
-      if (!tabActive || !ready || tour || !shared.isTutorialSeen || !shared.quantityTutorialSteps) return;
-      // Mark seen as soon as first autoplay starts, so closing the board mid-tour
-      // does not keep reopening the coach; replay stays in「更多操作」.
-      if (!shared.isTutorialSeen('quantity')) {
-        shared.markTutorialSeen?.('quantity');
-        startQuantityTour();
-      }
-    }, [tabActive, ready]);
-    const useTourLayout = React.useLayoutEffect || React.useEffect;
-    useTourLayout(() => {
-      if (!tour || !workspaceRef.current || !shared.measureTourTarget) {
-        setTourHole(null);
-        return undefined;
-      }
-      const step = tour.steps[tour.index];
-      const measure = () => {
-        if (tourSpotlightRef.current) {
-          tourSpotlightRef.current.classList.remove('eb-tour-spotlight');
-          tourSpotlightRef.current = null;
-        }
-        const hit = shared.measureTourTarget(workspaceRef.current, step?.target);
-        if (hit?.node) {
-          hit.node.classList.add('eb-tour-spotlight');
-          tourSpotlightRef.current = hit.node;
-        }
-        setTourHole(hit);
-      };
-      measure();
-      const onResize = () => measure();
-      window.addEventListener('resize', onResize);
-      return () => {
-        window.removeEventListener('resize', onResize);
-        if (tourSpotlightRef.current) {
-          tourSpotlightRef.current.classList.remove('eb-tour-spotlight');
-          tourSpotlightRef.current = null;
-        }
-      };
-    }, [tour, overlay, board.objects.length, selection.length]);
+    const { tour, hole: tourHole, start: startQuantityTour, finish: finishQuantityTour, signal: signalTour } = useTutorial({
+      mode: 'quantity', steps: shared.quantityTutorialSteps, active: tabActive, ready, rootRef: workspaceRef,
+      onStart() { setMoreOpen(false); setOverlay(null); },
+      onFinish() { setStatus(t('tutorialDone')); },
+      layoutDeps: [overlay, board.objects.length, selection.length],
+    });
 
     React.useEffect(() => {
       revision.current++;
@@ -1003,7 +945,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
             button(t('cancel'), dismissOverlay),
             button(t('confirmClear'), confirmClearBoard, { className: 'eb-primary eb-danger-solid' })))));
     const statusNode = controls.status(status);
-    const tourNode = tour && TutorialOverlay && h(TutorialOverlay, {
+    const tourNode = tabActive && tour && TutorialOverlay && h(TutorialOverlay, {
       step: tour.steps[tour.index], stepIndex: tour.index, stepCount: tour.steps.length,
       t, hole: tourHole, onSkip: finishQuantityTour,
     });

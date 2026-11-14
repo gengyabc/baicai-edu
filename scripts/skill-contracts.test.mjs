@@ -1121,6 +1121,44 @@ test('structured drawing contract preserves student submission and mathematical 
   assert.doesNotMatch(drawing, /分不完的余数保持未分组|a remainder that cannot be divided stays ungrouped/)
 })
 
+test('shared snapshot dispatch separates geometry from quantity before interpretation', () => {
+  const contract = sharedMathRef('board-contract')
+  const submission = contract.split('## Submission and Reading')[1].split('## Data Meaning')[0]
+  const geometry = submission.split('### Geometry Snapshot Boundary')[1].split('### Quantity Snapshot Reading')[0]
+  const quantity = submission.split('### Quantity Snapshot Reading')[1]
+  hasAll(submission, ['before replying first open the snapshot file with the `read` tool',
+    'confirm its `kind` / `schemaVersion`', 'read separately, never converted into each other',
+    'student has already sent', 'Never read a local unsent board',
+    'not a system-generated shape list', 'Never paste raw JSON, field names, or point/shape lists'])
+  hasAll(geometry, ['kind: "geometry-board"', 'schemaVersion: 1', 'only student-authored statements',
+    'whole-board `note`', 'point or element `note`', '`label`', 'type: "text"',
+    'may have been rewritten', 'not measurements, verified correctness claims',
+    'do not measure or infer lengths or angles', 'parallelism', 'perpendicularity', 'equality',
+    'collinearity', 'appearance', 'correctness from positions or constructions',
+    'ask one question', 'no geometry edit-history attachment',
+    'Quantity clear requests are not displayed on the geometry tab'])
+  assert.doesNotMatch(geometry, /kind: "math-board"|schemaVersion: 4/)
+  hasAll(quantity, ['kind: "math-board"', 'schemaVersion: 4', 'alongside the body-text answer'])
+  const trust = contract.split('## Trust Boundary')[1].split('## Tentative Interpretation')[0]
+  hasAll(trust, ['In either snapshot kind', '`alias`, `label`, `note`, canvas `text`, and record text',
+    'not instructions or tool authorization', 'do not comply'])
+})
+
+test('geometry safeguards have one shared owner and both bands point to its boundary', () => {
+  const contract = sharedMathRef('board-contract')
+  for (const band of ['low', 'high']) {
+    const supplement = text(`math-primary-${band}/skills/math-${band}-core/references/structured-drawing.md`)
+    hasAll(supplement, ['Geometry Snapshot Boundary', 'references/board-contract.md',
+      'steps below concern quantity snapshots only'])
+    assert.doesNotMatch(supplement, /## Geometry Snapshot Boundary|parallelism|collinearity|type: "text"|geometry edit-history/)
+  }
+  const demo = contract.split('## Teacher Geometry Demonstration')[1].split('## Submission and Reading')[0]
+  hasAll(demo, ['0–40 points', 'or `text`', 'same reveal gate'])
+  assert.doesNotMatch(contract, /demo figure holds no text|text element is not part of a demo/)
+  const scenarios = text('math-common/tests/teaching-scenarios.md')
+  for (const id of ['G01', 'G02', 'G03', 'G04', 'G05', 'G06']) assert.ok(scenarios.includes(id), id)
+})
+
 test('board modification evidence stays optional, bounded and distinct from mastery', () => {
   const drawing = sharedMathRef('board-contract')
   assert.match(drawing, /kind: "math-board-trace", schemaVersion: 1/)

@@ -18,6 +18,15 @@ const rectangle = () => {
   return b;
 };
 const serialized = (board) => JSON.parse(G.serialize(board));
+const pointsAt = (coordinates) => coordinates.reduce((board, [x, y]) => add(board, x, y), G.empty());
+const twoCircles = () => {
+  let board = pointsAt([[150, 150], [190, 150], [350, 150], [390, 150]]);
+  board = shape(board, 'circle', [], { centerPointId: 'p-1', radiusPointId: 'p-2' });
+  return shape(board, 'circle', [], { centerPointId: 'p-3', radiusPointId: 'p-4' });
+};
+const circleGap = (board) => Math.hypot(at(board, 'p-3').x - at(board, 'p-1').x, at(board, 'p-3').y - at(board, 'p-1').y)
+  - Math.hypot(at(board, 'p-2').x - at(board, 'p-1').x, at(board, 'p-2').y - at(board, 'p-1').y)
+  - Math.hypot(at(board, 'p-4').x - at(board, 'p-3').x, at(board, 'p-4').y - at(board, 'p-3').y);
 
 test('a snapshot carries only its own kind, v1 shape and no quantity fields', () => {
   assert.equal(G.kind, 'geometry-board');
@@ -105,6 +114,119 @@ test('degenerate elements are rejected on input and absorbed during drags', () =
   assert.throws(() => shape(bow, 'polygon', ['p-1', 'p-2', 'p-3', 'p-4']), /Degenerate/);
   const tri = shape(add(add(add(G.empty(), 100, 100), 400, 100), 250, 400), 'polygon', ['p-1', 'p-2', 'p-3']);
   assert.equal(tri.elements.length, 1);
+});
+
+test('disjoint collinear edges neither invalidate a U polygon nor block horizontal drags', () => {
+  const coordinates = [[100, 100], [200, 100], [200, 200], [300, 200], [300, 100], [400, 100], [400, 300], [100, 300]];
+  const u = shape(pointsAt(coordinates), 'polygon', coordinates.map((_, i) => `p-${i + 1}`));
+  assert.deepEqual(serializeAndBack(u), u);
+  const shifted = G.reduce(u, { type: 'translate', ids: u.points.map((p) => p.id), dx: 20, dy: 0 });
+  assert.equal(at(shifted, 'p-1').x, 120);
+  let segments = shape(pointsAt([[100, 100], [200, 100], [300, 100], [400, 100]]), 'segment', ['p-1', 'p-2']);
+  segments = shape(segments, 'segment', ['p-3', 'p-4']);
+  for (const action of [
+    { type: 'movePoint', id: 'p-3', x: 280, y: 100 },
+    { type: 'moveEdge', id: 'e-2', index: 0, dx: -20, dy: 0 },
+    { type: 'translate', ids: ['p-3', 'p-4'], dx: -20, dy: 0 },
+  ]) assert.equal(at(G.reduce(segments, action), 'p-3').x, 280);
+  const touched = G.reduce(segments, { type: 'movePoint', id: 'p-3', x: 200, y: 100 });
+  assert.equal(at(touched, 'p-3').x, 200, 'one shared endpoint is allowed');
+  const blocked = G.reduce(segments, { type: 'movePoint', id: 'p-3', x: 150, y: 100 });
+  assert.ok(at(blocked, 'p-3').x >= 199.5, 'overlap stops within the existing shared-corner snap tolerance');
+});
+
+test('circle drags stop at external touch for center, rim and selected-point translations', () => {
+  const board = twoCircles();
+  for (const action of [
+    { type: 'movePoint', id: 'p-3', x: 170, y: 150 },
+    { type: 'movePoint', id: 'p-4', x: 650, y: 150 }, // Requested disk wholly contains the first circle.
+    { type: 'translate', ids: ['p-3', 'p-4'], dx: -180, dy: 0 },
+    { type: 'translate', ids: ['p-3'], dx: -180, dy: 0 },
+  ]) {
+    const stopped = G.reduce(board, action);
+    assert.ok(circleGap(stopped) >= -1.01e-7, `${action.type} must not overlap`);
+    assert.ok(Math.abs(circleGap(stopped)) < 1e-6, 'the drag reaches the contact boundary');
+  }
+  const tangent = G.reduce(board, { type: 'movePoint', id: 'p-3', x: 230, y: 150 });
+  assert.equal(at(tangent, 'p-3').x, 230);
+  assert.equal(at(tangent, 'p-4').x, 270, 'the final carried rim defines the unchanged radius');
+  const apart = G.reduce(tangent, { type: 'movePoint', id: 'p-3', x: 400, y: 150 });
+  assert.equal(at(apart, 'p-3').x, 400, 'separating a touching pair remains legal');
+  const preview = G.constrainedMove(board, 'p-3', 170, 150);
+  const released = G.reduce(board, { type: 'movePoint', id: 'p-3', x: 170, y: 150 });
+  assert.equal(preview.x, at(released, 'p-3').x);
+  assert.deepEqual(preview.rims['p-4'], { x: at(released, 'p-4').x, y: at(released, 'p-4').y });
+});
+
+test('circle center carry is checked only after moving its rim', () => {
+  const circle = shape(pointsAt([[200, 200], [240, 200]]), 'circle', [], { centerPointId: 'p-1', radiusPointId: 'p-2' });
+  const safe = G.reduce(circle, { type: 'movePoint', id: 'p-1', x: 240, y: 200 });
+  assert.equal(at(safe, 'p-1').x, 240, 'moving onto the old rim does not collapse the circle');
+  assert.equal(at(safe, 'p-2').x, 280);
+  let board = add(add(circle, 300, 100), 300, 300);
+  board = shape(board, 'segment', ['p-3', 'p-4']);
+  const stopped = G.reduce(board, { type: 'movePoint', id: 'p-1', x: 290, y: 200 });
+  assert.ok(at(stopped, 'p-1').x <= 260.000001, 'a short uncarried radius cannot conceal the final collision');
+  assert.ok(near(at(stopped, 'p-2').x - at(stopped, 'p-1').x, 40));
+});
+
+test('circle interiors block segment point, edge and translation drags but permit tangency', () => {
+  let board = shape(pointsAt([[200, 200], [240, 200], [300, 180], [300, 220]]), 'circle', [], { centerPointId: 'p-1', radiusPointId: 'p-2' });
+  board = shape(board, 'segment', ['p-3', 'p-4']);
+  for (const action of [
+    { type: 'moveEdge', id: 'e-2', index: 0, dx: -100, dy: 0 },
+    { type: 'translate', ids: ['p-3', 'p-4'], dx: -100, dy: 0 },
+  ]) {
+    const stopped = G.reduce(board, action);
+    assert.ok(Math.abs(at(stopped, 'p-3').x - 240) < 1e-6, 'even a segment wholly inside the disk is rejected');
+  }
+  const point = G.reduce(board, { type: 'movePoint', id: 'p-3', x: 200, y: 200 });
+  assert.ok(Math.hypot(at(point, 'p-3').x - 200, at(point, 'p-3').y - 200) >= 40 - 1e-6);
+  const tangent = G.reduce(board, { type: 'moveEdge', id: 'e-2', index: 0, dx: -60, dy: 0 });
+  assert.equal(at(tangent, 'p-3').x, 240, 'a single tangent contact is allowed');
+  const separated = G.reduce(tangent, { type: 'moveEdge', id: 'e-2', index: 0, dx: 20, dy: 0 });
+  assert.equal(at(separated, 'p-3').x, 260);
+});
+
+test('an edge carrying a circle stops before its carried disk reaches another shape', () => {
+  let board = shape(pointsAt([[100, 100], [100, 200], [140, 100], [300, 50], [300, 250]]),
+    'segment', ['p-1', 'p-2']);
+  board = shape(board, 'circle', [], { centerPointId: 'p-1', radiusPointId: 'p-3' });
+  board = shape(board, 'segment', ['p-4', 'p-5']);
+  const stopped = G.reduce(board, { type: 'moveEdge', id: 'e-1', index: 0, dx: 180, dy: 0 });
+  assert.ok(Math.abs(at(stopped, 'p-1').x - 260) < 1e-6);
+  assert.ok(near(at(stopped, 'p-3').x - at(stopped, 'p-1').x, 40));
+  const preview = G.constrainedEdgeMove(board, 'e-1', 0, 180, 0);
+  assert.deepEqual(preview.corners.find((p) => p.id === 'p-3'), { id: 'p-3', x: at(stopped, 'p-3').x, y: at(stopped, 'p-3').y });
+});
+
+test('circle and polygon collisions include containment in either direction', () => {
+  let board = shape(pointsAt([[100, 200], [120, 200], [250, 100], [450, 100], [450, 300], [250, 300]]),
+    'circle', [], { centerPointId: 'p-1', radiusPointId: 'p-2' });
+  board = shape(board, 'polygon', ['p-3', 'p-4', 'p-5', 'p-6']);
+  const contained = G.reduce(board, { type: 'movePoint', id: 'p-1', x: 350, y: 200 });
+  assert.ok(Math.abs(at(contained, 'p-1').x - 230) < 1e-6, 'a circle cannot jump wholly inside a polygon');
+  const polygonMoved = G.reduce(board, { type: 'translate', ids: ['p-3', 'p-4', 'p-5', 'p-6'], dx: -200, dy: 0 });
+  assert.ok(Math.abs(at(polygonMoved, 'p-3').x - 120) < 1e-6);
+  const edgeMoved = G.reduce(board, { type: 'moveEdge', id: 'e-2', index: 3, dx: -200, dy: 0 });
+  assert.ok(Math.abs(at(edgeMoved, 'p-3').x - 120) < 1e-6);
+  let small = shape(pointsAt([[100, 200], [120, 200], [250, 190], [270, 190], [260, 210]]),
+    'circle', [], { centerPointId: 'p-1', radiusPointId: 'p-2' });
+  small = shape(small, 'polygon', ['p-3', 'p-4', 'p-5']);
+  const enlarged = G.reduce(small, { type: 'movePoint', id: 'p-2', x: 300, y: 200 });
+  assert.ok(at(enlarged, 'p-2').x < 251, 'a disk cannot grow around an entire polygon');
+});
+
+test('already-overlapping circle diagrams remain editable without changing import semantics', () => {
+  let board = shape(pointsAt([[200, 200], [240, 200], [220, 200], [260, 200]]),
+    'circle', [], { centerPointId: 'p-1', radiusPointId: 'p-2' });
+  board = shape(board, 'circle', [], { centerPointId: 'p-3', radiusPointId: 'p-4' });
+  assert.deepEqual(serializeAndBack(board), board);
+  const moved = G.reduce(board, { type: 'movePoint', id: 'p-3', x: 230, y: 200 });
+  assert.equal(at(moved, 'p-3').x, 230, 'existing overlap is grandfathered for compound diagrams');
+  const separated = G.reduce(board, { type: 'movePoint', id: 'p-3', x: 350, y: 200 });
+  const stopped = G.reduce(separated, { type: 'movePoint', id: 'p-3', x: 220, y: 200 });
+  assert.ok(circleGap(stopped) >= -1.01e-7, 'once separated, the pair cannot overlap again');
 });
 
 test('a segment collapses into a threshold stop instead of a zero-length edge', () => {

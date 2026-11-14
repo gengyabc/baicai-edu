@@ -110,6 +110,69 @@ export function geometryTutorialSteps() {
   ];
 }
 
+/** Shared per-page tutorial lifecycle; drafts and page-specific resets stay with the page. */
+export function createTutorialController(React, shared) {
+  return function useTutorial({ mode, steps, active, ready, rootRef, onStart, onFinish, layoutDeps = [] }) {
+    const [tour, setTour] = React.useState(null);
+    const [hole, setHole] = React.useState(null);
+    const spotlight = React.useRef(null);
+    const clearSpotlight = () => {
+      spotlight.current?.classList.remove('eb-tour-spotlight');
+      spotlight.current = null;
+    };
+    function start() {
+      if (!steps || !shared.createTutorialOverlay) return;
+      onStart();
+      setTour({ mode, index: 0, steps: steps() });
+    }
+    function finish() {
+      shared.markTutorialSeen?.(mode);
+      clearSpotlight();
+      setTour(null);
+      setHole(null);
+      onFinish();
+    }
+    function signal(value) {
+      if (!tour || !shared.advanceTutorial) return;
+      const next = shared.advanceTutorial(tour, value);
+      if (next === tour) return;
+      if (next.index >= next.steps.length) finish();
+      else setTour(next);
+    }
+    React.useEffect(() => {
+      if (!active || !ready || tour || !steps || !shared.isTutorialSeen) return;
+      // Consume autoplay at its start; replay is explicit, even after closing mid-tour.
+      if (!shared.isTutorialSeen(mode)) {
+        shared.markTutorialSeen?.(mode);
+        start();
+      }
+    }, [active, ready, mode]);
+    const useLayout = React.useLayoutEffect || React.useEffect;
+    useLayout(() => {
+      if (!active || !tour || !rootRef.current || !shared.measureTourTarget) {
+        setHole(null);
+        return undefined;
+      }
+      const measure = () => {
+        clearSpotlight();
+        const hit = shared.measureTourTarget(rootRef.current, tour.steps[tour.index]?.target);
+        if (hit?.node) {
+          hit.node.classList.add('eb-tour-spotlight');
+          spotlight.current = hit.node;
+        }
+        setHole(hit);
+      };
+      measure();
+      window.addEventListener('resize', measure);
+      return () => {
+        window.removeEventListener('resize', measure);
+        clearSpotlight();
+      };
+    }, [active, tour, ...layoutDeps]);
+    return { tour, hole, start, finish, signal };
+  };
+}
+
 /**
  * Measure a `[data-tour-id]` target inside `root` for the spotlight hole.
  * Returns null when the node is missing or not laid out yet.

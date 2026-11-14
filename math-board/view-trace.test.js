@@ -6,6 +6,7 @@ import { createBoardModel } from './model.js';
 import { createBoardTrace } from './trace.js';
 import { createBoardFilePicker, createBoardIcons } from './file-picker.js';
 import { createBoardControls } from './board-kit.js';
+import { createTutorialController } from './tutorial.js';
 import { applyHostConfig } from './config-bridge.js';
 
 const M = createBoardModel();
@@ -91,7 +92,7 @@ function mount(options = {}) {
   // This harness's React has no refs or effects, so the icons resolve once without them.
   const iconFor = createBoardIcons({ createElement: React.createElement });
   const Board = createBoardView(React, M, ctx, t, '', createShapeArt(React), applyHostConfig, T,
-    { createBoardFilePicker, createBoardIcons: () => iconFor, createBoardControls });
+    { createBoardFilePicker, createBoardIcons: () => iconFor, createBoardControls, createTutorialController });
   const props = { sessionId: 'integration', useProjection: (name) => name === 'eduBoardClear' ? clear : config, useInput: () => 'plain', inputActions,
     useChat: (select) => select(options.chat), renderFactorySlot: options.renderFactorySlot };
   function render() {

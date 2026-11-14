@@ -19,7 +19,7 @@ import { createBoardTrace } from './trace.js';
 import { createHooks, installBrowser, text, walk } from './test-harness.js';
 import { applyHostConfig } from './config-bridge.js';
 import {
-  advanceTutorial, createTutorialOverlay, geometryTutorialSteps, isTutorialSeen,
+  advanceTutorial, createTutorialController, createTutorialOverlay, geometryTutorialSteps, isTutorialSeen,
   markTutorialSeen, measureTourTarget, quantityTutorialSteps, tourHoldsNotePanel,
   tourInsertMode, tutorialStorageKey,
 } from './tutorial.js';
@@ -66,7 +66,7 @@ function mount(options = {}) {
   storage.set(tutorialStorageKey('quantity'), '1');
   storage.set(tutorialStorageKey('geometry'), '1');
   const shared = {
-    createBoardFilePicker, createBoardIcons, createTutorialOverlay,
+    createBoardFilePicker, createBoardIcons, createTutorialController, createTutorialOverlay,
     isTutorialSeen, markTutorialSeen, advanceTutorial, measureTourTarget,
     tourHoldsNotePanel, tourInsertMode, quantityTutorialSteps, geometryTutorialSteps,
     placeFigure, captionPosition, captionBox, visibleCaption,

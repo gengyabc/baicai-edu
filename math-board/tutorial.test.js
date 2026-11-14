@@ -2,10 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import {
-  TUTORIAL_VERSION, advanceTutorial, createTutorialOverlay, geometryTutorialSteps,
+  TUTORIAL_VERSION, advanceTutorial, createTutorialController, createTutorialOverlay, geometryTutorialSteps,
   isTutorialSeen, markTutorialSeen, measureTourTarget, quantityTutorialSteps,
   tourHoldsNotePanel, tourInsertMode, tourMaskPads, tutorialStorageKey,
 } from './tutorial.js';
+
+import { createHooks, installBrowser } from './test-harness.js';
 
 const zh = JSON.parse(await readFile(new URL('./locale/zh.json', import.meta.url), 'utf8'));
 const en = JSON.parse(await readFile(new URL('./locale/en.json', import.meta.url), 'utf8'));
@@ -158,6 +160,87 @@ test('createTutorialOverlay renders tip copy, skip and pad masks', () => {
     globalThis.window = previous;
   }
 });
+
+for (const mode of ['quantity', 'geometry']) {
+  test(`${mode} controller owns autoplay, progression, spotlight cleanup and replay`, () => {
+    const browser = installBrowser();
+    const hooks = createHooks();
+    const listeners = new Set();
+    window.addEventListener = (type, handler) => { assert.equal(type, 'resize'); listeners.add(handler); };
+    window.removeEventListener = (type, handler) => { assert.equal(type, 'resize'); listeners.delete(handler); };
+    const classes = new Set();
+    let width = 40;
+    const node = {
+      classList: { add: (name) => classes.add(name), remove: (name) => classes.delete(name) },
+      getBoundingClientRect: () => ({ top: 10, left: 20, width, height: 30 }),
+    };
+    const rootRef = { current: { querySelector: () => node } };
+    let starts = 0, finishes = 0, active = false, ready = false, layoutVersion = 0;
+    const shared = { createTutorialOverlay, isTutorialSeen, markTutorialSeen, advanceTutorial, measureTourTarget };
+    const useTutorial = createTutorialController(hooks.React, shared);
+    const steps = () => [
+      { id: 'first', target: `${mode}-first`, completeOn: 'first' },
+      { id: 'last', target: `${mode}-last`, completeOn: 'last' },
+    ];
+    const render = () => hooks.refresh(({ storeFor, hooks: state }) => {
+      state.current = storeFor(useTutorial);
+      return useTutorial({ mode, steps, active, ready, rootRef,
+        onStart() { starts++; }, onFinish() { finishes++; }, layoutDeps: [layoutVersion] });
+    });
+    try {
+      assert.equal(render().tour, null);
+      active = true;
+      assert.equal(render().tour, null, 'loading does not autoplay');
+      ready = true;
+      let controller = render();
+      assert.equal(starts, 1);
+      assert.equal(controller.tour.index, 0);
+      assert.equal(isTutorialSeen(mode), true);
+      assert.equal(isTutorialSeen(mode === 'quantity' ? 'geometry' : 'quantity'), false);
+      assert.equal(listeners.size, 1);
+      assert.ok(classes.has('eb-tour-spotlight'));
+      controller.signal('wrong');
+      assert.equal(render().tour.index, 0);
+      controller.signal('first');
+      controller = render();
+      assert.equal(controller.tour.index, 1);
+      assert.equal(listeners.size, 1, 'step changes replace, not accumulate, the listener');
+      width = 70;
+      for (const listener of listeners) listener();
+      assert.equal(render().hole.width, 70);
+      layoutVersion++;
+      render();
+      assert.equal(listeners.size, 1);
+      active = false;
+      render();
+      assert.equal(classes.size, 0, 'a hidden page releases its spotlight');
+      assert.equal(listeners.size, 0);
+      active = true;
+      controller = render();
+      assert.equal(starts, 1, 'switching back resumes the same tour');
+      assert.equal(controller.tour.index, 1);
+      controller.signal('last');
+      controller = render();
+      assert.equal(controller.tour, null);
+      assert.equal(finishes, 1);
+      assert.equal(classes.size, 0);
+      assert.equal(listeners.size, 0);
+      controller.start();
+      controller = render();
+      assert.equal(starts, 2, 'explicit replay starts from the first step');
+      assert.equal(controller.tour.index, 0);
+      controller.finish();
+      controller = render();
+      assert.equal(controller.tour, null, 'Skip uses the same cleanup');
+      assert.equal(finishes, 2);
+      controller.start();
+      render();
+      hooks.unmount();
+      assert.equal(classes.size, 0, 'unmount releases the spotlight');
+      assert.equal(listeners.size, 0);
+    } finally { hooks.unmount(); browser.restore(); }
+  });
+}
 
 test('tourHoldsNotePanel and tourInsertMode are step-scoped', () => {
   const steps = quantityTutorialSteps();

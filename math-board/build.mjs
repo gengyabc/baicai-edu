@@ -20,7 +20,7 @@ import {
 import { geometryFrameInputs, geometryTextOverflow, geometryFrame } from './geometry/frame.js';
 import { createBoardControls } from './board-kit.js';
 import {
-  TUTORIAL_VERSION, advanceTutorial, createTutorialOverlay, geometryTutorialSteps,
+  TUTORIAL_VERSION, advanceTutorial, createTutorialController, createTutorialOverlay, geometryTutorialSteps,
   isTutorialSeen, markTutorialSeen, measureTourTarget, quantityTutorialSteps,
   tourHoldsNotePanel, tourInsertMode, tourMaskPads, tutorialStorageKey,
 } from './tutorial.js';
@@ -78,6 +78,7 @@ window.__ModuleLoader__.load({
     const tutorialStorageKey = ${tutorialStorageKey.toString()};
     const tourMaskPads = ${tourMaskPads.toString()};
     const createTutorialOverlay = ${createTutorialOverlay.toString()};
+    const createTutorialController = ${createTutorialController.toString()};
     const isTutorialSeen = ${isTutorialSeen.toString()};
     const markTutorialSeen = ${markTutorialSeen.toString()};
     const advanceTutorial = ${advanceTutorial.toString()};
@@ -102,7 +103,7 @@ window.__ModuleLoader__.load({
         const Browser = {
           createBoardFilePicker: createFilePicker, createBoardIcons: createIcons,
           createBoardControls,
-          createTutorialOverlay, isTutorialSeen, markTutorialSeen, advanceTutorial,
+          createTutorialController, createTutorialOverlay, isTutorialSeen, markTutorialSeen, advanceTutorial,
           measureTourTarget, tourHoldsNotePanel, tourInsertMode,
           quantityTutorialSteps, geometryTutorialSteps,
           placeFigure, captionPosition, captionBox, visibleCaption,

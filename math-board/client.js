@@ -1062,6 +1062,8 @@ window.__ModuleLoader__.load({
   // The dock's 返回对话, menu rows, more-actions trigger, status line and the board's
   // colours are shared with the geometry and demo pages.
   const controls = shared.createBoardControls(React, t);
+  const useTutorial = shared.createTutorialController(React, shared);
+  const TutorialOverlay = shared.createTutorialOverlay?.(React);
   const sameIds = (a, b) => a.length === b.length && a.every((id, index) => id === b[index]);
   const sorted = (ids) => [...ids].sort();
   function swatch(shape, colorIndex, size = 30) {
@@ -1113,11 +1115,7 @@ window.__ModuleLoader__.load({
     const [moreOpen, setMoreOpen] = React.useState(false);
     const [append, setAppend] = React.useState(false);
     const [dragShape, setDragShape] = React.useState(null);
-    const [tour, setTour] = React.useState(null);
-    const [tourHole, setTourHole] = React.useState(null);
     const workspaceRef = React.useRef(null);
-    const tourSpotlightRef = React.useRef(null);
-    const TutorialOverlay = shared.createTutorialOverlay?.(React);
     const toolLevel = board.settings.levels.find((level) => level.value === toolValue)
       || board.settings.levels.find((level) => level.value === 1) || board.settings.levels[0];
     const config = props.useProjection('eduBoardConfig');
@@ -1174,69 +1172,13 @@ window.__ModuleLoader__.load({
     const reference = references.find((item) => item.key === questionKey) || references.at(-1);
     React.useEffect(() => { setQuestionExpanded(false); }, [reference?.key]);
 
-    function startQuantityTour() {
-      if (!shared.quantityTutorialSteps || !TutorialOverlay) return;
-      setMoreOpen(false);
-      setOverlay(null);
-      setTour({ mode: 'quantity', index: 0, steps: shared.quantityTutorialSteps() });
-    }
-    function finishQuantityTour() {
-      shared.markTutorialSeen?.('quantity');
-      if (tourSpotlightRef.current) {
-        tourSpotlightRef.current.classList.remove('eb-tour-spotlight');
-        tourSpotlightRef.current = null;
-      }
-      setTour(null);
-      setTourHole(null);
-      setStatus(t('tutorialDone'));
-    }
-    function signalTour(signal) {
-      if (!tour || !shared.advanceTutorial) return;
-      const next = shared.advanceTutorial(tour, signal);
-      if (next === tour) return;
-      if (next.index >= next.steps.length) finishQuantityTour();
-      else setTour(next);
-    }
     const tabActive = props.split ? props.tabActive === true : opened;
-    React.useEffect(() => {
-      if (!tabActive || !ready || tour || !shared.isTutorialSeen || !shared.quantityTutorialSteps) return;
-      // Mark seen as soon as first autoplay starts, so closing the board mid-tour
-      // does not keep reopening the coach; replay stays in「更多操作」.
-      if (!shared.isTutorialSeen('quantity')) {
-        shared.markTutorialSeen?.('quantity');
-        startQuantityTour();
-      }
-    }, [tabActive, ready]);
-    const useTourLayout = React.useLayoutEffect || React.useEffect;
-    useTourLayout(() => {
-      if (!tour || !workspaceRef.current || !shared.measureTourTarget) {
-        setTourHole(null);
-        return undefined;
-      }
-      const step = tour.steps[tour.index];
-      const measure = () => {
-        if (tourSpotlightRef.current) {
-          tourSpotlightRef.current.classList.remove('eb-tour-spotlight');
-          tourSpotlightRef.current = null;
-        }
-        const hit = shared.measureTourTarget(workspaceRef.current, step?.target);
-        if (hit?.node) {
-          hit.node.classList.add('eb-tour-spotlight');
-          tourSpotlightRef.current = hit.node;
-        }
-        setTourHole(hit);
-      };
-      measure();
-      const onResize = () => measure();
-      window.addEventListener('resize', onResize);
-      return () => {
-        window.removeEventListener('resize', onResize);
-        if (tourSpotlightRef.current) {
-          tourSpotlightRef.current.classList.remove('eb-tour-spotlight');
-          tourSpotlightRef.current = null;
-        }
-      };
-    }, [tour, overlay, board.objects.length, selection.length]);
+    const { tour, hole: tourHole, start: startQuantityTour, finish: finishQuantityTour, signal: signalTour } = useTutorial({
+      mode: 'quantity', steps: shared.quantityTutorialSteps, active: tabActive, ready, rootRef: workspaceRef,
+      onStart() { setMoreOpen(false); setOverlay(null); },
+      onFinish() { setStatus(t('tutorialDone')); },
+      layoutDeps: [overlay, board.objects.length, selection.length],
+    });
 
     React.useEffect(() => {
       revision.current++;
@@ -2050,7 +1992,7 @@ window.__ModuleLoader__.load({
             button(t('cancel'), dismissOverlay),
             button(t('confirmClear'), confirmClearBoard, { className: 'eb-primary eb-danger-solid' })))));
     const statusNode = controls.status(status);
-    const tourNode = tour && TutorialOverlay && h(TutorialOverlay, {
+    const tourNode = tabActive && tour && TutorialOverlay && h(TutorialOverlay, {
       step: tour.steps[tour.index], stepIndex: tour.index, stepCount: tour.steps.length,
       t, hole: tourHole, onSkip: finishQuantityTour,
     });
@@ -3731,7 +3673,11 @@ window.__ModuleLoader__.load({
   };
   // Two segments cross or touch where they overlap, which a simple ring never allows. A
   // corner a segment merely sits on counts as well: the ring passes through it.
-  const segmentsMeet = (a, b, c, d) => cross(a, b, c) * cross(a, b, d) <= 0 && cross(c, d, a) * cross(c, d, b) <= 0;
+  const segmentsMeet = (a, b, c, d) => Math.max(a.x, b.x) >= Math.min(c.x, d.x)
+    && Math.max(c.x, d.x) >= Math.min(a.x, b.x)
+    && Math.max(a.y, b.y) >= Math.min(c.y, d.y)
+    && Math.max(c.y, d.y) >= Math.min(a.y, b.y)
+    && cross(a, b, c) * cross(a, b, d) <= 0 && cross(c, d, a) * cross(c, d, b) <= 0;
   // Two shapes may not overlap, but one touching the other is a shared vertex, not a clash.
   const segmentsCrowd = (a, b, c, d) => {
     if (!segmentsMeet(a, b, c, d)) return false;
@@ -3860,16 +3806,6 @@ window.__ModuleLoader__.load({
       points: canonical.points.map(({ construction, ...rest }) => construction ? { ...rest, construction } : rest) });
   };
   const cloneBoard = (board) => validate(clone(board));
-  function withPoint(canonical, id, patch) {
-    const point = canonical.points.find((p) => p.id === id) || fail('Unknown point');
-    if (point.kind !== 'free') fail('Only a free point can move');
-    const moved = { ...point, x: patch.x, y: patch.y };
-    if (!finite(moved.x) || !finite(moved.y) || !inside(moved)) fail('Invalid coordinate');
-    return validate({ ...canonical, points: canonical.points.map((p) => p.id === id ? moved : p) });
-  }
-  function allowed(canonical, id, patch) {
-    try { withPoint(canonical, id, patch); return true; } catch { return false; }
-  }
   // A circle's centre is a handle for the whole circle: moving it carries the rim
   // point by the same offset, so the radius never changes on a centre drag.
   const circlesAt = (canonical, id) => canonical.elements.filter((e) => e.type === 'circle' && e.centerPointId === id);
@@ -3914,6 +3850,38 @@ window.__ModuleLoader__.load({
     return validate({ ...board, points: board.points.map((p) => (spare.has(p.id) && back.has(p.id)
       ? { ...p, x: back.get(p.id).x, y: back.get(p.id).y } : p)) });
   }
+  // Circle collisions use filled interiors, not only circumference crossings: a segment
+  // or another closed shape wholly inside the disk still overlaps it. External tangency
+  // is a single shared touch and is allowed. This tolerance is numerical, not a snap gap.
+  const COLLISION_TOLERANCE = 1e-7;
+  function pointSegmentDistance(p, a, b) {
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const length2 = dx * dx + dy * dy;
+    const t = length2 ? Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / length2)) : 0;
+    return distance(p, { x: a.x + t * dx, y: a.y + t * dy });
+  }
+  function pointInRing(point, ring) {
+    let within = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const a = ring[i], b = ring[j];
+      if (pointSegmentDistance(point, a, b) <= COLLISION_TOLERANCE) return false;
+      if ((a.y > point.y) !== (b.y > point.y)
+        && point.x < (b.x - a.x) * (point.y - a.y) / (b.y - a.y) + a.x) within = !within;
+    }
+    return within;
+  }
+  function circleCrowds(board, circle, other) {
+    const point = (id) => board.points.find((p) => p.id === id);
+    const center = point(circle.centerPointId);
+    const radius = distance(center, point(circle.radiusPointId));
+    if (other.type === 'circle') {
+      return distance(center, point(other.centerPointId))
+        < radius + distance(point(other.centerPointId), point(other.radiusPointId)) - COLLISION_TOLERANCE;
+    }
+    const ring = other.points.map(point);
+    return shapeEdges(other).some(([a, b]) => pointSegmentDistance(center, point(a), point(b)) < radius - COLLISION_TOLERANCE)
+      || (other.type !== 'segment' && pointInRing(center, ring));
+  }
   // Whether a drag is legal: a shape must stay simple, so a polygon may not cross itself and
   // no two shapes may overlap. Points that take no part in any shape step aside for the
   // test, so a lone dot inside a triangle is never mistaken for a crossing.
@@ -3947,6 +3915,13 @@ window.__ModuleLoader__.load({
     }));
     for (let i = 0; i < segments.length; i++) {
       for (let j = i + 1; j < segments.length; j++) {
+        if (shapes[i].type === 'circle' || shapes[j].type === 'circle') {
+          const [circle, other] = shapes[i].type === 'circle' ? [shapes[i], shapes[j]] : [shapes[j], shapes[i]];
+          // Existing compound diagrams (for example a circle centered on a polygon's
+          // vertex) remain editable. Imports/creation retain their existing contract;
+          // a previously disjoint pair may never acquire overlapping filled interiors.
+          if (circleCrowds(board, circle, other) && !circleCrowds(canonical, circle, other)) return false;
+        }
         for (const [a, b] of segments[i].edges) {
           for (const [c, d] of segments[j].edges) if (segmentsCrowd(a, b, c, d)) return false;
         }
@@ -3966,7 +3941,7 @@ window.__ModuleLoader__.load({
   //   rectangle:     the diagonals of a rectangle are equal, so k is also rotated to be
   //                  perpendicular to T - P with |k| = |T - P| / 2. That forces the four
   //                  right angles while W follows the pointer exactly.
-  function diagonalMove(canonical, id, target) {
+  function diagonalMove(canonical, id, target, finish = validate) {
     const shape = canonical.elements.find((e) => (e.type === 'rectangle' || e.type === 'parallelogram')
       && e.points.includes(id));
     if (!shape) return null;
@@ -4000,7 +3975,8 @@ window.__ModuleLoader__.load({
         // Free corners only move inside the board; the derived corner is checked there too.
         return inside(at) ? { ...p, x: at.x, y: at.y } : fail('Invalid coordinate');
       }) };
-      return layoutHolds(canonical, tried) ? validate(tried) : fail('Invalid coordinate');
+      const next = finish(tried);
+      return layoutHolds(canonical, next) ? next : fail('Invalid coordinate');
     };
     const start = { x: owner.x, y: owner.y };
     const legal = (t) => {
@@ -4013,24 +3989,25 @@ window.__ModuleLoader__.load({
     return boardAt(lastLegal(start, target, legal));
   }
   // A drag asks for a target; the model answers where the point may actually go.
-  function axisMove(canonical, id, patch) {
+  function axisMove(canonical, id, patch, finish = validate) {
     const point = canonical.points.find((p) => p.id === id) || fail('Unknown point');
     if (point.kind !== 'free') fail('Only a free point can move');
     const target = { x: patch.x, y: patch.y };
     if (!finite(target.x) || !finite(target.y)) fail('Invalid coordinate');
     // A quadrilateral corner moves the whole ring, keeping its diagonal partner still.
-    const diagonal = diagonalMove(canonical, id, target);
+    const diagonal = diagonalMove(canonical, id, target, finish);
     if (diagonal) return diagonal;
     const at = ({ x, y }) => ({ ...point, x, y });
     const shapeAt = (coordinate) => {
-      const next = validate({ ...canonical, points: canonical.points.map((p) => p.id === id ? at(coordinate) : p) });
+      const next = finish({ ...canonical, points: canonical.points.map((p) => p.id === id ? at(coordinate) : p) });
       if (!layoutHolds(canonical, next)) fail('Invalid coordinate');
       return next;
     };
     // A lone point that a shape still uses may not be dragged across another shape, so the
     // legal test is the shape test, not just the coordinate.
-    const legal = ({ x, y }) => allowed(canonical, id, at({ x, y })) && layoutHolds(canonical,
-      validate({ ...canonical, points: canonical.points.map((p) => p.id === id ? at({ x, y }) : p) }));
+    const legal = (coordinate) => {
+      try { shapeAt(coordinate); return true; } catch { return false; }
+    };
     const clamped = { x: Math.max(MARGIN, Math.min(WIDTH - MARGIN, target.x)),
       y: Math.max(MARGIN, Math.min(HEIGHT - MARGIN, target.y)) };
     if (legal(clamped)) return shapeAt(clamped);
@@ -4054,18 +4031,10 @@ window.__ModuleLoader__.load({
     // A quadrilateral corner drag answers with its whole ring; only a lone point needs the
     // circle translation, so the ring result is returned as the model computed it.
     if (!circlesAt(canonical, action.id).length) return axisMove(canonical, action.id, action);
-    const wanted = { x: action.x, y: action.y };
-    const start = { x: point.x, y: point.y };
-    const tryCarry = (coordinate) => {
-      try { return carryCircles(axisMove(canonical, action.id, coordinate), point, action.id, coordinate); } catch { return null; }
-    };
-    const direct = tryCarry(wanted);
-    if (direct) return direct;
-    // The rim would leave the board or break another shape: stop the drag short.
-    let last = null;
-    lastLegal(start, wanted, (probe) => { last = tryCarry(probe); return Boolean(last); });
-    if (!last) fail('The circle cannot move there');
-    return last;
+    // Carry before validation and collision checks: testing the uncarried rim would
+    // test a different radius, and could either reject a safe move or miss a collision.
+    return axisMove(canonical, action.id, action, (next) => carryCircles(next, point, action.id,
+      next.points.find((p) => p.id === action.id)));
   }
   // Move these free points by one vector. A circle whose centre is among them is
   // carried with it, so the radius stays. Derived corners are recomputed, not shifted.
@@ -5613,6 +5582,67 @@ window.__ModuleLoader__.load({
           }, t('tutorialSkip')))));
   };
 };
+    const createTutorialController = function createTutorialController(React, shared) {
+  return function useTutorial({ mode, steps, active, ready, rootRef, onStart, onFinish, layoutDeps = [] }) {
+    const [tour, setTour] = React.useState(null);
+    const [hole, setHole] = React.useState(null);
+    const spotlight = React.useRef(null);
+    const clearSpotlight = () => {
+      spotlight.current?.classList.remove('eb-tour-spotlight');
+      spotlight.current = null;
+    };
+    function start() {
+      if (!steps || !shared.createTutorialOverlay) return;
+      onStart();
+      setTour({ mode, index: 0, steps: steps() });
+    }
+    function finish() {
+      shared.markTutorialSeen?.(mode);
+      clearSpotlight();
+      setTour(null);
+      setHole(null);
+      onFinish();
+    }
+    function signal(value) {
+      if (!tour || !shared.advanceTutorial) return;
+      const next = shared.advanceTutorial(tour, value);
+      if (next === tour) return;
+      if (next.index >= next.steps.length) finish();
+      else setTour(next);
+    }
+    React.useEffect(() => {
+      if (!active || !ready || tour || !steps || !shared.isTutorialSeen) return;
+      // Consume autoplay at its start; replay is explicit, even after closing mid-tour.
+      if (!shared.isTutorialSeen(mode)) {
+        shared.markTutorialSeen?.(mode);
+        start();
+      }
+    }, [active, ready, mode]);
+    const useLayout = React.useLayoutEffect || React.useEffect;
+    useLayout(() => {
+      if (!active || !tour || !rootRef.current || !shared.measureTourTarget) {
+        setHole(null);
+        return undefined;
+      }
+      const measure = () => {
+        clearSpotlight();
+        const hit = shared.measureTourTarget(rootRef.current, tour.steps[tour.index]?.target);
+        if (hit?.node) {
+          hit.node.classList.add('eb-tour-spotlight');
+          spotlight.current = hit.node;
+        }
+        setHole(hit);
+      };
+      measure();
+      window.addEventListener('resize', measure);
+      return () => {
+        window.removeEventListener('resize', measure);
+        clearSpotlight();
+      };
+    }, [active, tour, ...layoutDeps]);
+    return { tour, hole, start, finish, signal };
+  };
+};
     const isTutorialSeen = function isTutorialSeen(mode, storage = globalThis.localStorage) {
   try {
     return storage?.getItem?.(tutorialStorageKey(mode)) === '1';
@@ -5724,7 +5754,7 @@ window.__ModuleLoader__.load({
         const Browser = {
           createBoardFilePicker: createFilePicker, createBoardIcons: createIcons,
           createBoardControls,
-          createTutorialOverlay, isTutorialSeen, markTutorialSeen, advanceTutorial,
+          createTutorialController, createTutorialOverlay, isTutorialSeen, markTutorialSeen, advanceTutorial,
           measureTourTarget, tourHoldsNotePanel, tourInsertMode,
           quantityTutorialSteps, geometryTutorialSteps,
           placeFigure, captionPosition, captionBox, visibleCaption,

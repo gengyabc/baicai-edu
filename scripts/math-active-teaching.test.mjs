@@ -13,7 +13,9 @@ const contains = (body, parts) => {
 
 test('one shared micro-lesson contract is branch-loaded by both existing owners', () => {
   contains(text('math-common/skills/math-common/SKILL.md'), ['references/micro-lesson-contract.md',
-    'one matching reference', 'never selected by the teaching resolver'])
+    'Read only the references required by the current branch',
+    'Teacher geometry needs both representation ownership and the board tool-call recipe',
+    'never selected by the teaching resolver'])
   for (const band of ['low', 'high']) {
     const session = text(`math-primary-${band}/skills/math-${band}-session/SKILL.md`)
     contains(session, ['math-common', 'references/micro-lesson-contract.md', 'micro_lesson',

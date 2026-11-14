@@ -249,6 +249,7 @@ test('no inlined factory reads a name it does not declare itself', () => {
     createFilePicker: 'createBoardFilePicker', createIcons: 'createBoardIcons',
     tutorialStorageKey: 'tutorialStorageKey', isTutorialSeen: 'isTutorialSeen',
     markTutorialSeen: 'markTutorialSeen', createTutorialOverlay: 'createTutorialOverlay',
+    createTutorialController: 'createTutorialController',
     tourMaskPads: 'tourMaskPads',
     advanceTutorial: 'advanceTutorial', measureTourTarget: 'measureTourTarget',
     tourHoldsNotePanel: 'tourHoldsNotePanel', tourInsertMode: 'tourInsertMode',
