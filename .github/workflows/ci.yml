@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify skills, contracts, and board
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Show Node version
+        run: node --version
+
+      # The skills, contracts, and board packages have no third-party
+      # dependencies, so there is nothing to install before testing.
+      - name: Static skill check
+        run: node scripts/check-skills.mjs
+
+      - name: Skill contract and install regressions
+        run: node --test scripts/*.test.mjs
+
+      - name: Rebuild the board client and confirm it is committed
+        run: |
+          node math-board/build.mjs
+          git diff --exit-code -- math-board/client.js
+
+      - name: Math board unit tests
+        working-directory: math-board
+        run: npm test
