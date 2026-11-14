@@ -41,9 +41,6 @@ docs/superpowers/
 # copyright-sensitive; nothing in the packages links here, so keep it local.
 docs/refs/
 
-# Temporary one-off diagnostics kept in-tree while an investigation is open.
-docs/zoom-fiber-inspect.mjs
-
 # Local debug output under .scratch/. Issue and spec docs there stay tracked;
 # only browser profiles, npm installs, packed tarballs and ad-hoc probes are
 # local.

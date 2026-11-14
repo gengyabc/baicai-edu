@@ -9,7 +9,7 @@
 ## 设计依据
 
 - [关系支持设计稿](../../docs/be-friend.md)：吸收真实拒绝权、稳定可靠的回应、非任务导向交流；不照搬朋友身份或固定“先关系后干预”的步骤。
-- [研究核查](../../outputs/research/learning-support-autonomy-and-rapport.md)：区分理论、真人师生关联研究和儿童 AI 权利规范；不能宣称已证明 AI 关系支持提高成绩。该文件位于忽略目录，实施规则不能依赖它作为运行时参考。
+- [研究核查](../../docs/research/learning-support-autonomy-and-rapport.md)：区分理论、真人师生关联研究和儿童 AI 权利规范；不能宣称已证明 AI 关系支持提高成绩。该文件位于忽略目录，实施规则不能依赖它作为运行时参考。
 - [现有支持技能](../../learn/skills/learn-support/SKILL.md)和[生命周期](../../learn/skills/learn-data/references/session-lifecycle.md)：复用现有支持分支，不另造教学或保存入口。
 
 ## 决策
