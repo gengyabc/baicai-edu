@@ -11,7 +11,7 @@ import { captionBox, captionPosition, visibleCaption } from './geometry/caption.
 import {
   geometryHiddenPoints, geometryCaptionLabel, geometryPointLabel, geometryPointDot, geometryShapeNode, geometryStroke,
 } from './geometry/draw.js';
-import { geometryFrameInputs, geometryTextOverflow, geometryFrame } from './geometry/frame.js';
+import { geometryViewport, geometryFrameInputs, geometryTextOverflow, geometryFrame } from './geometry/frame.js';
 import { createBoardControls } from './board-kit.js';
 import { createGeometryModel } from './geometry/model.js';
 import { createBoardModel } from './model.js';
@@ -72,10 +72,11 @@ function mount(options = {}) {
     placeFigure, captionPosition, captionBox, visibleCaption,
     createBoardControls,
     geometryHiddenPoints, geometryCaptionLabel, geometryPointLabel, geometryPointDot, geometryShapeNode, geometryStroke,
-    geometryTextOverflow, geometryFrame, geometryFrameInputs,
+    geometryViewport, geometryTextOverflow, geometryFrame, geometryFrameInputs,
   };
   const quantityPage = () => createBoardView(React, M, ctx, t, '', createShapeArt(React), applyHostConfig, T, shared);
-  const geometryPage = () => createGeometryPage(React, G, ctx, t, shared);
+  let geometryComponent;
+  const geometryPage = () => (geometryComponent = createGeometryPage(React, G, ctx, t, shared));
   const demoPage = () => createGeometryDemoPage(React, G, t, shared);
   // The shell draws the shared brand mark, so the quantity page hands it in.
   const Board = createTabbedBoardView(React, t, '', {
@@ -148,6 +149,14 @@ function mount(options = {}) {
     get persisted() { return persisted; },
     get tree() { return tree; },
     render: refresh, find, button, visibleNodes,
+    resizeGeometry(width, height) {
+      // Drive the viewport state that ResizeObserver supplies in the real browser.
+      const slot = storeFor(geometryComponent).slots.find((item) => item?.value
+        && Object.keys(item.value).sort().join(',') === 'height,width');
+      assert.ok(slot, 'geometry viewport state exists');
+      slot.value = { width, height };
+      refresh();
+    },
     tab(name) {
       find((node) => node.props['data-tab'] === name).props.onClick();
       refresh();
@@ -669,7 +678,7 @@ test('grid and snap are local view state, never snapshot fields', () => {
     h.click(t('gridOff'));
     assert.ok(h.find((n) => String(n.props.className || '').includes('eb-grid')));
     const stored = JSON.parse(h.raw(GEOMETRY_KEY) || 'null');
-    assert.deepEqual(Object.keys(stored).sort(), ['elements', 'note', 'points', 'schemaVersion'],
+    assert.deepEqual(Object.keys(stored).sort(), ['canvas', 'elements', 'note', 'points', 'schemaVersion'],
       'grid and snap never reach the snapshot');
   });
 });
@@ -846,12 +855,12 @@ test('fit shows the whole board and only zooming scrolls to the rest of it', () 
     const zoomLabel = () => h.find((n) => n.type === 'button' && n.props['aria-label'] === t('fitView'));
     const zoomIn = () => h.find((n) => n.type === 'button' && n.props['aria-label'] === t('zoomIn'));
     const before = artboard();
-    const [x, y, w, vh] = before.props.viewBox.split(' ').map(Number);
+    const [, , w, vh] = before.props.viewBox.split(' ').map(Number);
     // A fit keeps the whole board in the frame, with room for point labels on each side.
-    assert.ok(x < 0 || y < 0, 'the fit leaves room past the board origin for its labels');
-    assert.ok(x + w > 800 && y + vh > 600, 'the fit leaves room past the far edge for its labels');
-    assert.ok(Math.abs(before.props.style.width / before.props.style.height - w / vh) < 1e-3,
-      'the canvas box matches its viewBox');
+    assert.ok(w > 800 && vh > 600, 'the fit leaves room past the board for its labels');
+    // The viewBox AND SVG box fill the frame at one scale; no letterboxing remains.
+    assert.deepEqual(before.props.style, { width: 1280, height: 640 });
+    assert.ok(Math.abs(w / vh - 2) < 1e-9, 'viewBox has the same aspect ratio as the frame');
     assert.equal(before.props.preserveAspectRatio, 'xMidYMid meet');
 
     zoomIn().props.onClick();
@@ -860,8 +869,9 @@ test('fit shows the whole board and only zooming scrolls to the rest of it', () 
     // Zooming grows the canvas box instead of cropping the viewBox, so everything drawn
     // stays reachable by scrolling the frame.
     assert.equal(zoomed.props.viewBox, before.props.viewBox, 'zoom never crops the drawn area');
-    assert.ok(zoomed.props.style.width > before.props.style.width, 'zoom enlarges the canvas');
-    assert.ok(zoomed.props.style.height > before.props.style.height);
+    assert.equal(typeof zoomed.props.style.width, 'number', 'a zoom leaves the frame and sizes the canvas itself');
+    assert.equal(zoomed.props.style.width, 1600, 'zoom scales expanded paper by 125%');
+    assert.equal(zoomed.props.style.height, 800);
     assert.equal(text(zoomLabel()), '125%');
 
     // 适应宽度 restores the full board at the fit scale.
@@ -869,6 +879,82 @@ test('fit shows the whole board and only zooming scrolls to the rest of it', () 
     h.render();
     assert.deepEqual(artboard().props.style, before.props.style);
     assert.equal(h.find((n) => n.type === 'button' && n.props['aria-label'] === t('fitView')).props['aria-pressed'], true);
+  });
+});
+
+test('viewport measurement ignores scrollbar feedback and floors fractional layout sizes', () => {
+  const node = {
+    clientWidth: 1199, clientHeight: 699,
+    getBoundingClientRect: () => ({ width: 1198.5, height: 698.5 }),
+  };
+  const before = geometryViewport(node);
+  node.clientWidth -= 15;
+  node.clientHeight -= 15;
+  assert.deepEqual(geometryViewport(node), before, 'scrollbars must not resize the coordinate system');
+  assert.deepEqual(before, { width: 1198, height: 698 }, 'never round into fractional overflow');
+  assert.equal(geometryViewport({ getBoundingClientRect: () => ({ width: 0, height: 0 }) }), null);
+});
+
+test('student fill expands board coordinates across a wide frame without stretching', () => {
+  const frame = geometryFrame(
+    { width: 800, height: 600, board: { points: [], elements: [] } },
+    { width: 1600, height: 640 }, { value: 1, fit: true, fill: true },
+  );
+  assert.ok(frame.paper.width > 1400, 'the extra width is drawable paper, not SVG letterboxing');
+  assert.equal(frame.box.width, 1600);
+  assert.equal(frame.box.height, 640);
+  assert.ok(Math.abs(frame.box.width / frame.span.width - frame.box.height / frame.span.height) < 1e-9,
+    'horizontal and vertical units have identical scale');
+});
+
+test('expanded geometry paper supports drawing, grid and snapshot reopening past the old edge', () => {
+  const storage = new Map();
+  withMount((h) => {
+    h.tab('geometry');
+    h.click(t('gridOff'));
+    const svg = h.find((n) => n.type === 'svg' && String(n.props.className || '').includes('eb-geometry'));
+    const [, , w, height] = svg.props.viewBox.split(' ').map(Number);
+    const horizontal = walk(svg).filter((n) => n.type === 'line' && n.props.y1 === n.props.y2);
+    assert.ok(horizontal.some((n) => n.props.x2 - n.props.x1 >= w - 1e-6), 'grid crosses the full paper');
+    assert.ok(w > 1200 && height >= 600);
+    h.tool('point');
+    h.clickAt(1100, 100);
+    assert.equal(h.board().points[0].x, 1100, 'new area must not clamp to the old 776 edge');
+    const saved = JSON.parse(G.serialize(h.board()));
+    assert.ok(saved.canvas.width >= 1124, 'snapshot retains new paper extent');
+    assert.equal(G.validate(saved).points[0].x, 1100);
+  }, { storage });
+  withMount((h) => {
+    h.tab('geometry');
+    assert.equal(h.board().points[0].x, 1100, 'reopening keeps drawing in the added area');
+  }, { storage });
+});
+
+test('resizing fills both axes without compounding unused paper or clipping existing points', () => {
+  withMount((h) => {
+    h.tab('geometry');
+    const original = { ...h.board().canvas };
+    for (let i = 0; i < 4; i++) {
+      h.resizeGeometry(640, 1280);
+      assert.ok(h.board().canvas.height > 1500, 'portrait frame extends vertically');
+      h.resizeGeometry(1280, 640);
+      assert.deepEqual(h.board().canvas, original, 'unused paper never compounds');
+    }
+    h.tool('point');
+    h.clickAt(1100, 100);
+    h.resizeGeometry(640, 1280);
+    assert.equal(h.board().points[0].x, 1100);
+    assert.ok(h.board().canvas.width >= 1124, 'occupied paper never clips after a resize');
+  });
+});
+
+test('geometry dock clear, undo, redo and more buttons contain visible icons', () => {
+  withMount((h) => {
+    h.tab('geometry');
+    for (const label of ['clearGeometry', 'undo', 'redo', 'moreActions']) {
+      const control = h.find((n) => n.type === 'button' && n.props['aria-label'] === t(label));
+      assert.ok(walk(control).some((n) => n.type === 'svg'), `${label} must contain an actual icon`);
+    }
   });
 });
 

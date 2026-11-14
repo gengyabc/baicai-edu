@@ -816,7 +816,8 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     const canvas = h('div', { className: 'eb-canvas-scroll', ref: canvasRef },
       h('svg', {
         ref: svgRef, className: 'eb-artboard',
-        style: { width: fit ? '100%' : 800 * zoom, height: fit ? 'auto' : boardHeight * zoom },
+        // Quantity paper already fits the width; keep its growing height scrollable.
+        style: fit ? { width: '100%', height: 'auto' } : { width: 800 * zoom, height: boardHeight * zoom },
         viewBox: `0 0 800 ${boardHeight}`, preserveAspectRatio: 'xMidYMid meet', role: 'group', 'aria-label': t('canvas'),
         onPointerDown: pointerDown, onPointerMove: pointerMove, onPointerUp: (event) => pointerEnd(event),
         onPointerCancel: (event) => pointerEnd(event, true), onLostPointerCapture: (event) => pointerEnd(event, true),
@@ -901,7 +902,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
         'data-tour-id': 'quantity-note',
       }),
       button(icon('clear', 19), () => requestOverlay({ kind: 'clear' }), { className: 'eb-icon-button eb-danger', title: t('clear'), 'aria-label': t('clear') }),
-      controls.moreMenu(moreOpen, () => setMoreOpen(!moreOpen)),
+      controls.moreMenu(moreOpen, () => setMoreOpen(!moreOpen), icon('more', 19)),
       button(h(React.Fragment, null, icon('insert', 17), h('span', null, t('insert'))), insert, {
         className: 'eb-primary', title: t('insert'), 'data-tour-id': 'quantity-insert',
         disabled: (shared.tourInsertMode?.(tour) === 'block'

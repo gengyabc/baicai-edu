@@ -122,7 +122,10 @@ points:   [{ id, label, kind: "free"|"derived", x, y, construction?, note }]
 elements: [{ id, type: "segment"|"polygon"|"circle"|"parallelogram"|"rectangle", points|centerPointId+radiusPointId, role, note }]
           文字：{ id, type: "text", role, note, x, y, text }
 note:     整板说明
+canvas?:  { width, height } // 可选纸面范围；省略时为 800×600
 ```
+
+几何页按可见区域扩展纸面、网格和可绘制坐标，横纵始终使用同一个缩放比例，不将固定画板居中留白，也不拉伸图形。窗口尺寸变化不会移动已有点；重新适配保留全部已有内容，空余纸面不因反复横竖切换无限累积。扩展纸面通过可选 `canvas` 随快照保存，宽为 800–10000 的整数、高为 600–10000 的整数；旧版未带尺寸的 v1 文件仍按 800×600 打开。清空本模式保留纸面尺寸，教师演示复制使用目标纸面范围。
 
 派生点只保存构造（`midpoint` 或三点定第四点，`P4 = P1 + P3 - P2`），位置由构造重算，不作为权威坐标；快照验证会忽略伪造的派生坐标，并拒绝悬空引用、退化图形、重名标签和跨模式文件。文字元素在快照里保存学生写下的原文和它的锚点；空文字、控制字符、超过 200 字、写到画板外，或给文字挂上点引用、给图形挂上文字字段的文件都会被拒绝，不做猜测修复。教师演示图也支持文字元素，复制后可由学生改写。插件系统提示声明只读提交边界；两个数学年级段的共同读取与信任规则由[共享画板契约](<../math-common/skills/math-common/references/board-contract.md>)统一维护。
 

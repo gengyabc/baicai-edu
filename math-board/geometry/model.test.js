@@ -43,6 +43,94 @@ test('a snapshot carries only its own kind, v1 shape and no quantity fields', ()
   assert.deepEqual(G.validate(wire), G.validate(rectangle()));
 });
 
+test('optional canvas extends point and text bounds without changing legacy snapshots', () => {
+  assert.throws(() => add(G.empty(), 777, 100), /Invalid coordinate/);
+  const canvas = { width: 1600, height: 600 };
+  const configured = createGeometryModel(canvas);
+  assert.deepEqual(configured.empty().canvas, canvas);
+  let board = add({ ...G.empty(), canvas }, 1500, 100);
+  board = G.reduce(board, { type: 'addText', x: 1500, y: 200, text: '扩展画布' });
+  assert.deepEqual(G.boundsFor(board), { width: 1600, height: 600, margin: 24, epsilon: 0.5 });
+  assert.deepEqual(G.validate(serialized(board)), board);
+  assert.equal(serialized(board).schemaVersion, 1);
+  assert.deepEqual(serialized(board).canvas, canvas);
+  assert.equal(board.elements[0].x, 1500);
+  assert.equal(Object.hasOwn(serialized(G.empty()), 'canvas'), false);
+  assert.deepEqual(G.boundsFor(G.empty()), G.bounds);
+  assert.throws(() => configured.reduce(G.empty(), { type: 'addPoint', x: 1500, y: 100 }), /Invalid coordinate/);
+});
+
+test('clear retains optional canvas and preserves the existing board note behavior', () => {
+  const canvas = { width: 1600, height: 900 };
+  const board = G.reduce(add({ ...G.empty(), canvas }, 1500, 800), { type: 'note', value: '  保留说明  ' });
+  const cleared = G.reduce(board, { type: 'clear' });
+  assert.deepEqual(cleared, { ...G.empty(), canvas, note: '  保留说明  ' });
+  assert.deepEqual(G.validate(serialized(cleared)), cleared);
+});
+
+test('canvas requires complete integer dimensions within the supported range', () => {
+  for (const canvas of [null, undefined, {}, [], { width: 1600 }, { width: 799, height: 600 },
+    { width: 800, height: 599 }, { width: 10001, height: 600 }, { width: 800, height: 10001 },
+    { width: 800.5, height: 600 }, { width: 800, height: NaN }, { width: '1600', height: 600 },
+    { width: 1600, height: 600, extra: true }]) {
+    assert.throws(() => G.validate({ ...G.empty(), canvas }), /Invalid canvas/);
+    if (canvas != null) assert.throws(() => createGeometryModel(canvas), /Invalid canvas/);
+  }
+  for (const canvas of [{ width: 800, height: 600 }, { width: 10000, height: 10000 }]) {
+    assert.deepEqual(G.validate({ ...G.empty(), canvas }).canvas, canvas);
+  }
+});
+
+test('extended canvas drawing and drag previews use both dimensions without leaking bounds', () => {
+  const canvas = { width: 1600, height: 1200 };
+  let board = { ...G.empty(), canvas };
+  for (const [x, y] of [[1200, 700], [1500, 700], [1500, 1000]]) board = add(board, x, y);
+  board = shape(board, 'rectangle', ['p-1', 'p-2', 'p-3']);
+  assert.deepEqual([at(board, 'p-4').x, at(board, 'p-4').y], [1200, 1000]);
+  board = G.reduce(board, { type: 'addMidpoint', a: 'p-1', b: 'p-2' });
+  assert.equal(G.midpointOf(board, 'p-1', 'p-2').x, 1350);
+  assert.deepEqual(G.dependents(board, 'p-1'), ['p-4', 'p-5']);
+  assert.deepEqual(G.parseEdgeKey(board, 'e-1#1').points, ['p-2', 'p-3']);
+  assert.equal(G.edgeAt(board, { id: 'e-1#1' }).index, 1);
+  const edge = G.constrainedEdgeMove(board, 'e-1', 1, 20, 0);
+  const resized = G.reduce(board, { type: 'moveEdge', id: 'e-1', index: 1, dx: 20, dy: 0 });
+  assert.equal(at(resized, 'p-2').x, 1520);
+  assert.equal(edge.corners.find((p) => p.id === 'p-2').x, 1520);
+  const translated = G.reduce(board, { type: 'translate', ids: ['p-1', 'p-2', 'p-3'], dx: 20, dy: 30 });
+  assert.deepEqual([at(translated, 'p-4').x, at(translated, 'p-4').y], [1220, 1030]);
+  const translation = G.constrainedTranslate(board, ['p-1', 'p-2', 'p-3'], 20, 30);
+  assert.deepEqual(translation.corners.find((p) => p.id === 'p-4'), { id: 'p-4', x: 1220, y: 1030 });
+  const lone = add({ ...G.empty(), canvas }, 1500, 1000);
+  const preview = G.constrainedMove(lone, 'p-1', 2000, 2000);
+  const moved = G.reduce(lone, { type: 'movePoint', id: 'p-1', x: 2000, y: 2000 });
+  assert.deepEqual([preview.x, preview.y], [1576, 1176]);
+  assert.deepEqual([at(moved, 'p-1').x, at(moved, 'p-1').y], [1576, 1176]);
+  let writing = G.reduce(lone, { type: 'addText', x: 1500, y: 1100, text: '文字' });
+  writing = G.reduce(writing, { type: 'moveText', id: 'e-1', x: 2000, y: 2000 });
+  assert.deepEqual([writing.elements[0].x, writing.elements[0].y], [1600, 1176]);
+  assert.deepEqual(G.validate(serialized(writing)), writing);
+  assert.throws(() => add(G.empty(), 1500, 100), /Invalid coordinate/);
+  assert.deepEqual(G.bounds, { width: 800, height: 600, margin: 24, epsilon: 0.5 });
+});
+
+test('configured canvas is detached and embedded factories dispatch without dependencies', () => {
+  const canvas = { width: 1600, height: 600 };
+  const configured = createGeometryModel(canvas);
+  canvas.width = 800;
+  const empty = configured.empty();
+  assert.equal(empty.canvas.width, 1600);
+  empty.canvas.width = 900;
+  assert.equal(configured.empty().canvas.width, 1600);
+  const board = freeze(add(configured.empty(), 1500, 100));
+  const canonical = G.validate(board);
+  canonical.canvas.width = 800;
+  assert.equal(board.canvas.width, 1600);
+  const embedded = new Function(`return (${createGeometryModel.toString()})();`)();
+  assert.deepEqual(embedded.validate(JSON.parse(embedded.serialize(board))), board);
+  assert.equal(embedded.reduce(board, { type: 'movePoint', id: 'p-1', x: 2000, y: 100 }).points[0].x, 1576);
+  assert.equal(embedded.reduce(board, { type: 'clear' }).canvas.width, 1600);
+});
+
 test('cross-mode files are rejected outright, with no conversion', () => {
   const quantity = JSON.parse(Q.serialize(Q.reduce(Q.empty(), { type: 'add', shape: 'circle' })));
   assert.throws(() => G.validate(quantity), /Another board kind/);

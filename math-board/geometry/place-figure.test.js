@@ -28,6 +28,38 @@ test('an empty draft keeps the figure coordinates, labels, role, and note', () =
   assert.deepEqual(placed.elementIds, [placed.board.elements[0].id]);
 });
 
+test('copy keeps the target canvas on an empty extended draft', () => {
+  const student = { ...G.empty(), canvas: { width: 1600, height: 900 }, note: 'mine' };
+  const result = placeFigure(G, student, segment(80, 90, 180, 90));
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.board.canvas, { width: 1600, height: 900 });
+  assert.equal(result.board.note, 'mine');
+  assert.deepEqual(G.validate(JSON.parse(G.serialize(result.board))), result.board);
+});
+
+test('copy places points and writing in the expanded target area instead of the source bounds', () => {
+  const student = G.reduce({ ...G.empty(), canvas: { width: 1600, height: 900 } },
+    { type: 'addPoint', x: 1400, y: 700, label: 'S' });
+  const before = G.serialize(student);
+  const figure = G.reduce(segment(100, 100, 200, 100),
+    { type: 'addText', x: 100, y: 150, text: '说明' });
+  const result = placeFigure(G, student, figure);
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.board.canvas, student.canvas);
+  assert.deepEqual(result.board.points.filter((point) => point.id !== 'p-1').map((point) => point.x), [1424, 1524]);
+  assert.equal(result.board.elements.find((element) => element.type === 'text').x, 1424);
+  assert.equal(G.serialize(student), before, 'copy does not mutate the existing draft');
+  const embedded = new Function(`return (${placeFigure.toString()});`)();
+  assert.deepEqual(embedded(G, student, figure), result);
+});
+
+test('copy never imports the source canvas into a legacy target', () => {
+  const figure = { ...segment(80, 90, 180, 90), canvas: { width: 1600, height: 900 } };
+  const result = placeFigure(G, G.empty(), figure);
+  assert.equal(result.ok, true);
+  assert.equal(Object.hasOwn(result.board, 'canvas'), false);
+});
+
 test('an occupied draft moves the figure to the right and renames colliding labels', () => {
   let student = G.reduce(G.empty(), { type: 'addPoint', x: 100, y: 120, label: 'A' });
   const placed = placeFigure(G, student, segment(400, 200, 500, 200));

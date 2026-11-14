@@ -41,7 +41,7 @@ export function placeFigure(geometry, student, figure) {
     for (const scale of [1, 0.85, 0.7, 0.55, 0.4]) {
       let scaled = source;
       if (scale !== 1) {
-        try { scaled = transform(geometry, source, 0, 0, scale); } catch { continue; }
+        try { scaled = transform(geometry, student, source, 0, 0, scale); } catch { continue; }
       }
       const box = boundsOf(scaled);
       // Four ways out of the draft: right, below, left, above.
@@ -54,13 +54,13 @@ export function placeFigure(geometry, student, figure) {
       for (const move of moves) {
         // A zero offset is not a way out: it would return the overlapping original.
         if (!move.dx && !move.dy) continue;
-        try { placed.push(transform(geometry, scaled, move.dx, move.dy, 1)); } catch { /* outside or degenerate */ }
+        try { placed.push(transform(geometry, student, scaled, move.dx, move.dy, 1)); } catch { /* outside or degenerate */ }
       }
     }
     return placed;
   }
 
-  function transform(geometry, source, dx, dy, scale) {
+  function transform(geometry, student, source, dx, dy, scale) {
     const free = source.points.filter((point) => point.kind === 'free');
     // A text-only figure has no free points to measure from; it still moves as a unit.
     const anchors = free.length ? free : source.elements.filter((item) => item.type === 'text');
@@ -78,7 +78,8 @@ export function placeFigure(geometry, student, figure) {
     // character size is the board's, not something a copied figure may shrink.
     const elements = source.elements.map((element) => (element.type === 'text'
       ? { ...element, x: element.x + dx, y: element.y + dy } : element));
-    return geometry.validate({ schemaVersion: 1, points, elements, note: source.note });
+    // Candidate positions live on the destination paper, not the teacher's canvas.
+    return geometry.validate({ ...student, points, elements, note: source.note });
   }
 
   function letters(n) {
@@ -144,7 +145,7 @@ export function placeFigure(geometry, student, figure) {
       }
     }
     const board = geometry.validate({
-      schemaVersion: 1,
+      ...student,
       points: [...student.points, ...points],
       elements: [...student.elements, ...elements],
       note: student.note,

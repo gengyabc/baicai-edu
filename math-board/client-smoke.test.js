@@ -245,7 +245,7 @@ test('no inlined factory reads a name it does not declare itself', () => {
     createBoardControls: 'createBoardControls', geometryHiddenPoints: 'geometryHiddenPoints',
     geometryCaptionLabel: 'geometryCaptionLabel', geometryPointLabel: 'geometryPointLabel',
     geometryPointDot: 'geometryPointDot', geometryStroke: 'geometryStroke',
-    geometryTextOverflow: 'geometryTextOverflow', geometryFrame: 'geometryFrame',
+    geometryViewport: 'geometryViewport', geometryTextOverflow: 'geometryTextOverflow', geometryFrame: 'geometryFrame',
     createFilePicker: 'createBoardFilePicker', createIcons: 'createBoardIcons',
     tutorialStorageKey: 'tutorialStorageKey', isTutorialSeen: 'isTutorialSeen',
     markTutorialSeen: 'markTutorialSeen', createTutorialOverlay: 'createTutorialOverlay',

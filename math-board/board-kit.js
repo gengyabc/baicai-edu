@@ -35,7 +35,8 @@ export function createBoardControls(React, t) {
   }
   /** A square icon button used by both student docks. */
   function iconButton(handler, label, props = {}) {
-    return button(undefined, handler, { title: label, 'aria-label': label, className: 'eb-icon-button', ...props });
+    const { icon, ...attributes } = props;
+    return button(icon, handler, { title: label, 'aria-label': label, className: 'eb-icon-button', ...attributes });
   }
   /**
    * The one dock control that leaves the board: the same markup, style class and words on
@@ -58,9 +59,9 @@ export function createBoardControls(React, t) {
     return button(h(React.Fragment, null, ...parts), handler, { role: 'menuitem', ...props });
   }
   /** The more-actions trigger; `toggle` opens or closes the menu the page renders. */
-  function moreMenu(open, toggle) {
+  function moreMenu(open, toggle, icon) {
     return iconButton(toggle, t('moreActions'), {
-      className: 'eb-icon-button eb-menu-trigger', 'aria-expanded': open, title: t('moreActions'), 'aria-label': t('moreActions'),
+      icon, className: 'eb-icon-button eb-menu-trigger', 'aria-expanded': open, title: t('moreActions'), 'aria-label': t('moreActions'),
     });
   }
   /**

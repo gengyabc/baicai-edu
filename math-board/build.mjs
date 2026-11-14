@@ -17,7 +17,7 @@ import { captionBox, captionPosition, visibleCaption } from './geometry/caption.
 import {
   geometryHiddenPoints, geometryCaptionLabel, geometryPointLabel, geometryPointDot, geometryShapeNode, geometryStroke,
 } from './geometry/draw.js';
-import { geometryFrameInputs, geometryTextOverflow, geometryFrame } from './geometry/frame.js';
+import { geometryViewport, geometryFrameInputs, geometryTextOverflow, geometryFrame } from './geometry/frame.js';
 import { createBoardControls } from './board-kit.js';
 import {
   TUTORIAL_VERSION, advanceTutorial, createTutorialController, createTutorialOverlay, geometryTutorialSteps,
@@ -71,6 +71,7 @@ window.__ModuleLoader__.load({
     const geometryTextOverflow = ${geometryTextOverflow.toString()};
     const geometryFrameInputs = ${geometryFrameInputs.toString()};
     const geometryFrame = ${geometryFrame.toString()};
+    const geometryViewport = ${geometryViewport.toString()};
     const createBoardControls = ${createBoardControls.toString()};
     const createFilePicker = ${createBoardFilePicker.toString()};
     const createIcons = ${createBoardIcons.toString()};
@@ -108,7 +109,7 @@ window.__ModuleLoader__.load({
           quantityTutorialSteps, geometryTutorialSteps,
           placeFigure, captionPosition, captionBox, visibleCaption,
           geometryHiddenPoints, geometryCaptionLabel, geometryPointLabel, geometryPointDot, geometryShapeNode, geometryStroke,
-          geometryTextOverflow, geometryFrameInputs, geometryFrame,
+          geometryViewport, geometryTextOverflow, geometryFrameInputs, geometryFrame,
         };
         const View = createView(React, M, ctx, t, ${JSON.stringify(stylesheet)}, art, applyHostConfig, T, Browser);
         const Board = createTabs(React, t, ${JSON.stringify(stylesheet)}, {

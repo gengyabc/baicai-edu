@@ -883,7 +883,9 @@ test('tapping fills ten shapes per row and a taller board grows for scrolling', 
     assert.equal(h.board().objects.length, 80);
     assert.deepEqual([h.board().objects.at(-1).x, h.board().objects.at(-1).y], [30 + 9 * 52, 30 + 7 * 48]);
     assert.equal(artboard().props.viewBox, '0 0 800 426');
+    // Quantity paper fills the width without squeezing a tall board into the frame.
     assert.deepEqual(artboard().props.style, { width: '100%', height: 'auto' });
+    assert.equal(artboard().props.preserveAspectRatio, 'xMidYMid meet');
   });
 });
 

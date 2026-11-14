@@ -3,11 +3,9 @@
  * Geometry is a separate, read-only expression mode beside the quantity board: nothing here
  * converts a quantity object, and nothing here persists a derived point's position.
  */
-export function createGeometryModel() {
+export function createGeometryModel(canvas = null) {
   const KIND = 'geometry-board';
   const coordinateSystem = Object.freeze({ type: 'cartesian-2d', units: 'board-unit' });
-  const WIDTH = 800;
-  const HEIGHT = 600;
   // Every point keeps this distance from the border so its label and hit area stay on the board.
   const MARGIN = 24;
   // Corner drags stop just before a degenerate shape instead of refusing the whole drag.
@@ -27,6 +25,18 @@ export function createGeometryModel() {
     if (!record(v) || required.some((k) => !Object.hasOwn(v, k))
       || Object.keys(v).some((k) => !required.includes(k) && !optional.includes(k))) fail('Invalid fields');
   };
+  // Dimensions are immutable configuration, not shared mutable drawing state. Keeping
+  // this validator in the factory also keeps its browser-embedded source self-contained.
+  function canvasSize(value) {
+    if (!record(value) || Object.keys(value).length !== 2
+      || !Object.hasOwn(value, 'width') || !Object.hasOwn(value, 'height')
+      || !Number.isInteger(value.width) || value.width < 800 || value.width > 10000
+      || !Number.isInteger(value.height) || value.height < 600 || value.height > 10000) fail('Invalid canvas');
+    return { width: value.width, height: value.height };
+  }
+  const configuredCanvas = canvas === null ? null : canvasSize(canvas);
+  const WIDTH = configuredCanvas?.width ?? 800;
+  const HEIGHT = configuredCanvas?.height ?? 600;
   const chars = (v) => [...v];
   const text = (v, max) => typeof v === 'string' && chars(v).length <= max;
   const idValid = (v) => text(v, 100) && v.trim().length > 0;
@@ -133,7 +143,8 @@ export function createGeometryModel() {
     }
     return { op: construction.op, inputs: [...construction.inputs] };
   }
-  const empty = () => ({ schemaVersion: 1, points: [], elements: [], note: '' });
+  const empty = () => ({ schemaVersion: 1, points: [], elements: [], note: '',
+    ...(configuredCanvas ? { canvas: { ...configuredCanvas } } : {}) });
   // Text words are free student writing: no control characters, no blank line, and at
   // least one visible character. The stored value is trimmed at both ends.
   const words = (v) => typeof v === 'string' && chars(v).length <= TEXT_MAX
@@ -142,7 +153,8 @@ export function createGeometryModel() {
   /** Return detached canonical state; a snapshot only carries its own kind. */
   function validate(input) {
     if (record(input) && Object.hasOwn(input, 'kind') && input.kind !== KIND) fail('Another board kind');
-    keys(input, ['schemaVersion', 'points', 'elements', 'note'], ['kind']);
+    keys(input, ['schemaVersion', 'points', 'elements', 'note'], ['kind', 'canvas']);
+    const canvas = Object.hasOwn(input, 'canvas') ? canvasSize(input.canvas) : null;
     // A canonical state always writes `construction`; the wire form writes it only for derived points.
     // The board note is student text copied verbatim; it may be empty and is never rewritten.
     if (input.schemaVersion !== 1 || !Array.isArray(input.points) || input.points.length > 300
@@ -215,7 +227,8 @@ export function createGeometryModel() {
       } else if (e.type === 'polygon' ? polygonDegenerate(ordered) : degenerate[e.type](ordered)) fail('Degenerate element');
       return { id: e.id, type: e.type, points: ordered.map((p) => p.id), role: e.role, note: e.note ?? '' };
     });
-    return { schemaVersion: 1, points: raw.map((p) => pointMap.get(p.id)), elements, note: input.note };
+    return { schemaVersion: 1, points: raw.map((p) => pointMap.get(p.id)), elements, note: input.note,
+      ...(canvas ? { canvas } : {}) };
   }
   // Derived positions are computed from their construction and are not written as authority.
   // A free point carries no construction key; derived positions are recomputed, not trusted.
@@ -937,7 +950,7 @@ export function createGeometryModel() {
         elementById(action.id);
         return removeSelection(canonical, [], [action.id]);
       }
-      case 'clear': return validate({ ...empty(), note: canonical.note });
+      case 'clear': return validate({ ...canonical, points: [], elements: [] });
       default: fail('Unknown action');
     }
   }
@@ -1033,8 +1046,12 @@ export function createGeometryModel() {
     size: TEXT_SIZE * scale, line: TEXT_LINE * scale,
     box: (lines) => { const measured = textBox(lines.length ? lines : ['']); return { width: measured.width * scale, height: measured.height * scale }; },
   });
-  return { kind: KIND, coordinateSystem, shapeLibrary, elementTypes: [...elementTypes], roles: [...roles], operations: [...operations],
-    bounds: { width: WIDTH, height: HEIGHT, margin: MARGIN, epsilon: EPSILON },
+  const boundsFor = (board) => ({
+    ...(record(board) && Object.hasOwn(board, 'canvas') ? canvasSize(board.canvas) : { width: 800, height: 600 }),
+    margin: MARGIN, epsilon: EPSILON,
+  });
+  const api = { kind: KIND, coordinateSystem, shapeLibrary, elementTypes: [...elementTypes], roles: [...roles], operations: [...operations],
+    bounds: { width: WIDTH, height: HEIGHT, margin: MARGIN, epsilon: EPSILON }, boundsFor,
     // A view that draws text at another size measures it here, so the drawing and the
     // space reserved around it can never disagree.
     empty, validate, reduce, TEXT_MAX, textBox: (lines) => textBox(lines.length ? lines : ['']), textMetrics,
@@ -1043,4 +1060,18 @@ export function createGeometryModel() {
     // same way the actions behind it do.
     shapeEdges, edgeKey, parseEdgeKey, edgeAt, midpointOf, rectanglePlacement,
     dependents: (board, id) => dependents(cloneBoard(board), id) };
+  // All board-first entry points use that board's dimensions, including when called on
+  // an instance configured for another canvas. Internal calls stay in the sized closure.
+  // No canvas on a legacy board always means 800×600, even on a configured instance.
+  for (const name of ['validate', 'reduce', 'serialize', 'constrainedMove', 'constrainedEdgeMove',
+    'constrainedTranslate', 'parseEdgeKey', 'edgeAt', 'midpointOf', 'dependents']) {
+    const local = api[name];
+    api[name] = (board, ...args) => {
+      const size = boundsFor(board);
+      if (size.width === WIDTH && size.height === HEIGHT) return local(board, ...args);
+      const sized = createGeometryModel({ width: size.width, height: size.height });
+      return sized[name](board, ...args);
+    };
+  }
+  return api;
 }

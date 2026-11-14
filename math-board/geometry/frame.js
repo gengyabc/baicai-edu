@@ -11,6 +11,18 @@
 //
 // build.mjs inlines these with toString(), so they use only their own arguments.
 
+/** Stable viewport dimensions, independent of the scrollbars the SVG creates. */
+export function geometryViewport(node) {
+  if (!node || typeof node.getBoundingClientRect !== 'function') return null;
+  // clientWidth/clientHeight exclude scrollbars. Using them to resize the SVG that
+  // creates those scrollbars feeds its own output back into the next measurement.
+  const box = node.getBoundingClientRect();
+  if (!(box.width > 0 && box.height > 0)) return null;
+  // The frame can land on fractional CSS pixels (browser zoom, flex layout). Never
+  // round UP into overflow and create another scrollbar during an otherwise full fit.
+  return { width: Math.max(160, Math.floor(box.width)), height: Math.max(160, Math.floor(box.height)) };
+}
+
 /**
  * The space a text element's writing can reach past its box: the writing is anchored on its
  * left baseline, drawn with a light halo, and each line box is taller than the next line's
@@ -54,8 +66,9 @@ export function geometryFrameInputs(options) {
 
 /**
  * Frame the board. `viewport` is the area the canvas really has; `zoom` is `{ value, fit }`.
- * Returns the fit scale, the scrollable canvas box, the viewBox that shows it, and the
- * board rectangle a complete view of the drawing must keep reachable.
+ * Returns the fit scale, scrollable SVG box and visible coordinate range. With `fill`,
+ * paper expands into spare viewport space at the same scale; otherwise a fixed snapshot
+ * stays completely visible. `paper` gives the resulting drawable integer dimensions.
  */
 export function geometryFrame(geometry, viewport, zoom) {
   // Board units of ink a point label can reach past its point, as a box around the point.
@@ -108,12 +121,23 @@ export function geometryFrame(geometry, viewport, zoom) {
   const span = { width: geometry.width + inset.left + inset.right, height: geometry.height + inset.top + inset.bottom };
   // A fit shows the whole board, so the longest side lands on the viewport's matching side.
   const fitScale = Math.min(viewport.width / span.width, viewport.height / span.height);
+  // Student paper grows into spare viewport space at the SAME scale in both axes.
+  // Merely sizing the SVG to 100% leaves letterboxing inside its old viewBox instead.
+  // Demo snapshots keep their original framing unless the caller explicitly opts in.
+  if (zoom.fill && fitScale > 0) {
+    span.width = Math.max(span.width, viewport.width / fitScale);
+    span.height = Math.max(span.height, viewport.height / fitScale);
+  }
+  const paper = {
+    width: Math.min(10000, Math.max(geometry.width, Math.floor(span.width - inset.left - inset.right + 1e-7))),
+    height: Math.min(10000, Math.max(geometry.height, Math.floor(span.height - inset.top - inset.bottom + 1e-7))),
+  };
   const scale = Math.max(0.05, fitScale * (zoom.fit ? 1 : zoom.value)) || 0.05;
   const box = { width: Math.round(span.width * scale), height: Math.round(span.height * scale) };
   const origin = { x: -inset.left, y: -inset.top };
   return {
     reserve: { left: -label.x, top: -label.y, right: label.x + label.width, bottom: label.y + label.height },
-    inset, span, scale, fitScale, box, origin,
+    inset, span, scale, fitScale, box, origin, paper,
     visible: { x: origin.x, y: origin.y, width: span.width, height: span.height },
   };
 }

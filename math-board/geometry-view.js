@@ -136,15 +136,37 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     // An open that arrives after this tab's draft changed must not overwrite it.
     const revision = React.useRef(0);
     const phase = props.useInput((s) => s.phase);
-    const width = G.bounds.width, height = G.bounds.height;
     // The area the canvas really has. A fit is sized against it, so a short window never
     // crops the bottom of the board.
     const [viewport, setViewport] = React.useState({ width: 1280, height: 640 });
+    const storedBounds = G.boundsFor(board);
+    // Refit against content, not previously unused paper: repeated window rotations must
+    // not compound old horizontal and vertical extensions into an ever-growing board.
+    const anchors = [...board.points, ...board.elements.filter((element) => element.type === 'text')];
+    const paperBounds = {
+      width: Math.min(10000, Math.max(G.bounds.width, ...anchors.map((point) => Math.ceil(point.x + G.bounds.margin)))),
+      height: Math.min(10000, Math.max(G.bounds.height, ...anchors.map((point) => Math.ceil(point.y + G.bounds.margin)))),
+    };
+    const frame = shared.geometryFrame(shared.geometryFrameInputs({
+      ...paperBounds, board,
+      captionOf: (element) => shared.captionPosition?.(element,
+        (id) => board.points.find((point) => point.id === id), paperBounds) || null,
+      textBox: (element) => shared.geometryTextBox(element.text.split('\n'), textMetrics),
+    }), viewport, { value: zoom, fit, fill: true });
+    const { width, height } = frame.paper;
+    // Growing paper is layout, not a student action. Preserve it in the snapshot so
+    // points in the added area remain valid after saving, opening or submitting.
+    React.useEffect(() => {
+      if (!ready || (width === storedBounds.width && height === storedBounds.height)) return;
+      publish(G.validate({ ...boardRef.current, canvas: { width, height } }));
+    }, [ready, width, height, storedBounds.width, storedBounds.height]);
     React.useEffect(() => {
       const node = canvasRef.current;
       if (!node || typeof ResizeObserver === 'undefined') return undefined;
       const measure = () => {
-        const next = { width: Math.max(160, node.clientWidth), height: Math.max(160, node.clientHeight) };
+        // Measure the stable outer scrollport, not its scrollbar-dependent client area.
+        const next = shared.geometryViewport(node);
+        if (!next) return;
         setViewport((old) => (old.width === next.width && old.height === next.height ? old : next));
       };
       measure();
@@ -1129,14 +1151,8 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     // shape and the parked one it becomes cannot be styled two different ways.
     const previewStroke = { ...shared.geometryStroke(null, controls), stroke: controls.preview, strokeWidth: 2, strokeDasharray: '5 4', 'pointer-events': 'none' };
     const hiddenRims = exclusiveRimIds(board);
-    // The canvas is framed once for the whole board, and a full view keeps a reserve on
-    // each side for what the drawing puts past the board: point labels, captions and the
-    // student's writing. `geometryFrame` owns that rule so the demo page shares it.
-    const frame = shared.geometryFrame(shared.geometryFrameInputs({
-      width, height, board,
-      captionOf: (element) => shared.captionPosition?.(element, at, { width, height }) || null,
-      textBox: (element) => shared.geometryTextBox(element.text.split('\n'), textMetrics),
-    }), viewport, { value: zoom, fit });
+    // `frame` expands the coordinate range as well as the paper. Both axes retain
+    // one common scale, and labels/text outside the drawing area remain reachable.
     const origin = frame.origin;
     // Zoom is real: the canvas grows with the zoom and the frame scrolls to the rest of
     // the drawing, so nothing is cropped; a fit puts the whole board, reserve included,
@@ -1155,8 +1171,8 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       },
       h('rect', { x: origin.x, y: origin.y, width: frame.span.width, height: frame.span.height, fill: '#FFFFFF' }),
       grid && h('g', { 'pointer-events': 'none' },
-        Array.from({ length: Math.floor(width / 40) + 1 }, (_, i) => h('line', { key: `v${i}`, x1: i * 40, y1: 0, x2: i * 40, y2: height, stroke: '#EEF2F4' })),
-        Array.from({ length: Math.floor(height / 40) + 1 }, (_, i) => h('line', { key: `h${i}`, x1: 0, y1: i * 40, x2: width, y2: i * 40, stroke: '#EEF2F4' }))),
+        Array.from({ length: Math.ceil(frame.span.width / 40) + 1 }, (_, i) => h('line', { key: `v${i}`, x1: i * 40, y1: origin.y, x2: i * 40, y2: origin.y + frame.span.height, stroke: '#EEF2F4' })),
+        Array.from({ length: Math.ceil(frame.span.height / 40) + 1 }, (_, i) => h('line', { key: `h${i}`, x1: origin.x, y1: i * 40, x2: origin.x + frame.span.width, y2: i * 40, stroke: '#EEF2F4' }))),
       board.elements.filter((e) => e.type !== 'text').map(renderElement),
       board.elements.filter((e) => e.type === 'text').map(renderText),
       board.points.filter((q) => !hiddenRims.has(q.id)).map(renderPoint),
@@ -1239,7 +1255,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     // An icon button whose accessible name is the tool's own; the note and clear controls
     // pass their own words instead.
     function dockButton(name, handler, extra = {}) {
-      return controls.iconButton(handler, extra.title ?? t(name), { title: t(name), ...extra });
+      return controls.iconButton(handler, extra.title ?? t(name), { icon: icon(name, 19), title: t(name), ...extra });
     }
     const modeToggle = (pressed, onLabel, offLabel, handler) => button(pressed ? t(onLabel) : t(offLabel), handler, {
       className: 'eb-mode-toggle', 'aria-pressed': pressed, title: pressed ? t(onLabel) : t(offLabel),
@@ -1280,7 +1296,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
         'aria-label': t('note'), 'data-tour-id': 'geometry-note',
       }),
       dockButton('clear', () => requestOverlay({ kind: 'clear' }), { className: 'eb-icon-button eb-danger', title: t('clearGeometry') }),
-      controls.moreMenu(moreOpen, () => setMoreOpen(!moreOpen)),
+      controls.moreMenu(moreOpen, () => setMoreOpen(!moreOpen), icon('more', 19)),
       button(h(React.Fragment, null, icon('insert', 17), h('span', null, t('insert'))), () => insertGeometry(), {
         className: 'eb-primary', title: t('insert'), 'aria-label': t('insert'), 'data-tour-id': 'geometry-insert',
         disabled: phase !== 'plain'
