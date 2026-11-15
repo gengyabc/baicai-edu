@@ -16,7 +16,7 @@ const t = (key, params = {}) => {
   assert.equal(typeof locale[key], 'string', `Missing locale key: ${key}`);
   return locale[key].replace(/\{(\w+)\}/g, (match, name) => Object.hasOwn(params, name) ? String(params[name]) : match);
 };
-const key = 'dsh-edu-math-board:v4:integration';
+const key = 'baicai-edu-math-board:v4:integration';
 const traceKey = `${key}:trace-v1`;
 const walk = (node) => !node || typeof node !== 'object' ? []
   : [node, ...(node.children || []).flat(Infinity).flatMap(walk)];
@@ -204,7 +204,7 @@ test('a genuine nineteen-pattern v3 local draft migrates without hiding its obje
   for (const object of old.objects) delete object.note;
   old.settings.defaults = old.settings.defaults.filter((entry) => entry.shape !== 'rectangle');
   old.settings.shapes = ['cat', 'circle'];
-  const storage = new Map([['dsh-edu-math-board:v3:integration', JSON.stringify(old)]]);
+  const storage = new Map([['baicai-edu-math-board:v3:integration', JSON.stringify(old)]]);
   withMount({ storage }, (h) => {
     assert.equal(h.board().schemaVersion, 4);
     assert.equal(h.board().objects.length, 1);
@@ -219,7 +219,7 @@ test('a genuine nineteen-pattern v3 local draft migrates without hiding its obje
 
 test('old draft without a trace restores the board and explicitly marks unknown prior work', () => {
   const draft = M.reduce(M.empty(), { type: 'add', shape: 'cat', count: 2 });
-  for (const draftKey of [key, 'dsh-edu-math-board:v3:integration', 'dsh-edu-math-board:v2:integration']) {
+  for (const draftKey of [key, 'baicai-edu-math-board:v3:integration', 'baicai-edu-math-board:v2:integration']) {
     withMount({ storage: new Map([[draftKey, JSON.stringify(draft)]]) }, (h) => {
       assert.deepEqual(h.board(), draft); assert.deepEqual(h.trace(), T.empty(true));
     });

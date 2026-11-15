@@ -38,7 +38,7 @@ Read the shared rules first; read the others before entering the matching branch
 
 `supported_stages: lower_primary, upper_primary`. This declares the default expression and flow it is adapted for; it is not a content gate. Other stages are routed to general teaching by the unified resolver.
 
-`subject: english`, teaching entry `english-session`, package `dsh-edu-english`. Teaching delivery language: English (see Turn Delivery Rules below). Role meanings are defined in `learn-data` `references/subject-contract.md`; the entry and this package's branches read from here as well.
+`subject: english`, teaching entry `english-session`, package `baicai-edu-english`. Teaching delivery language: English (see Turn Delivery Rules below). Role meanings are defined in `learn-data` `references/subject-contract.md`; the entry and this package's branches read from here as well.
 
 | Role | Read |
 |---|---|

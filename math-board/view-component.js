@@ -36,9 +36,9 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
 
   function Board(props) {
     React.useSyncExternalStore((fn) => ctx.locale.subscribe(fn), () => ctx.locale.getSnapshot());
-    const key = `dsh-edu-math-board:v4:${props.sessionId}`;
-    const legacyKey = `dsh-edu-math-board:v2:${props.sessionId}`;
-    const oldKey = `dsh-edu-math-board:v3:${props.sessionId}`;
+    const key = `baicai-edu-math-board:v4:${props.sessionId}`;
+    const legacyKey = `baicai-edu-math-board:v2:${props.sessionId}`;
+    const oldKey = `baicai-edu-math-board:v3:${props.sessionId}`;
     const watermarkKey = `${key}:config`;
     // One atomic local envelope pairs the reset watermark with the surviving
     // draft. Never persist a reset marker separately from its canvas.
@@ -81,7 +81,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     // File handles, pickers and the browser-side memory are shared with the geometry tab;
     // this page only supplies its own JSON, its draft and its sentences.
     const picker = shared.createBoardFilePicker({
-      React, t, dbName: 'dsh-edu-math-board', handleKey: 'last-board-file', anchor: true,
+      React, t, dbName: 'baicai-edu-math-board', handleKey: 'last-board-file', anchor: true,
       read: () => (gesture.current = null, M.serialize(boardRef.current)),
       load: (file, epoch) => loadOpenedFile(file, revision.current, epoch ?? draftEpoch.current),
       stale: (rev) => rev !== revision.current,

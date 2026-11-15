@@ -14,8 +14,8 @@
 
 ## 决策
 
-1. 新增共享规则包 `dsh-edu-math`（目录 `math-common/`），只注册一个内部技能 `math-common`（`user-invocable: false`）。它**不是**教学实现：不注册 band 的 core / session 教学技能，不声明 `supported_stages`，不写完整学科契约，不接管调度、档案或 finalize，也不参与教学解析。
-2. 依赖方向固定为 `learn ← dsh-edu-math ← band`，`math-board ← math-primary-low`。两个 band 的 `package.json` 显式声明 `dsh-edu-math`；安装闭包中共享包只出现一次，高年级不会因此带入画板。
+1. 新增共享规则包 `baicai-edu-math`（目录 `math-common/`），只注册一个内部技能 `math-common`（`user-invocable: false`）。它**不是**教学实现：不注册 band 的 core / session 教学技能，不声明 `supported_stages`，不写完整学科契约，不接管调度、档案或 finalize，也不参与教学解析。
+2. 依赖方向固定为 `learn ← baicai-edu-math ← band`，`math-board ← math-primary-low`。两个 band 的 `package.json` 显式声明 `baicai-edu-math`；安装闭包中共享包只出现一次，高年级不会因此带入画板。
 3. 共享规则按契约分文件，接口只回答“何时读哪份规则”：
    - `student-problem-contract.md`：角色边界、作答方式、受限刻意错答、纠正义务、批改响应、证据归属。
    - `practice-evidence-contract.md`：四种目的非等级、单题推进、题量上限非配额、停止条件、迁移需换场景取证。

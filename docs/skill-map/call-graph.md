@@ -5,39 +5,39 @@
 
 ## 1. 包依赖
 
-`math-primary-low`、`math-primary-high`、`chinese-reading` 与 `english` 通过 **skill 名称** 加载 `learn` 包中的共享能力；不能依赖 checkout 绝对路径。包配置以 `dependencies` 正式声明这些依赖。两个数学 band 还依赖共享数学契约包 `dsh-edu-math`（目录 `math-common/`，只注册内部 skill `math-common`）；该包自身只依赖 `learn`，不依赖任何 band。低年级数学另必需依赖独立的 `math-board`，高年级数学不自动带入画板，可显式选装。使用 `node scripts/install.mjs <学科包>` 自动把完整依赖闭包安装为 profile 顶层 bundle；当前 DSH 不会递归启用 npm 间接依赖，不能只 link 一个学科包。详见[统一安装说明](<../installation.md>)。
+`math-primary-low`、`math-primary-high`、`chinese-reading` 与 `english` 通过 **skill 名称** 加载 `learn` 包中的共享能力；不能依赖 checkout 绝对路径。包配置以 `dependencies` 正式声明这些依赖。两个数学 band 还依赖共享数学契约包 `baicai-edu-math`（目录 `math-common/`，只注册内部 skill `math-common`）；该包自身只依赖 `learn`，不依赖任何 band。低年级数学另必需依赖独立的 `math-board`，高年级数学不自动带入画板，可显式选装。使用 `node scripts/install.mjs <学科包>` 自动把完整依赖闭包安装为 profile 顶层 bundle；当前 DSH 不会递归启用 npm 间接依赖，不能只 link 一个学科包。详见[统一安装说明](<../installation.md>)。
 
 数学按年级段分两个包，**二者互不依赖且技能名唯一**：科目 id 同为 `math`，低年级包注册 `math-low-*`，高年级包注册 `math-high-*`。选型统一由[教学解析](<../../learn/skills/learn-data/references/teaching-resolver.md>)负责：新任务已知 1–3 年级优先 low、4–6 年级优先 high，缺年级默认 low；这是教学适配优先级而非内容门槛，low 也支持高阶内容。首选不可用时可用另一个完整兼容 band，否则走通用教学。`teaching.core_skill` / `teaching.session_skill` 保存实际唯一名，按名加载即可，无需宿主补丁或 provider 参数；进行中的任务保留原 band，不随安装顺序、年级偏好或题目难度热替换。旧名恢复只按 resolver 的迁移规则处理。
 
 ```mermaid
 flowchart TB
-  subgraph learn_pkg["learn / dsh-edu-learn"]
+  subgraph learn_pkg["learn / baicai-edu-learn"]
     L_entries["入口: learn-start · learn · learn-feynman · learn-profile · learn-save · learn-clean"]
     L_shared["底座: learn-core · learn-data · learn-errors · learn-recommend<br/>通用教学: learn-general-core · learn-general-session<br/>按需支持: learn-support"]
     L_READ["learn-read-image<br/>有图才读；读取层不诊断"]
   end
 
-  subgraph math_common_pkg["math-common / dsh-edu-math"]
+  subgraph math_common_pkg["math-common / baicai-edu-math"]
     MCOM["math-common<br/>编题契约 · 练习证据契约 · 画板协议<br/>只给规则，不是教学实现"]
   end
 
-  subgraph math_low_pkg["math-primary-low / dsh-edu-math-primary-low"]
+  subgraph math_low_pkg["math-primary-low / baicai-edu-math-primary-low"]
     ML["math-low-session · math-low-core · math-low-diagnose<br/>math-low-practice · math-low-student-problem"]
   end
 
-  subgraph math_high_pkg["math-primary-high / dsh-edu-math-primary-high"]
+  subgraph math_high_pkg["math-primary-high / baicai-edu-math-primary-high"]
     MH["math-high-session · math-high-core · math-high-diagnose<br/>math-high-practice · math-high-student-problem<br/>math-high-application-modeling<br/>已安装 references/: 任务选方法 · 支架 · 知识图谱"]
   end
 
-  subgraph chinese_pkg["chinese-reading / dsh-edu-chinese-reading"]
+  subgraph chinese_pkg["chinese-reading / baicai-edu-chinese-reading"]
     C["chinese-session · chinese-core<br/>chinese-reading-session · chinese-writing-session<br/>chinese-read-write-transfer · chinese-generate-tasks"]
   end
 
-  subgraph english_pkg["english / dsh-edu-english"]
+  subgraph english_pkg["english / baicai-edu-english"]
     E["english-session · english-core<br/>child-english-coach · child-news-reader<br/>comprehensible-input · interaction-hypothesis<br/>output-hypothesis · scaffolding-zpd<br/>task-based-language-learning · usage-based-language-learning<br/>spaced-retrieval"]
   end
 
-  MB["math-board / dsh-edu-math-board<br/>独立 Web 画板 + math_board_settings"]
+  MB["math-board / baicai-edu-math-board<br/>独立 Web 画板 + math_board_settings"]
   math_low_pkg -->|必需包依赖；学生提交画板快照供教学| MB
   math_high_pkg -.->|可选安装；学生提交画板快照供教学| MB
   math_low_pkg -->|必需包依赖；按条件加载共享契约| math_common_pkg
@@ -239,7 +239,7 @@ leaf 用 `await_student` 表达等待，以 `continue_diagnose` / `continue_prac
 
 普通学习闭环时回传 `stage_options`：`迁移` → `math-{low,high}-student-problem`，`练一练` → `math-{low,high}-practice`（高年级另加 `ui.stage.modeling` → `math-high-application-modeling`）；由入口按 `next-step.md` 与基础菜单合并展示。未处理文件交回生命周期调用一次 `learn-errors`，已处理文件只读 extracted / `material_refs`；本包不直接加载 `learn-errors`。segment 的 `source` 沿用 `target_context.source`，不因切换 leaf 覆盖材料来源；`submode` 由 session 按本轮已有学生表现证据的主任务合并。leaf 收到结束请求先回传 session，再交生命周期处理；不直接 finalize。`mode=feynman` 优先于迁移，保持学生主讲，不并行开启出题迁移。
 
-画板：消息带 `我的画板.json` / `我的修改记录.json`，或学生问画板怎么用时，按 `math-{low,high}-core` 条件表 **read** `references/structured-drawing.md`（不是独立 skill），该 reference 再按条件加载 `math-common` 的 `board-contract`。出题不因此去写摆法。新的学习 `session_id` 不接上一场题面和画板修改；同一条未保存日志才接本场未答题。画板只认本场已发送附件。可选 Web 插件 `dsh-edu-math-board` 见 [`math-board/README.md`](../../math-board/README.md)。
+画板：消息带 `我的画板.json` / `我的修改记录.json`，或学生问画板怎么用时，按 `math-{low,high}-core` 条件表 **read** `references/structured-drawing.md`（不是独立 skill），该 reference 再按条件加载 `math-common` 的 `board-contract`。出题不因此去写摆法。新的学习 `session_id` 不接上一场题面和画板修改；同一条未保存日志才接本场未答题。画板只认本场已发送附件。可选 Web 插件 `baicai-edu-math-board` 见 [`math-board/README.md`](../../math-board/README.md)。
 
 图片 / 手写：消息附件由当前学科 session 按 `learn-core` 条件行加载 `learn-read-image`；正文路径或 `scan all` 由入口交 `learn-errors`，图片再交同一读取层。数学先按 `math-{low,high}-core` 条件行加载 `math-common` 并读手写契约，再加载读取层；路径 / `scan all` 的数学图片同样按当前学科 core 的图片条件先读手写契约。读取层归档原图、写转录、交回事实与至多一个待答问题，诊断与证据合并仍归 `math-{low,high}-session`。读取层不直接对学生说话：原件未归档或格式不支持时，由当前回合所有者说明或提问。场景见 [4.10](#410-图片与手写读取)。
 

@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to `dsh-edu-math-board` are recorded here. This package has
+All notable changes to `baicai-edu-math-board` are recorded here. This package has
 not been published to a registry yet; everything below landed before the first
 release, so 0.6.0 is the current state rather than an upgrade path.
 

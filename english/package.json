@@ -1,26 +1,26 @@
 {
-  "name": "dsh-edu-english",
+  "name": "baicai-edu-english",
   "version": "0.1.0",
   "type": "module",
   "exports": {
     "./package.json": "./package.json"
   },
-  "description": "English teaching skills for dsh-edu: story input, dialogic interaction, output, scaffolding, tasks, usage-based patterns, spaced retrieval, and child-friendly news reading.",
+  "description": "English teaching skills for baicai-edu: story input, dialogic interaction, output, scaffolding, tasks, usage-based patterns, spaced retrieval, and child-friendly news reading.",
   "license": "GPL-3.0-or-later",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gengyabc/dsh-edu.git",
+    "url": "git+https://github.com/gengyabc/baicai-edu.git",
     "directory": "english"
   },
-  "homepage": "https://github.com/gengyabc/dsh-edu/tree/main/english#readme",
+  "homepage": "https://github.com/gengyabc/baicai-edu/tree/main/english#readme",
   "bugs": {
-    "url": "https://github.com/gengyabc/dsh-edu/issues"
+    "url": "https://github.com/gengyabc/baicai-edu/issues"
   },
   "engines": {
     "node": ">=22"
   },
   "dependencies": {
-    "dsh-edu-learn": "^0.1.0"
+    "baicai-edu-learn": "^0.1.0"
   },
   "files": [
     "cordis.patch.yml",

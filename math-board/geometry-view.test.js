@@ -38,8 +38,8 @@ const t = (key, params = {}) => {
   return locale[key].replace(/\{(\w+)\}/g, (match, name) =>
     Object.hasOwn(params, name) ? String(params[name]) : match);
 };
-const QUANTITY_KEY = 'dsh-edu-math-board:v4:tabbed';
-const GEOMETRY_KEY = `dsh-edu-math-board:geometry:v1:tabbed`;
+const QUANTITY_KEY = 'baicai-edu-math-board:v4:tabbed';
+const GEOMETRY_KEY = `baicai-edu-math-board:geometry:v1:tabbed`;
 
 /** Stateful hooks: persistent slots, dependency-aware effects and explicit rendering. */
 function mount(options = {}) {

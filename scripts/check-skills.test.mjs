@@ -8,7 +8,7 @@ import test from 'node:test'
 // Isolated checker fixtures: never rename real skills or touch a DSH profile.
 const checker = readFileSync(new URL('./check-skills.mjs', import.meta.url), 'utf8')
 function checkFixture(duplicate) {
-  const root = mkdtempSync(join(tmpdir(), 'dsh-edu-skill-check-'))
+  const root = mkdtempSync(join(tmpdir(), 'baicai-edu-skill-check-'))
   try {
     mkdirSync(join(root, 'scripts'))
     writeFileSync(join(root, 'scripts/check-skills.mjs'), checker)
@@ -27,7 +27,7 @@ function checkFixture(duplicate) {
     }
     for (const bundle of ['math-primary-low', 'math-primary-high']) {
       writeFileSync(join(root, bundle, 'package.json'), JSON.stringify({
-        dependencies: { 'dsh-edu-math': '^0.1.0' },
+        dependencies: { 'baicai-edu-math': '^0.1.0' },
       }))
     }
     return spawnSync(process.execPath, [join(root, 'scripts/check-skills.mjs')], { encoding: 'utf8' })
@@ -56,7 +56,7 @@ test('skill checker rejects duplicate math registrations before map insertion lo
 // A skill ships alone: `skills/` and `resources/` are all an install has. A link
 // that resolves only in the checkout is dead for every installed student.
 function linkFixture(body) {
-  const root = mkdtempSync(join(tmpdir(), 'dsh-edu-link-check-'))
+  const root = mkdtempSync(join(tmpdir(), 'baicai-edu-link-check-'))
   try {
     mkdirSync(join(root, 'scripts'))
     writeFileSync(join(root, 'scripts/check-skills.mjs'), checker)
@@ -81,7 +81,7 @@ function linkFixture(body) {
       '---\nname: math-high-core\ndescription: Peer.\nuser-invocable: false\n---\n')
     for (const bundle of ['math-primary-low', 'math-primary-high']) {
       writeFileSync(join(root, bundle, 'package.json'), JSON.stringify({
-        dependencies: { 'dsh-edu-math': '^0.1.0' },
+        dependencies: { 'baicai-edu-math': '^0.1.0' },
       }))
     }
     return spawnSync(process.execPath, [join(root, 'scripts/check-skills.mjs')], { encoding: 'utf8' })

@@ -16,9 +16,9 @@ A brief first contact may go straight into learning, or use Feynman mode so the 
 
 | Option | subject id | Subject package |
 |---|---|---|
-| Math | `math` | `dsh-edu-math-primary-low`, `dsh-edu-math-primary-high` |
-| Chinese | `chinese` | `dsh-edu-chinese-reading` |
-| English | `english` | `dsh-edu-english` |
+| Math | `math` | `baicai-edu-math-primary-low`, `baicai-edu-math-primary-high` |
+| Chinese | `chinese` | `baicai-edu-chinese-reading` |
+| English | `english` | `baicai-edu-english` |
 
 Math has one subject id and two band packages; the resolver selects the one whose declared stage fit matches the student, so the table names both and the option does not ask the student to choose a package. A subject id that resolves to more than one package is normal; record which one was selected in the session as usual.
 

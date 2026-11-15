@@ -2,7 +2,7 @@
 
 ## 两种安装来源
 
-- **registry 发布**：每个包声明发布版本范围（如 `"dsh-edu-learn": "^0.1.0"`），不声明 `"private": true`。接收方只需装 **DSH**，用自己的 dsh 命令按包名安装；不需要你的 checkout、profile 或任何本机路径。
+- **registry 发布**：每个包声明发布版本范围（如 `"baicai-edu-learn": "^0.1.0"`），不声明 `"private": true`。接收方只需装 **DSH**，用自己的 dsh 命令按包名安装；不需要你的 checkout、profile 或任何本机路径。
 - **本地 checkout**：`scripts/install.mjs` 按 `package.json` 的必需依赖遍历同仓库 bundle，把依赖闭包**逐个 `npm pack` 成 tarball**，再把这批 tarball 一次交给 `dsh` 安装。本地与 registry 因而得到同一种 `node_modules` 布局：闭包里每个包都是 profile 的直接依赖，也正是单份技能 provider 能解析全部包的前提。**不要再用 `link:` 装本地 checkout**：pnpm 不会安装被链接包的依赖，profile 只会得到闭包的一部分。技能仍从安装处读取，本地改动重装一次即生效；宿主代码修改按 DSH 重载或重启诊断生效。
 
 ## 接收方怎么装（DSH 已装好）
@@ -10,16 +10,16 @@
 一个学科一条命令，**只写学科包名**：
 
 ```bash
-dsh plugin --profile web add dsh-edu-math-primary-low     # 低年级数学
-dsh plugin --profile web add dsh-edu-math-primary-high    # 高年级数学（画板可选，见下）
-dsh plugin --profile web add dsh-edu-chinese-reading      # 语文
-dsh plugin --profile web add dsh-edu-english              # 英语
+dsh plugin --profile web add baicai-edu-math-primary-low     # 低年级数学
+dsh plugin --profile web add baicai-edu-math-primary-high    # 高年级数学（画板可选，见下）
+dsh plugin --profile web add baicai-edu-chinese-reading      # 语文
+dsh plugin --profile web add baicai-edu-english              # 英语
 ```
 
-`dsh plugin` 是 pnpm 的透传入口（`dsh plugin --help`：「pnpm arguments, forwarded verbatim」）。装完一个包后，DSH 的 `reconcile` 会把**本次新增**且声明了 `dsh.bundle` 的依赖一并写进 `dsh.profile.bundles`：它按依赖名遍历当前 `dependencies`，跳过安装前就存在的（`beforeDeps`），把新出现的 bundle 追加进选择。因此 `add dsh-edu-math-primary-low` 一条命令就会启用 `dsh-edu-learn`、`dsh-edu-math`、`dsh-edu-math-board` 和它自己，**不需要把依赖再列一遍**。
+`dsh plugin` 是 pnpm 的透传入口（`dsh plugin --help`：「pnpm arguments, forwarded verbatim」）。装完一个包后，DSH 的 `reconcile` 会把**本次新增**且声明了 `dsh.bundle` 的依赖一并写进 `dsh.profile.bundles`：它按依赖名遍历当前 `dependencies`，跳过安装前就存在的（`beforeDeps`），把新出现的 bundle 追加进选择。因此 `add baicai-edu-math-primary-low` 一条命令就会启用 `baicai-edu-learn`、`baicai-edu-math`、`baicai-edu-math-board` 和它自己，**不需要把依赖再列一遍**。
 
-- 按需加载：只装哪个学科，就只有那个学科的技能注册；共享的 `dsh-edu-learn` 随依赖装入并启用，因为学科包需要它的生命周期与数据协议。
-- 高年级数学不依赖画板，要画板就**另外**装一次：`dsh plugin --profile web add dsh-edu-math-board`。低年级数学已在依赖里声明画板，会自动带上。
+- 按需加载：只装哪个学科，就只有那个学科的技能注册；共享的 `baicai-edu-learn` 随依赖装入并启用，因为学科包需要它的生命周期与数据协议。
+- 高年级数学不依赖画板，要画板就**另外**装一次：`dsh plugin --profile web add baicai-edu-math-board`。低年级数学已在依赖里声明画板，会自动带上。
 - 已手动禁用的 bundle 不会被重装强行启用；要恢复它，先在 DSH 插件管理里明确启用。
 - 这条自动启用行为来自 DSH 0.2.2-rc.1 的 `dsh-plugin-manager`（`reconcile`），属于上游行为而非本仓库保证；换 DSH 版本后请以实际安装结果为准。
 
@@ -54,19 +54,19 @@ node scripts/build-resources.mjs        # 由 skills/ 重建六个包的 resourc
 ```yaml
 - insert:
     - id: edu-skills
-      name: !!js …createRequire(baseUrl + 'x').resolve('dsh-edu-learn/package.json') → skill-provider.mjs
+      name: !!js …createRequire(baseUrl + 'x').resolve('baicai-edu-learn/package.json') → skill-provider.mjs
       config:
         packages: [ … 闭包里每个包的 package.json 路径 … ]
 ```
 
-- **只有一份 provider 代码**：任何学科包都依赖 `dsh-edu-learn`，所以任何安装都能解析到同一个模块；不再有各包内的副本，也没有 `sync` 与副本比对。
+- **只有一份 provider 代码**：任何学科包都依赖 `baicai-edu-learn`，所以任何安装都能解析到同一个模块；不再有各包内的副本，也没有 `sync` 与副本比对。
 - **闭包整份列出**：`name` 是包内路径（各次激活完全相同），`config.packages` 列出闭包中的七个包。DSH 把同 id 的插入行组合成一个条目，而各 bundle 层**后写入者生效**；因此每一行都列出完整闭包，无论最终留下的是哪一行的最后一层，provider 都拿得到全部根路径。装不上或未安装的包保留为未解析路径，provider 跳过它（本地半装不会凭空注册不存在的包）。
 - **代码与文档分离**：技能正文渲染进各包的 `resources/`（每个技能一个文件，附它引用的资源文件），所以只有代码、没有 `skills/` 的安装同样能注册完整技能。`skills/` 仍随包发布，供阅读与维护。
-- **自包含**：`dsh-edu-learn` 单独安装时，`learn-general-*` 的引用都在 `learn/resources/` 里，不依赖其他学科包。
-- 发布后至少用隔离 `DSH_HOME` 真装一次，**且只写学科包名**：`dsh plugin --profile web add dsh-edu-math-primary-low`，确认 `dsh.profile.bundles` 里出现 `dsh-edu-learn`、`dsh-edu-math`、`dsh-edu-math-board`，并确认技能注册齐全（低年级数学闭包注册 20 个技能，全装 43 个）、不是静默少一批。tarball 里有文件只说明包装对了，不等于接收方已注册。
-- 接收方侧的前置条件只有 DSH 与可用模型路由；插件的 `dsh-edu-learn: ^0.1.0` 等范围由 npm 自动满足。
+- **自包含**：`baicai-edu-learn` 单独安装时，`learn-general-*` 的引用都在 `learn/resources/` 里，不依赖其他学科包。
+- 发布后至少用隔离 `DSH_HOME` 真装一次，**且只写学科包名**：`dsh plugin --profile web add baicai-edu-math-primary-low`，确认 `dsh.profile.bundles` 里出现 `baicai-edu-learn`、`baicai-edu-math`、`baicai-edu-math-board`，并确认技能注册齐全（低年级数学闭包注册 20 个技能，全装 43 个）、不是静默少一批。tarball 里有文件只说明包装对了，不等于接收方已注册。
+- 接收方侧的前置条件只有 DSH 与可用模型路由；插件的 `baicai-edu-learn: ^0.1.0` 等范围由 npm 自动满足。
 
-**本地安装为什么先 pack**：`pnpm add link:<目录>` 只链接该目录本身、不装它的 `dependencies`，profile 里只有部分包，单份 provider 就找不到其余包。安装器因此走「pack 闭包 → 一次 `dsh plugin add <tarballs>`」，并在 profile 的 `pnpm-workspace.yaml` 写 `overrides`（DSH 没有对应命令，由安装器写入；重装时整块替换），让某个 tarball 声明的兄弟依赖也解析到本地 tarball，而不是 npm registry（`dsh-edu-*` 目前尚未发布）。每次重装都重新 pack 闭包，并把之前装过的其它学科包按仍留在 profile 里的 tarball 路径一并重新 add，因此逐个安装学科不会互相清掉。pack 产物放在系统临时目录，重装会生成新的目录并替换 profile 里的引用。
+**本地安装为什么先 pack**：`pnpm add link:<目录>` 只链接该目录本身、不装它的 `dependencies`，profile 里只有部分包，单份 provider 就找不到其余包。安装器因此走「pack 闭包 → 一次 `dsh plugin add <tarballs>`」，并在 profile 的 `pnpm-workspace.yaml` 写 `overrides`（DSH 没有对应命令，由安装器写入；重装时整块替换），让某个 tarball 声明的兄弟依赖也解析到本地 tarball，而不是 npm registry（`baicai-edu-*` 目前尚未发布）。每次重装都重新 pack 闭包，并把之前装过的其它学科包按仍留在 profile 里的 tarball 路径一并重新 add，因此逐个安装学科不会互相清掉。pack 产物放在系统临时目录，重装会生成新的目录并替换 profile 里的引用。
 
 ## 本地 checkout 安装
 
@@ -114,17 +114,17 @@ node scripts/install.mjs math-primary-low --profile web --dry-run
 
 `learn` 自带 `learn-general-core`、`learn-general-session` 与 `learn-support`，单独安装即可使用通用任务教学和五类支持；不按年龄另装包，不反向安装所有学科。专门包仍提供各自教学方法，缺包不妨碍通用路径。此源码变更本身不表示正在使用的 profile 已更新或启用。
 
-依赖只声明在各包的 `package.json` → `dependencies`：`dsh-edu-math`、两个 band、语文学科与英语声明 `dsh-edu-learn: ^0.1.0`，两个 band 另外声明 `dsh-edu-math: ^0.1.0`（低年级数学另加 `dsh-edu-math-board: ^0.6.0`）。任何包都不再声明 `"private": true`，因为 npm 会拒绝发布私有包，而 DSH 的官方 bundle 校验也按“公开 bundle”读取。
+依赖只声明在各包的 `package.json` → `dependencies`：`baicai-edu-math`、两个 band、语文学科与英语声明 `baicai-edu-learn: ^0.1.0`，两个 band 另外声明 `baicai-edu-math: ^0.1.0`（低年级数学另加 `baicai-edu-math-board: ^0.6.0`）。任何包都不再声明 `"private": true`，因为 npm 会拒绝发布私有包，而 DSH 的官方 bundle 校验也按“公开 bundle”读取。
 
 安装器从这些声明递归生成依赖优先、按包去重的闭包，把它们 pack 成 tarball 后执行**一次**：
 
 ```bash
 node scripts/install.mjs math-primary-low --profile web
 # 展开结果等价于（由安装器生成，不需要手写）：
-dsh plugin --profile web add <临时目录>/dsh-edu-learn-*.tgz <临时目录>/dsh-edu-math-*.tgz <临时目录>/dsh-edu-math-board-*.tgz <临时目录>/dsh-edu-math-primary-low-*.tgz
+dsh plugin --profile web add <临时目录>/baicai-edu-learn-*.tgz <临时目录>/baicai-edu-math-*.tgz <临时目录>/baicai-edu-math-board-*.tgz <临时目录>/baicai-edu-math-primary-low-*.tgz
 ```
 
-每个 bundle 成为 profile 的顶层依赖，由 DSH 原生处理安装与启用。技能由 `learn` 携带的唯一 provider 从各包的 `resources/` 注册；学科 patch 不复制共享规则，不重复插入画板，六个技能包激活的是同一个 `edu-skills` 条目。`all` 只是三个已交付学科（数学两个年级段包）的快捷选择，不扫描实验目录为新学科。两个数学包互不依赖：科目 id 都是 `math`，使用唯一技能名 `math-low-*` / `math-high-*`，由[教学解析](../learn/skills/learn-data/references/teaching-resolver.md)统一选择：已知 1–3 年级优先 low、4–6 年级优先 high，缺年级默认 low；优先级不是内容门槛，low 也可教高阶内容，已安装但未被选中的包不影响正在进行的任务。共享数学契约由 `dsh-edu-math` 提供，闭包中只出现一次；它不含 band 的 core / session 教学技能，不会被解析成第三个数学实现。
+每个 bundle 成为 profile 的顶层依赖，由 DSH 原生处理安装与启用。技能由 `learn` 携带的唯一 provider 从各包的 `resources/` 注册；学科 patch 不复制共享规则，不重复插入画板，六个技能包激活的是同一个 `edu-skills` 条目。`all` 只是三个已交付学科（数学两个年级段包）的快捷选择，不扫描实验目录为新学科。两个数学包互不依赖：科目 id 都是 `math`，使用唯一技能名 `math-low-*` / `math-high-*`，由[教学解析](../learn/skills/learn-data/references/teaching-resolver.md)统一选择：已知 1–3 年级优先 low、4–6 年级优先 high，缺年级默认 low；优先级不是内容门槛，low 也可教高阶内容，已安装但未被选中的包不影响正在进行的任务。共享数学契约由 `baicai-edu-math` 提供，闭包中只出现一次；它不含 band 的 core / session 教学技能，不会被解析成第三个数学实现。
 
 ## registry 安装为什么只写学科包
 
@@ -157,4 +157,4 @@ node --test scripts/skill-contracts.test.mjs
 node --test math-board/*.test.js
 ```
 
-隔离实测时可指定临时 `DSH_HOME`，避免修改正在使用的 profile。新建 profile 只安装高年级数学后，dependencies 与 `dsh.profile.bundles` 中应同时看到 `dsh-edu-learn`、`dsh-edu-math`、`dsh-edu-math-primary-high`，没有 `dsh-edu-math-board`；显式选装画板后才增加它。低年级数学仍同时安装 `dsh-edu-learn`、`dsh-edu-math`、`dsh-edu-math-board`、`dsh-edu-math-primary-low`。重复安装或组合安装时 `dsh-edu-math` 仍只出现一次。重装及加入其他学科后，每个教育 bundle 仍只出现一次。通过配置展开确认各技能 provider 及已选装的画板各注册一次；实际工具栏显示与交互仍需在真实 Web 页面验收。
+隔离实测时可指定临时 `DSH_HOME`，避免修改正在使用的 profile。新建 profile 只安装高年级数学后，dependencies 与 `dsh.profile.bundles` 中应同时看到 `baicai-edu-learn`、`baicai-edu-math`、`baicai-edu-math-primary-high`，没有 `baicai-edu-math-board`；显式选装画板后才增加它。低年级数学仍同时安装 `baicai-edu-learn`、`baicai-edu-math`、`baicai-edu-math-board`、`baicai-edu-math-primary-low`。重复安装或组合安装时 `baicai-edu-math` 仍只出现一次。重装及加入其他学科后，每个教育 bundle 仍只出现一次。通过配置展开确认各技能 provider 及已选装的画板各注册一次；实际工具栏显示与交互仍需在真实 Web 页面验收。

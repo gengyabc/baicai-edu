@@ -1,6 +1,6 @@
-# dsh-edu-math-primary-high
+# baicai-edu-math-primary-high
 
-以小学高年级（4–6 年级）为主的多方法数学教学包，以学生思路为起点，按任务、先修知识与实际表现选择方法。年级只调整语言、记号、题型和节奏，不限制学生探究更高内容；仅依赖 `dsh-edu-learn` 与共享数学契约包 `dsh-edu-math`，无需画板也能完整教学。低年级（1–3 年级）对应包为 [`math-primary-low/`](../math-primary-low/README.md)。
+以小学高年级（4–6 年级）为主的多方法数学教学包，以学生思路为起点，按任务、先修知识与实际表现选择方法。年级只调整语言、记号、题型和节奏，不限制学生探究更高内容；仅依赖 `baicai-edu-learn` 与共享数学契约包 `baicai-edu-math`，无需画板也能完整教学。低年级（1–3 年级）对应包为 [`math-primary-low/`](../math-primary-low/README.md)。
 
 ## 与低年级包的关系
 
@@ -58,7 +58,7 @@ node scripts/install.mjs math-primary-high math-board --profile web
 
 系统状态在 `outputs/students/`，用户原件在 `data/students/<student_id>/math/raw/`；均不随包发布。原件只读，改名先备份至 `outputs/students/<student_id>/math/backups/raw/`，处理交共享技能。
 
-学生编题、练习证据与画板协议只维护在 `dsh-edu-math`，本包 reference 只保留高年级增补；共享契约变更时两个 band 的共同场景与差异场景都要回放。数学技能复用有效快照，并读取共享 `personal.interests` 与科目偏好。题型按教学目的选择，故事、计算、图表、等式和论证各有用途；同一关系换场景可检验情境迁移，兴趣只在学生做不出当前题时搭桥。用法见 `skills/math-high-core/references/math-personalization.md`。每轮唯一 segment 由调用方追加到 `session_log.json`；档案与 finalize 由共享协议执行，完整结构见 `learn-data`。
+学生编题、练习证据与画板协议只维护在 `baicai-edu-math`，本包 reference 只保留高年级增补；共享契约变更时两个 band 的共同场景与差异场景都要回放。数学技能复用有效快照，并读取共享 `personal.interests` 与科目偏好。题型按教学目的选择，故事、计算、图表、等式和论证各有用途；同一关系换场景可检验情境迁移，兴趣只在学生做不出当前题时搭桥。用法见 `skills/math-high-core/references/math-personalization.md`。每轮唯一 segment 由调用方追加到 `session_log.json`；档案与 finalize 由共享协议执行，完整结构见 `learn-data`。
 
 ```bash
 node scripts/check-skills.mjs

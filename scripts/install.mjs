@@ -13,7 +13,7 @@
 // overrides in the PROFILE's package.json. So the install also declares
 // overrides naming every packed tarball: a closure package pulled in by another
 // tarball resolves to the packed copy instead of the registry. npm has not
-// published dsh-edu yet, and even after that a local install must use this
+// published baicai-edu yet, and even after that a local install must use this
 // checkout, not whatever is published.
 import { existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -39,13 +39,13 @@ function readManifest(directory) {
 }
 
 const subjectPackages = {
-  learn: 'dsh-edu-learn',
-  'math-common': 'dsh-edu-math',
-  'math-board': 'dsh-edu-math-board',
-  'math-primary-low': 'dsh-edu-math-primary-low',
-  'math-primary-high': 'dsh-edu-math-primary-high',
-  'chinese-reading': 'dsh-edu-chinese-reading',
-  english: 'dsh-edu-english',
+  learn: 'baicai-edu-learn',
+  'math-common': 'baicai-edu-math',
+  'math-board': 'baicai-edu-math-board',
+  'math-primary-low': 'baicai-edu-math-primary-low',
+  'math-primary-high': 'baicai-edu-math-primary-high',
+  'chinese-reading': 'baicai-edu-chinese-reading',
+  english: 'baicai-edu-english',
 };
 const subjectKeys = Object.fromEntries(Object.entries(subjectPackages).map(([subject, name]) => [name, subject]));
 
@@ -60,7 +60,7 @@ function readBundledManifest(root, subject) {
 
 /**
  * Resolve an argument that may be a subject (`learn`), a package name
- * (`dsh-edu-learn`), or a directory name, to the checkout's bundle subject.
+ * (`baicai-edu-learn`), or a directory name, to the checkout's bundle subject.
  */
 export function resolvePackageKey(name) {
   return subjectKeys[name] ?? name;
@@ -121,7 +121,7 @@ export function planInstallation(argv, root = repositoryRoot) {
     for (const [dependencyName, spec] of Object.entries(manifest.dependencies ?? {})) {
       const dependencyKey = bundledNames.get(dependencyName);
       // External runtime libraries are npm's responsibility, not DSH bundles.
-      if (!dependencyKey && !dependencyName.startsWith('dsh-edu-')) continue;
+      if (!dependencyKey && !dependencyName.startsWith('baicai-edu-')) continue;
       if (!dependencyKey || typeof spec !== 'string') {
         throw new Error(`${key}: missing or mismatched bundle dependency ${dependencyName} (${spec}).`);
       }
@@ -156,7 +156,7 @@ export function planInstallation(argv, root = repositoryRoot) {
  * @param options.stage - a directory to pack into (defaults to a new temp one).
  * @returns `{ stage, specs }`: the directory and `{ name, spec }` per tarball.
  */
-export function packLocal(plan, { root = repositoryRoot, run = spawnSync, stage = mkdtempSync(join(tmpdir(), 'dsh-edu-install-')) } = {}) {
+export function packLocal(plan, { root = repositoryRoot, run = spawnSync, stage = mkdtempSync(join(tmpdir(), 'baicai-edu-install-')) } = {}) {
   const specs = plan.packages.map(directory => {
     const out = run('npm', ['pack', `./${directory}`, '--pack-destination', stage],
       { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
@@ -217,7 +217,7 @@ function artifacts(plan, profilesRoot, profile, { root, run }) {
     });
   // Every install owns a fresh staging directory, so it also declares the
   // current artifacts; nothing else repacks the copies they replace.
-  const stage = mkdtempSync(join(tmpdir(), 'dsh-edu-install-'));
+  const stage = mkdtempSync(join(tmpdir(), 'baicai-edu-install-'));
   const packed = packLocal(plan, { root, run, stage });
   const byName = new Map([...kept, ...packed.specs].map(({ name, spec }) => [name, spec]));
   const order = [...new Set([...plan.names.filter((name) => byName.has(name)), ...byName.keys()])];

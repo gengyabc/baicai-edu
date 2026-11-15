@@ -1,6 +1,6 @@
-# dsh-edu-math-primary-low
+# baicai-edu-math-primary-low
 
-以小学低年级（1–3 年级）为主的 CGI 数学指令包，年级只调整语气、语言和呈现，不限制学生探究高年级内容；依赖 `dsh-edu-learn`、共享数学契约包 `dsh-edu-math` 与 `dsh-edu-math-board`，自身不提供工具或运行时，画板由独立依赖包提供。4–6 年级对应包为 [`math-primary-high/`](../math-primary-high/README.md)：两者科目 id 同为 `math`，技能名分别为 `math-low-*` 与 `math-high-*`。选型由 `learn-data` 的 `references/teaching-resolver.md` 统一负责：已知 1–3 年级优先 low、4–6 年级优先 high，缺年级默认 low；这些优先级不是内容门槛，low 也支持高阶内容。同一场进行中的任务不受另一包安装影响。
+以小学低年级（1–3 年级）为主的 CGI 数学指令包，年级只调整语气、语言和呈现，不限制学生探究高年级内容；依赖 `baicai-edu-learn`、共享数学契约包 `baicai-edu-math` 与 `baicai-edu-math-board`，自身不提供工具或运行时，画板由独立依赖包提供。4–6 年级对应包为 [`math-primary-high/`](../math-primary-high/README.md)：两者科目 id 同为 `math`，技能名分别为 `math-low-*` 与 `math-high-*`。选型由 `learn-data` 的 `references/teaching-resolver.md` 统一负责：已知 1–3 年级优先 low、4–6 年级优先 high，缺年级默认 low；这些优先级不是内容门槛，low 也支持高阶内容。同一场进行中的任务不受另一包安装影响。
 
 ## 技能
 
@@ -43,7 +43,7 @@ node scripts/install.mjs math-primary-low --profile web
 
 数学技能复用有效快照，并读取共享 `personal.interests` 与科目偏好。数量关系题以 CGI 为视角，题面按目标选取，故事用于数量意义，计算、等式等可用非故事格式；独立新情境的对应证据才支持迁移，教学换场景不计迁移；兴趣只在学生做不出当前题时搭桥。用法见 `skills/math-low-core/references/math-personalization.md`。每轮唯一 segment 由调用方追加到 `session_log.json`；档案与 finalize 由共享协议执行，完整结构见 `learn-data`。
 
-规则按 `math-low-core` 条件指针加载，不把参考书摘要放进运行指令；阶段按 CGI 分算术、多位数、分数三条线，仅作策略摘要，不改共享 schema、不设内容门槛。共同的编题、练习证据与画板协议只维护在 `dsh-edu-math`，本包 reference 只保留本地增补；共享契约变更时两个 band 的共同场景与差异场景都要回放。
+规则按 `math-low-core` 条件指针加载，不把参考书摘要放进运行指令；阶段按 CGI 分算术、多位数、分数三条线，仅作策略摘要，不改共享 schema、不设内容门槛。共同的编题、练习证据与画板协议只维护在 `baicai-edu-math`，本包 reference 只保留本地增补；共享契约变更时两个 band 的共同场景与差异场景都要回放。
 
 ```bash
 node scripts/check-skills.mjs

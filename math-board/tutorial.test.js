@@ -18,8 +18,8 @@ const t = (key, params = {}) => {
 };
 
 test('tutorial storage keys are mode-specific and versioned', () => {
-  assert.equal(tutorialStorageKey('quantity'), `dsh-edu-math-board:tutorial:${TUTORIAL_VERSION}:quantity`);
-  assert.equal(tutorialStorageKey('geometry'), `dsh-edu-math-board:tutorial:${TUTORIAL_VERSION}:geometry`);
+  assert.equal(tutorialStorageKey('quantity'), `baicai-edu-math-board:tutorial:${TUTORIAL_VERSION}:quantity`);
+  assert.equal(tutorialStorageKey('geometry'), `baicai-edu-math-board:tutorial:${TUTORIAL_VERSION}:geometry`);
   assert.notEqual(tutorialStorageKey('quantity'), tutorialStorageKey('geometry'));
 });
 

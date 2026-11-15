@@ -53,7 +53,7 @@ If `math-common` cannot be loaded, keep teaching under this safe fallback and do
 
 Band selection belongs to `learn-data`'s `references/teaching-resolver.md`. The bands have unique skill names: this package uses `math-low-core`, `math-low-session`, `math-low-diagnose`, `math-low-practice`, and `math-low-student-problem`; the other uses `math-high-*`. Load the selected skills by name. Known grades 1–3 prefer low and grades 4–6 prefer high; missing grade defaults to low. These are teaching-fit preferences, not content gates: low supports advanced content, and a harder topic alone does not change bands. Keep the current task's resolved teaching owner; let the shared resolver select teaching for a new task.
 
-`subject: math`, teaching entry `math-low-session`, package `dsh-edu-math-primary-low`. For the meaning of roles see `learn-data`'s `references/subject-contract.md`; the entry and this package's branches are read from here as well.
+`subject: math`, teaching entry `math-low-session`, package `baicai-edu-math-primary-low`. For the meaning of roles see `learn-data`'s `references/subject-contract.md`; the entry and this package's branches are read from here as well.
 
 Teaching delivery language: the student's `language` from the shared profile (missing or unknown → `zh-CN`), so student-visible teaching stays in that language; process labels follow the UI locale per `learn-data`'s `references/ui-locale.md`.
 

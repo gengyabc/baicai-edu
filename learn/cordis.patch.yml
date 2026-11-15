@@ -1,6 +1,6 @@
-# Shared learning skills for dsh-edu.
+# Shared learning skills for baicai-edu.
 #
-# Every skill package activates the one provider shipped by dsh-edu-learn,
+# Every skill package activates the one provider shipped by baicai-edu-learn,
 # so a single plugin module registers every installed package's skills.
 #
 # The entry id is shared by every activation: DSH composes them into one entry
@@ -10,13 +10,13 @@
 # this row or a subject's is left standing.
 - insert:
     - id: edu-skills
-      name: !!js process.getBuiltinModule('node:url').fileURLToPath(new URL('skill-provider.mjs', process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('dsh-edu-learn/package.json')))
+      name: !!js process.getBuiltinModule('node:url').fileURLToPath(new URL('skill-provider.mjs', process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('baicai-edu-learn/package.json')))
       config:
         packages:
-          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('dsh-edu-learn/package.json')
-          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('dsh-edu-math/package.json')
-          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('dsh-edu-math-board/package.json')
-          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('dsh-edu-math-primary-low/package.json')
-          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('dsh-edu-math-primary-high/package.json')
-          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('dsh-edu-chinese-reading/package.json')
-          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('dsh-edu-english/package.json')
+          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('baicai-edu-learn/package.json')
+          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('baicai-edu-math/package.json')
+          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('baicai-edu-math-board/package.json')
+          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('baicai-edu-math-primary-low/package.json')
+          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('baicai-edu-math-primary-high/package.json')
+          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('baicai-edu-chinese-reading/package.json')
+          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('baicai-edu-english/package.json')

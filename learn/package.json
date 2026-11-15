@@ -1,20 +1,20 @@
 {
-  "name": "dsh-edu-learn",
+  "name": "baicai-edu-learn",
   "version": "0.1.0",
   "type": "module",
   "exports": {
     "./package.json": "./package.json"
   },
-  "description": "Shared learning entry skills, pedagogy rules, student-data protocol, and error handling for dsh-edu.",
+  "description": "Shared learning entry skills, pedagogy rules, student-data protocol, and error handling for baicai-edu.",
   "license": "GPL-3.0-or-later",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gengyabc/dsh-edu.git",
+    "url": "git+https://github.com/gengyabc/baicai-edu.git",
     "directory": "learn"
   },
-  "homepage": "https://github.com/gengyabc/dsh-edu/tree/main/learn#readme",
+  "homepage": "https://github.com/gengyabc/baicai-edu/tree/main/learn#readme",
   "bugs": {
-    "url": "https://github.com/gengyabc/dsh-edu/issues"
+    "url": "https://github.com/gengyabc/baicai-edu/issues"
   },
   "engines": {
     "node": ">=22"

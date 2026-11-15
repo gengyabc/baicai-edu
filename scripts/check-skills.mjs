@@ -226,9 +226,9 @@ if (statSync(sharedSkillsDir, { throwIfNoEntry: false })) {
     // Published packages carry a registry range ('^0.1.0'); a local checkout
     // may still point at the adjacent directory. Either way the band must
     // declare the shared math contract package itself.
-    const spec = manifest.dependencies?.['dsh-edu-math']
+    const spec = manifest.dependencies?.['baicai-edu-math']
     if (typeof spec !== 'string' || !(spec === 'file:../math-common' || /^\^(0|1)\./.test(spec))) {
-      errors.push(`${band}/package.json: must depend on dsh-edu-math (^0.1.0 or file:../math-common)`)
+      errors.push(`${band}/package.json: must depend on baicai-edu-math (^0.1.0 or file:../math-common)`)
     }
   }
 }

@@ -3,7 +3,7 @@
 // geometry-view.js / geometry-demo-view.js / geometry/model.js / geometry/demo-model.js / geometry/place-figure.js /
 // geometry/caption.js / geometry/draw.js / geometry/frame.js / board-kit.js / tutorial.js / tool-projection.js / board.css / locale/*.json instead.
 window.__ModuleLoader__.load({
-  id: 'dsh-edu-math-board',
+  id: 'baicai-edu-math-board',
   factory(require) {
     const React = require('react');
     const M = (function createBoardModel() {
@@ -1083,9 +1083,9 @@ window.__ModuleLoader__.load({
 
   function Board(props) {
     React.useSyncExternalStore((fn) => ctx.locale.subscribe(fn), () => ctx.locale.getSnapshot());
-    const key = `dsh-edu-math-board:v4:${props.sessionId}`;
-    const legacyKey = `dsh-edu-math-board:v2:${props.sessionId}`;
-    const oldKey = `dsh-edu-math-board:v3:${props.sessionId}`;
+    const key = `baicai-edu-math-board:v4:${props.sessionId}`;
+    const legacyKey = `baicai-edu-math-board:v2:${props.sessionId}`;
+    const oldKey = `baicai-edu-math-board:v3:${props.sessionId}`;
     const watermarkKey = `${key}:config`;
     // One atomic local envelope pairs the reset watermark with the surviving
     // draft. Never persist a reset marker separately from its canvas.
@@ -1128,7 +1128,7 @@ window.__ModuleLoader__.load({
     // File handles, pickers and the browser-side memory are shared with the geometry tab;
     // this page only supplies its own JSON, its draft and its sentences.
     const picker = shared.createBoardFilePicker({
-      React, t, dbName: 'dsh-edu-math-board', handleKey: 'last-board-file', anchor: true,
+      React, t, dbName: 'baicai-edu-math-board', handleKey: 'last-board-file', anchor: true,
       read: () => (gesture.current = null, M.serialize(boardRef.current)),
       load: (file, epoch) => loadOpenedFile(file, revision.current, epoch ?? draftEpoch.current),
       stale: (rev) => rev !== revision.current,
@@ -2063,7 +2063,7 @@ window.__ModuleLoader__.load({
   const QuantityPage = quantityPage();
   const GeometryPage = geometryPage ? geometryPage() : null;
   const DemoPage = demoPage ? demoPage() : null;
-  const DEMO_SEEN = 'dsh-edu-math-board:geometry-demo-seen:';
+  const DEMO_SEEN = 'baicai-edu-math-board:geometry-demo-seen:';
   return function TabbedBoard(props) {
     const [tab, setTab] = React.useState('quantity');
     const [opened, setOpened] = React.useState(false);
@@ -2245,7 +2245,7 @@ window.__ModuleLoader__.load({
 };
     const createGeometry = function createGeometryPage(React, G, ctx, t, shared) {
   const h = React.createElement;
-  const STORAGE_PREFIX = 'dsh-edu-math-board:geometry:v1:';
+  const STORAGE_PREFIX = 'baicai-edu-math-board:geometry:v1:';
   const HISTORY_LIMIT = 40;
   const SNAP_RADIUS = 12;
   // The drawable library comes from the model so the two lists cannot drift.
@@ -3222,7 +3222,7 @@ window.__ModuleLoader__.load({
       return t('geometryImportFailed');
     }
     const picker = shared.createBoardFilePicker({
-      React, t, dbName: 'dsh-edu-math-board', handleKey: 'last-geometry-board-file',
+      React, t, dbName: 'baicai-edu-math-board', handleKey: 'last-geometry-board-file',
       attachmentKey: 'geometryAttachmentName',
       read: () => G.serialize(boardRef.current),
       load: loadOpenedFile,
@@ -5534,7 +5534,7 @@ window.__ModuleLoader__.load({
 };
     const TUTORIAL_VERSION = "v1";
     const tutorialStorageKey = function tutorialStorageKey(mode) {
-  return `dsh-edu-math-board:tutorial:${TUTORIAL_VERSION}:${mode}`;
+  return `baicai-edu-math-board:tutorial:${TUTORIAL_VERSION}:${mode}`;
 };
     const tourMaskPads = function tourMaskPads(hole, pad = 8, viewport = null) {
   const width = viewport?.width ?? (typeof window !== 'undefined' ? window.innerWidth : 0);

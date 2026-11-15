@@ -35,9 +35,9 @@ test('real DSH installs, composes, deduplicates and preserves explicit disableme
   const install = (...packages) => run(process.execPath,
     ['scripts/install.mjs', ...packages, '--profile', profile]);
 
-  const selected = manifest => manifest.dsh.profile.bundles.filter(name => name.startsWith('dsh-edu-'));
-  const high = ['dsh-edu-learn', 'dsh-edu-math', 'dsh-edu-math-primary-high'];
-  const math = [...high, 'dsh-edu-math-board', 'dsh-edu-math-primary-low'];
+  const selected = manifest => manifest.dsh.profile.bundles.filter(name => name.startsWith('baicai-edu-'));
+  const high = ['baicai-edu-learn', 'baicai-edu-math', 'baicai-edu-math-primary-high'];
+  const math = [...high, 'baicai-edu-math-board', 'baicai-edu-math-primary-low'];
   try {
     install('math-primary-high');
     assert.deepEqual(selected(readManifest()), high);
@@ -49,20 +49,20 @@ test('real DSH installs, composes, deduplicates and preserves explicit disableme
     assert.ok([...highDump.matchAll(/^- id: edu-skills$/gm)].length >= 1);
     assert.doesNotMatch(highDump, /^- id: edu-math-board$/m);
     // The composed entry must name the roots of the row DSH kept.
-    assert.ok(highDump.includes('dsh-edu-math-primary-high/package.json'));
+    assert.ok(highDump.includes('baicai-edu-math-primary-high/package.json'));
 
     // An explicit opt-in adds the board; subsequent low installation reuses it.
     install('math-primary-high', 'math-board');
-    assert.deepEqual(selected(readManifest()), [...high, 'dsh-edu-math-board']);
+    assert.deepEqual(selected(readManifest()), [...high, 'baicai-edu-math-board']);
     assert.deepEqual(Object.keys(readManifest().dependencies).sort(),
-      [...high, 'dsh-edu-math-board'].sort());
+      [...high, 'baicai-edu-math-board'].sort());
     install('math-primary-low');
     assert.deepEqual(selected(readManifest()), math);
     assert.deepEqual(Object.keys(readManifest().dependencies).sort(), [...math].sort());
 
     install('all', 'math-primary-low');
     install('all');
-    const all = [...math, 'dsh-edu-chinese-reading', 'dsh-edu-english'];
+    const all = [...math, 'baicai-edu-chinese-reading', 'baicai-edu-english'];
     const manifest = readManifest();
     assert.deepEqual(selected(manifest), all);
     assert.deepEqual(Object.keys(manifest.dependencies).sort(), [...all].sort());
@@ -74,33 +74,33 @@ test('real DSH installs, composes, deduplicates and preserves explicit disableme
     assert.doesNotMatch(composed, /id: edu-[a-z-]+-skills$/m, 'per-package provider entries are gone');
     // Every skill package teaches from ONE installed module: the profile holds
     // the provider once, and only `learn` ships it.
-    assert.ok(existsSync(join(home, 'profiles', profile, 'node_modules', 'dsh-edu-learn', 'skill-provider.mjs')));
-    for (const name of ['dsh-edu-math', 'dsh-edu-math-primary-low', 'dsh-edu-math-primary-high', 'dsh-edu-english']) {
+    assert.ok(existsSync(join(home, 'profiles', profile, 'node_modules', 'baicai-edu-learn', 'skill-provider.mjs')));
+    for (const name of ['baicai-edu-math', 'baicai-edu-math-primary-low', 'baicai-edu-math-primary-high', 'baicai-edu-english']) {
       assert.ok(!existsSync(join(home, 'profiles', profile, 'node_modules', name, 'skill-provider.mjs')), name);
     }
     // The shared math contract is registered once, and its rules reach a subject.
-    assert.equal(selected(readManifest()).filter(name => name === 'dsh-edu-math').length, 1);
-    assert.equal(selected(readManifest()).filter(name => name === 'dsh-edu-math-primary-high').length, 1);
+    assert.equal(selected(readManifest()).filter(name => name === 'baicai-edu-math').length, 1);
+    assert.equal(selected(readManifest()).filter(name => name === 'baicai-edu-math-primary-high').length, 1);
 
     // Mutate only this test-owned manifest to represent a user's explicit disable.
-    manifest.dsh.profile.bundles = manifest.dsh.profile.bundles.filter(name => name !== 'dsh-edu-math-board');
+    manifest.dsh.profile.bundles = manifest.dsh.profile.bundles.filter(name => name !== 'baicai-edu-math-board');
     writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
     install('math-primary-low');
-    assert.ok(!selected(readManifest()).includes('dsh-edu-math-board'));
-    assert.ok('dsh-edu-math-board' in readManifest().dependencies);
+    assert.ok(!selected(readManifest()).includes('baicai-edu-math-board'));
+    assert.ok('baicai-edu-math-board' in readManifest().dependencies);
 
     // Disabling the shared math contract keeps both bands' own providers; it is a
     // rule source, not a teaching implementation, and reinstall does not re-enable it.
     const withoutShared = readManifest();
     withoutShared.dsh.profile.bundles = withoutShared.dsh.profile.bundles
-      .filter(name => name !== 'dsh-edu-math');
+      .filter(name => name !== 'baicai-edu-math');
     writeFileSync(manifestPath, `${JSON.stringify(withoutShared, null, 2)}\n`);
     install('math-primary-low');
-    assert.ok(!selected(readManifest()).includes('dsh-edu-math'));
-    assert.ok('dsh-edu-math' in readManifest().dependencies);
+    assert.ok(!selected(readManifest()).includes('baicai-edu-math'));
+    assert.ok('baicai-edu-math' in readManifest().dependencies);
     const bandOnly = run('dsh', ['--profile', profile, '--dump-config']);
     assert.ok([...bandOnly.matchAll(/^- id: edu-skills$/gm)].length >= 1);
-    assert.ok(bandOnly.includes('dsh-edu-math-primary-high/package.json'));
+    assert.ok(bandOnly.includes('baicai-edu-math-primary-high/package.json'));
   } finally {
     // home is the exact directory returned by mkdtempSync above, never a user path.
     rmSync(home, { recursive: true });

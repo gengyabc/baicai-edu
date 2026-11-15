@@ -7,7 +7,7 @@ export const TUTORIAL_VERSION = 'v1';
 // free name resolves in client.js. Keep every key path on TUTORIAL_VERSION / this helper
 // so a version bump cannot leave a stale literal behind.
 export function tutorialStorageKey(mode) {
-  return `dsh-edu-math-board:tutorial:${TUTORIAL_VERSION}:${mode}`;
+  return `baicai-edu-math-board:tutorial:${TUTORIAL_VERSION}:${mode}`;
 }
 
 export function isTutorialSeen(mode, storage = globalThis.localStorage) {

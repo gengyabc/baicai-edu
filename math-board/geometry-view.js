@@ -10,7 +10,7 @@
  */
 export function createGeometryPage(React, G, ctx, t, shared) {
   const h = React.createElement;
-  const STORAGE_PREFIX = 'dsh-edu-math-board:geometry:v1:';
+  const STORAGE_PREFIX = 'baicai-edu-math-board:geometry:v1:';
   const HISTORY_LIMIT = 40;
   const SNAP_RADIUS = 12;
   // The drawable library comes from the model so the two lists cannot drift.
@@ -987,7 +987,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       return t('geometryImportFailed');
     }
     const picker = shared.createBoardFilePicker({
-      React, t, dbName: 'dsh-edu-math-board', handleKey: 'last-geometry-board-file',
+      React, t, dbName: 'baicai-edu-math-board', handleKey: 'last-geometry-board-file',
       attachmentKey: 'geometryAttachmentName',
       read: () => G.serialize(boardRef.current),
       load: loadOpenedFile,

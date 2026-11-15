@@ -1,5 +1,5 @@
 {
-  "name": "dsh-edu-math",
+  "name": "baicai-edu-math",
   "version": "0.1.0",
   "type": "module",
   "exports": {
@@ -9,18 +9,18 @@
   "license": "GPL-3.0-or-later",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gengyabc/dsh-edu.git",
+    "url": "git+https://github.com/gengyabc/baicai-edu.git",
     "directory": "math-common"
   },
-  "homepage": "https://github.com/gengyabc/dsh-edu/tree/main/math-common#readme",
+  "homepage": "https://github.com/gengyabc/baicai-edu/tree/main/math-common#readme",
   "bugs": {
-    "url": "https://github.com/gengyabc/dsh-edu/issues"
+    "url": "https://github.com/gengyabc/baicai-edu/issues"
   },
   "engines": {
     "node": ">=22"
   },
   "dependencies": {
-    "dsh-edu-learn": "^0.1.0"
+    "baicai-edu-learn": "^0.1.0"
   },
   "files": [
     "cordis.patch.yml",

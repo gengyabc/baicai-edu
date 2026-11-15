@@ -1,15 +1,15 @@
 #!/usr/bin/env node
-// Register every installed dsh-edu skill with DSH's skill registry.
+// Register every installed baicai-edu skill with DSH's skill registry.
 //
 // Each skill package ships a `cordis.patch.yml` that activates THIS file, and in
 // a registry (or packed-tarball) install every named dependency is a direct
 // dependency of the profile, so all six activations resolve to the profile's
-// one copy of `dsh-edu-learn/skill-provider.mjs`.
+// one copy of `baicai-edu-learn/skill-provider.mjs`.
 //
 // Every activation shares one entry id, so the profile composes a single entry —
 // and a single `config.packages` list, because the last layer's row wins. That
 // is why this entry is inserted by the LAYER THAT IS FIRST in bundle order
-// (`dsh-edu-learn`, always a transitive dependency of a subject install and its
+// (`baicai-edu-learn`, always a transitive dependency of a subject install and its
 // own direct dependency): its row is the one left standing, and it must name the
 // whole closure. A top-level bundle that sorts after it would be defeated by
 // this row's last-wins config.

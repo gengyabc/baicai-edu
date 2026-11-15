@@ -28,7 +28,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
  * nothing to do with the package being packed. Point npm at a temp cache
  * instead; `NPM_CONFIG_CACHE` wins when the caller set one on purpose.
  */
-const npmCache = process.env.NPM_CONFIG_CACHE ?? mkdtempSync(join(tmpdir(), 'dsh-edu-npm-cache-'));
+const npmCache = process.env.NPM_CONFIG_CACHE ?? mkdtempSync(join(tmpdir(), 'baicai-edu-npm-cache-'));
 process.env.NPM_CONFIG_CACHE = npmCache;
 
 /** Publish order: shared packages before the subjects that depend on them. */
@@ -116,7 +116,7 @@ export function releaseProblems() {
  * Pack each package once and report the tarball, so a dry run proves the same
  * artifact `--publish` would upload rather than only the file list.
  */
-export function packAll({ stage = mkdtempSync(join(tmpdir(), 'dsh-edu-pack-')) } = {}) {
+export function packAll({ stage = mkdtempSync(join(tmpdir(), 'baicai-edu-pack-')) } = {}) {
   const packed = [];
   for (const directory of PUBLISH_ORDER) {
     const out = execFileSync('npm', ['pack', spec(directory), '--pack-destination', stage],

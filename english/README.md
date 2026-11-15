@@ -1,6 +1,6 @@
-# dsh-edu-english
+# baicai-edu-english
 
-dsh-edu 的英语教学技能包：故事与可理解输入、对话协商、输出尝试、支架退让、任务驱动、用法积累、间隔提取，以及适合孩子的新闻阅读。全部为模型内部 skill，不占用 `/` 入口；入口与服务由 `dsh-edu-learn` 提供。
+baicai-edu 的英语教学技能包：故事与可理解输入、对话协商、输出尝试、支架退让、任务驱动、用法积累、间隔提取，以及适合孩子的新闻阅读。全部为模型内部 skill，不占用 `/` 入口；入口与服务由 `baicai-edu-learn` 提供。
 
 方法 skill 保留各自的理论来源、做法与材料设计；公共规则通过 `english-core` 按需读取，避免每个方法另写一套难度、提示或证据标准：
 
@@ -53,10 +53,10 @@ english/
 
 ## 进入方式
 
-从 registry 安装时只写英语包名即可，`dsh-edu-learn` 作为依赖会被一并安装并启用：
+从 registry 安装时只写英语包名即可，`baicai-edu-learn` 作为依赖会被一并安装并启用：
 
 ```bash
-dsh plugin --profile web add dsh-edu-english
+dsh plugin --profile web add baicai-edu-english
 ```
 
 本仓库本地 checkout 用统一入口（它把闭包 pack 成 tarball 安装，与 registry 布局一致）：
@@ -112,7 +112,7 @@ outputs/students/
 
 ## 依赖
 
-本包依赖 `dsh-edu-learn`，缺少时共享规则、会话循环与数据协议不可用：入口加载 `learn-core` 与 `learn-data` 并处理投放文件（`learn-errors`），`english-session` 复用交接再加载 `english-core`；学生数据按 `learn-data` 的 JSON 协议读写。
+本包依赖 `baicai-edu-learn`，缺少时共享规则、会话循环与数据协议不可用：入口加载 `learn-core` 与 `learn-data` 并处理投放文件（`learn-errors`），`english-session` 复用交接再加载 `english-core`；学生数据按 `learn-data` 的 JSON 协议读写。
 
 ## 验证
 

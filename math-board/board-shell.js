@@ -24,7 +24,7 @@ export function createTabbedBoardView(React, t, css, pages, readDemo) {
   const QuantityPage = quantityPage();
   const GeometryPage = geometryPage ? geometryPage() : null;
   const DemoPage = demoPage ? demoPage() : null;
-  const DEMO_SEEN = 'dsh-edu-math-board:geometry-demo-seen:';
+  const DEMO_SEEN = 'baicai-edu-math-board:geometry-demo-seen:';
   return function TabbedBoard(props) {
     const [tab, setTab] = React.useState('quantity');
     const [opened, setOpened] = React.useState(false);

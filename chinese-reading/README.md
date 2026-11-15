@@ -1,6 +1,6 @@
-# dsh-edu-chinese-reading
+# baicai-edu-chinese-reading
 
-dsh-edu 的语文教学技能包：阅读、写作、读写迁移、出题、评改，以及经验缺口桥接。全部为模型内部 skill，不占用 `/` 入口；入口与共享规则由 `dsh-edu-learn` 提供。
+baicai-edu 的语文教学技能包：阅读、写作、读写迁移、出题、评改，以及经验缺口桥接。全部为模型内部 skill，不占用 `/` 入口；入口与共享规则由 `baicai-edu-learn` 提供。
 
 ## 包结构
 
@@ -54,14 +54,14 @@ node scripts/install.mjs chinese-reading --profile web
 
 ## 依赖
 
-本包在 `dependencies` 中声明依赖 `dsh-edu-learn`，上述统一入口会自动补齐；不需要单独再安装共享包。此前手动禁用的 bundle 保持禁用，需在 DSH 插件管理中明确启用。详见[统一安装说明](<../docs/installation.md>)。
+本包在 `dependencies` 中声明依赖 `baicai-edu-learn`，上述统一入口会自动补齐；不需要单独再安装共享包。此前手动禁用的 bundle 保持禁用，需在 DSH 插件管理中明确启用。详见[统一安装说明](<../docs/installation.md>)。
 
 - `chinese-session` 路由前加载 `learn-core` 与 `learn-data`。
 - 各子 skill 用 `learn-core` 的共享语气、按需确认、年级段、结束信号、费曼规则。
 - 读写学生数据时用 `learn-data` 的 `outputs/students/` JSON 协议。
 - 处理错题图片或 Markdown 时加载 `learn-errors`，语文标签由本包 `chinese-core` 提供。
 
-缺少 `dsh-edu-learn` 时，语文教学所需的共享规则与数据协议不可用。
+缺少 `baicai-edu-learn` 时，语文教学所需的共享规则与数据协议不可用。
 
 ## 数据目录
 
@@ -92,4 +92,4 @@ outputs/students/
 ## 说明
 
 - 本包是纯技能包：没有插件运行时、没有额外工具，全部行为由 `SKILL.md` 指令与文件读写构成。
-- `cordis.patch.yml` 只有一行：激活 `dsh-edu-learn` 携带的那一个技能 provider（条目 `edu-skills`），它从各已安装包的 `resources/` 注册全部技能。安装时读的是渲染后的 `resources/`，`skills/` 是技能来源；改完技能先跑 `node scripts/build-resources.mjs`。
+- `cordis.patch.yml` 只有一行：激活 `baicai-edu-learn` 携带的那一个技能 provider（条目 `edu-skills`），它从各已安装包的 `resources/` 注册全部技能。安装时读的是渲染后的 `resources/`，`skills/` 是技能来源；改完技能先跑 `node scripts/build-resources.mjs`。

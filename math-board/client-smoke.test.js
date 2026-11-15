@@ -80,7 +80,7 @@ test('bundled tutorial seen flags persist across calls', () => {
 
 test('the generated bundle registers and its pages construct without a missing binding', () => {
   const mod = loadBundle();
-  assert.equal(mod.id, 'dsh-edu-math-board');
+  assert.equal(mod.id, 'baicai-edu-math-board');
   assert.equal(typeof mod.factory, 'function');
 
   // A stub conversation keeps the pages from needing a live host.

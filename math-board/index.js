@@ -10,7 +10,7 @@ import { registerToolIfSupported, addPromptIfSupported } from './capabilities.js
 
 const M = createBoardModel();
 
-export const name = 'dsh-edu-math-board';
+export const name = 'baicai-edu-math-board';
 // Cordis has no optional inject declaration: array entries and object keys
 // are ALL required. Keep the entry active and scope each capability to a child
 // injection instead. These children activate/restart when services arrive or
@@ -101,7 +101,7 @@ async function mountBoard(ctx) {
     },
   });
   ctx.inject(['commands'], child => child.effect(() => child.commands.register({
-    definitionId: 'dsh-edu-math-board:settings', name: CONFIG_COMMAND,
+    definitionId: 'baicai-edu-math-board:settings', name: CONFIG_COMMAND,
     description: '读取或更新本会话数学画板的图案数值与量级颜色设置。',
     input: { hint: '<JSON: action=get 或 action=set, settings, scope, expectedRevision>' },
     handler({ agent, rawInput, commandId }) {

@@ -7,7 +7,7 @@
 // `apply(ctx)` directly cannot catch that class of bug, so this test boots the
 // package the way dsh does:
 //
-//   Context + Loader -> loader.create({ name: 'dsh-edu-math-board' })
+//   Context + Loader -> loader.create({ name: 'baicai-edu-math-board' })
 //
 // and asserts the fiber settles ACTIVE and registers its four projections.
 //

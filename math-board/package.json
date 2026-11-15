@@ -1,17 +1,17 @@
 {
-  "name": "dsh-edu-math-board",
+  "name": "baicai-edu-math-board",
   "version": "0.6.0",
   "type": "module",
   "description": "表达型数学工作台：数量画板（预设颜色创建图案、可命名分组与同形合并）与几何画板（点、线段、多边形、圆、平行四边形、矩形）并列两个 tab；以只读快照和学生自述提交。",
   "license": "GPL-3.0-or-later",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gengyabc/dsh-edu.git",
+    "url": "git+https://github.com/gengyabc/baicai-edu.git",
     "directory": "math-board"
   },
-  "homepage": "https://github.com/gengyabc/dsh-edu/tree/main/math-board#readme",
+  "homepage": "https://github.com/gengyabc/baicai-edu/tree/main/math-board#readme",
   "bugs": {
-    "url": "https://github.com/gengyabc/dsh-edu/issues"
+    "url": "https://github.com/gengyabc/baicai-edu/issues"
   },
   "engines": {
     "node": ">=22"

@@ -157,7 +157,7 @@ test('shared learn files leave subject teaching rules to subject packages', () =
   ])
   // Shared learn rules stay subject-agnostic: no subject labels or concrete package coupling.
   // Prose uses of a language name ("English slug") are not package coupling.
-  const subjectSpecific = /数学|语文|英语|math-|chinese-|english-|dsh-edu-(?:math|chinese|english)|math-primary-low\/|chinese-reading\/|english\//i
+  const subjectSpecific = /数学|语文|英语|math-|chinese-|english-|baicai-edu-(?:math|chinese|english)|math-primary-low\/|chinese-reading\/|english\//i
   for (const path of markdownFiles('learn')) {
     // The resolver names concrete implementations but does not own subject pedagogy.
     if (path === 'learn/skills/learn-data/references/teaching-resolver.md') continue
@@ -172,19 +172,19 @@ test('shared learn files leave subject teaching rules to subject packages', () =
 })
 
 test('entries locate subjects through the contract; only /learn-start lists them', () => {
-  const subjectSpecific = /math-|chinese-|english-|dsh-edu-math|dsh-edu-chinese|dsh-edu-english|math-primary-low\/|chinese-reading\/|english\//
+  const subjectSpecific = /math-|chinese-|english-|baicai-edu-math|baicai-edu-chinese|baicai-edu-english|math-primary-low\/|chinese-reading\/|english\//
   for (const name of ['learn', 'learn-feynman', 'learn-profile', 'learn-save']) {
     const body = text(skillPath('learn', name)).replace(/^---\n[\s\S]*?\n---\n/, '')
     assert.doesNotMatch(body, subjectSpecific, name)
   }
   const start = text(skillPath('learn', 'learn-start'))
   assert.match(start, /references\/subject-contract\.md/)
-  assert.match(start, /\| English \| `english` \| `dsh-edu-english` \|/)
+  assert.match(start, /\| English \| `english` \| `baicai-edu-english` \|/)
   // Math keeps one subject id; both band packages are listed so the resolver can
   // select by staged fit without asking the student to pick a package.
-  assert.match(start, /\| Math \| `math` \| `dsh-edu-math-primary-low`, `dsh-edu-math-primary-high` \|/)
+  assert.match(start, /\| Math \| `math` \| `baicai-edu-math-primary-low`, `baicai-edu-math-primary-high` \|/)
   assert.match(start, /one subject id and two band packages/)
-  assert.match(start, /\| Chinese \| `chinese` \| `dsh-edu-chinese-reading` \|/)
+  assert.match(start, /\| Chinese \| `chinese` \| `baicai-edu-chinese-reading` \|/)
   assert.doesNotMatch(start, /math-low-core|chinese-core|english-core|likes_|math-primary-low\/|chinese-reading\/|english\//)
   for (const name of ['learn', 'learn-feynman', 'learn-profile']) {
     const entry = text(skillPath('learn', name))
@@ -1488,13 +1488,13 @@ test('shared math contract is a rule source, never a teaching implementation', (
   assert.doesNotMatch(sharedMathSkill, /^## Subject contract$/m)
   assert.match(sharedMathSkill, /never selected by the teaching resolver/)
   for (const path of markdownFiles('math-common/skills')) {
-    assert.doesNotMatch(text(path), /math-primary-low|math-primary-high|dsh-edu-math-primary|\.\.\//, path)
+    assert.doesNotMatch(text(path), /math-primary-low|math-primary-high|baicai-edu-math-primary|\.\.\//, path)
   }
   const manifest = JSON.parse(text('math-common/package.json'))
-  assert.equal(manifest.name, 'dsh-edu-math')
-  assert.deepEqual(manifest.dependencies, { 'dsh-edu-learn': '^0.1.0' })
+  assert.equal(manifest.name, 'baicai-edu-math')
+  assert.deepEqual(manifest.dependencies, { 'baicai-edu-learn': '^0.1.0' })
   for (const band of ['math-primary-low', 'math-primary-high']) {
-    assert.equal(JSON.parse(text(`${band}/package.json`)).dependencies['dsh-edu-math'], '^0.1.0', band)
+    assert.equal(JSON.parse(text(`${band}/package.json`)).dependencies['baicai-edu-math'], '^0.1.0', band)
   }
 })
 
@@ -1576,7 +1576,7 @@ test('upper-primary math satisfies the same subject contract as the other packag
     assert.ok(subjectContractSection(highCore).includes(role), `math-primary-high math-high-core: ${role}`)
   }
   assert.match(highCore, /supported_stages: upper_primary/)
-  assert.match(highCore, /subject: math.*math-high-session.*dsh-edu-math-primary-high/)
+  assert.match(highCore, /subject: math.*math-high-session.*baicai-edu-math-primary-high/)
   assert.doesNotMatch(highCore, /supported_stages:.*lower_primary/)
   const learning = highRef('learning-recommendations')
   assert.match(learning, /Relationship × Strategy × Structure/)
@@ -1674,7 +1674,7 @@ test('batch sub-questions separate exploration distribution from one board for t
 
 test('one provider serves every skill package, and each activation names its closure', () => {
   // There is exactly ONE provider module, shipped by `learn`. Every skill
-  // package's cordis.patch.yml activates it through `dsh-edu-learn`, so any
+  // package's cordis.patch.yml activates it through `baicai-edu-learn`, so any
   // install that pulls one bundle in (they all depend on learn) resolves the
   // same file. Copying it beside each package was the old failure mode; the
   // patch rows are now the only per-package part, and they must stay suffixes
@@ -1682,9 +1682,9 @@ test('one provider serves every skill package, and each activation names its clo
   const provider = text('learn/skill-provider.mjs')
   const activation = (directory) => {
     const patch = text(`${directory}/cordis.patch.yml`)
-    const names = [...patch.matchAll(/resolve\('(dsh-edu-[a-z-]+)\/(?:package\.json|skill-provider\.js)'\)/g)].map((match) => match[1])
-    const activationRoot = patch.match(/new URL\('skill-provider\.mjs',\s*process\.getBuiltinModule\('node:module'\)\.createRequire\(baseUrl \+ 'x'\)\.resolve\('dsh-edu-learn\/package\.json'\)\)/)
-    assert.ok(activationRoot !== null, `${directory}/cordis.patch.yml does not activate dsh-edu-learn's provider`)
+    const names = [...patch.matchAll(/resolve\('(baicai-edu-[a-z-]+)\/(?:package\.json|skill-provider\.js)'\)/g)].map((match) => match[1])
+    const activationRoot = patch.match(/new URL('skill-provider\.mjs', \s*process\.getBuiltinModule('node:module')\.createRequire\(baseUrl \+ 'x'\)\.resolve('baicai-edu-learn\/package\.json')\))/)
+    assert.ok(activationRoot !== null, `${directory}/cordis.patch.yml does not activate baicai-edu-learn's provider`)
     assert.equal([...patch.matchAll(/- id: edu-skills$/gm)].length, 1, `${directory} activates edu-skills more than once`)
     return names
   }
@@ -1699,7 +1699,7 @@ test('one provider serves every skill package, and each activation names its clo
       assert.ok(manifest.files.includes('skill-provider.mjs'), 'learn must ship the provider')
     } else {
       assert.ok(!existsSync(join(root, bundle, 'skill-provider.mjs')), `${bundle} ships a second provider`)
-      assert.equal(manifest.dependencies?.['dsh-edu-learn'], '^0.1.0', `${bundle} must depend on dsh-edu-learn`)
+      assert.equal(manifest.dependencies?.['baicai-edu-learn'], '^0.1.0', `${bundle} must depend on baicai-edu-learn`)
     }
     assert.ok(manifest.files.includes('resources'), `${bundle} does not ship resources/`)
     assert.ok(manifest.files.includes('build.json'), `${bundle} does not ship build.json`)
@@ -1782,10 +1782,10 @@ test('one subject package name installs its whole bundle closure', () => {
   // The subject closures learners actually act on. `math-primary-high` pairs
   // with the optional board, which a learner adds separately, so it stays out.
   const closures = {
-    'dsh-edu-math-primary-low': ['dsh-edu-math-primary-low', 'dsh-edu-learn', 'dsh-edu-math', 'dsh-edu-math-board'],
-    'dsh-edu-math-primary-high': ['dsh-edu-math-primary-high', 'dsh-edu-learn', 'dsh-edu-math'],
-    'dsh-edu-chinese-reading': ['dsh-edu-chinese-reading', 'dsh-edu-learn'],
-    'dsh-edu-english': ['dsh-edu-english', 'dsh-edu-learn'],
+    'baicai-edu-math-primary-low': ['baicai-edu-math-primary-low', 'baicai-edu-learn', 'baicai-edu-math', 'baicai-edu-math-board'],
+    'baicai-edu-math-primary-high': ['baicai-edu-math-primary-high', 'baicai-edu-learn', 'baicai-edu-math'],
+    'baicai-edu-chinese-reading': ['baicai-edu-chinese-reading', 'baicai-edu-learn'],
+    'baicai-edu-english': ['baicai-edu-english', 'baicai-edu-learn'],
   }
   const closureOf = (name) => {
     const seen = new Set([name])
@@ -1803,9 +1803,9 @@ test('one subject package name installs its whole bundle closure', () => {
 
   // The install docs must show the one-name form, not the stale list-everything form.
   const installDoc = text('docs/installation.md')
-  assert.ok(installDoc.includes('dsh plugin --profile web add dsh-edu-math-primary-low'),
+  assert.ok(installDoc.includes('dsh plugin --profile web add baicai-edu-math-primary-low'),
     'docs/installation.md must show the single subject-package install')
-  assert.ok(!/add dsh-edu-learn dsh-edu-math/.test(installDoc),
+  assert.ok(!/add baicai-edu-learn baicai-edu-math/.test(installDoc),
     'docs/installation.md still tells the reader to list dependencies by hand')
 })
 
@@ -1814,8 +1814,8 @@ test('high-grade methodology is kept as material and never registered as skills'
   assert.deepEqual(manifest.files, ['cordis.patch.yml', 'build.json', 'resources', 'skills', 'README.md', 'LICENSE'])
   assert.ok(!manifest.files.includes('sources'))
   assert.deepEqual(manifest.dependencies, {
-    'dsh-edu-learn': '^0.1.0',
-    'dsh-edu-math': '^0.1.0',
+    'baicai-edu-learn': '^0.1.0',
+    'baicai-edu-math': '^0.1.0',
   })
   const installed = readdirSync(join(root, 'math-primary-high', 'skills')).sort()
   assert.deepEqual(installed, ['math-high-application-modeling', 'math-high-core', 'math-high-diagnose',

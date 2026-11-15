@@ -8,9 +8,9 @@ import { applyOverrides, install, planInstallation } from './install.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const subjectPackages = {
-  learn: 'dsh-edu-learn', 'math-common': 'dsh-edu-math', 'math-board': 'dsh-edu-math-board',
-  'math-primary-low': 'dsh-edu-math-primary-low', 'math-primary-high': 'dsh-edu-math-primary-high',
-  'chinese-reading': 'dsh-edu-chinese-reading', english: 'dsh-edu-english',
+  learn: 'baicai-edu-learn', 'math-common': 'baicai-edu-math', 'math-board': 'baicai-edu-math-board',
+  'math-primary-low': 'baicai-edu-math-primary-low', 'math-primary-high': 'baicai-edu-math-primary-high',
+  'chinese-reading': 'baicai-edu-chinese-reading', english: 'baicai-edu-english',
 };
 const plan = (...args) => planInstallation(args);
 
@@ -20,19 +20,19 @@ test('a low-band install explicitly selects its required bundle closure', () => 
   for (const mode of [[], ['--from', 'registry']]) {
     const result = plan('math-primary-low', ...mode);
     assert.deepEqual(result.packages, ['learn', 'math-common', 'math-board', 'math-primary-low']);
-    assert.deepEqual(result.names, ['dsh-edu-learn', 'dsh-edu-math', 'dsh-edu-math-board', 'dsh-edu-math-primary-low']);
+    assert.deepEqual(result.names, ['baicai-edu-learn', 'baicai-edu-math', 'baicai-edu-math-board', 'baicai-edu-math-primary-low']);
   }
 });
 
 test('registry installs explicitly select dependencies before their consumers', () => {
   const result = plan('math-primary-low', '--from', 'registry');
   assert.deepEqual(result.packages, ['learn', 'math-common', 'math-board', 'math-primary-low']);
-  assert.deepEqual(result.names, ['dsh-edu-learn', 'dsh-edu-math', 'dsh-edu-math-board', 'dsh-edu-math-primary-low']);
+  assert.deepEqual(result.names, ['baicai-edu-learn', 'baicai-edu-math', 'baicai-edu-math-board', 'baicai-edu-math-primary-low']);
   assert.deepEqual(plan('all', '--from', 'registry').names, [
-    'dsh-edu-learn', 'dsh-edu-math', 'dsh-edu-math-board', 'dsh-edu-math-primary-low',
-    'dsh-edu-math-primary-high', 'dsh-edu-chinese-reading', 'dsh-edu-english']);
+    'baicai-edu-learn', 'baicai-edu-math', 'baicai-edu-math-board', 'baicai-edu-math-primary-low',
+    'baicai-edu-math-primary-high', 'baicai-edu-chinese-reading', 'baicai-edu-english']);
   // A bare subject installs alone too: the shared bundles are their own opt-in.
-  assert.deepEqual(plan('learn', '--from', 'registry').names, ['dsh-edu-learn']);
+  assert.deepEqual(plan('learn', '--from', 'registry').names, ['baicai-edu-learn']);
 });
 
 test('local installs pack the closure and never link a checkout directory', () => {
@@ -48,8 +48,8 @@ test('local installs pack the closure and never link a checkout directory', () =
 test('packed installs declare pnpm overrides so a tarball pulls its siblings from the tarballs', () => {
   // pnpm rewrites the dependencies of an installed tarball for any name the
   // PROFILE also overrides; without these entries a closure package resolves
-  // from the registry, which has not published dsh-edu.
-  const home = mkdtempSync(join(tmpdir(), 'dsh-edu-home-'));
+  // from the registry, which has not published baicai-edu.
+  const home = mkdtempSync(join(tmpdir(), 'baicai-edu-home-'));
   try {
     const profileDir = join(home, 'profiles', 'web');
     mkdirSync(profileDir, { recursive: true });
@@ -57,22 +57,22 @@ test('packed installs declare pnpm overrides so a tarball pulls its siblings fro
     const original = 'packages:\n  - .\n\nnodeLinker: hoisted\n';
     writeFileSync(settings, original);
     applyOverrides(join(home, 'profiles'), 'web', [
-      { name: 'dsh-edu-learn', spec: '/tmp/stage/dsh-edu-learn-0.1.0.tgz' },
-      { name: 'dsh-edu-math', spec: '/tmp/stage/dsh-edu-math-0.1.0.tgz' },
+      { name: 'baicai-edu-learn', spec: '/tmp/stage/baicai-edu-learn-0.1.0.tgz' },
+      { name: 'baicai-edu-math', spec: '/tmp/stage/baicai-edu-math-0.1.0.tgz' },
     ]);
     const written = readFileSync(settings, 'utf8');
     assert.match(written, /^packages:\n  - \.\n/);
     assert.match(written, /overrides:/);
-    assert.match(written, /"dsh-edu-learn": "file:\/tmp\/stage\/dsh-edu-learn-0\.1\.0\.tgz"/);
+    assert.match(written, /"baicai-edu-learn": "file:\/tmp\/stage\/baicai-edu-learn-0\.1\.0\.tgz"/);
     assert.ok(written.includes('nodeLinker: hoisted'), 'existing settings stay intact');
     // A reinstall replaces the block wholesale instead of appending to it.
     applyOverrides(join(home, 'profiles'), 'web', [
-      { name: 'dsh-edu-learn', spec: '/tmp/stage2/dsh-edu-learn-0.1.0.tgz' },
+      { name: 'baicai-edu-learn', spec: '/tmp/stage2/baicai-edu-learn-0.1.0.tgz' },
     ]);
     const again = readFileSync(settings, 'utf8');
     assert.equal([...again.matchAll(/^overrides:$/gm)].length, 1);
     assert.ok(!again.includes('/tmp/stage/'), 'a stale tarball path would break the next install');
-    assert.ok(again.includes('/tmp/stage2/dsh-edu-learn-0.1.0.tgz'));
+    assert.ok(again.includes('/tmp/stage2/baicai-edu-learn-0.1.0.tgz'));
     // The block stays: it names the artifacts a reinstall re-runs `pnpm add` with.
     writeFileSync(settings, original);
   } finally {
@@ -82,32 +82,32 @@ test('packed installs declare pnpm overrides so a tarball pulls its siblings fro
 
 for (const subject of ['chinese-reading', 'english']) {
   test(`${subject} is its own bundle and never the board`, () => {
-    assert.deepEqual(plan(subject, '--from', 'registry').names, ['dsh-edu-learn', `dsh-edu-${subject}`]);
-    assert.ok(!plan(subject, '--from', 'registry').names.includes('dsh-edu-math-board'));
+    assert.deepEqual(plan(subject, '--from', 'registry').names, ['baicai-edu-learn', `baicai-edu-${subject}`]);
+    assert.ok(!plan(subject, '--from', 'registry').names.includes('baicai-edu-math-board'));
   });
 }
 
 // The resolver picks one math band per session; neither depends on the other.
 test('upper-primary math never implies the optional board', () => {
   assert.deepEqual(plan('math-primary-high', '--from', 'registry').names,
-    ['dsh-edu-learn', 'dsh-edu-math', 'dsh-edu-math-primary-high']);
+    ['baicai-edu-learn', 'baicai-edu-math', 'baicai-edu-math-primary-high']);
   assert.deepEqual(plan('math-primary-high', 'math-board', 'math-board', '--from', 'registry').names,
-    ['dsh-edu-learn', 'dsh-edu-math', 'dsh-edu-math-primary-high', 'dsh-edu-math-board']);
+    ['baicai-edu-learn', 'baicai-edu-math', 'baicai-edu-math-primary-high', 'baicai-edu-math-board']);
   assert.deepEqual(plan('math-board', 'math-primary-high', '--from', 'registry').names,
-    ['dsh-edu-math-board', 'dsh-edu-learn', 'dsh-edu-math', 'dsh-edu-math-primary-high']);
+    ['baicai-edu-math-board', 'baicai-edu-learn', 'baicai-edu-math', 'baicai-edu-math-primary-high']);
   const high = JSON.parse(readFileSync(join(root, 'math-primary-high', 'package.json'), 'utf8'));
-  assert.deepEqual(Object.keys(high.dependencies).sort(), ['dsh-edu-learn', 'dsh-edu-math']);
+  assert.deepEqual(Object.keys(high.dependencies).sort(), ['baicai-edu-learn', 'baicai-edu-math']);
   const low = JSON.parse(readFileSync(join(root, 'math-primary-low', 'package.json'), 'utf8'));
   assert.deepEqual(Object.keys(low.dependencies).sort(),
-    ['dsh-edu-learn', 'dsh-edu-math', 'dsh-edu-math-board']);
+    ['baicai-edu-learn', 'baicai-edu-math', 'baicai-edu-math-board']);
 });
 
 test('the shared math contract is never a teaching implementation', () => {
   // It brings in the shared learning protocol, never a teaching band or board.
-  assert.deepEqual(plan('math-common', '--from', 'registry').names, ['dsh-edu-learn', 'dsh-edu-math']);
+  assert.deepEqual(plan('math-common', '--from', 'registry').names, ['baicai-edu-learn', 'baicai-edu-math']);
   const all = plan('all', '--from', 'registry').names;
-  assert.equal(all.filter(name => name === 'dsh-edu-math').length, 1);
-  assert.ok(!plan('math-primary-high', '--from', 'registry').names.includes('dsh-edu-math-board'));
+  assert.equal(all.filter(name => name === 'baicai-edu-math').length, 1);
+  assert.ok(!plan('math-primary-high', '--from', 'registry').names.includes('baicai-edu-math-board'));
 });
 
 for (const independent of ['learn', 'math-board']) {
@@ -118,13 +118,13 @@ for (const independent of ['learn', 'math-board']) {
 
 test('all subjects and repeated requests share one copy of each bundle', () => {
   assert.deepEqual(plan('all', 'math-primary-low', 'learn', 'all', '--from', 'registry').names, [
-    'dsh-edu-learn', 'dsh-edu-math', 'dsh-edu-math-board', 'dsh-edu-math-primary-low',
-    'dsh-edu-math-primary-high', 'dsh-edu-chinese-reading', 'dsh-edu-english',
+    'baicai-edu-learn', 'baicai-edu-math', 'baicai-edu-math-board', 'baicai-edu-math-primary-low',
+    'baicai-edu-math-primary-high', 'baicai-edu-chinese-reading', 'baicai-edu-english',
   ]);
   assert.deepEqual(plan('english', 'chinese-reading', 'math-primary-high', '--from', 'registry').names,
-    ['dsh-edu-learn', 'dsh-edu-english', 'dsh-edu-chinese-reading', 'dsh-edu-math', 'dsh-edu-math-primary-high']);
+    ['baicai-edu-learn', 'baicai-edu-english', 'baicai-edu-chinese-reading', 'baicai-edu-math', 'baicai-edu-math-primary-high']);
   // Package names and directory names select the same bundle.
-  assert.deepEqual(plan('dsh-edu-learn', 'learn', '--from', 'registry').names, ['dsh-edu-learn']);
+  assert.deepEqual(plan('baicai-edu-learn', 'learn', '--from', 'registry').names, ['baicai-edu-learn']);
 });
 
 test('profile and preview are explicit; no machine-specific path is stored', () => {
@@ -154,7 +154,7 @@ test('preview and help never invoke DSH', () => {
 test('installation uses one shell-free DSH call with the packed tarballs', () => {
   const calls = [];
   const fakeRoot = fixture({ learn: {}, 'math board': {} });
-  const home = mkdtempSync(join(tmpdir(), 'dsh-edu-home-'));
+  const home = mkdtempSync(join(tmpdir(), 'baicai-edu-home-'));
   try {
     mkdirSync(join(home, 'profiles', 'web'), { recursive: true });
     writeFileSync(join(home, 'profiles', 'web', 'pnpm-workspace.yaml'), 'packages:\n  - .\n');
@@ -169,8 +169,8 @@ test('installation uses one shell-free DSH call with the packed tarballs', () =>
         calls.push([command, args]);
         if (command === 'npm') {
           const stage = args[args.indexOf('--pack-destination') + 1];
-          writeFileSync(join(stage, 'dsh-edu-math board-0.1.0.tgz'), '');
-          return { status: 0, stdout: 'dsh-edu-math board-0.1.0.tgz\n', stderr: '' };
+          writeFileSync(join(stage, 'baicai-edu-math board-0.1.0.tgz'), '');
+          return { status: 0, stdout: 'baicai-edu-math board-0.1.0.tgz\n', stderr: '' };
         }
         return { status: 0 };
       },
@@ -181,7 +181,7 @@ test('installation uses one shell-free DSH call with the packed tarballs', () =>
     assert.deepEqual(dshArgs.slice(0, 4), ['plugin', '--profile', 'web', 'add']);
     // One spec per packed bundle, in dependency order, each a tarball path.
     assert.equal(dshArgs.length, 5);
-    assert.ok(dshArgs[4].endsWith('dsh-edu-math board-0.1.0.tgz'), dshArgs[4]);
+    assert.ok(dshArgs[4].endsWith('baicai-edu-math board-0.1.0.tgz'), dshArgs[4]);
     assert.ok(!dshArgs.some((arg) => arg.startsWith('link:')));
   } finally {
     rmSync(home, { recursive: true, force: true });
@@ -190,7 +190,7 @@ test('installation uses one shell-free DSH call with the packed tarballs', () =>
 });
 
 test('failed command, missing DSH, and signal exits are never reported as success', () => {
-  const home = mkdtempSync(join(tmpdir(), 'dsh-edu-home-'));
+  const home = mkdtempSync(join(tmpdir(), 'baicai-edu-home-'));
   try {
     mkdirSync(join(home, 'profiles', 'web'), { recursive: true });
     writeFileSync(join(home, 'profiles', 'web', 'pnpm-workspace.yaml'), 'packages:\n  - .\n');
@@ -214,11 +214,11 @@ test('failed command, missing DSH, and signal exits are never reported as succes
 });
 
 function fixture(packages) {
-  const path = mkdtempSync(join(tmpdir(), 'dsh-edu-install-'));
+  const path = mkdtempSync(join(tmpdir(), 'baicai-edu-install-'));
   for (const [key, dependencies] of Object.entries(packages)) {
     mkdirSync(join(path, key));
     writeFileSync(join(path, key, 'package.json'), JSON.stringify({
-      name: `dsh-edu-${key}`, dependencies, dsh: { bundle: { patch: './cordis.patch.yml' } },
+      name: `baicai-edu-${key}`, dependencies, dsh: { bundle: { patch: './cordis.patch.yml' } },
     }));
   }
   return { path, cleanup: () => rmSync(path, { recursive: true }) };
@@ -226,12 +226,12 @@ function fixture(packages) {
 
 test('cycles, missing packages, mismatched names, and unsupported specs fail closed', () => {
   for (const packages of [
-    { a: { 'dsh-edu-b': 'file:../b' }, b: { 'dsh-edu-a': 'file:../a' } },
-    { a: { 'dsh-edu-b': '^0.1.0' }, b: { 'dsh-edu-a': '^0.1.0' } },
-    { a: { 'dsh-edu-b': 'workspace:*' }, b: {} },
-    { a: { 'dsh-edu-b': 'file:../missing' } },
-    { a: { 'dsh-edu-wrong': 'file:../b' }, b: {} },
-    { a: { 'dsh-edu-learn': 'file:../learn' } },
+    { a: { 'baicai-edu-b': 'file:../b' }, b: { 'baicai-edu-a': 'file:../a' } },
+    { a: { 'baicai-edu-b': '^0.1.0' }, b: { 'baicai-edu-a': '^0.1.0' } },
+    { a: { 'baicai-edu-b': 'workspace:*' }, b: {} },
+    { a: { 'baicai-edu-b': 'file:../missing' } },
+    { a: { 'baicai-edu-wrong': 'file:../b' }, b: {} },
+    { a: { 'baicai-edu-learn': 'file:../learn' } },
     { learn: {} },
   ]) {
     const sandbox = fixture(packages);
@@ -244,7 +244,7 @@ test('cycles, missing packages, mismatched names, and unsupported specs fail clo
 });
 
 test('dependency closure comes from manifests and excludes external npm libraries', () => {
-  const sandbox = fixture({ a: { 'dsh-edu-b': '^0.1.0', react: '^19.0.0' }, b: {} });
+  const sandbox = fixture({ a: { 'baicai-edu-b': '^0.1.0', react: '^19.0.0' }, b: {} });
   try {
     for (const mode of [[], ['--from', 'registry']]) {
       assert.deepEqual(planInstallation(['a', ...mode], sandbox.path).packages, ['b', 'a']);
@@ -264,7 +264,7 @@ test('dependency declarations are the only graph and patch registrations stay un
     // range; a local file: reference, when present, must point at that bundle.
     for (const [name, spec] of Object.entries(manifest.dependencies ?? {})) {
       const directory = Object.entries(subjectPackages).find(([, packageName]) => packageName === name)?.[0];
-      assert.ok(directory, `${key}: unknown dsh-edu dependency ${name}`);
+      assert.ok(directory, `${key}: unknown baicai-edu dependency ${name}`);
       if (spec.startsWith('file:')) {
         assert.equal(resolve(root, key, spec.slice(5)), resolve(root, directory), `${key}: ${name}`);
       } else {

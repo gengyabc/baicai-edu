@@ -1,6 +1,6 @@
-# dsh-edu-math
+# baicai-edu-math
 
-两个小学数学年级段包共享的数学契约包（目录 `math-common/`，包名 `dsh-edu-math`）。它只注册一个内部技能 `math-common`（`user-invocable: false`），不提供教学入口、不注册 band 的 session、不参与教学选型。
+两个小学数学年级段包共享的数学契约包（目录 `math-common/`，包名 `baicai-edu-math`）。它只注册一个内部技能 `math-common`（`user-invocable: false`），不提供教学入口、不注册 band 的 session、不参与教学选型。
 
 ## 为什么存在
 
@@ -27,7 +27,7 @@
 
 ## 安装
 
-两个 band 的 `package.json` 显式依赖 `dsh-edu-math`，`node scripts/install.mjs math-primary-low|math-primary-high|all` 的依赖闭包只安装本包一次。单独安装本包没有教学入口，只在调试加载链路时使用：
+两个 band 的 `package.json` 显式依赖 `baicai-edu-math`，`node scripts/install.mjs math-primary-low|math-primary-high|all` 的依赖闭包只安装本包一次。单独安装本包没有教学入口，只在调试加载链路时使用：
 
 ```bash
 node scripts/install.mjs math-common --profile web
