@@ -53,13 +53,19 @@ english/
 
 ## 进入方式
 
-在仓库根目录用统一入口自动安装共享包与本包：
+从 registry 安装时只写英语包名即可，`dsh-edu-learn` 作为依赖会被一并安装并启用：
+
+```bash
+dsh plugin --profile web add dsh-edu-english
+```
+
+本仓库本地 checkout 用统一入口（它把闭包 pack 成 tarball 安装，与 registry 布局一致）：
 
 ```bash
 node scripts/install.mjs english --profile web
 ```
 
-按 DSH 输出决定是否重启，再刷新页面。不要只 link 英语包：间接依赖不会自动启用；此前手动禁用的 bundle 也不会被重装强行启用。详见[统一安装说明](<../docs/installation.md>)。
+按 DSH 输出决定是否重启，再刷新页面。不要用 `link:` 装本仓库的 checkout：pnpm 不会带上它的依赖，单份 provider 也就找不到共享包；此前手动禁用的 bundle 也不会被重装强行启用。详见[统一安装说明](<../docs/installation.md>)。
 
 刷新 Web 会话后：
 

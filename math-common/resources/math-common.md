@@ -1,0 +1,31 @@
+---
+name: math-common
+description: Shared math rules for both primary bands. Load from a math band skill for an agreed micro-lesson, a student-made problem, practice evidence, a geometry figure on the Teacher demo tab, or reading or writing the math board; returns rules only.
+resources: micro-lesson-contract.md student-problem-contract.md practice-evidence-contract.md representation-contract.md board-contract.md handwritten-work-contract.md
+---
+
+# Shared Math Contracts
+
+The math rules both primary bands must change together. This is not a teaching implementation: it registers no session, declares no stage fit, chooses no band, grade, method, activity, or clear authorization, and produces no student reply, segment, or profile write.
+
+## Interface
+
+The caller is the current math band, which already holds the current provider, `mode` and confirmed-skill evidence, the current problem and pending step, the practice purpose, and the evidence and signal to return. When an input a rule depends on is missing, take that rule's most conservative branch (no confirmed skill means always answer correctly).
+
+Loading this skill returns its base directory. Read only the references required by the current branch, and reuse contracts already read this session. Teacher geometry needs both representation ownership and the board tool-call recipe; do not pre-load unrelated contracts or invent one that is missing.
+
+| When the band needs | Read | The band keeps |
+|---|---|---|
+| An agreed new-learning micro-lesson | `references/micro-lesson-contract.md` | Entry decision, method selection, teaching execution, and local activity state |
+| A student-authored problem | `references/student-problem-contract.md` | Multi-part grading, problem-type range, invented-versus-real quantities |
+| Practice evidence | `references/practice-evidence-contract.md` | Problem design, methods and scaffolds, batch attribution |
+| Choosing teacher-supplied diagrams, student-generated representations, or fading support; geometry-related teaching or a geometry problem | `references/representation-contract.md` | Learning goal, method, activity, pending task, and evidence attribution. Call `geometry_board_draw` for a drawable figure; that call is teacher material, not a student draft |
+| The math board, including an explicit request for the teacher to draw or a missing teacher figure | `references/board-contract.md` | Clear authorization, teaching use, sub-question attribution; Tool Dispatch and executable geometry-call recipe |
+| The student's handwritten work, a math diagram, or a printed math page | `references/handwritten-work-contract.md` | Diagnosis, scaffolds and the next teaching move; the contract supplies reading hints and step-check facts only |
+
+## Boundary
+
+- Shared text never names a band package, band file, or relative path; where local detail is needed it says "the current provider's rule", and the band's supplement names its own file.
+- Stage fit, session ownership, clear authorization, method selection, diagnostic depth, batch tracking, and modeling work stay local to the band.
+- The handwriting contract supplies reading hints and deterministic step-check facts only; it assigns no error type, label, mastery, or next move, and names no grade.
+- If this skill cannot be loaded or is disabled, the band continues under the safe fallback in its own core skill and does not claim the shared contract was applied. This skill is never a math specialist and is never selected by the teaching resolver.

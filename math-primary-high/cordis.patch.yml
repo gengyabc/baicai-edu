@@ -1,12 +1,21 @@
 # Task-driven, multi-method math teaching skills for grades 4-6; board optional.
 #
-# Roots are resolved from the installed package location (baseUrl = the profile
-# dir), so link:, file: and git installs all behave the same. Registry publish
-# ships without "private": true.
+# Skills come from the one provider shipped by dsh-edu-learn; this bundle
+# activates it like every skill package. All activations share the entry id,
+# and DSH composes them with the LAST bundle layer winning, so the row here
+# must name the same whole closure as learn's: a subject sorts after learn
+# and can be the row that remains. A root the install lacks stays a path
+# and is skipped, so a partial local install registers nothing rather than
+# guessing what is installed.
 - insert:
-    - id: edu-math-primary-high-skills
-      name: '@deepseek-ai/dsh-skill-filesystem'
+    - id: edu-skills
+      name: !!js process.getBuiltinModule('node:url').fileURLToPath(new URL('skill-provider.mjs', process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('dsh-edu-learn/package.json')))
       config:
-        providerName: edu-math-primary-high
-        includeDefaultRoots: false
-        bundledSkillDir: !!js process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('dsh-edu-math-primary-high/package.json')), 'skills')
+        packages:
+          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('dsh-edu-learn/package.json')
+          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('dsh-edu-math/package.json')
+          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('dsh-edu-math-board/package.json')
+          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('dsh-edu-math-primary-low/package.json')
+          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('dsh-edu-math-primary-high/package.json')
+          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('dsh-edu-chinese-reading/package.json')
+          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('dsh-edu-english/package.json')

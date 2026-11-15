@@ -44,6 +44,8 @@
 - `learn-read-image/references/reading.md`、`record.md`、`handoff.md`：图片读取、原图与转录记录、交回字段的唯一正文；触发条件由 `learn-core` 的条件行与 `learn-errors` 的图片分支维护，读取层本身不诊断。
 - 学科 references：方法、量规、标签与题型的唯一正文；学科 SKILL 保留分流、执行步骤和独有输出。
 
+技能正文在 `skills/`；安装时读的是仓库根目录 `scripts/build-resources.mjs` 由它渲染出的 `resources/`（本包发布内容含 `resources/`，`skills/` 供阅读与维护）。改完技能先跑 `node scripts/build-resources.mjs` 再提交，否则 `publish.mjs check` 与契约测试会报 `resources/` 与源码不一致。
+
 验证：`node scripts/check-skills.mjs`；协议回归检查：`node --test scripts/*.test.mjs`。这些是静态检查，不替代真实对话验证。
 
 日志新增可选 `context`（目标、材料引用、模式与当前动作）及临时 `finalize_plan`（部分保存失败重放），旧日志仍可恢复，无需迁移学生档案。提交顺序和清理以 finalize reference 为准；同一学生/科目有待完成保存时先恢复，再编辑档案或处理新错题。

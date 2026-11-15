@@ -3,22 +3,29 @@
 ## 两种安装来源
 
 - **registry 发布**：每个包声明发布版本范围（如 `"dsh-edu-learn": "^0.1.0"`），不声明 `"private": true`。接收方只需装 **DSH**，用自己的 dsh 命令按包名安装；不需要你的 checkout、profile 或任何本机路径。
-- **本地 checkout**：`scripts/install.mjs` 按 `package.json` 的必需依赖遍历同仓库 bundle，兼容发布版本范围与 `file:` 声明，再把依赖闭包全部以 `link:` 路径一次交给 `dsh`。技能后续加载可读到本地修改；宿主代码修改仍按 DSH 重载或重启诊断生效。
+- **本地 checkout**：`scripts/install.mjs` 按 `package.json` 的必需依赖遍历同仓库 bundle，把依赖闭包**逐个 `npm pack` 成 tarball**，再把这批 tarball 一次交给 `dsh` 安装。本地与 registry 因而得到同一种 `node_modules` 布局：闭包里每个包都是 profile 的直接依赖，也正是单份技能 provider 能解析全部包的前提。**不要再用 `link:` 装本地 checkout**：pnpm 不会安装被链接包的依赖，profile 只会得到闭包的一部分。技能仍从安装处读取，本地改动重装一次即生效；宿主代码修改按 DSH 重载或重启诊断生效。
 
 ## 接收方怎么装（DSH 已装好）
 
+一个学科一条命令，**只写学科包名**：
+
 ```bash
-# 当前 DSH 不自动启用间接依赖；把必需 bundle 一起列为顶层选择。
-dsh plugin --profile web add dsh-edu-learn dsh-edu-math dsh-edu-math-board dsh-edu-math-primary-low
-dsh plugin --profile web add dsh-edu-learn dsh-edu-math dsh-edu-math-primary-high
-# 高年级画板可选：另加 dsh-edu-math-board。
-dsh plugin --profile web add dsh-edu-learn dsh-edu-chinese-reading
-dsh plugin --profile web add dsh-edu-learn dsh-edu-english
+dsh plugin --profile web add dsh-edu-math-primary-low     # 低年级数学
+dsh plugin --profile web add dsh-edu-math-primary-high    # 高年级数学（画板可选，见下）
+dsh plugin --profile web add dsh-edu-chinese-reading      # 语文
+dsh plugin --profile web add dsh-edu-english              # 英语
 ```
+
+`dsh plugin` 是 pnpm 的透传入口（`dsh plugin --help`：「pnpm arguments, forwarded verbatim」）。装完一个包后，DSH 的 `reconcile` 会把**本次新增**且声明了 `dsh.bundle` 的依赖一并写进 `dsh.profile.bundles`：它按依赖名遍历当前 `dependencies`，跳过安装前就存在的（`beforeDeps`），把新出现的 bundle 追加进选择。因此 `add dsh-edu-math-primary-low` 一条命令就会启用 `dsh-edu-learn`、`dsh-edu-math`、`dsh-edu-math-board` 和它自己，**不需要把依赖再列一遍**。
+
+- 按需加载：只装哪个学科，就只有那个学科的技能注册；共享的 `dsh-edu-learn` 随依赖装入并启用，因为学科包需要它的生命周期与数据协议。
+- 高年级数学不依赖画板，要画板就**另外**装一次：`dsh plugin --profile web add dsh-edu-math-board`。低年级数学已在依赖里声明画板，会自动带上。
+- 已手动禁用的 bundle 不会被重装强行启用；要恢复它，先在 DSH 插件管理里明确启用。
+- 这条自动启用行为来自 DSH 0.2.2-rc.1 的 `dsh-plugin-manager`（`reconcile`），属于上游行为而非本仓库保证；换 DSH 版本后请以实际安装结果为准。
 
 装完按 DSH 的提示重启或刷新 Web 页面即可，**不需要再配置模型**：插件不注册、不改写任何模型 provider，会话继续使用接收方 DSH 里已经选好的模型与凭据。插件本身也不发网络请求、不带 API key。要求 DSH 的模型路由已能在接收方机器上正常对话（这与插件无关）。
 
-本仓库的安装器在两种模式下都显式展开必需 bundle；`--from registry` 用发布包名代替本地链接（预览不修改 profile）：
+本仓库的安装器在两种模式下都显式展开必需 bundle；`--from registry` 按发布包名安装（预览不修改 profile）：
 
 ```bash
 node scripts/install.mjs all --profile web --from registry --dry-run
@@ -28,17 +35,38 @@ node scripts/install.mjs all --profile web --from registry --dry-run
 
 ## 发布者侧
 
+发布从仓库根目录用 `scripts/publish.mjs` 驱动，不依赖任何根 `package.json`（根没有 `package.json`，也不要加）：
+
 ```bash
-npm publish ./learn ./math-common ./math-board          # 共享包先发
-npm publish ./math-primary-low ./math-primary-high ./chinese-reading ./english
+node scripts/publish.mjs check          # 干跑：校验 7 个包可发布、resources/ 与源码一致
+node scripts/publish.mjs pack            # 打包到临时目录，产出的就是要发的 tarball
+node scripts/publish.mjs publish         # check → pack → 按依赖顺序 npm publish
+node scripts/build-resources.mjs        # 由 skills/ 重建六个包的 resources/（改技能后必须跑）
 ```
 
-**当前发布阻断项（方案 B 待落地）**：技能条目的路径解析只在开发机成立，接收方会静默失配。
+- 发布顺序写死在脚本里：`learn` → `math-common` / `math-board` → 两个 band → `chinese-reading` / `english`；依赖范围没变时，先发的共享包不必等后面。
+- 脚本自己用一个临时 npm 缓存（`NPM_CONFIG_CACHE` 优先），因为默认的 `~/.npm` 在沙箱里或含有旧 npm 留下的 root 文件时会让 `npm pack` 直接 EPERM，这与包本身无关。
+- `check` 会打包校验每个包是否带 `cordis.patch.yml`、`skills/`、`resources/` 与 `build.json`（`math-board` 无技能，只要求 patch），并比对 `resources/` 是否与源码重建结果一致。CI 跑同一条命令。
+- OTP 走环境变量：`NPM_OTP=123456 node scripts/publish.mjs publish`。
 
-- 各包 `cordis.patch.yml` 的技能注册是 `@deepseek-ai/dsh-skill-filesystem` + `bundledSkillDir: !!js ...createRequire(baseUrl).resolve('<包名>/package.json')...`。`baseUrl` 是**接收方 profile 目录**；开发机上能解析，是因为那里 `node_modules/dsh-edu-*` 是 `link:` 指向本仓库，而发布出去后是真实安装目录。
-- 实测：把 profile 路径换成干净目录（`/tmp/fakeprofile/`）后，同一表达式返回 `MODULE_NOT_FOUND`。技能不会注册，patch 也不会报错，只会静默少一批技能。插件同时改了技能目录或 `providerName` 后，旧引用不再命中。
-- 发布前必须把技能注册改为**不依赖 `baseUrl` 解析**的形式（如随包自带的 provider 插件），并把「发布物实跑一遍、确认 43 个技能全部注册」加入发布检查；在此之前不要 `npm publish`。
+**技能注册方式：每个包只有一行激活，逻辑只有一份。** provider 由 `learn` 携带（`learn/skill-provider.mjs` + `learn/lib/skill-resources.mjs`），六个技能包的 `cordis.patch.yml` 都激活它：
+
+```yaml
+- insert:
+    - id: edu-skills
+      name: !!js …createRequire(baseUrl + 'x').resolve('dsh-edu-learn/package.json') → skill-provider.mjs
+      config:
+        packages: [ … 闭包里每个包的 package.json 路径 … ]
+```
+
+- **只有一份 provider 代码**：任何学科包都依赖 `dsh-edu-learn`，所以任何安装都能解析到同一个模块；不再有各包内的副本，也没有 `sync` 与副本比对。
+- **闭包整份列出**：`name` 是包内路径（各次激活完全相同），`config.packages` 列出闭包中的七个包。DSH 把同 id 的插入行组合成一个条目，而各 bundle 层**后写入者生效**；因此每一行都列出完整闭包，无论最终留下的是哪一行的最后一层，provider 都拿得到全部根路径。装不上或未安装的包保留为未解析路径，provider 跳过它（本地半装不会凭空注册不存在的包）。
+- **代码与文档分离**：技能正文渲染进各包的 `resources/`（每个技能一个文件，附它引用的资源文件），所以只有代码、没有 `skills/` 的安装同样能注册完整技能。`skills/` 仍随包发布，供阅读与维护。
+- **自包含**：`dsh-edu-learn` 单独安装时，`learn-general-*` 的引用都在 `learn/resources/` 里，不依赖其他学科包。
+- 发布后至少用隔离 `DSH_HOME` 真装一次，**且只写学科包名**：`dsh plugin --profile web add dsh-edu-math-primary-low`，确认 `dsh.profile.bundles` 里出现 `dsh-edu-learn`、`dsh-edu-math`、`dsh-edu-math-board`，并确认技能注册齐全（低年级数学闭包注册 20 个技能，全装 43 个）、不是静默少一批。tarball 里有文件只说明包装对了，不等于接收方已注册。
 - 接收方侧的前置条件只有 DSH 与可用模型路由；插件的 `dsh-edu-learn: ^0.1.0` 等范围由 npm 自动满足。
+
+**本地安装为什么先 pack**：`pnpm add link:<目录>` 只链接该目录本身、不装它的 `dependencies`，profile 里只有部分包，单份 provider 就找不到其余包。安装器因此走「pack 闭包 → 一次 `dsh plugin add <tarballs>`」，并在 profile 的 `pnpm-workspace.yaml` 写 `overrides`（DSH 没有对应命令，由安装器写入；重装时整块替换），让某个 tarball 声明的兄弟依赖也解析到本地 tarball，而不是 npm registry（`dsh-edu-*` 目前尚未发布）。每次重装都重新 pack 闭包，并把之前装过的其它学科包按仍留在 profile 里的 tarball 路径一并重新 add，因此逐个安装学科不会互相清掉。pack 产物放在系统临时目录，重装会生成新的目录并替换 profile 里的引用。
 
 ## 本地 checkout 安装
 
@@ -88,34 +116,34 @@ node scripts/install.mjs math-primary-low --profile web --dry-run
 
 依赖只声明在各包的 `package.json` → `dependencies`：`dsh-edu-math`、两个 band、语文学科与英语声明 `dsh-edu-learn: ^0.1.0`，两个 band 另外声明 `dsh-edu-math: ^0.1.0`（低年级数学另加 `dsh-edu-math-board: ^0.6.0`）。任何包都不再声明 `"private": true`，因为 npm 会拒绝发布私有包，而 DSH 的官方 bundle 校验也按“公开 bundle”读取。
 
-安装器从这些声明递归生成依赖优先、按包去重的闭包，然后执行**一次**：
+安装器从这些声明递归生成依赖优先、按包去重的闭包，把它们 pack 成 tarball 后执行**一次**：
 
 ```bash
-dsh plugin --profile web add link:<checkout>/learn link:<checkout>/math-common link:<checkout>/math-board link:<checkout>/math-primary-low [link:<checkout>/math-primary-high]
-# 或由统一入口按 manifest 的必需依赖生成（版本范围与 file: 都会展开）：
 node scripts/install.mjs math-primary-low --profile web
+# 展开结果等价于（由安装器生成，不需要手写）：
+dsh plugin --profile web add <临时目录>/dsh-edu-learn-*.tgz <临时目录>/dsh-edu-math-*.tgz <临时目录>/dsh-edu-math-board-*.tgz <临时目录>/dsh-edu-math-primary-low-*.tgz
 ```
 
-每个 bundle 成为 profile 的顶层依赖，由 DSH 原生处理安装与启用。各包仍只注册自己的技能或插件；学科 patch 不复制共享规则，不重复插入画板。`all` 只是三个已交付学科（数学两个年级段包）的快捷选择，不扫描实验目录为新学科。两个数学包互不依赖：科目 id 都是 `math`，使用唯一技能名 `math-low-*` / `math-high-*`，由[教学解析](../learn/skills/learn-data/references/teaching-resolver.md)统一选择：已知 1–3 年级优先 low、4–6 年级优先 high，缺年级默认 low；优先级不是内容门槛，low 也可教高阶内容，已安装但未被选中的包不影响正在进行的任务。共享数学契约由 `dsh-edu-math` 提供，闭包中只出现一次；它不含 band 的 core / session 教学技能，不会被解析成第三个数学实现。
+每个 bundle 成为 profile 的顶层依赖，由 DSH 原生处理安装与启用。技能由 `learn` 携带的唯一 provider 从各包的 `resources/` 注册；学科 patch 不复制共享规则，不重复插入画板，六个技能包激活的是同一个 `edu-skills` 条目。`all` 只是三个已交付学科（数学两个年级段包）的快捷选择，不扫描实验目录为新学科。两个数学包互不依赖：科目 id 都是 `math`，使用唯一技能名 `math-low-*` / `math-high-*`，由[教学解析](../learn/skills/learn-data/references/teaching-resolver.md)统一选择：已知 1–3 年级优先 low、4–6 年级优先 high，缺年级默认 low；优先级不是内容门槛，low 也可教高阶内容，已安装但未被选中的包不影响正在进行的任务。共享数学契约由 `dsh-edu-math` 提供，闭包中只出现一次；它不含 band 的 core / session 教学技能，不会被解析成第三个数学实现。
 
-## 为什么不能只写 dependencies
+## registry 安装为什么只写学科包
 
-当前验证版本 DSH `0.2.2-rc.1` 的安装流程只为**新增的 profile 顶层依赖**自动选择 bundle；读取配置时也只加载 `dsh.profile.bundles` 中选择的 patch。npm 间接依赖的代码可解析，不意味着该包的 patch 或 Web 插件已经启用。
+`dsh plugin add <包名>` 由 pnpm 真实安装该包**及其 `dependencies`**，随后 DSH 的 `reconcile` 把本次新增、且声明了 `dsh.bundle` 的依赖补进 `dsh.profile.bundles`。所以 registry 装法只写学科包名即可，依赖不必重列。
 
-因此：
+本地安装走同一个 `dsh plugin ... add`，只是参数是安装器 pack 出来的 tarball，因此依赖同样整份装在 profile 顶层。`link:` 与 `file:<目录>` 都不要用：pnpm 不安装被链接/目录依赖的间接依赖，闭包不会展开。
 
-- 首选年级段包不可用时，解析可选另一个完整且兼容的数学 band；仍不适配时回退通用任务教学，而不是拒绝继续。想让两个年级段的首选实现都可用，需分别安装或使用 `all`。
-- `dsh plugin ... add link:<checkout>/math-primary-low` **不是完整数学安装入口**：pnpm 的 `link:` 本身不安装目标目录的间接依赖，DSH 也不递归启用它们。
-- 改用 `file:` 让 pnpm 安装间接依赖，仍不能替代 bundle 启用。
-- 推荐使用上面的统一入口；手工安装时必须显式列出依赖闭包中的所有包。
+- 想让两个年级段的首选实现都可用，需各自安装，或使用 `all`。
+- 首选年级段包不可用时，解析可选另一个完整且兼容的数学 band；仍不适配时回退通用任务教学，而不是拒绝继续。
+- 已被手动禁用的 bundle 不会因重装自动重新启用。
 
 ## 已有 profile、重复安装与失败
 
 - 已经安装了学科但缺依赖：用统一入口重装该学科，会补齐缺失的顶层依赖。不会移除其他学科、用户配置或学生数据。
-- 多学科和重复输入先去重；重复运行交给 pnpm 更新同名依赖，DSH 不会再次向 bundle 列表追加同名新增项。共享包、画板各使用原本唯一的 patch 注册。
+- 多学科和重复输入先去重；再次安装任意学科都会把之前装过的包按 profile 里登记的 tarball 路径一并重新 add，所以逐学科安装不会互相清掉，共享包、画板仍各只有一份。
 - **尊重手动禁用**：当前 DSH CLI 不会因重装自动启用此前已安装但被禁用的 bundle。脚本不绕过该行为；要恢复它，先在 DSH 插件管理中明确启用对应 bundle。脚本返回零只表示 DSH 命令完成，不能当成所有插件均已激活或界面已目视验证。
 - 依赖不存在、包名不匹配、循环、非本地依赖或参数错误会在调用 DSH 前失败。执行失败会返回非零，保留原始 DSH 输出；不声称事务回滚，修复具体错误后重试。
-- 本方案使用本地 `link:`，开发目录必须持续存在；移动 checkout 后重新运行安装入口。安装不负责构建画板，画板源码修改后仍须执行它的 build。
+- pack 产物在系统临时目录，profile 的依赖与 `pnpm-workspace.yaml` 的 `overrides` 指向那里；重装会重新 pack 并改写这些引用。临时目录被系统清理后，先重装一次即可，不需要改 profile。
+- 安装不负责构建画板，画板源码修改后仍须执行它的 build；技能（`skills/` 与 `references/`）修改后先跑 `node scripts/build-resources.mjs` 再重装，否则装的是旧的 `resources/`（`publish.mjs check` 与契约测试会拦下未重建的情况）。
 
 ## 验证
 

@@ -2,6 +2,9 @@
   "name": "dsh-edu-english",
   "version": "0.1.0",
   "type": "module",
+  "exports": {
+    "./package.json": "./package.json"
+  },
   "description": "English teaching skills for dsh-edu: story input, dialogic interaction, output, scaffolding, tasks, usage-based patterns, spaced retrieval, and child-friendly news reading.",
   "license": "GPL-3.0-or-later",
   "repository": {
@@ -21,6 +24,8 @@
   },
   "files": [
     "cordis.patch.yml",
+    "build.json",
+    "resources",
     "skills",
     "README.md",
     "LICENSE"

@@ -92,4 +92,4 @@ outputs/students/
 ## 说明
 
 - 本包是纯技能包：没有插件运行时、没有额外工具，全部行为由 `SKILL.md` 指令与文件读写构成。
-- `cordis.patch.yml` 为包内 `skills/` 注册独立的 filesystem skill provider（`providerName: edu-chinese-reading`），root 从安装后的包位置解析，`link:` / `file:` / git 安装行为一致。
+- `cordis.patch.yml` 只有一行：激活 `dsh-edu-learn` 携带的那一个技能 provider（条目 `edu-skills`），它从各已安装包的 `resources/` 注册全部技能。安装时读的是渲染后的 `resources/`，`skills/` 是技能来源；改完技能先跑 `node scripts/build-resources.mjs`。

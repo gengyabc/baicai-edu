@@ -1,0 +1,17 @@
+# Create Student
+
+Run only after `/learn-start` has collected and confirmed the necessary information. For the field shell, read `references/profile-schema.md`; for stage compatibility, read `references/grade-band-defaults.md`. First read `references/teaching-resolver.md` and adopt its real `subject`, stable `scope_id`, and `teaching` result; do not treat general teaching as a subject identity. Preference keys, `current_levels`, and `active_domain` come from the subject contract (`references/subject-contract.md`) of the returned `core_skill`, without directly assuming a specialist package exists; example values are not initialization defaults.
+
+1. Convert the name to a lowercase romanized (pinyin or English) slug and add 4 random hex characters to produce `stu_<slug>_<4hex>`. Discover existing students per Data Root and verify the id is unique before writing.
+2. Write `outputs/students/<id>/profile.json` per the Base Profile template:
+   - Name, language, and creation and update times come from the information confirmed this time. `grade` may be omitted; `education_stage` and `learning_context` are optional. An existing primary grade can derive the stage; when unknown, do not force-fill a primary grade or grade band.
+   - Write interests to the shared `personal.interests`; for skippable items not provided, leave them empty, do not apply template experiences, and do not proactively collect hardships.
+   - Shared `learning_preferences = { goals: [], support_preferences: [] }` defaults to empty arrays; write only long-term goals and support preferences the student explicitly set for cross-subject reuse. Subject preferences still belong to the subject profile; learning difficulties and sensitive family/occupation/emotion details are not written to shared fields, and a shared psychological profile is not inferred from a single performance.
+3. Write the current subject's `profile.json`, `memory.json`, `current_state.json`, `milestones.json`, and `session_log.json` per the templates:
+   - Use the defaults of the resolved teaching contract; the general path keeps unknown levels and does not fabricate primary-school grades, specialist diagnoses, or mastery labels.
+   - Set all `profile.preferences` to `false` first, then set the items the student actually chose to `true`; if skipped, keep the defaults.
+   - All subjects use `profile.self_report.easy_topics` / `hard_topics`; do not rename them, and do not copy them as shared learning difficulties.
+   - Support plans/observations stay in the subject `memory.json` under `learning_support_memory.plans` / `observations`, initialized empty; records may be written only by finalize, so do not turn the profile-creation chat into a support observation here, and do not create a separate memory file.
+4. Per the session.json structure in `learn-data`, write the current student, the real subject, and the teaching implementation and scope fields required by the protocol, to activate the profile.
+5. Create directories (keep them if they exist): `data/students/<id>/<subject>/raw/`, `outputs/students/<id>/<subject>/extracted/`, `outputs/students/<id>/<subject>/backups/raw/`.
+6. Once all required files and directories are written successfully and session points to the new student and subject, tell the student that profile creation is done and the next step is `/learn`. If any step fails, report the incomplete operation, keep the parts that succeeded for retry, and do not announce success early.

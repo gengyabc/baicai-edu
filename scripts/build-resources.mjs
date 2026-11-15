@@ -1,0 +1,135 @@
+// Build one skill package's `resources/` directory from its skill package.
+//
+// Each skill package ships a `resources/` tree that holds, per skill, the union
+// of every file that skill needs: its body, its own references, and the
+// references it cites by another skill's name. Two files per skill:
+//
+//   resources/<name>.md          body + `resources:` header naming cited own files
+//   resources/<name>~resources.md  the shared resource directory (care of), if any
+//
+// The install-time rebuild (scripts/install.mjs) writes those files from the
+// sources named in `build.json`, which is the only place a package knows where
+// its skill package lives. A registry install, where the skill package may be
+// absent, keeps the committed copy, so the committed tree must stay current:
+// `node scripts/build-resources.mjs` regenerates it and the contract test
+// compares the two.
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+
+/** Packages that teach skills, in the order their shared resource directories are searched. */
+export const SKILL_PACKAGES = ['learn', 'math-common', 'math-primary-low', 'math-primary-high', 'chinese-reading', 'english']
+
+// `ENGLISH_SKILL` → `english-skill`: a cited `name: file` pair becomes one file name.
+const encode = (skill, file) => `${skill}~${file}`
+
+/** `skill, file` pairs a body cites through another skill's name, in citation order, without duplicates. */
+export function citedFiles(body) {
+  const pairs = []
+  for (const match of body.matchAll(/`([a-z0-9]+(?:-[a-z0-9]+)*)`\s*`?references\/([A-Za-z0-9_.-]+\.md)`?/g)) {
+    const key = encode(match[1], match[2])
+    if (!pairs.some(([pair]) => pair === key)) pairs.push([key, match[1], match[2]])
+  }
+  return pairs
+}
+
+/** A skill's own reference files its body cites by bare name, in citation order. */
+export function citedOwn(body) {
+  const files = []
+  for (const match of body.matchAll(/`?references\/([A-Za-z0-9_.-]+\.md)`?/g)) {
+    if (!files.includes(match[1])) files.push(match[1])
+  }
+  return files
+}
+
+const header = (fields) => ['---', ...Object.entries(fields).flatMap(([key, value]) => (
+  Array.isArray(value) ? (value.length === 0 ? [] : [`${key}: ${value.join(' ')}`]) : [`${key}: ${value}`]
+)), '---', ''].join('\n')
+
+/**
+ * Flatten one skill directory into its two resource files.
+ * @param skillDirectory - the skill's directory under a skill package's `skills/`.
+ * @param referenceDirectories - directories searched, in order, for cited files the skill does not own.
+ * @returns `{ body, shared }` file texts, or undefined when a cited file cannot be found.
+ */
+export function flattenSkill(skillDirectory, referenceDirectories) {
+  const text = readFileSync(join(skillDirectory, 'SKILL.md'), 'utf8')
+  const match = /^---\n([\s\S]*?)\n---\n?/.exec(text)
+  if (match === null) throw new Error(`${skillDirectory}/SKILL.md: missing frontmatter`)
+  const fields = {}
+  for (const line of match[1].split('\n')) {
+    const entry = /^([\w-]+):\s*(.*)$/.exec(line)
+    if (entry !== null) fields[entry[1]] = entry[2].trim().replace(/^["']|["']$/g, '')
+  }
+  const body = text.slice(match[0].length)
+  const own = citedOwn(body).filter((name) => /^[A-Za-z0-9_.-]+\.md$/.test(name))
+  // A shared file is listed under its own `<file>.md` name, or under
+  // `skill/file.md` when the skill ships a file of the same name.
+  const ownExisting = own.filter((name) => existsSync(join(skillDirectory, 'references', name)))
+  const resources = [...new Set(ownExisting)]
+  const sharedFiles = []
+  for (const [pair, owner, file] of citedFiles(body)) {
+    const directory = referenceDirectories.find((candidate) => existsSync(join(candidate, owner, 'references', file)))
+    if (directory === undefined) continue
+    const name = resources.includes(file) ? `${owner}/${file}` : file
+    if (!resources.includes(name)) resources.push(name)
+    sharedFiles.push([name, `${header({ cited: `${owner}/references/${file}` })}\n${readFileSync(join(directory, owner, 'references', file), 'utf8').trim()}\n`])
+  }
+  const ownFiles = [...new Set(ownExisting)]
+  const headerFields = { name: fields.name, description: fields.description }
+  if (resources.length > 0) headerFields.resources = resources
+  // One file per listed resource. A skill's own file wins a name collision, so
+  // shared files never overwrite it; only `resources` decides what is inlined.
+  const files = new Map(sharedFiles.map(([name, text]) => [name, text]))
+  for (const name of ownFiles) files.set(name, readFileSync(join(skillDirectory, 'references', name), 'utf8').trim() + '\n')
+  return { body: `${header(headerFields)}${body}`, shared: [...files] }
+}
+
+/**
+ * Build a package's `resources/` tree.
+ * @param packageName - the package's published name, as in its `build.json`.
+ * @param options.root - repository root (defaults to this checkout).
+ * @param options.write - `false` renders in memory and writes nothing.
+ * @returns `{ files: Map<relativePath, text>, problems: string[] }`.
+ */
+export function buildResources(packageName, { root = ROOT, write = true } = {}) {
+  const directory = SKILL_PACKAGES.find((name) => {
+    const manifest = join(root, name, 'package.json')
+    return existsSync(manifest) && JSON.parse(readFileSync(manifest, 'utf8')).name === packageName
+  })
+  if (directory === undefined) throw new Error(`${packageName}: not a skill package of this checkout`)
+  const config = JSON.parse(readFileSync(join(root, directory, 'build.json'), 'utf8'))
+  const source = resolve(root, config.skills)
+  const shared = config.skillResources.map((path) => resolve(root, path))
+  const files = new Map()
+  const problems = []
+  for (const entry of readdirSync(source, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue
+    const flattened = flattenSkill(join(source, entry.name), shared)
+    files.set(`resources/${entry.name}.md`, flattened.body)
+    for (const [name, text] of flattened.shared) files.set(`resources/${name}`, text)
+  }
+  if (write) {
+    const target = join(root, directory, 'resources')
+    rmSync(target, { recursive: true, force: true })
+    mkdirSync(target, { recursive: true })
+    for (const [relative, text] of files) {
+      mkdirSync(join(root, directory, relative, '..'), { recursive: true })
+      writeFileSync(join(root, directory, relative), text)
+    }
+  }
+  return { files, problems }
+}
+
+if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const requested = process.argv.slice(2)
+  const names = requested.length === 0
+    ? SKILL_PACKAGES.map((directory) => JSON.parse(readFileSync(join(ROOT, directory, 'package.json'), 'utf8')).name)
+    : requested
+  for (const packageName of names) {
+    const { files } = buildResources(packageName)
+    console.log(`${packageName}: ${files.size} files`)
+  }
+}

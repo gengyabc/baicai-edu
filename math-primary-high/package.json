@@ -2,6 +2,9 @@
   "name": "dsh-edu-math-primary-high",
   "version": "0.1.0",
   "type": "module",
+  "exports": {
+    "./package.json": "./package.json"
+  },
   "description": "Task-driven upper-primary (grades 4-6) math teaching with multiple methods, evidence-based support, strategy diagnosis, practice, student-authored problems, and real-world modeling; the math board is optional.",
   "license": "GPL-3.0-or-later",
   "repository": {
@@ -22,6 +25,8 @@
   },
   "files": [
     "cordis.patch.yml",
+    "build.json",
+    "resources",
     "skills",
     "README.md",
     "LICENSE"

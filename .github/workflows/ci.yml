@@ -32,6 +32,9 @@ jobs:
       - name: Skill contract and install regressions
         run: node --test scripts/*.test.mjs
 
+      - name: Publish artifacts are shippable and resources match their skills
+        run: node scripts/publish.mjs check
+
       - name: Rebuild the board client and confirm it is committed
         run: |
           node math-board/build.mjs

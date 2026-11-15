@@ -1,7 +1,7 @@
 // Opt-in: exercises the real DSH CLI without touching the user's DSH_HOME.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
@@ -34,6 +34,7 @@ test('real DSH installs, composes, deduplicates and preserves explicit disableme
   };
   const install = (...packages) => run(process.execPath,
     ['scripts/install.mjs', ...packages, '--profile', profile]);
+
   const selected = manifest => manifest.dsh.profile.bundles.filter(name => name.startsWith('dsh-edu-'));
   const high = ['dsh-edu-learn', 'dsh-edu-math', 'dsh-edu-math-primary-high'];
   const math = [...high, 'dsh-edu-math-board', 'dsh-edu-math-primary-low'];
@@ -41,9 +42,14 @@ test('real DSH installs, composes, deduplicates and preserves explicit disableme
     install('math-primary-high');
     assert.deepEqual(selected(readManifest()), high);
     assert.deepEqual(Object.keys(readManifest().dependencies).sort(), [...high].sort());
-    const highOnly = run('dsh', ['--profile', profile, '--dump-default-config']);
-    assert.match(highOnly, /^- id: edu-math-primary-high-skills$/m);
-    assert.doesNotMatch(highOnly, /^- id: edu-math-board$/m);
+    // Every skill package activates the same provider entry. `--dump-config`
+    // lists the layers (bundle rows are not composed), and DSH composes rows
+    // sharing an id into one entry.
+    const highDump = run('dsh', ['--profile', profile, '--dump-config']);
+    assert.ok([...highDump.matchAll(/^- id: edu-skills$/gm)].length >= 1);
+    assert.doesNotMatch(highDump, /^- id: edu-math-board$/m);
+    // The composed entry must name the roots of the row DSH kept.
+    assert.ok(highDump.includes('dsh-edu-math-primary-high/package.json'));
 
     // An explicit opt-in adds the board; subsequent low installation reuses it.
     install('math-primary-high', 'math-board');
@@ -60,14 +66,19 @@ test('real DSH installs, composes, deduplicates and preserves explicit disableme
     const manifest = readManifest();
     assert.deepEqual(selected(manifest), all);
     assert.deepEqual(Object.keys(manifest.dependencies).sort(), [...all].sort());
-    const composed = run('dsh', ['--profile', profile, '--dump-default-config']);
-    for (const id of ['edu-learn-skills', 'edu-math-common-skills', 'edu-math-board', 'edu-math-primary-low-skills',
-      'edu-math-primary-high-skills', 'edu-chinese-reading-skills', 'edu-english-skills']) {
-      assert.equal([...composed.matchAll(new RegExp(`^- id: ${id}$`, 'gm'))].length, 1, id);
+    const composed = run('dsh', ['--profile', profile, '--dump-config']);
+    // One provider entry, and the board's own row; no per-package provider rows.
+    for (const id of ['edu-skills', 'edu-math-board']) {
+      assert.ok([...composed.matchAll(new RegExp(`^- id: ${id}$`, 'gm'))].length >= 1, id);
     }
-
-    // The shared math contract is registered once, and the upper-primary bundle keeps
-    // its own provider beside the optional board.
+    assert.doesNotMatch(composed, /id: edu-[a-z-]+-skills$/m, 'per-package provider entries are gone');
+    // Every skill package teaches from ONE installed module: the profile holds
+    // the provider once, and only `learn` ships it.
+    assert.ok(existsSync(join(home, 'profiles', profile, 'node_modules', 'dsh-edu-learn', 'skill-provider.mjs')));
+    for (const name of ['dsh-edu-math', 'dsh-edu-math-primary-low', 'dsh-edu-math-primary-high', 'dsh-edu-english']) {
+      assert.ok(!existsSync(join(home, 'profiles', profile, 'node_modules', name, 'skill-provider.mjs')), name);
+    }
+    // The shared math contract is registered once, and its rules reach a subject.
     assert.equal(selected(readManifest()).filter(name => name === 'dsh-edu-math').length, 1);
     assert.equal(selected(readManifest()).filter(name => name === 'dsh-edu-math-primary-high').length, 1);
 
@@ -87,10 +98,9 @@ test('real DSH installs, composes, deduplicates and preserves explicit disableme
     install('math-primary-low');
     assert.ok(!selected(readManifest()).includes('dsh-edu-math'));
     assert.ok('dsh-edu-math' in readManifest().dependencies);
-    const bandOnly = run('dsh', ['--profile', profile, '--dump-default-config']);
-    assert.match(bandOnly, /^- id: edu-math-primary-low-skills$/m);
-    assert.match(bandOnly, /^- id: edu-math-primary-high-skills$/m);
-    assert.doesNotMatch(bandOnly, /^- id: edu-math-common-skills$/m);
+    const bandOnly = run('dsh', ['--profile', profile, '--dump-config']);
+    assert.ok([...bandOnly.matchAll(/^- id: edu-skills$/gm)].length >= 1);
+    assert.ok(bandOnly.includes('dsh-edu-math-primary-high/package.json'));
   } finally {
     // home is the exact directory returned by mkdtempSync above, never a user path.
     rmSync(home, { recursive: true });

@@ -161,6 +161,10 @@ test('shared learn files leave subject teaching rules to subject packages', () =
   for (const path of markdownFiles('learn')) {
     // The resolver names concrete implementations but does not own subject pedagogy.
     if (path === 'learn/skills/learn-data/references/teaching-resolver.md') continue
+    // `resources/` is generated from the skill files this test already covers,
+    // with each cited resource inlined; checking it again only reports the same
+    // subject names from those copied bodies.
+    if (path.startsWith('learn/resources/')) continue
     // Acceptance fixtures may name subjects; other shared runtime rules may not.
     if (entries.has(path) || path.startsWith('learn/tests/')) continue
     assert.doesNotMatch(text(path), subjectSpecific, path)
@@ -1668,9 +1672,146 @@ test('batch sub-questions separate exploration distribution from one board for t
   }
 })
 
+test('one provider serves every skill package, and each activation names its closure', () => {
+  // There is exactly ONE provider module, shipped by `learn`. Every skill
+  // package's cordis.patch.yml activates it through `dsh-edu-learn`, so any
+  // install that pulls one bundle in (they all depend on learn) resolves the
+  // same file. Copying it beside each package was the old failure mode; the
+  // patch rows are now the only per-package part, and they must stay suffixes
+  // of learn's row so a last-wins composed entry keeps every root it needs.
+  const provider = text('learn/skill-provider.mjs')
+  const activation = (directory) => {
+    const patch = text(`${directory}/cordis.patch.yml`)
+    const names = [...patch.matchAll(/resolve\('(dsh-edu-[a-z-]+)\/(?:package\.json|skill-provider\.js)'\)/g)].map((match) => match[1])
+    const activationRoot = patch.match(/new URL\('skill-provider\.mjs',\s*process\.getBuiltinModule\('node:module'\)\.createRequire\(baseUrl \+ 'x'\)\.resolve\('dsh-edu-learn\/package\.json'\)\)/)
+    assert.ok(activationRoot !== null, `${directory}/cordis.patch.yml does not activate dsh-edu-learn's provider`)
+    assert.equal([...patch.matchAll(/- id: edu-skills$/gm)].length, 1, `${directory} activates edu-skills more than once`)
+    return names
+  }
+  const learnRoots = activation('learn')
+  for (const bundle of bundles) {
+    activation(bundle)
+    // One provider module, not one per package.
+    assert.ok(!existsSync(join(root, bundle, 'skill-provider.js')), `${bundle} still ships a provider copy`)
+    // The provider activation is self-contained: learn is a declared dependency.
+    const manifest = JSON.parse(text(`${bundle}/package.json`))
+    if (bundle === 'learn') {
+      assert.ok(manifest.files.includes('skill-provider.mjs'), 'learn must ship the provider')
+    } else {
+      assert.ok(!existsSync(join(root, bundle, 'skill-provider.mjs')), `${bundle} ships a second provider`)
+      assert.equal(manifest.dependencies?.['dsh-edu-learn'], '^0.1.0', `${bundle} must depend on dsh-edu-learn`)
+    }
+    assert.ok(manifest.files.includes('resources'), `${bundle} does not ship resources/`)
+    assert.ok(manifest.files.includes('build.json'), `${bundle} does not ship build.json`)
+    assert.ok(!manifest.files.includes('skill-provider.js'), `${bundle} still lists a provider copy`)
+    // DSH composes all rows with this id into one entry whose config the last
+    // bundle layer wins; by `dsh.profile.bundles` order (reconcile appends, so a
+    // subject comes after learn), a subject's row is what remains. It must list
+    // every root the provider needs, and that list must be learn's closure.
+    const roots = activation(bundle)
+    if (bundle !== 'learn') {
+      assert.deepEqual(roots, learnRoots,
+        `${bundle}/cordis.patch.yml is the row DSH keeps; it must name learn's whole closure`)
+    }
+  }
+  assert.ok(!existsSync(join(root, 'math-board', 'skill-provider.js')),
+    'math-board has no skills and must not carry a provider')
+  assert.match(provider, /edu-skills/, 'learn/skill-provider.mjs must register the edu-skills provider')
+  // Every skill package also lets the activation resolve its manifest.
+  for (const bundle of [...bundles, 'math-board']) {
+    const manifest = JSON.parse(text(`${bundle}/package.json`))
+    assert.equal(manifest.exports?.['./package.json'], './package.json',
+      `${bundle} must export ./package.json for the activation row`)
+  }
+})
+
+test('committed resources match a fresh build, and every shipped file resolves', async () => {
+  // A registry install has code only: each skill arrives as one rendered file
+  // plus the resource files it names. `resources/` is generated from skills/,
+  // so a source edit without a rebuild would ship stale text — compare them.
+  const build = spawnSync(process.execPath, ['scripts/build-resources.mjs'], { cwd: root, encoding: 'utf8' })
+  assert.equal(build.status, 0, build.stderr)
+  const { buildResources } = await import('../scripts/build-resources.mjs')
+  for (const bundle of bundles) {
+    const name = JSON.parse(text(`${bundle}/package.json`)).name
+    const { files } = buildResources(name, { root, write: false })
+    const committed = readdirSync(join(root, bundle, 'resources'), { recursive: true })
+      .map(String).filter((path) => path.endsWith('.md')).sort()
+    assert.deepEqual(committed, [...files.keys()].map((path) => path.replace(/^resources\//, '')).sort(),
+      `${bundle}/resources does not match scripts/build-resources.mjs (run it and commit the result)`)
+    for (const [path, body] of files) {
+      assert.equal(text(`${bundle}/${path}`), body, `${bundle}/${path} is stale (run node scripts/build-resources.mjs)`)
+      const header = /^---\n([\s\S]*?)\n---\n?/.exec(body)
+      if (header === null) continue
+      const resources = /^resources: (.*)$/m.exec(header[1])?.[1]?.split(/\s+/).filter(Boolean) ?? []
+      for (const resource of resources) {
+        assert.ok(existsSync(join(root, bundle, 'resources', resource)),
+          `${bundle}/${path} lists ${resource}, which the package does not ship`)
+      }
+    }
+  }
+  // The board teaches nothing, so it ships no resources.
+  assert.ok(!existsSync(join(root, 'math-board', 'resources')), 'math-board must not ship resources/')
+})
+
+test('one subject package name installs its whole bundle closure', () => {
+  // Registry install: `dsh plugin add <subject>` runs pnpm, which installs the
+  // package and its declared dependencies; DSH then appends every NEWLY added
+  // dependency that declares dsh.bundle to dsh.profile.bundles
+  // (dsh-plugin-manager reconcile: it iterates `dependencies`, skips names
+  // already present before the install, and pushes those with a bundle).
+  // So a subject must declare every bundle a learner needs, or the install
+  // silently enables a subset — the failure this test exists to prevent.
+  const dirs = ['learn', 'math-common', 'math-board', 'math-primary-low', 'math-primary-high', 'chinese-reading', 'english']
+  const pkg = (dir) => JSON.parse(text(`${dir}/package.json`))
+  const byName = new Map(dirs.map((dir) => [pkg(dir).name, dir]))
+
+  for (const dir of dirs) {
+    const manifest = pkg(dir)
+    // Every bundle must declare its own patch, or reconcile never enables it.
+    assert.ok(manifest.dsh?.bundle?.patch !== undefined, `${dir} declares no dsh.bundle.patch`)
+    for (const [dependency, range] of Object.entries(manifest.dependencies ?? {})) {
+      assert.ok(byName.has(dependency), `${dir} depends on ${dependency}, which is not a repo package`)
+      // A dependency must be a bundle too, or it is installed but never enabled.
+      assert.ok(pkg(byName.get(dependency)).dsh?.bundle?.patch !== undefined,
+        `${dependency} has no dsh.bundle, so installing ${dir} would not enable it`)
+      assert.match(range, /^\^0\.\d+\.\d+$/, `${dir} must declare a caret range for ${dependency}`)
+    }
+  }
+
+  // The subject closures learners actually act on. `math-primary-high` pairs
+  // with the optional board, which a learner adds separately, so it stays out.
+  const closures = {
+    'dsh-edu-math-primary-low': ['dsh-edu-math-primary-low', 'dsh-edu-learn', 'dsh-edu-math', 'dsh-edu-math-board'],
+    'dsh-edu-math-primary-high': ['dsh-edu-math-primary-high', 'dsh-edu-learn', 'dsh-edu-math'],
+    'dsh-edu-chinese-reading': ['dsh-edu-chinese-reading', 'dsh-edu-learn'],
+    'dsh-edu-english': ['dsh-edu-english', 'dsh-edu-learn'],
+  }
+  const closureOf = (name) => {
+    const seen = new Set([name])
+    const queue = [name]
+    while (queue.length > 0) {
+      for (const dependency of Object.keys(pkg(byName.get(queue.shift())).dependencies ?? {})) {
+        if (!seen.has(dependency)) { seen.add(dependency); queue.push(dependency) }
+      }
+    }
+    return [...seen].sort()
+  }
+  for (const [subject, expected] of Object.entries(closures)) {
+    assert.deepEqual(closureOf(subject), [...expected].sort(), `${subject} closure changed — update the install docs too`)
+  }
+
+  // The install docs must show the one-name form, not the stale list-everything form.
+  const installDoc = text('docs/installation.md')
+  assert.ok(installDoc.includes('dsh plugin --profile web add dsh-edu-math-primary-low'),
+    'docs/installation.md must show the single subject-package install')
+  assert.ok(!/add dsh-edu-learn dsh-edu-math/.test(installDoc),
+    'docs/installation.md still tells the reader to list dependencies by hand')
+})
+
 test('high-grade methodology is kept as material and never registered as skills', () => {
   const manifest = JSON.parse(text('math-primary-high/package.json'))
-  assert.deepEqual(manifest.files, ['cordis.patch.yml', 'skills', 'README.md', 'LICENSE'])
+  assert.deepEqual(manifest.files, ['cordis.patch.yml', 'build.json', 'resources', 'skills', 'README.md', 'LICENSE'])
   assert.ok(!manifest.files.includes('sources'))
   assert.deepEqual(manifest.dependencies, {
     'dsh-edu-learn': '^0.1.0',

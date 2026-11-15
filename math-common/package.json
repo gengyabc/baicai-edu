@@ -2,6 +2,9 @@
   "name": "dsh-edu-math",
   "version": "0.1.0",
   "type": "module",
+  "exports": {
+    "./package.json": "./package.json"
+  },
   "description": "Shared math contracts for the primary math bands: student-authored problems, practice evidence, the math-board protocol, and handwriting/image reading. Rules only; never a teaching implementation or resolver candidate.",
   "license": "GPL-3.0-or-later",
   "repository": {
@@ -21,6 +24,8 @@
   },
   "files": [
     "cordis.patch.yml",
+    "build.json",
+    "resources",
     "skills",
     "README.md",
     "LICENSE"
