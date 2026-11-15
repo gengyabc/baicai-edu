@@ -30,6 +30,12 @@ Completion: the student connects each term or transformation to a region or a ju
 
 Use `references/math-segment-fields.md` for the existing single merged segment and continuation descriptions. Keep student route selection, supported calculation, teacher-supplied constructions and still-unknown explanation or transfer separate. Teacher-only demonstrations have `session_segment: null`; repeating a supplied partition or formula is supported work. Local tool readiness does not establish independent parent construction or long-term mastery. Near transfer and changed-condition boundaries serve different purposes; offer them only when useful and agreed, and respect refusal or ending under the existing lifecycle.
 
+## Opening contrast: deriving parallelogram area
+
+If existing evidence shows rectangle-area calculation and area-preserving paper movement, reuse it. For a goal of **finding a transformation**, a supported opening can ask: “Can you show a way to turn this into a shape whose area you can calculate, without adding or losing any paper?” It supplies the familiar-shape and preservation directions, not a destination rectangle, cut line or movement. The teacher figure shows only the known starting shape, not those still-open choices. Asking which formula comes first would miss the unformed overall relationship.
+
+If the student instead proposes completing a larger rectangle and subtracting extra pieces, investigate that route: the extra regions must have computable areas, and the proposed removal must exactly recover the target. Follow it when justified rather than requiring cut-and-move. If it relies on a still-unknown triangle-area relation, keep the route provisional and identify that dependency; neither reject the alternative automatically nor assume its tools. For **learning an assigned cut-and-move operation**, explicit guidance may fit, but record teacher route selection and student execution separately. For a genuinely absent direction, a permitted separate-example demonstration follows `references/scaffold-calibration.md`; choose one whose prerequisites do not depend on the target formula.
+
 ## Teacher-only checked cases
 
 Keep these checks private during independent exploration; select a next question from the actual obstacle rather than reciting a worked route. The shared reveal rules in the derivation/proof references determine when a supplied demonstration or informed full solution is appropriate.

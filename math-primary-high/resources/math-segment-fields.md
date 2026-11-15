@@ -40,6 +40,17 @@ In `strategy_summary`, include only what informs the next decision: correctness,
 
 Stage, diagnosis, and skill confirmation are each decided by their own evidence thresholds; omit optional fields not observed and keep existing profile values. The same performance is interpreted only within its task scope: a correct percent task does not establish proportional reasoning everywhere, and a correct computed value after an example does not establish independent understanding. When the existing schema suffices, keep differences in natural language and add no stage or global level.
 
+## Route Ownership and Monitoring Evidence
+
+For conception tasks, use existing `strategy_summary` (and optional `ability_evidence` when applicable) to distinguish four observed facts, in concise natural language rather than new keys or a metacognition score:
+
+- **Route source:** student proposal, teacher hint/construction, joint development, or unknown. A method cue in a question or teacher figure counts as help; execution afterward does not change its source.
+- **Connection:** what the student said or showed linking a known tool/representation to the unknown, and under what support. Pointing, a meaningful sketch, a trial or an equation may supply evidence; agreeing with the teacher does not.
+- **Key derivation:** which load-bearing inference the student carried and which was supplied, separately from arithmetic accuracy.
+- **Monitoring:** any actual check of usefulness/conditions or grounded continue, revise or switch decision. If not observed, leave it unknown rather than infer it from completion.
+
+Record only evidence relevant to the next decision; no four-part interview is required. A student-found defensible route with a calculation error can support a route-selection strength and a separate execution difficulty. For an unhinted fresh or changed-condition check, state the task and prompting conditions; a saved recommendation is not transfer evidence. Keep teacher-only turns context-only and durable confirmation under the shared thresholds.
+
 ## Word-Problem Derivation Evidence
 
 For multi-step word problems, `strategy_summary` separates the student's selection of an intermediate quantity or equation, the justification linking quantities, execution, and checking against original conditions. Include the time origin or interval when it changes the meaning of a result. Distinguish teacher-supplied relationships from student-owned choices; computing a correct answer after a supplied route is supported execution, not independent route selection. This remains the current act's evidence, not an automatic `modeling` submode or new ability stage. Continuation uses the existing state per `references/word-problem-derivation.md`.

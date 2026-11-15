@@ -2008,7 +2008,7 @@ test('derivation teaching plans backward and bridges forward from student eviden
   // Workflow coverage only; student-facing behavior still requires dialogue replay.
   const ref = highRef('derivation-teaching')
   const steps = ['Establish the destination', 'Locate the student starting point',
-    'Plan backward across candidate routes', 'Probe the nearest uncertain bridge',
+    'Plan backward across candidate routes', '先搭桥，再推导 — choose the student-owned decision',
     'Teach forward with visible progress', 'Update the route from the response',
     'Completion and recording']
   let previous = -1
@@ -2025,6 +2025,74 @@ test('derivation teaching plans backward and bridges forward from student eviden
   const scenarios = text('math-primary-high/tests/teaching-scenarios.md')
   hasAll(scenarios, ['逆向规划、正向搭桥', '同一目标、不同已知', '试探结果改变路线',
     '失败尝试也留下进展', '学生提出另一条可行路线'])
+})
+
+test('bridge-before-derivation wires student-owned decisions to calibrated help and evidence', () => {
+  // Static rule/link guards only: no model or student dialogue is executed here.
+  const derivation = highRef('derivation-teaching')
+  hasAll(derivation, ['one consequential route decision',
+    'Keep it open in both the question and any teacher figure',
+    'The student already offers a viable route', 'Skip a route-finding probe',
+    'omit method cues', 'old method inconvenient', 'record each separately'])
+  const scaffold = highRef('scaffold-calibration')
+  hasAll(scaffold, ['Route Hints versus Execution Hints', '先搭桥，再推导',
+    'references/derivation-teaching.md', 'independent arithmetic after a route hint',
+    'separate problem', 'supported reconstruction, not rediscovery'])
+  const fields = highRef('math-segment-fields')
+  hasAll(fields, ['Route Ownership and Monitoring Evidence', 'Route source:',
+    'Connection:', 'Key derivation:', 'Monitoring:',
+    'a route-selection strength and a separate execution difficulty'])
+})
+
+test('bridge acceptance materials retain three core replays and evidence attribution branches', () => {
+  // Acceptance-material coverage only, not a claim that any replay has passed.
+  const scenarios = text('math-primary-high/tests/teaching-scenarios.md')
+  assert.match(scenarios, /\[核心行为配对回放\]\(<bridge-before-derivation\.md>\)/)
+  const acceptance = text('math-primary-high/tests/bridge-before-derivation.md')
+  hasAll(acceptance, ['待真实模型多轮回放，未执行',
+    'B1：不同已知，不同开场', 'B1-A', 'B1-B', 'B1-C', 'B1-D',
+    'B2：接住非标准路线', 'B2-A', 'B2-B', 'B2-C', 'B2-D',
+    'B3：无方法暗示迁移', 'B3-A', 'B3-B',
+    '只报10分钟', '从提示处起转为受助', '不要求学生一定换路',
+    '学生拒绝变式或要求暂停', '选择证据及来源', '执行证据及来源',
+    '不得用本文件的期望回复代填实际回复'])
+})
+
+test('step-back guidance separates strategy candidate generation and execution', () => {
+  // Static contract guards only; B4 dialogue branches remain unexecuted acceptance material.
+  const derivation = highRef('derivation-teaching')
+  hasAll(derivation, ['Step back: strategy → candidate → execution',
+    'Candidate-source check (teacher-private)', 'without knowing the target answer',
+    'an expected benefit alone does not explain how to generate a candidate',
+    'Formula recall alone does not establish', 'a fixed strategy menu',
+    'an actual trial as the source', 'a test, not an inevitable deduction',
+    'narrowing one selection decision', 'not extra stages for routine application',
+    'not the teacher-private candidate search'])
+  hasAll(highRef('scaffold-calibration'), ['candidate-source check',
+    'specifying the particular intermediate quantity or construction supplies that choice',
+    'repair that selection bridge before assigning more execution'])
+  const acceptance = text('math-primary-high/tests/bridge-before-derivation.md')
+  hasAll(acceptance, ['B4：退一步找策略', 'B4-A', 'B4-B', 'B4-C', 'B4-D',
+    'B4-E', 'B4-F', 'B4-G', '原失败反例', 'k²−(k−1)²=2k−1',
+    '为什么想到立方', '不能证明知道为什么选立方', '有限数据只能支持猜想',
+    '不能以静态断言代替'])
+})
+
+test('clue-first route questions leave the search dimension open until support is needed', () => {
+  // Static rule/scenario coverage, not an executed model-behavior replay.
+  const derivation = highRef('derivation-teaching')
+  const pause = derivation.split('**Clue-first pause:**')[1]?.split('**Candidate-source check')[0] ?? ''
+  hasAll(pause, ['observed result to the goal', 'open next-move question and wait',
+    'including the search dimension', 'concrete observed clue plus a clear desired effect',
+    'rather than asking which power of adjacent numbers to subtract',
+    'asks for help or shows a specific obstacle', 'correct short response alone',
+    'authorized full solution'])
+  hasAll(highRef('scaffold-calibration'), ['Clue-first pause', 'before narrowing the search dimension'])
+  const acceptance = text('math-primary-high/tests/bridge-before-derivation.md')
+  hasAll(acceptance, ['B4-H', 'B4-I', '2k+1，没有了',
+    '为了让差里留下平方项，你想可以怎么做呢',
+    '你想试相邻两个数的几次方相减', '给点提示', '不拉回预设立方路线',
+    '不是模型实际通过记录'])
 })
 
 test('derivation teaching grounds exact choices and repairs answer-led scaffolds', () => {

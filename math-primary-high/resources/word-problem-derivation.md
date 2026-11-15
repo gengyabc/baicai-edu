@@ -51,7 +51,8 @@ Completion: the relationship is justified for its interval and any computed resu
 **Private verified route:** at B's departure A is 300 m ahead; while both move the gap shrinks by 20 m/min; catch is 15 minutes after B leaves, or 20 minutes after A leaves. Check: B travels 1200 m and A travels 1200 m. An equation using B's elapsed time t, `80t = 60(t+5)`, is equally valid.
 
 - **Over-leading for independent solving:** give the head start, speed difference, and division, then ask for the quotient.
-- **Reachable bridge when basic distance calculation is available:** “They did not start together. At the moment B starts, where is A relative to B?” Wait for the response; if that state is already established, reuse it rather than re-asking.
+- **Route-finding opening when basic distance calculation is available:** put the requested catch-up time and the student's usable distance–speed–time relationship in view, then ask for one intermediate quantity or representation that could connect them. Accept a justified equation, timeline or gap route; do not require a complete plan. If a route is already shown, skip this opening.
+- **More directed bridge when that connection remains unclear:** “They did not start together. At the moment B starts, where is A relative to B?” This selects the shared-event/head-start direction for the student, so record it as a route hint, not independent selection. Wait for the response; if that state is already established, reuse it rather than re-asking.
 - Once the student establishes the gap, investigate how it changes during a common minute as a separate task. Only after that relation is established connect it to catch-up time. If the student writes the valid equation first, follow it rather than requiring the gap method.
 - A reply of “20 minutes” needs its time origin interpreted before being judged wrong: 20 after A leaves and 15 after B leaves name the same event, but the requested time origin still matters.
 

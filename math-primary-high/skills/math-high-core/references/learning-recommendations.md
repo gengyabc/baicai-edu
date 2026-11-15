@@ -21,7 +21,8 @@ Keep the existing `id / focus / target_context / reason / basis` shape. Topic na
 | Evidence | Small candidate | Suggested opening |
 |---|---|---|
 | Several comparable performances or an existing diagnosis confirm one blocking relation | Repair that minimal relevant gap, such as equivalence with the same whole | `micro_lesson` when the gap is clear and teaching fits; `probe` if the cause is still ambiguous |
-| Recent completion depended on hints/examples, with no independent evidence | Consolidate the same relation | `practice`: fresh unhinted check before further scaffolding, not a harder topic |
+| Usable tool execution is evidenced, but route selection depended on teacher cues or is the observed obstacle | Find and assess one route linking that tool to an unfamiliar target; follow the route-ownership guidance below | `probe` for an unhinted selection check; `micro_lesson` when learning to choose a route is agreed; not more of the same calculations |
+| Recent completion depended on hints/examples, with no independent evidence and no separately evidenced route-selection obstacle | Consolidate the same relation | `practice`: fresh unhinted check before further scaffolding, not a harder topic |
 | Recent comparable independent explanation or method selection | One near-neighbor new relation or a structural/meaningful-context variation | `micro_lesson` for new learning; `challenge` for transfer without revealing the method |
 | Explicit later-check suggestion, or earlier success without recent comparable performance | Offer one fresh look back | `practice`, unhinted; claim neither forgetting nor a due date without the required records |
 | One error only | Local clarification, keeping the cause tentative | `probe` only when discriminating evidence is needed, not a stable-weakness label |
@@ -31,6 +32,12 @@ Keep the existing `id / focus / target_context / reason / basis` shape. Topic na
 For example, a confirmed digit-count decimal comparison difficulty can support comparing `0.9` and `0.87` on a number line. An independently justified `3/4 = 6/8` can support new learning about common fraction units; if the explanation was teacher-supported, prefer a fresh independent equivalence check first. For geometry/data/ratio use the domain's actual relationship, not an arithmetic ladder.
 
 Hints are optional, temporary, and advisory: only candidates and the selected session context carry them. Session chooses the real action; lifecycle consumes the hint in the first successful opening context write with the advanced pending state. Failed writes retain it for retry. Never put hints into long-term summaries, profiles, ability evidence, or a global mode. Old candidates without hints follow normal rules. A continued same-goal pending task resumes unchanged, and explicit practice, self-derivation, Feynman, or original-solution requests override stale hints.
+
+### Recommend route finding, not calculation volume
+
+When the recorded pattern is **can execute a supplied method, but has not selected a route**, make the activity about finding a connection and assessing whether it works. For example: “Try turning an unfamiliar shape into something whose area you know · Find one way, then check whether it works”, or “From what is asked, find one intermediate quantity that would help.” These describe candidate activities; an actual independent-check task omits the method cue. Use the active UI locale for student-facing wording.
+
+Apply **先搭桥，再推导** in `references/derivation-teaching.md` after entry; keep the existing `/learn` route and candidate shape. Geometry transformations/auxiliary objects and multi-step intermediate quantities are initial use cases, not a reason to add a planning layer to routine fluency. If route source was not recorded, say it is unknown and offer a low-load check, not a stable “cannot choose” diagnosis. If the route is already student-owned and only execution is unstable, target execution instead. For agreed transfer after route learning, consider an unhinted fresh task, including a changed condition where the previous route is inconvenient; a justified switch is useful evidence even before a correct final value.
 
 ## Ranking and Reasons
 
