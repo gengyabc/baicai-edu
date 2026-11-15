@@ -25,4 +25,4 @@ After editing a skill, an agent should be able to run it without fetching an ext
 
 `node scripts/check-skills.mjs` rejects `https?://` anywhere under a non-allowlisted skill directory. Expand the allowlist only for runtime working materials, not citations.
 
-Design record: `docs/superpowers/specs/2026-11-10-skill-no-external-links-design.md`.
+Design record: `2026-11-10-skill-no-external-links-design.md` under the local-only `docs/superpowers/specs/` directory (gitignored, so not published).

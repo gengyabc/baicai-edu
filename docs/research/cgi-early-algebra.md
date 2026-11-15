@@ -1,6 +1,6 @@
 # CGI early algebra: sources and band split
 
-Maintainer background only. Runtime rules live in the installed references: [`relational-thinking.md`](../../math-primary-low/skills/math-low-core/references/relational-thinking.md) (grades 1–3) and [`early-algebra.md`](../../math-primary-high/skills/math-high-core/references/early-algebra.md) (grades 4–6). Design record: `docs/superpowers/specs/2026-11-10-cgi-early-algebra-design.md`.
+Maintainer background only. Runtime rules live in the installed references: [`relational-thinking.md`](../../math-primary-low/skills/math-low-core/references/relational-thinking.md) (grades 1–3) and [`early-algebra.md`](../../math-primary-high/skills/math-high-core/references/early-algebra.md) (grades 4–6). Design record: `2026-11-10-cgi-early-algebra-design.md` under the local-only `docs/superpowers/specs/` directory (gitignored, so not published).
 
 ## What the work says
 

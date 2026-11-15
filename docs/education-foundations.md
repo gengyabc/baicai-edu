@@ -20,7 +20,7 @@
 |---|---|---|
 | 数学教学规则审核 | [审核矩阵](research/math-skill-audit-matrix.md) | 20 条规则的“原规则—依据—适用条件—风险—改写草案”、文件联动顺序、最小回归用例；含 R1–R14 研究索引 |
 | 表征与支架（给图还是学生画、何时撤除） | [表征支架研究](research/math-representation-scaffolding-research.md) | S1–S7 逐条核查深度与限制、条件决策表、math-board 设计边界 |
-| CGI 早期代数 | [CGI 早期代数](research/cgi-early-algebra.md) | 五方向的教学归纳、高低学段分工；设计记录在 `superpowers/specs/2026-11-10-cgi-early-algebra-design.md` |
+| CGI 早期代数 | [CGI 早期代数](research/cgi-early-algebra.md) | 五方向的教学归纳、高低学段分工；设计记录在仅本机保留的 `docs/superpowers/specs/2026-11-10-cgi-early-algebra-design.md` |
 | 学习支持方法（动机、关系、自我调节等） | [支持方法来源核验](learn-support-evidence.md) | 10 个理论的“研究对象/机制/限制/核验边界”，明确标注哪些原文未读到 |
 | 被动来学者的自主支持与关系边界 | [自主支持研究](research/learning-support-autonomy-and-rapport.md) | 措辞与“先交朋友”设计的证据判断 |
 | 高年级方法名 → 已安装位置 | [方法落点](math-primary-high-methods.md) | 旧方法名到已安装技能/参考的映射；运行时以已安装文件为准 |
