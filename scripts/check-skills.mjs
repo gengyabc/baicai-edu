@@ -6,7 +6,7 @@
  * Exit code 1 when an error is found.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs'
-import { join, basename, extname } from 'node:path'
+import { join, basename, dirname, resolve } from 'node:path'
 
 const ROOT = new URL('..', import.meta.url).pathname
 const BUNDLES = ['learn', 'math-common', 'math-primary-low', 'math-primary-high', 'chinese-reading', 'english']
@@ -46,6 +46,13 @@ const BANNED = [
 // Runtime working-material URLs only (news sources, remote images). Citation URLs stay out of skills.
 const RUNTIME_URL_SKILLS = new Set(['child-news-reader'])
 const EXTERNAL_URL = /https?:\/\//i
+// A skill is installed on its own machine: an npm tarball carries only `skills/`,
+// `resources/`, `cordis.patch.yml` and `build.json`. A relative link into any of
+// these is valid in the checkout and dead once installed, so it must not exist.
+const NON_SHIPPED = ['.scratch', 'docs', 'scripts', 'data', 'outputs', 'node_modules']
+// A `../` link may still reach another skill, whose citations are inlined into
+// this skill's rendered resource at build time (scripts/build-resources.mjs).
+const RELATIVE_LINK = /\]\(<?([^)>]+)>?\)/g
 
 const errors = []
 const warnings = []
@@ -60,6 +67,34 @@ function walk(dir, out = []) {
     else out.push(path)
   }
   return out
+}
+
+/**
+ * Relative links that resolve in the checkout but not where the skill is
+ * installed: a path into a repository-only directory, or a `../` that climbs out
+ * of every shipped `skills/` tree. Links to another skill are fine — those get
+ * inlined when the skill is rendered — so only escapes are reported.
+ */
+function nonShippedLinks(file, text) {
+  const problems = []
+  for (const match of text.matchAll(RELATIVE_LINK)) {
+    const target = match[1].split('#')[0].trim()
+    if (target === '' || /^(https?:|mailto:)/i.test(target)) continue
+    // Name the offending directory wherever it appears — `docs/x.md`, `../docs/x.md`
+    // and `../../../docs/x.md` are the same mistake from different depths.
+    const named = NON_SHIPPED.find((dir) => new RegExp(`(^|/)\\.?/?${dir}/`).test(target))
+    if (named !== undefined) {
+      problems.push(`${file}: link "${target}" points into ${named}/, ` +
+        'which is not shipped; extract the rule into the skill')
+    } else if (target.startsWith('..')) {
+      const absolute = resolve(dirname(file), target)
+      const insideShippedSkills = BUNDLES.some((bundle) => absolute.startsWith(join(ROOT, bundle, 'skills')))
+      if (!insideShippedSkills) {
+        problems.push(`${file}: link "${target}" leaves every shipped skills/ tree and is dead once installed`)
+      }
+    }
+  }
+  return problems
 }
 
 function parseFrontmatter(text) {
@@ -142,6 +177,10 @@ for (const bundle of BUNDLES) {
           )
         }
       }
+    }
+    for (const path of walk(dir)) {
+      if (!/\.md$/i.test(path)) continue
+      errors.push(...nonShippedLinks(path, readFileSync(path, 'utf8')))
     }
     for (const m of text.matchAll(/"source":\s*"([a-z_]+)"/g)) {
       if (!SOURCES.has(m[1])) warnings.push(`${file}: unknown source "${m[1]}"`)

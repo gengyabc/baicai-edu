@@ -14,6 +14,8 @@ Does **not** apply to package `README.md`, maintainer docs under `docs/`, or tes
 | --- | --- |
 | Citation / provenance URLs (papers, guides, theory pages) | Forbidden in the skill tree. Rewrite as mechanisms, boundaries, and limits the agent can follow without opening a link. |
 | In-repo relative links (`references/…`, sibling skills) | Allowed. |
+| Links into a repository-only directory (`.scratch/`, `docs/`, `scripts/`, `data/`, `outputs/`) | Forbidden. An install has only the package's `skills/`, `resources/`, `cordis.patch.yml` and `build.json`, so such a link is dead for every student. Extract the rule into the skill. |
+| A `../` link leaving every shipped `skills/` tree | Forbidden, for the same reason. A `../` to another skill is fine: its citations are inlined when the skill is rendered. |
 | Runtime material URLs (trusted source entry points, remote images shown to the student) | Allowed only for skills on the runtime-URL allowlist. Today: `child-news-reader` only. |
 | Maintainer verification with live links | Keep under `docs/` (e.g. `docs/learn-support-evidence.md`), never back into the skill. |
 
@@ -24,5 +26,7 @@ After editing a skill, an agent should be able to run it without fetching an ext
 ## Enforcement
 
 `node scripts/check-skills.mjs` rejects `https?://` anywhere under a non-allowlisted skill directory. Expand the allowlist only for runtime working materials, not citations.
+
+It also rejects relative links that resolve only in the checkout: a path into a repository-only directory, and a `../` that climbs out of every shipped `skills/` tree. These are the quieter failure — they look right while editing and break only after install, which is how `learn-support` once shipped a `../learn-data/…` link that its renderer never inlined.
 
 Design record: `2026-11-10-skill-no-external-links-design.md` under the local-only `docs/superpowers/specs/` directory (gitignored, so not published).
