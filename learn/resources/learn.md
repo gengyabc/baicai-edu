@@ -1,6 +1,7 @@
 ---
 name: learn
 description: Start adaptive learning from a topic, materials, error items, or profile goals; prefer applicable subject packages, fall back to general-task teaching when none apply, and support different education stages.
+resources: ui-locale.md
 ---
 
 # Learn

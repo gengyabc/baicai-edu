@@ -1,3 +1,7 @@
+---
+cited: learn-data/references/session-schema.md
+---
+
 # Session Schema
 
 Each teaching turn needs only this file: the structure of the log and segments. Templates for profile, memory, state, error items, and milestones are in `references/profile-schema.md`, read only when creating a profile, initializing missing files, and finalizing.

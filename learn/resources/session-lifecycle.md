@@ -1,3 +1,7 @@
+---
+cited: learn-data/references/session-lifecycle.md
+---
+
 # Session Lifecycle
 
 Take the first matching row in a table from top to bottom. `STOP` only ends this turn, not the session. Finalize is a called sub-flow and is not run in sequence.

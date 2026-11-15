@@ -25,12 +25,25 @@ export const SKILL_PACKAGES = ['learn', 'math-common', 'math-primary-low', 'math
 // `ENGLISH_SKILL` → `english-skill`: a cited `name: file` pair becomes one file name.
 const encode = (skill, file) => `${skill}~${file}`
 
-/** `skill, file` pairs a body cites through another skill's name, in citation order, without duplicates. */
+/**
+ * `skill, file` pairs a body cites through another skill's name, in citation order,
+ * without duplicates. Two forms count, because both read as a citation to an author:
+ *
+ *   `learn-data` `references/session-schema.md`   backticked name, then the path
+ *   [session structure](../learn-data/references/session-schema.md)   ordinary link
+ *
+ * The second form was silently dropped, so its target never got inlined and the
+ * rendered resource kept a `../` path that does not exist after rendering.
+ */
 export function citedFiles(body) {
   const pairs = []
-  for (const match of body.matchAll(/`([a-z0-9]+(?:-[a-z0-9]+)*)`\s*`?references\/([A-Za-z0-9_.-]+\.md)`?/g)) {
-    const key = encode(match[1], match[2])
-    if (!pairs.some(([pair]) => pair === key)) pairs.push([key, match[1], match[2]])
+  for (const match of body.matchAll(
+    /`([a-z0-9]+(?:-[a-z0-9]+)*)`\s*`?references\/([A-Za-z0-9_.-]+\.md)`?|\((?:\.\.\/)?([a-z0-9]+(?:-[a-z0-9]+)*)\/references\/([A-Za-z0-9_.-]+\.md)\)/g,
+  )) {
+    const owner = match[1] ?? match[3]
+    const file = match[2] ?? match[4]
+    const key = encode(owner, file)
+    if (!pairs.some(([pair]) => pair === key)) pairs.push([key, owner, file])
   }
   return pairs
 }
@@ -102,7 +115,9 @@ export function buildResources(packageName, { root = ROOT, write = true } = {}) 
   if (directory === undefined) throw new Error(`${packageName}: not a skill package of this checkout`)
   const config = JSON.parse(readFileSync(join(root, directory, 'build.json'), 'utf8'))
   const source = resolve(root, config.skills)
-  const shared = config.skillResources.map((path) => resolve(root, path))
+  // A skill may also cite a sibling skill in the same package (`learn-data` from
+  // `learn-support`), so that package's own skills tree is always searched last.
+  const shared = [...config.skillResources.map((path) => resolve(root, path)), source]
   const files = new Map()
   const problems = []
   for (const entry of readdirSync(source, { withFileTypes: true })) {
