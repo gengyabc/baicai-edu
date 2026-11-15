@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "type": "module",
   "exports": {
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./skill-provider.mjs": "./skill-provider.mjs"
   },
   "description": "Shared learning entry skills, pedagogy rules, student-data protocol, and error handling for baicai-edu.",
   "license": "GPL-3.0-or-later",

@@ -1683,7 +1683,11 @@ test('one provider serves every skill package, and each activation names its clo
   const activation = (directory) => {
     const patch = text(`${directory}/cordis.patch.yml`)
     const names = [...patch.matchAll(/resolve\('(baicai-edu-[a-z-]+)\/(?:package\.json|skill-provider\.js)'\)/g)].map((match) => match[1])
-    const activationRoot = patch.match(/new URL('skill-provider\.mjs', \s*process\.getBuiltinModule('node:module')\.createRequire\(baseUrl \+ 'x'\)\.resolve('baicai-edu-learn\/package\.json')\))/)
+    // The provider row must name the module as a plain specifier. `!!js` parses
+    // into an `{ __jsExpr }` object, and compatibility preflight reads `row.name`
+    // before the loader interpolates it, so an expression there fails
+    // `name.startsWith` and DSH disables the row instead of activating it.
+    const activationRoot = patch.match(/^\s*name: baicai-edu-learn\/skill-provider\.mjs$/m)
     assert.ok(activationRoot !== null, `${directory}/cordis.patch.yml does not activate baicai-edu-learn's provider`)
     assert.equal([...patch.matchAll(/- id: edu-skills$/gm)].length, 1, `${directory} activates edu-skills more than once`)
     return names

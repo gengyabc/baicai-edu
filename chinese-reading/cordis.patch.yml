@@ -9,7 +9,7 @@
 # guessing what is installed.
 - insert:
     - id: edu-skills
-      name: !!js process.getBuiltinModule('node:url').fileURLToPath(new URL('skill-provider.mjs', process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('baicai-edu-learn/package.json')))
+      name: baicai-edu-learn/skill-provider.mjs
       config:
         packages:
           - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('baicai-edu-learn/package.json')
