@@ -1,6 +1,7 @@
 import { writeFile, readFile } from 'node:fs/promises';
 import { createBoardModel } from './src/quantity/model.js';
 import { createBoardTrace } from './src/quantity/trace.js';
+import { createQuantityPractice } from './src/quantity/practice.js';
 import { applyHostConfig } from './src/host/config-bridge.js';
 import { boardQuestionReferences } from './src/shared/question-reference.js';
 import { createReferenceModel } from './src/reference/reference-model.js';
@@ -71,6 +72,7 @@ window.__ModuleLoader__.load({
     const geometryFrame = ${geometryFrame.toString()};
     const geometryViewport = ${geometryViewport.toString()};
     const createBoardControls = ${createBoardControls.toString()};
+    const createQuantityPractice = ${createQuantityPractice.toString()};
     const createFilePicker = ${createBoardFilePicker.toString()};
     const createIcons = ${createBoardIcons.toString()};
     const TUTORIAL_VERSION = ${JSON.stringify(TUTORIAL_VERSION)};
@@ -101,7 +103,7 @@ window.__ModuleLoader__.load({
         // geometry drawing rules or the memory.
         const Browser = {
           createBoardFilePicker: createFilePicker, createBoardIcons: createIcons,
-          createBoardControls,
+          createBoardControls, createQuantityPractice,
           createTutorialController, createTutorialOverlay, isTutorialSeen, markTutorialSeen, advanceTutorial,
           measureTourTarget, tourHoldsNotePanel, tourInsertMode,
           quantityTutorialSteps, geometryTutorialSteps,

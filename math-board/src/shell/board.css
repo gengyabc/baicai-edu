@@ -55,6 +55,18 @@
 .eb-topbar svg{flex:none}
 .eb-workspace{position:absolute;inset:56px 0 0}
 
+/* Separate state owners share layout, never draft state. The coach reserves its
+   own space (no click-blocking mask); Exit remains available with an editor open. */
+.eb-quantity-owner{position:absolute;inset:56px 0 0;display:flex;flex-direction:column;min-height:0}
+.eb-tabpanel .eb-quantity-owner{inset:0}
+.eb-quantity-owner[hidden]{display:none}
+.eb-quantity-owner>.eb-workspace{position:relative;inset:auto;flex:1;min-height:0}
+.eb-practice-coach{position:relative;z-index:31;flex:none;display:flex;align-items:flex-start;gap:12px;padding:8px 12px;border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-base)}
+.eb-practice-coach>div{flex:1;min-width:0;max-height:22dvh;overflow:auto;overflow-wrap:anywhere}
+.eb-practice-coach p{margin:4px 0;line-height:1.4}
+.eb-practice-coach small{color:var(--dsw-alias-label-secondary)}
+.eb-practice-exit{flex:none;min-height:44px!important;border:1px solid var(--dsw-alias-border-l1)!important}
+
 /* The palette is a narrow rail; the canvas owns everything else. */
 .eb-brand{position:absolute;z-index:4;top:12px;left:14px;display:flex;align-items:center;justify-content:center;width:44px;height:44px;pointer-events:none}
 .eb-palette{position:absolute;z-index:3;left:8px;top:62px;bottom:78px;width:62px;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:2px 0}

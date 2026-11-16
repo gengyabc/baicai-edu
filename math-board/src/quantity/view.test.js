@@ -7,6 +7,7 @@ import { createBoardTrace } from './trace.js';
 import { createBoardFilePicker, createBoardIcons } from '../shared/file-picker.js';
 import { createBoardControls } from '../shared/board-kit.js';
 import { createTutorialController } from '../shell/tutorial.js';
+import { createHooks, installBrowser, walk, text } from '../testing/test-harness.js';
 
 const M = createBoardModel();
 const React = { createElement(type, props, ...children) { return { type, props: props || {}, children }; } };
@@ -16,32 +17,15 @@ const t = (key, params = {}) => zh[key].replace(/\{(\w+)\}/g, (match, name) =>
   Object.hasOwn(params, name) ? String(params[name]) : match);
 
 test('creation colour defaults to 1 and synchronizes previews and new objects', () => {
-  const states = []; let cursor = 0;
-  const hooks = { ...React,
-    useState(initial) {
-      const index = cursor++;
-      if (!(index in states)) states[index] = typeof initial === 'function' ? initial() : initial;
-      return [states[index], (next) => { states[index] = typeof next === 'function' ? next(states[index]) : next; }];
-    },
-    useRef: (current) => ({ current }), useEffect() {}, useSyncExternalStore() {},
-  };
-  const previousWindow = globalThis.window;
-  globalThis.window = { matchMedia: () => ({ matches: true }) };
-  const text = (node) => typeof node === 'string' || typeof node === 'number' ? String(node)
-    : node && typeof node === 'object' ? (node.children || []).flat(Infinity).map(text).join('') : '';
+  const browser = installBrowser();
+  const hooks = createHooks();
   try {
-    const Board = createBoardView(hooks, M, {}, t, '', art, () => null, createBoardTrace(M), { createBoardFilePicker, createBoardIcons, createBoardControls, createTutorialController });
-    const render = () => {
-      cursor = 0;
-      const tree = Board({ sessionId: 'test', useProjection: () => null, useInput: () => 'plain' });
-      const nodes = [];
-      const walk = (node) => { if (!node || typeof node !== 'object') return; nodes.push(node); node.children?.flat(Infinity).forEach(walk); };
-      walk(tree); return nodes;
-    };
-    render();
-    // This render-only harness omits effects; model completion of draft loading
-    // before exercising editing (the stateful integration harness tests loading).
-    states[2] = true;
+    const ctx = { locale: { subscribe() {}, getSnapshot() {} } };
+    const Board = createBoardView(hooks.React, M, ctx, t, '', art, () => null, createBoardTrace(M), { createBoardFilePicker, createBoardIcons, createBoardControls, createTutorialController });
+    const render = () => walk(hooks.refresh(() => {
+      hooks.hooks.current = hooks.storeFor(Board);
+      return Board({ sessionId: 'test', useProjection: () => null, useInput: () => 'plain' });
+    }));
     let nodes = render();
     let tool = nodes.find((n) => n.props.className === 'eb-shape-tool');
     assert.ok(tool.props.title.endsWith('1'));
@@ -52,9 +36,11 @@ test('creation colour defaults to 1 and synchronizes previews and new objects', 
     tool = nodes.find((n) => n.props.className === 'eb-shape-tool');
     assert.ok(tool.props.title.endsWith('10'));
     tool.props.onClick();
-    assert.equal(states[1].objects[0].value, 10);
-    assert.equal(states[1].objects[0].color, colorIndexForValue(states[1].settings.levels, 10));
-  } finally { globalThis.window = previousWindow; }
+    render();
+    const saved = JSON.parse(browser.storage.get('baicai-edu-math-board:v4:test'));
+    assert.equal(saved.objects[0].value, 10);
+    assert.equal(saved.objects[0].color, 1);
+  } finally { hooks.unmount(); browser.restore(); }
 });
 
 test('every library pattern renders artwork, and the custom patterns use the level fill', () => {
