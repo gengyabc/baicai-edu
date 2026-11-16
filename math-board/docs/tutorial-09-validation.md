@@ -34,8 +34,20 @@ The geometry zoom pair uses a minimum of 1, so Zoom out is disabled on a fresh c
 - Opening clear without an empty after-board does not pass. A confirmed clear completes the chapter, drops the stored undo and redo boards, and a later undo event does not put them back.
 - `start` reuses a previous board that already has a point and otherwise creates one point. That create is not observed. History for that start is empty. Grid starts off, snap starts on, zoom is 1, fit is true, and scroll is `{ left: 0, top: 0 }`. `fresh` supports catalogue entry. `createGoal` throws `Invalid adjust goal` instead of repairing a bad save. `skip` does not call `observe`, does not turn the grid on, does not turn snap off, and does not clear the board. Skipping into undo leaves one history entry. Skipping into clear leaves the board non-empty.
 
-[geometry-view.test.js](<../src/geometry/geometry-view.test.js>) replays the mounted editor in Chinese and English, with the stand-in pointer reported as `mouse` and `touch`. Exit leaves a pre-seeded real geometry draft and a pre-seeded quantity draft unchanged. No attachment, text, or send is recorded. Skip, reset, chapter retry, and a refresh resume stay on the practice record. The scroll step sets `scrollLeft` and `scrollTop` on the stand-in node and calls `onScroll`.
+[geometry-view.test.js](<../src/geometry/geometry-view.test.js>) replays the mounted editor in Chinese and English, with the stand-in pointer reported as `mouse` and `touch`. Exit leaves a pre-seeded real geometry draft and a pre-seeded quantity draft unchanged. No attachment, text, or send is recorded. Skip, reset, chapter retry, and a refresh resume stay on the practice record. The scroll step sets `scrollLeft` and `scrollTop` on the stand-in node and calls `onScroll`. The replay calls `onClick` on the disabled undo control at the start, on the disabled redo control before the real undo, and on undo after confirm-clear. Each call leaves the step id and the board unchanged. After clear, history stays empty and the stored undo board stays null.
 
 ## Unexecuted / limits
 
 No real browser, real mouse, touch device, layout, focus, or scrollbar check. The mounted replay is a handler replay, not a browser pass. The known tool-schema failure was not investigated beyond confirming it is the pre-existing fenced-JSON assertion.
+
+## Follow-up
+
+The disabled-click checks above were added inside the existing replay. The page handler already returned before `practiceEvent` when undo or redo had no history entry, so it was not changed and `client.js` was not rebuilt. The full suite was not re-run.
+
+Focused command, **74/74 passed**:
+
+```sh
+node --test math-board/src/geometry/geometry-adjust.test.js math-board/src/geometry/geometry-view.test.js math-board/tests/practice-geometry-adjust-bundle.test.js
+```
+
+`git diff --check` passed.

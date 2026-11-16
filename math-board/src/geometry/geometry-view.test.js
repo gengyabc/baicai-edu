@@ -1806,8 +1806,13 @@ for (const language of ['zh', 'en']) {
         assert.equal(text(walk(heading).find((node) => node.type === 'strong')), tr('geometryPracticeAdjust'));
         assert.equal(practiceParagraph(h), tr('geometryPracticeGoal_adjust-grid'));
         const seen = [practiceParagraph(h)];
-        assert.equal(control(h, tr('undo')).props.disabled, true);
+        const undoAtStart = control(h, tr('undo'));
+        assert.equal(undoAtStart.props.disabled, true);
+        const boardAtStart = adjustState(h).frame.board;
+        undoAtStart.props.onClick();
+        h.render();
         assert.equal(practiceStep(h), 'adjust-grid', 'a click while undo is disabled does not pass');
+        assert.deepEqual(adjustState(h).frame.board, boardAtStart);
         h.click(tr('gridOff'));
         assert.equal(practiceStep(h), 'adjust-grid', 'turning the grid on without a new point does not pass');
         h.tool('point');
@@ -1821,8 +1826,13 @@ for (const language of ['zh', 'en']) {
         seen.push(practiceParagraph(h));
         const latest = adjustState(h).goal.pointId;
         assert.equal(adjustState(h).frame.board.points.some((point) => point.id === latest), true);
-        assert.equal(control(h, tr('redo')).props.disabled, true);
+        const redoBeforeUndo = control(h, tr('redo'));
+        assert.equal(redoBeforeUndo.props.disabled, true);
+        const boardBeforeUndo = adjustState(h).frame.board;
+        redoBeforeUndo.props.onClick();
+        h.render();
         assert.equal(practiceStep(h), 'adjust-undo', 'a click while redo is disabled does not pass');
+        assert.deepEqual(adjustState(h).frame.board, boardBeforeUndo);
         h.click(tr('undo'));
         assert.equal(practiceStep(h), 'adjust-redo');
         assert.equal(adjustState(h).frame.board.points.some((point) => point.id === latest), false);
@@ -1862,8 +1872,16 @@ for (const language of ['zh', 'en']) {
         assert.equal(cleared.frame.board.elements.length, 0);
         assert.deepEqual(cleared.frame.history, { past: [], future: [] });
         assert.equal(cleared.goal.undoBoard, null);
-        assert.equal(control(h, tr('undo')).props.disabled, true, 'undo after clear does not restore the old board');
-        assert.equal(adjustState(h).frame.board.points.length, 0);
+        const undoAfterClear = control(h, tr('undo'));
+        assert.equal(undoAfterClear.props.disabled, true);
+        const boardAfterClear = cleared.frame.board;
+        undoAfterClear.props.onClick();
+        h.render();
+        const afterLateUndo = adjustState(h);
+        assert.equal(practiceStep(h), 'adjust-complete', 'undo after clear does not pass another step');
+        assert.deepEqual(afterLateUndo.frame.board, boardAfterClear, 'undo after clear does not restore the old board');
+        assert.deepEqual(afterLateUndo.frame.history, { past: [], future: [] });
+        assert.equal(afterLateUndo.goal.undoBoard, null);
         for (const copy of seen) {
           assert.ok(copy.length > 0);
           assert.ok(!/geometryPracticeGoal_|practiceGoal_/.test(copy), `${language}: no raw keys on screen`);

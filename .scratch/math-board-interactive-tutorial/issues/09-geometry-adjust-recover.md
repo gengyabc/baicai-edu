@@ -31,4 +31,5 @@
 - 最后一项未勾：中英和 `mouse`／`touch` 指针类型都有处理器回放，聚焦检查与全量测试已执行，但没有真实浏览器、真实鼠标、触屏设备或布局验收。滚动回放是在替身节点上设置 `scrollLeft`／`scrollTop` 再调用 `onScroll`。处理器回放不是浏览器通过。
 - 实现提交 `7d5bbfcf67e63af350fa785fe828de76705162df`。未合并，未推送。
 - 聚焦命令为 **74/74 通过**：`node --test math-board/src/geometry/geometry-adjust.test.js math-board/src/geometry/geometry-view.test.js math-board/tests/practice-geometry-adjust-bundle.test.js`。全量 `npm --prefix math-board test` 为 **452 项、451 通过、1 失败**。唯一失败是既有 [tool-schema.test.js:214–220](<../../../math-board/src/host/tool-schema.test.js#L214-L220>) 的 fenced JSON recipe，`assert.ok(get)`。未改教学契约。生成客户端仍保留基础章、构造章和编辑章，并把 `createGeometryAdjustChapter` 放在 `createGeometryEditChapter` 之后。中英词典 UI 键数相同（405）。本章新增 17 个测试：8 个章节测试、5 个处理器回放、4 个打包测试。
+- 回放补上了三处禁用点击：章开始时对禁用的撤销调用 `onClick`，真正撤销前对禁用的重做调用 `onClick`，确认清空后再对撤销调用 `onClick`。步骤 id 和画板都不变。清空后历史仍是 `{ past: [], future: [] }`，目标里的撤销画板仍是 `null`。页面处理函数在没有历史条目时已经先返回，不会把禁用点击送进 `practiceEvent`，因此这次没有改处理函数，也没有重编客户端。这次聚焦仍是 **74/74**（断言加在原有回放里）。全量套件未重跑。
 - 详细命令、计数和未执行边界见 [验证记录](<../../../math-board/docs/tutorial-09-validation.md>)。接入说明见 [安全教程扩展接口](<../../../math-board/README.md#安全教程扩展接口>)。
