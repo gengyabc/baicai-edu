@@ -301,5 +301,16 @@
   "text": "文字",
   "addText": "写下文字",
   "editText": "修改文字",
-  "textHint": "例如：面积 = 长 × 宽（点“保存”写下；Esc 取消）"
+  "textHint": "例如：面积 = 长 × 宽（点“保存”写下；Esc 取消）",
+  "geometryPracticeBasics": "几何安全基础练习 — 与真实作答隔离",
+  "geometryPracticeInsert": "这里只模拟：真正放入时只有几何快照与整板说明，没有几何修改记录。本次不上传、不附文件、不改输入框、不发送。",
+  "geometryPracticeGoal_point": "选「点」，再点空白画布放一个自由点。只选工具不通过。可随时退出，浏览器存储可用时可续学。",
+  "geometryPracticeGoal_segment": "选「线段」，点刚才的第一个点，再点另一个位置完成线段。只有第一个端点或绘制失败不通过。",
+  "geometryPracticeGoal_triangle": "选「三角形」，沿用线段的两个端点，再点第三个位置完成图形。不判断边长角度。",
+  "geometryPracticeGoal_polygon": "选「多边形」，在留白处点至少三个顶点，再点回起点闭合。未闭合的轮廓不通过。",
+  "geometryPracticeGoal_circle": "选「圆」，在留白处点圆心，再点圆上点完成圆。只有圆心不通过。",
+  "geometryPracticeGoal_select-one": "选「选择」，只点第一个点 A。鼠标或触屏也可拖框多选，不必使用键盘。选错目标不通过。",
+  "geometryPracticeGoal_deselect": "点画布空白处后松手，取消全部选择。悬停不通过。",
+  "geometryPracticeGoal_insert": "点「放入回答」模拟。真正放入只有几何快照与整板说明，没有几何修改记录。这里不上传或发送。",
+  "geometryPracticeGoal_complete": "基础操作练习已完成，不表示数学掌握或其他章节完成。没有附文件或发送，退出后继续真实作答。"
 }
