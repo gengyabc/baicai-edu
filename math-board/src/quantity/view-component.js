@@ -15,6 +15,38 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
   // The dock's 返回对话, menu rows, more-actions trigger, status line and the board's
   // colours are shared with the geometry and demo pages.
   const controls = shared.createBoardControls(React, t);
+  // Stable chapter ids are public extension points; later tickets append definitions.
+  const PracticeNavigation = shared.createPracticeNavigation?.(React, t);
+  const practiceSteps = ['add', 'move', 'add-second', 'select-one', 'select-many', 'deselect', 'insert'];
+  const emptyPracticeFrame = () => ({ board: M.empty(), trace: T.empty(), history: { past: [], future: [] },
+    selection: [], zoom: 1, fit: true, attachTrace: true, toolValue: null, append: false, scroll: { left: 0, top: 0 } });
+  function validatePracticeFrame(frame) {
+    if (!frame || !frame.history || !Array.isArray(frame.history.past) || !Array.isArray(frame.history.future)
+      || frame.history.past.length > 40 || frame.history.future.length > 40
+      || !Array.isArray(frame.selection) || !frame.selection.every((id) => typeof id === 'string')
+      || !Number.isFinite(frame.zoom) || frame.zoom < 0.1 || frame.zoom > 10
+      || typeof frame.fit !== 'boolean' || typeof frame.attachTrace !== 'boolean'
+      || typeof frame.append !== 'boolean' || !(frame.toolValue === null || Number.isSafeInteger(frame.toolValue))
+      || !Number.isFinite(frame.scroll?.left) || !Number.isFinite(frame.scroll?.top)) throw Error('Invalid practice frame');
+    return { ...frame, board: M.validate(frame.board), trace: T.validate(frame.trace),
+      history: { past: frame.history.past.map((state) => M.validate(state)), future: frame.history.future.map((state) => M.validate(state)) } };
+  }
+  const practiceChapters = [{ id: 'quantity-basics', titleKey: 'practiceBasics', steps: practiceSteps,
+    start: emptyPracticeFrame, createGoal: shared.createQuantityPractice,
+    skip(saved, frame) {
+      const index = saved.index + 1;
+      const targets = [...saved.targets];
+      // Skipping an add supplies its dependency, but never counts the seed as an action.
+      const needed = index >= 3 ? 2 : index >= 1 ? 1 : 0;
+      for (let position = 0; position < needed; position++) {
+        if (frame.board.objects.some((o) => o.id === targets[position])) continue;
+        const before = new Set(frame.board.objects.map((o) => o.id));
+        frame.board = M.reduce(frame.board, { type: 'add', shape: 'circle' });
+        targets[position] = frame.board.objects.find((o) => !before.has(o.id)).id;
+      }
+      return { goal: { index, targets }, frame };
+    },
+  }, ...(shared.quantityPracticeChapters || []).map((factory) => factory({ M, T, emptyFrame: emptyPracticeFrame }))];
   const sameIds = (a, b) => a.length === b.length && a.every((id, index) => id === b[index]);
   const sorted = (ids) => [...ids].sort();
   function swatch(shape, colorIndex, size = 30) {
@@ -50,10 +82,14 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     const practiceOpenRef = React.useRef(false);
     practiceOpenRef.current = practiceOpen;
     const practiceRef = React.useRef(null);
-    if (props.practice && !practiceRef.current) practiceRef.current = shared.createQuantityPractice();
-    const [practiceState, setPracticeState] = React.useState(() => practiceRef.current?.snapshot());
+    if (props.practice && !practiceRef.current) practiceRef.current = shared.createPracticeProgress({
+      mode: 'quantity', chapters: practiceChapters, validateFrame: validatePracticeFrame,
+    });
+    const [practiceProgress, setPracticeProgress] = React.useState(() => practiceRef.current?.snapshot());
+    const practiceState = practiceProgress?.goal || { step: 'add', index: 0, total: 7, targets: [], completed: false };
+    const practiceEvents = React.useRef([]);
     function practiceEvent(event) {
-      if (props.practice) setPracticeState(practiceRef.current.observe(event));
+      if (props.practice) { practiceEvents.current.push(event); setPracticeProgress({ ...practiceRef.current.snapshot() }); }
     }
     const [opened, setOpened] = React.useState(false);
     const [board, setBoard] = React.useState(M.empty);
@@ -148,7 +184,11 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     }, [pageActive]);
 
     React.useEffect(() => {
-      if (props.practice) { setReady(true); return undefined; }
+      if (props.practice) {
+        const next = practiceRef.current.enter();
+        applyPracticeFrame(next.frame); setPracticeProgress(next); setReady(true);
+        return () => { gesture.current = null; revision.current++; };
+      }
       revision.current++;
       try {
         const envelope = JSON.parse(localStorage.getItem(clearKey) || 'null');
@@ -203,6 +243,35 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       }, () => setStatus(t('storageError')));
       return () => { live = false; };
     }, [board, trace, attachTrace, ready, storageBlocked, key]);
+
+    function practiceFrame() {
+      return { board, trace, history, selection, zoom, fit, attachTrace, toolValue, append,
+        scroll: { left: canvasRef.current?.scrollLeft || 0, top: canvasRef.current?.scrollTop || 0 } };
+    }
+    function applyPracticeFrame(frame) {
+      gesture.current = null; setPreview(null); setDragShape(null); setOverlay(null); setMoreOpen(false);
+      boardRef.current = frame.board; setBoard(frame.board);
+      traceRef.current = frame.trace; setTrace(frame.trace);
+      setHistory(frame.history); setSelection(frame.selection); setZoom(frame.zoom); setFit(frame.fit);
+      setAttachTrace(frame.attachTrace); setToolValue(frame.toolValue); setAppend(frame.append);
+      if (canvasRef.current) { canvasRef.current.scrollLeft = frame.scroll.left; canvasRef.current.scrollTop = frame.scroll.top; }
+    }
+    function navigatePractice(command, value) {
+      practiceEvents.current = [];
+      const next = command === 'retry' ? practiceRef.current.enter(practiceProgress.current, { retry: true })
+        : command === 'enter' ? practiceRef.current.enter(value)
+          : command === 'retryStep' ? practiceRef.current.retryStep(value) : practiceRef.current[command]();
+      applyPracticeFrame(next.frame); setPracticeProgress(next);
+    }
+    React.useEffect(() => {
+      if (!props.practice || !ready) return;
+      const events = practiceEvents.current.splice(0);
+      let next;
+      if (events.length) for (const event of events) next = practiceRef.current.observe(event, practiceFrame());
+      else next = practiceRef.current.saveFrame(practiceFrame());
+      // Do not loop an effect for a failed write or a frame-only save.
+      if (events.length || next.persistence !== practiceProgress?.persistence) setPracticeProgress(next);
+    }, [ready, board, trace, history, selection, zoom, fit, attachTrace, toolValue, append, practiceProgress]);
 
     // New shapes that land below the visible part of a tall board scroll it down so
     // the student sees the row they just started.
@@ -627,7 +696,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       // This guard precedes every host/composer access, including keyboard calls
       // and direct activation at an earlier goal or after completion.
       if (props.practice) {
-        const step = practiceRef.current.snapshot().step;
+        const step = practiceRef.current.snapshot().goal.step;
         practiceEvent({ type: 'insert', after: boardRef.current });
         setStatus(t(step === 'insert' || step === 'complete' ? 'tutorialInsertPractice' : 'practiceInsertBlocked'));
         return;
@@ -840,7 +909,11 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       button(icon('plus', 20), () => requestOverlay({ kind: 'library' }), {
         className: 'eb-shape-tool eb-shape-more', title: t('morePatterns'), 'aria-label': t('morePatterns'),
       }));
-    const canvas = h('div', { className: 'eb-canvas-scroll', ref: canvasRef },
+    const canvas = h('div', { className: 'eb-canvas-scroll', ref: canvasRef,
+      onScroll: props.practice ? () => {
+        const next = practiceRef.current.saveFrame(practiceFrame());
+        if (next.persistence !== practiceProgress.persistence) setPracticeProgress(next);
+      } : undefined },
       h('svg', {
         ref: svgRef, className: 'eb-artboard',
         // Quantity paper already fits the width; keep its growing height scrollable.
@@ -974,8 +1047,10 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       className: 'eb-practice-coach', 'aria-label': t('practiceTitle'), 'data-practice-step': practiceState.step,
     },
       h('div', { role: 'status', 'aria-live': 'polite' },
-        h('strong', null, t(practiceState.completed ? 'practiceComplete' : 'practiceTitle')),
-        h('p', null, t(`practiceGoal_${practiceState.step}`)),
+        h('strong', null, t(practiceProgress?.chapters.find((chapter) => chapter.id === practiceProgress.current)?.status === 'completed' ? 'practiceComplete' : 'practiceTitle')),
+        h('p', null, t(practiceState.completed && practiceProgress?.chapters.find((chapter) => chapter.id === practiceProgress.current)?.status !== 'completed'
+          ? 'practiceSkippedEnd' : `practiceGoal_${practiceState.step}`)),
+        PracticeNavigation && practiceProgress?.goal && h(PracticeNavigation, { progress: practiceProgress, chapters: practiceChapters, onNavigate: navigatePractice }),
         practiceState.targets.some((id) => !board.objects.some((o) => o.id === id))
           && h('p', { role: 'alert' }, t('practiceTargetMissing')),
         !practiceState.completed && h('small', null, t('tutorialProgress', { step: practiceState.index + 1, total: practiceState.total }))),

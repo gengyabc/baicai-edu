@@ -37,6 +37,16 @@ test('quantity safe basics requires actual successful changes and exact student 
   assert.equal(practice.snapshot().completed, true);
 });
 
+test('restoring quantity goals restores position and targets but never awards a pass', () => {
+  const resumed = createQuantityPractice({ index: 1, targets: ['a'] });
+  assert.equal(resumed.snapshot().step, 'move');
+  assert.deepEqual(resumed.snapshot().targets, ['a']);
+  assert.equal(resumed.snapshot().completed, false);
+  assert.throws(() => createQuantityPractice({ index: 99, targets: [] }));
+  assert.throws(() => createQuantityPractice({ index: 3, targets: [] }));
+  assert.throws(() => createQuantityPractice({ index: 3, targets: ['a', 'a'] }));
+});
+
 test('insert at any earlier step is only a blocked simulation', () => {
   const practice = createQuantityPractice();
   practice.observe({ type: 'insert' });
