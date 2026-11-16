@@ -3,6 +3,7 @@ import { createBoardModel } from './src/quantity/model.js';
 import { createBoardTrace } from './src/quantity/trace.js';
 import { createPracticeProgress, createPracticeNavigation } from './src/shell/practice-progress.js';
 import { createQuantityPractice } from './src/quantity/practice.js';
+import { createQuantityAdjustChapter } from './src/quantity/practice-adjust.js';
 import { applyHostConfig } from './src/host/config-bridge.js';
 import { boardQuestionReferences } from './src/shared/question-reference.js';
 import { createReferenceModel } from './src/reference/reference-model.js';
@@ -78,6 +79,7 @@ window.__ModuleLoader__.load({
     const geometryViewport = ${geometryViewport.toString()};
     const createBoardControls = ${createBoardControls.toString()};
     const createQuantityPractice = ${createQuantityPractice.toString()};
+    const createQuantityAdjustChapter = ${createQuantityAdjustChapter.toString()};
     const createPracticeProgress = ${createPracticeProgress.toString()};
     const createPracticeNavigation = ${createPracticeNavigation.toString()};
     const createFilePicker = ${createBoardFilePicker.toString()};
@@ -111,7 +113,8 @@ window.__ModuleLoader__.load({
         const Browser = {
           createBoardFilePicker: createFilePicker, createBoardIcons: createIcons,
           createBoardControls, createQuantityPractice, createPracticeProgress, createPracticeNavigation,
-          quantityPracticeChapters: [], // Append independently inlined chapter factories here.
+          // Append independently inlined chapter factories here.
+          quantityPracticeChapters: [createQuantityAdjustChapter],
           createGeometryPractice, createGeometryBasicsChapter, createGeometryPracticeFrames,
           geometryPracticeChapters: [], // Geometry extensions own independent chapter modules.
           createTutorialController, createTutorialOverlay, isTutorialSeen, markTutorialSeen, advanceTutorial,
