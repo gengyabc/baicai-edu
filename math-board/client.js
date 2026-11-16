@@ -1566,7 +1566,7 @@ window.__ModuleLoader__.load({
     function batch(actions) { return action({ type: 'batch', actions }); }
     function selectIds(ids, user = false) {
       setSelection(ids);
-      if (user) practiceEvent({ type: 'select', selection: ids });
+      if (user) practiceEvent({ type: 'select', selection: ids, after: boardRef.current });
     }
     function undo() {
       if (!canEdit()) return;
@@ -5752,10 +5752,23 @@ window.__ModuleLoader__.load({
       frame.board = M.reduce(frame.board, { type: 'deleteGroup', id });
     }
     // The naming step supplies nothing: its goal is a first valid name, never a preset.
+    // Reselect and peer name only object 1. Peer is the step that changes object 2,
+    // so that object must not already hold the name. From grouping on, both share it
+    // so the existing merge rules can allow the pair. None of this is observed.
     let name = saved.name || '';
     if (index >= at('organize-reselect') && index !== at('organize-split')) {
       if (!name.trim()) name = SETUP_NAME;
-      for (const id of targets) frame.board = M.reduce(frame.board, { type: 'update', id, patch: { alias: name, removed: false } });
+      const named = index >= at('organize-group') ? targets : [targets[0]];
+      for (const id of named) {
+        if (!live(frame, id)) continue;
+        frame.board = M.reduce(frame.board, { type: 'update', id, patch: { alias: name, removed: false } });
+      }
+      if (index === at('organize-peer')) {
+        const second = live(frame, targets[1]);
+        if (second && second.alias === name) {
+          frame.board = M.reduce(frame.board, { type: 'update', id: targets[1], patch: { alias: '' } });
+        }
+      }
     } else if (index === at('organize-split') && !name.trim()) name = SETUP_NAME;
     if (index >= at('organize-group-name') && index <= at('organize-ungroup')) {
       frame.board = M.reduce(frame.board, { type: 'groupSelected', ids: targets, alias: name });
@@ -5815,11 +5828,6 @@ window.__ModuleLoader__.load({
       return { index, targets: [...targets], name, mergedId, total: steps.length,
         step: steps[index] || 'complete', completed: index === steps.length };
     };
-    // A note on an object, or on the exact selection a merge replaces, travels with
-    // that merge; a note on some other group does not describe these members.
-    function mergeKeepsNotes(board) {
-      return board.notes.every((note) => !note.objectIds.some((id) => targets.includes(id)));
-    }
     // Each step checks its own committed change and reports the reason when it misses.
     function judge(event) {
       const [first, second] = targets;
@@ -5827,7 +5835,11 @@ window.__ModuleLoader__.load({
       const before = event.before, after = event.after;
       const mine = (board, id) => board?.objects.find((o) => o.id === id);
       if (event.type === 'select') {
-        if (step === 'organize-reselect') return [event.selection?.length === 1 && event.selection[0] === first, 'organizeSelectExplain'];
+        if (step === 'organize-reselect') {
+          const chosen = event.selection?.length === 1 && event.selection[0] === first;
+          const still = event.after?.objects?.find((object) => object.id === first);
+          return [Boolean(chosen && still && still.alias === name), 'organizeSelectExplain'];
+        }
         return [false, step === 'organize-delete' ? 'organizeDeleteSelect' : 'organizeSelectExplain'];
       }
       if (event.type === 'add') {
@@ -5872,7 +5884,6 @@ window.__ModuleLoader__.load({
         if (step !== 'organize-merge') return [false, 'organizeMergeExplain'];
         const merged = after?.objects.find((o) => !before?.objects.some((p) => p.id === o.id) && o.sources.length === 2
           && targets.every((id) => o.sources.some((source) => source.id === id)));
-        if (merged && !mergeKeepsNotes(before)) return [false, 'organizeMergeNoteExplain'];
         if (merged && targets.every((id) => !after.objects.some((o) => o.id === id)) && M.mergeCandidate(before, targets).allowed) {
           mergedId = merged.id;
           return [true, ''];

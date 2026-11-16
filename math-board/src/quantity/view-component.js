@@ -521,7 +521,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     function batch(actions) { return action({ type: 'batch', actions }); }
     function selectIds(ids, user = false) {
       setSelection(ids);
-      if (user) practiceEvent({ type: 'select', selection: ids });
+      if (user) practiceEvent({ type: 'select', selection: ids, after: boardRef.current });
     }
     function undo() {
       if (!canEdit()) return;

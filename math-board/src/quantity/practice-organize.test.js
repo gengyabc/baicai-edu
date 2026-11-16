@@ -31,7 +31,7 @@ function driver(options = {}) {
     while (!done(step)) {
       const now = goal.snapshot().step;
       if (now === 'organize-name') nameFirst(`${options.alias || 'Team'}`);
-      else if (now === 'organize-reselect') select([first], { after: undefined });
+      else if (now === 'organize-reselect') select([first]);
       else if (now === 'organize-peer') act({ type: 'update', id: second, patch: { alias: goal.snapshot().name } });
       else if (now === 'organize-group') act({ type: 'groupSelected', ids: [first, second], alias: 'Group' });
       else if (now === 'organize-group-name') act({ type: 'renameGroup', id: groupId(), alias: 'Together' });
@@ -66,10 +66,41 @@ test('naming needs a changed valid name on the marked object; reselect then read
   assert.equal(d.goal.snapshot().step, 'organize-reselect', 'selecting the other object does not read back');
   d.select([d.first, d.second]);
   assert.equal(d.goal.snapshot().step, 'organize-reselect', 'a two-object selection is not the readback');
+  d.act({ type: 'update', id: d.first, patch: { alias: 'Renamed' } });
   d.select([d.first]);
+  assert.equal(d.goal.snapshot().step, 'organize-reselect', 'selecting after the saved name changed does not pass');
+  d.act({ type: 'update', id: d.first, patch: { alias: 'Group' } });
+  d.select([d.first]);
+  assert.equal(d.frame.board.objects.find((object) => object.id === d.first).alias, 'Group');
   assert.equal(d.goal.snapshot().step, 'organize-peer');
   assert.equal(d.goal.snapshot().name, 'Group');
   assert.equal(d.c.createGoal(d.goal.snapshot()).snapshot().step, 'organize-peer', 'a restored goal resumes without credit');
+});
+
+test('skip into peer leaves the second object unnamed, and reset restores that start', () => {
+  const storage = new Map();
+  const adapter = { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) };
+  const progress = createPracticeProgress({ mode: 'quantity', chapters: [chapter()], storage: adapter });
+  let state = progress.enter();
+  state = progress.skip();
+  assert.equal(state.goal.step, 'organize-reselect');
+  state = progress.skip();
+  assert.equal(state.goal.step, 'organize-peer');
+  const [first, second] = state.goal.targets;
+  const alias = (id) => state.frame.board.objects.find((object) => object.id === id).alias;
+  assert.equal(alias(first), state.goal.name);
+  assert.notEqual(alias(second), state.goal.name, 'object 2 does not already hold the name peer asks for');
+  const named = M.reduce(state.frame.board, { type: 'update', id: second, patch: { alias: state.goal.name } });
+  progress.saveFrame({ ...state.frame, board: named });
+  state = progress.reset();
+  assert.equal(state.goal.step, 'organize-peer');
+  assert.notEqual(alias(second), state.goal.name, 'reset restores object 2 without the saved name');
+  const before = state.frame.board;
+  const after = M.reduce(before, { type: 'update', id: second, patch: { alias: state.goal.name } });
+  state = progress.observe({ type: 'update', before, after, action: { type: 'update', id: second, patch: { alias: state.goal.name } } },
+    { ...state.frame, board: after });
+  assert.equal(state.goal.step, 'organize-group');
+  assert.equal(state.frame.board.objects.find((object) => object.id === second).alias, state.goal.name);
 });
 
 test('grouping needs the marked pair in one new group; naming, dissolving and merging are separate steps', () => {
@@ -126,6 +157,17 @@ test('an unmergeable pair is refused, and the chapter supplies a mergeable pair 
   d.act({ type: 'update', id: d.second, patch: { alias: 'Team' } });
   d.act({ type: 'merge', ids: [d.first, d.second] });
   assert.equal(d.goal.snapshot().step, 'organize-split');
+});
+
+test('a selection note on the marked pair still lets a committed merge advance', () => {
+  const d = driver();
+  d.reach('organize-merge');
+  d.act({ type: 'annotate', target: 'selection', ids: [d.first, d.second], value: 'Both' });
+  assert.equal(d.goal.snapshot().step, 'organize-merge', 'writing the note is not the merge');
+  assert.ok(M.mergeCandidate(d.frame.board, [d.first, d.second]).allowed);
+  d.act({ type: 'merge', ids: [d.first, d.second] });
+  assert.equal(d.goal.snapshot().step, 'organize-split');
+  assert.equal(d.frame.board.objects.find((object) => object.sources.length === 2).note, 'Both');
 });
 
 test('copy adds one matching copy beside the original; copying another or the copy again does not pass', () => {
