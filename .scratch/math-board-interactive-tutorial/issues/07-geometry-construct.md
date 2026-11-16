@@ -27,6 +27,6 @@
 - `start(previousFrame)` 返回练习画面。已有足够的自由点和一条可用线段时复用，否则只补这些前提；三点若共线会再补一个不共线的点，因为模型拒绝平掉的平行四边形。这些创建不送进 `observe`。`fresh()` 返回 `{ frame, saved }`。`skip` 准备下一步的点、线段、选中的边、可移动自由点，或在辅助图形那一步之前把辅助开关关掉；不调用 `observe`，也不替学生创建本步要求的平行四边形、矩形、中点或辅助图形。不一致的已存目标抛出 `Invalid construct goal`，不自行修补。
 - 已勾选的隔离项由本章单元测试和几何页处理器回放覆盖：退出后预置的真实几何草稿不变，数量草稿不变，上传、附件和发送次数为 0。练习记录写在 `practice:v2:geometry`，不写几何草稿键。单章重练不清基础章已完成的步骤。
 - 最后一项未勾：中英和 `mouse`／`touch` 指针类型都有处理器回放，聚焦检查与全量测试已执行，但没有真实浏览器、真实鼠标、触屏设备或布局验收。处理器回放不是浏览器通过。
-- 实现提交见本分支 `feat/tutorial-07`。未合并，未推送。
+- 实现提交 `5789ac06092ece055755439bbebbf4825c56b4a8`，分支 `feat/tutorial-07`。未合并，未推送。
 - 聚焦命令在收尾前为 **61/61 通过**：`node --test math-board/src/geometry/geometry-construct.test.js math-board/src/geometry/geometry-view.test.js math-board/tests/practice-construct-bundle.test.js`。全量 `npm --prefix math-board test` 为 **412 项、411 通过、1 失败**。唯一失败是既有 [tool-schema.test.js:214–220](<../../../math-board/src/host/tool-schema.test.js#L214-L220>) 的 fenced JSON recipe，`assert.ok(get)`。未改教学契约。生成客户端仍保留基础章，并把 `createGeometryConstructChapter` 放进 `geometryPracticeChapters`。中英词典 UI 键数相同（384）。
 - 详细命令、计数和未执行边界见 [验证记录](<../../../math-board/docs/tutorial-07-validation.md>)。接入说明见 [安全教程扩展接口](<../../../math-board/README.md#安全教程扩展接口>)。
