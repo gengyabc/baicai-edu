@@ -11,6 +11,7 @@ import { composerNote, createBoardView, createShapeArt, colorIndexForValue } fro
 import { createTabbedBoardView } from './src/shell/board-shell.js';
 import { createBoardFilePicker, createBoardIcons } from './src/shared/file-picker.js';
 import { createGeometryPage } from './src/geometry/geometry-view.js';
+import { createGeometryPractice, createGeometryBasicsChapter, createGeometryPracticeFrames } from './src/geometry/geometry-basics.js';
 import { createGeometryModel } from './src/geometry/model.js';
 import { createTeacherReferenceView } from './src/reference/reference-view.js';
 import { createDemoModel } from './src/teacher-demo/demo-model.js';
@@ -55,6 +56,9 @@ window.__ModuleLoader__.load({
     const createTabs = ${createTabbedBoardView.toString()};
     const createTeacherReferenceView = ${createTeacherReferenceView.toString()};
     const createGeometry = ${createGeometryPage.toString()};
+    const createGeometryPractice = ${createGeometryPractice.toString()};
+    const createGeometryBasicsChapter = ${createGeometryBasicsChapter.toString()};
+    const createGeometryPracticeFrames = ${createGeometryPracticeFrames.toString()};
     const createGeoModel = ${createGeometryModel.toString()};
     const createDemoModel = ${createDemoModel.toString()};
     const readDemoView = ${readDemoView.toString()};
@@ -111,6 +115,8 @@ window.__ModuleLoader__.load({
           createBoardControls, createQuantityPractice, createPracticeProgress, createPracticeNavigation,
           // Append independently inlined chapter factories here.
           quantityPracticeChapters: [createQuantityAdjustChapter],
+          createGeometryPractice, createGeometryBasicsChapter, createGeometryPracticeFrames,
+          geometryPracticeChapters: [], // Geometry extensions own independent chapter modules.
           createTutorialController, createTutorialOverlay, isTutorialSeen, markTutorialSeen, advanceTutorial,
           measureTourTarget, tourHoldsNotePanel, tourInsertMode,
           quantityTutorialSteps, geometryTutorialSteps,

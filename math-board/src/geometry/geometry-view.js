@@ -97,7 +97,12 @@ export function createGeometryPage(React, G, ctx, t, shared) {
   // per-tab callbacks below differ.
   const icon = shared.createBoardIcons(React);
   const controls = shared.createBoardControls(React, t);
-  return function GeometryPage(props) {
+  const PracticeNavigation = shared.createPracticeNavigation?.(React, t);
+  const practiceFrames = shared.createGeometryPracticeFrames?.(G);
+  const practiceChapters = shared.createGeometryBasicsChapter ? [shared.createGeometryBasicsChapter({
+    G, emptyFrame: practiceFrames.empty, createGoal: shared.createGeometryPractice,
+  }), ...(shared.geometryPracticeChapters || []).map(factory => factory({G,emptyFrame:practiceFrames.empty}))] : [];
+  function Board(props) {
     const key = `${STORAGE_PREFIX}${props.sessionId}`;
     const [ready, setReady] = React.useState(false);
     const [board, setBoard] = React.useState(G.empty);
@@ -121,11 +126,21 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     const [overlay, setOverlay] = React.useState(null);
     const [rename, setRename] = React.useState(null);
     const [writing, setWriting] = React.useState(null);
-    const [tour, setTour] = React.useState(null);
-    const [tourHole, setTourHole] = React.useState(null);
+    const [practiceOpen, setPracticeOpen] = React.useState(false);
+    const practiceOpenRef = React.useRef(false);
+    practiceOpenRef.current = practiceOpen;
+    const alive = React.useRef(true);
+    const practiceRef = React.useRef(null);
+    if (props.practice && !practiceRef.current) practiceRef.current = shared.createPracticeProgress({
+      mode:'geometry',chapters:practiceChapters,validateFrame:practiceFrames.validate,
+    });
+    const [progress,setProgress] = React.useState(() => practiceRef.current?.snapshot());
+    const practiceEvents = React.useRef([]);
+    const practiceState = progress?.goal;
+    function editable() { return alive.current && (props.practice || !practiceOpenRef.current); }
+    function practiceEvent(event) { if (props.practice && alive.current) { practiceEvents.current.push(event); setProgress({...practiceRef.current.snapshot()}); } }
+    function selectUser(ids) { setSelection(ids); practiceEvent({type:'select',selection:ids}); }
     const workspaceRef = React.useRef(null);
-    const tourSpotlightRef = React.useRef(null);
-    const TutorialOverlay = shared.createTutorialOverlay?.(React);
     const gesture = React.useRef(null);
     // Free points created for the unfinished shape. Escape deletes these and leaves
     // points the student had already placed.
@@ -176,15 +191,20 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     }, []);
 
     React.useEffect(() => {
+      alive.current = true;
+      if (props.practice) {
+        const next = practiceRef.current.enter(); applyPracticeFrame(next.frame); setProgress(next); setReady(true);
+        return () => { alive.current = false; gesture.current = null; };
+      }
       try {
         const saved = JSON.parse(localStorage.getItem(key) || 'null');
         if (saved !== null) { const next = G.validate(saved); boardRef.current = next; setBoard(next); }
       } catch { setStatus(t('geometryLoadError')); }
       setReady(true);
-      return () => { gesture.current = null; };
+      return () => { alive.current = false; gesture.current = null; };
     }, [key]);
     React.useEffect(() => {
-      if (!ready) return;
+      if (!ready || props.practice || !alive.current) return;
       try { localStorage.setItem(key, JSON.stringify(board)); } catch { setStatus(t('storageError')); }
     }, [board, ready, key]);
     React.useEffect(() => {
@@ -214,74 +234,46 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       return () => document.removeEventListener('pointerdown', closeMenus);
     }, [moreOpen]);
 
+    const tabActive = props.tabActive === true && !practiceOpen;
+    React.useEffect(() => { if (!props.tabActive) setPracticeOpen(false); }, [props.tabActive]);
     function startGeometryTour() {
-      if (!shared.geometryTutorialSteps || !TutorialOverlay) return;
-      setMoreOpen(false);
-      setOverlay(null);
-      setRename(null);
-      setTour({ mode: 'geometry', index: 0, steps: shared.geometryTutorialSteps() });
+      if (!practiceChapters.length) return;
+      practiceOpenRef.current = true;
+      setMoreOpen(false); setOverlay(null); setRename(null); setWriting(null); setPracticeOpen(true);
     }
-    function finishGeometryTour() {
-      shared.markTutorialSeen?.('geometry');
-      if (tourSpotlightRef.current) {
-        tourSpotlightRef.current.classList.remove('eb-tour-spotlight');
-        tourSpotlightRef.current = null;
-      }
-      setTour(null);
-      setTourHole(null);
-      setStatus(t('tutorialDone'));
+    function practiceFrame() {
+      return {board:boardRef.current,history,selection,tool,pending,construction:constructionPoints.current,
+        auxiliary,grid,snap,zoom,fit,scroll:{left:canvasRef.current?.scrollLeft || 0,top:canvasRef.current?.scrollTop || 0}};
     }
-    function signalTour(signal) {
-      if (!tour || !shared.advanceTutorial) return;
-      const next = shared.advanceTutorial(tour, signal);
-      if (next === tour) return;
-      if (next.index >= next.steps.length) finishGeometryTour();
-      else setTour(next);
+    function applyPracticeFrame(frame) {
+      publish(frame.board); setHistory(frame.history); setSelection(frame.selection); setTool(frame.tool);
+      setPending(frame.pending); constructionPoints.current = frame.construction;
+      setAuxiliary(frame.auxiliary); setGrid(frame.grid); setSnap(frame.snap); setZoom(frame.zoom); setFit(frame.fit);
+      gesture.current=null; setPreview(null); setMarquee(null); setHover(null); setHit(null);
+      setOverlay(null); setRename(null); setWriting(null);
+      if (canvasRef.current) {canvasRef.current.scrollLeft=frame.scroll.left;canvasRef.current.scrollTop=frame.scroll.top;}
     }
-    const tabActive = props.tabActive === true;
+    function navigatePractice(command,value) {
+      practiceEvents.current=[];
+      const next = command==='retry' ? practiceRef.current.enter(progress.current,{retry:true})
+        : command==='enter' ? practiceRef.current.enter(value)
+          : command==='retryStep' ? practiceRef.current.retryStep(value) : practiceRef.current[command]();
+      applyPracticeFrame(next.frame); setProgress(next);
+    }
     React.useEffect(() => {
-      if (!tabActive || !ready || tour || !shared.isTutorialSeen || !shared.geometryTutorialSteps) return;
-      // Mark seen as soon as first autoplay starts, so closing the board mid-tour
-      // does not keep reopening the coach; replay stays in「更多操作」.
-      if (!shared.isTutorialSeen('geometry')) {
-        shared.markTutorialSeen?.('geometry');
-        startGeometryTour();
-      }
-    }, [tabActive, ready]);
-    const useTourLayout = React.useLayoutEffect || React.useEffect;
-    useTourLayout(() => {
-      if (!tour || !workspaceRef.current || !shared.measureTourTarget) {
-        setTourHole(null);
-        return undefined;
-      }
-      const step = tour.steps[tour.index];
-      const measure = () => {
-        if (tourSpotlightRef.current) {
-          tourSpotlightRef.current.classList.remove('eb-tour-spotlight');
-          tourSpotlightRef.current = null;
-        }
-        const hit = shared.measureTourTarget(workspaceRef.current, step?.target);
-        if (hit?.node) {
-          hit.node.classList.add('eb-tour-spotlight');
-          tourSpotlightRef.current = hit.node;
-        }
-        setTourHole(hit);
-      };
-      measure();
-      const onResize = () => measure();
-      window.addEventListener('resize', onResize);
-      return () => {
-        window.removeEventListener('resize', onResize);
-        if (tourSpotlightRef.current) {
-          tourSpotlightRef.current.classList.remove('eb-tour-spotlight');
-          tourSpotlightRef.current = null;
-        }
-      };
-    }, [tour, overlay, board.points.length, board.elements.length, tool]);
+      if (!props.practice || !ready || !alive.current) return;
+      const events=practiceEvents.current.splice(0), wasSupplementing=practiceRef.current.snapshot().supplementing;
+      let next;
+      if (events.length) for (const event of events) next=practiceRef.current.observe(event,practiceFrame());
+      else next=practiceRef.current.saveFrame(practiceFrame());
+      if (wasSupplementing && !next.supplementing) applyPracticeFrame(next.frame);
+      if (events.length || next.persistence!==progress?.persistence) setProgress(next);
+    },[ready,board,history,selection,tool,pending,auxiliary,grid,snap,zoom,fit,progress]);
+    function closePage() { if (props.practice) props.onPracticeExit(); else setPracticeOpen(false); props.close?.(); }
 
-    function publish(next) { boardRef.current = next; setBoard(next); }
+    function publish(next) { revision.current += 1; boardRef.current = next; setBoard(next); }
     function action(a) {
-      if (!ready) return null;
+      if (!ready || !editable()) return null;
       try {
         const next = G.reduce(boardRef.current, a);
         if (JSON.stringify(next) !== JSON.stringify(boardRef.current)) {
@@ -294,7 +286,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     function appendFigure(figureBoard) {
       // Only a real placement failure may reach the demo's "make room" message; a draft
       // that has not loaded yet or a missing module is not the student's canvas being full.
-      if (!ready) return { ok: false, reason: 'not-ready' };
+      if (!ready || !alive.current) return { ok: false, reason: 'not-ready' };
       if (typeof shared.placeFigure !== 'function') return { ok: false, reason: 'failed' };
       const placed = shared.placeFigure(G, boardRef.current, figureBoard);
       if (!placed?.ok) return placed || { ok: false, reason: 'full' };
@@ -335,11 +327,13 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     }
     function forgetConstruction() { constructionPoints.current = []; }
     function undo() {
+      if (!editable()) return;
       const prev = history.past.at(-1); if (!prev) return;
       setHistory({ past: history.past.slice(0, -1), future: [boardRef.current, ...history.future].slice(0, HISTORY_LIMIT) });
       forgetConstruction(); publish(prev); setSelection([]); setPending([]);
     }
     function redo() {
+      if (!editable()) return;
       const next = history.future[0]; if (!next) return;
       setHistory({ past: [...history.past, boardRef.current].slice(-HISTORY_LIMIT), future: history.future.slice(1) });
       forgetConstruction(); publish(next); setSelection([]); setPending([]);
@@ -468,10 +462,9 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       return Math.hypot(p.x - (a.x + at * dx), p.y - (a.y + at * dy));
     }
     function chooseTool(name) {
+      if (!editable()) return;
       forgetConstruction();
       setTool(name); setPending([]); setSelection([]);
-      if (name === 'point') signalTour('geometry-tool-point');
-      if (name === 'segment') signalTour('geometry-tool-segment');
     }
     function finish(ids) {
       const before = boardRef.current;
@@ -492,13 +485,14 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       const created = next.elements.find((e) => !before.elements.some((old) => old.id === e.id));
       if (created && closedShape(created.type)) setSelection(created.points.map((_, index) => edgeKey(created.id, index)));
       else if (created) setSelection([created.id]);
-      if (drawing === 'segment') signalTour('geometry-add-segment');
+      if (created) practiceEvent({type:'draw',tool:drawing,before,after:next,closed:drawing==='polygon'});
     }
     function clickEmpty(p) {
+      const before = boardRef.current;
       const next = action({ type: 'addPoint', x: p.x, y: p.y });
-      // Only the point tool counts for the place-point tour step; other tools also
+      // Only the point tool counts for this goal; other tools also
       // drop free points as construction inputs and must not advance that step.
-      if (next && tool === 'point') signalTour('geometry-add-point');
+      if (next && tool === 'point') practiceEvent({type:'draw',tool,before,after:next});
       const created = next ? next.points.at(-1) : null;
       if (created && tool !== 'point') constructionPoints.current.push(created.id);
       return created;
@@ -622,14 +616,14 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       return null;
     }
     function pointerDown(event) {
-      if (event.button !== 0 || !ready) return;
+      if (event.button !== 0 || !ready || !editable()) return;
       const p = localPoint(event);
       const target = hitTest(p);
       const pointId = event.target.closest?.('[data-point]')?.getAttribute('data-point');
       if (tool === 'text') {
         // Clicking a text with the text tool edits it; clicking empty canvas starts a
         // new one whose left baseline sits at the click.
-        if (target?.kind === 'text') { setSelection([target.id]); openText(target.id); }
+        if (target?.kind === 'text') { selectUser([target.id]); openText(target.id); }
         else openText(null, { x: Math.max(24, Math.min(width - 24, p.x)), y: Math.max(G.bounds.margin + TEXT_SIZE, p.y) });
         event.preventDefault();
         return;
@@ -650,7 +644,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
         if (target?.kind === 'text') {
           const item = boardRef.current.elements.find((e) => e.id === target.id);
           if (item) {
-            setSelection([item.id]);
+            selectUser([item.id]);
             gesture.current = { kind: 'text', id: item.id, start: p, base: { x: item.x, y: item.y }, pointer: event.pointerId, moved: false };
             setPreview({ text: { id: item.id, x: item.x, y: item.y } });
             setMarquee(null);
@@ -673,7 +667,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
             return;
           }
           if (q.kind === 'free') {
-            if (!selection.includes(q.id)) setSelection([q.id]);
+            if (!selection.includes(q.id)) selectUser([q.id]);
             gesture.current = { kind: 'drag', id: q.id, start: p, base: boardRef.current, pointer: event.pointerId, moved: false };
             setPreview({ id: q.id, x: q.x, y: q.y });
             setMarquee(null);
@@ -710,7 +704,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
         const handle = resizeHandle(target);
         if (handle?.kind === 'radius') {
           const rim = boardRef.current.points.find((item) => item.id === handle.id);
-          setSelection([handle.selectionId]);
+          selectUser([handle.selectionId]);
           gesture.current = { kind: 'drag', id: rim.id, start: p, base: boardRef.current, pointer: event.pointerId, moved: false };
           setPreview({ id: rim.id, x: rim.x, y: rim.y });
           setMarquee(null);
@@ -718,7 +712,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
           return;
         }
         if (handle?.kind === 'edge') {
-          setSelection([handle.selectionId]);
+          selectUser([handle.selectionId]);
           gesture.current = { kind: 'edge', id: handle.id, index: handle.index, start: p, base: boardRef.current, pointer: event.pointerId, moved: false };
           setPreview(null);
           setMarquee(null);
@@ -726,7 +720,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
           return;
         }
         if (target) {
-          setSelection([target.id]);
+          selectUser([target.id]);
           event.preventDefault();
           return;
         }
@@ -741,6 +735,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       event.preventDefault();
     }
     function pointerMove(event) {
+      if (!editable()) return;
       const p = localPoint(event);
       const g = gesture.current;
       if (g && g.pointer === event.pointerId) {
@@ -788,20 +783,21 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       }
     }
     function pointerEnd(event, cancelled = false) {
+      if (!editable()) return;
       const g = gesture.current;
       if (!g || g.pointer !== event.pointerId) return;
       gesture.current = null;
       if (g.kind === 'marquee') {
         setMarquee(null);
-        if (cancelled || !g.moved) { setSelection([]); return; }
-        setSelection(idsInBox(boxFrom(g.start, g.current || g.start)));
+        if (cancelled || !g.moved) { selectUser([]); return; }
+        selectUser(idsInBox(boxFrom(g.start, g.current || g.start)));
         return;
       }
       if (g.kind === 'edge' || g.kind === 'translate') {
         const end = g.point;
         setPreview(null);
         if (cancelled || !g.moved || !end) {
-          if (!cancelled && g.narrow) setSelection(g.narrow);
+          if (!cancelled && g.narrow) selectUser(g.narrow);
           return;
         }
         if (g.kind === 'translate') action({ type: 'translate', ids: g.ids, dx: end.x - g.start.x, dy: end.y - g.start.y });
@@ -824,18 +820,14 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       action({ type: 'movePoint', id: g.id, x: shown.x, y: shown.y });
     }
     function deleteSelection() {
+      if (!editable()) return;
       if (!selection.length) return;
       const ids = selection.slice();
       action({ type: 'delete', ids });
       setSelection([]);
     }
     function requestOverlay(next) {
-      // While note-save spotlights the note panel, refuse replace/clear so the tour
-      // does not fall back to a full-screen mask with only Skip.
-      if (overlay?.kind === 'note' && shared.tourHoldsNotePanel?.(tour)
-          && (!next || next.kind !== 'note')) {
-        return;
-      }
+      if (!editable()) return;
       setOverlay(next);
     }
     function dismissOverlay() {
@@ -844,6 +836,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       requestOverlay(null);
     }
     function cancelDrawing() {
+      if (!editable()) return;
       const live = boardRef.current;
       const ids = constructionPoints.current.filter((id) => {
         const point = live.points.find((item) => item.id === id);
@@ -862,7 +855,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       const onKey = (event) => {
         if (event.target?.closest?.('.eb-teacher-reference')) return;
         if (event.key === 'Delete' || event.key === 'Backspace') {
-          if (!selection.length || overlay || rename || writing || tour) return;
+          if (!selection.length || overlay || rename || writing) return;
           const tag = event.target?.tagName;
           if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || event.target?.isContentEditable) return;
           event.preventDefault();
@@ -870,9 +863,8 @@ export function createGeometryPage(React, G, ctx, t, shared) {
           return;
         }
         if (event.key !== 'Escape') return;
-        // Note-save keeps its panel. Anything else open is the current operation,
-        // and a later Escape can still drop a line that was underneath it.
-        const noteHeld = overlay?.kind === 'note' && shared.tourHoldsNotePanel?.(tour);
+        // An open panel is the current operation; Escape dismisses it first.
+        const noteHeld = false;
         if (overlay && !noteHeld) { event.preventDefault(); dismissOverlay(); }
         if (rename) { event.preventDefault(); setRename(null); }
         if (writing) { event.preventDefault(); setWriting(null); }
@@ -893,17 +885,18 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       };
       document.addEventListener('keydown', onKey);
       return () => document.removeEventListener('keydown', onKey);
-    }, [tabActive, overlay, rename, writing, moreOpen, tour, pending, tool, selection]);
+    }, [tabActive, overlay, rename, writing, moreOpen, pending, tool, selection]);
     function applyNote() {
+      if (!editable()) return;
       const value = noteRef.current?.value ?? '';
       const target = noteCardTarget;
       if (target) action({ type: 'annotate', target: target.kind, id: target.id, value });
       else action({ type: 'note', value });
       if (overlay?.selectOnClose) setSelection([overlay.selectOnClose]);
       setOverlay(null);
-      signalTour('geometry-note-save');
     }
     function applyRename() {
+      if (!editable()) return;
       const value = nameRef.current?.value ?? '';
       if (rename) action({ type: 'renamePoint', id: rename.id, label: value });
       setRename(null);
@@ -911,10 +904,12 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     // Writing is the one editor a text has: a new one is created on save, an existing
     // one is rewritten in place. An empty save adds nothing and changes nothing.
     function openText(id = null, at = null) {
+      if (!editable()) return;
       const item = id ? boardRef.current.elements.find((e) => e.id === id) : null;
       setWriting({ id: item ? item.id : null, value: item ? item.text : '', x: at?.x, y: at?.y });
     }
     function applyText() {
+      if (!editable()) return;
       const value = (textRef.current?.value ?? '').trim();
       if (!value) { setWriting(null); return; }
       if (writing?.id) action({ type: 'editText', id: writing.id, text: value });
@@ -930,15 +925,11 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     // The composer keeps whatever it already held, and a failed insert leaves nothing behind.
     function insertGeometry() {
       if (!ready) return;
-      // Whole-tour practice: only the insert step advances; earlier steps never attach.
-      const insertMode = shared.tourInsertMode?.(tour);
-      if (insertMode === 'practice') {
-        signalTour('geometry-insert');
-        setStatus(t('tutorialInsertPractice'));
-        return;
+      if (!editable()) return;
+      if (props.practice) {
+        practiceEvent({type:'insert',after:boardRef.current});
+        setStatus(t('geometryPracticeInsert')); return;
       }
-      // A press under the mask is reached by keyboard: say why nothing was attached.
-      if (insertMode === 'block') { setStatus(t('tutorialInsertLater')); return; }
       const conversation = ctx.get('conversation');
       let drafts = [];
       const discard = () => {
@@ -974,6 +965,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       return (async () => {
         // Validation runs before anything is published: a bad file changes nothing.
         const next = G.validate(JSON.parse(await file.text()));
+        if (!editable() || props.practice) return;
         forgetConstruction();
         publish(next); setHistory({ past: [], future: [] }); setSelection([]); setPending([]);
         revision.current += 1;
@@ -992,23 +984,24 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       read: () => G.serialize(boardRef.current),
       load: loadOpenedFile,
       // An open that outlives an edit must not replace the draft the student has moved on to.
-      stale: (rev) => rev !== revision.current,
+      stale: (rev) => !editable() || props.practice || rev !== revision.current,
       describe: importFailure,
     });
     const fileInputRef = picker.fileInputRef;
     // The remembered last file is read once this page is interactive, so a reopen starts
     // at the student's own file.
-    React.useEffect(() => { picker.rememberName(); }, []);
+    React.useEffect(() => { if (!props.practice) picker.rememberName(); }, []);
     // The shared picker reports outcomes; this page shows them in its own status line.
     const report = (result) => {
       if (result?.message) setStatus(result.message);
     };
-    const saveFile = () => { setMoreOpen(false); return picker.saveFile().then(report); };
-    const openFile = () => { setMoreOpen(false); return picker.openFile({ revision: revision.current }).then(report); };
-    const importInput = (event) => picker.importInput(event, { revision: revision.current }).then(report);
+    const saveFile = () => { setMoreOpen(false); if (!editable()) return; if (props.practice) {setStatus(t('practiceFilesUnavailable'));return;} return picker.saveFile().then(report); };
+    const openFile = () => { setMoreOpen(false); if (!editable()) return; if (props.practice) {setStatus(t('practiceFilesUnavailable'));return;} return picker.openFile({ revision: revision.current }).then(report); };
+    const importInput = (event) => {if (!editable() || props.practice) return; return picker.importInput(event, { revision: revision.current }).then(report);};
     function clearMode() {
       // Clearing this mode resets the geometry canvas and its undo history only.
       forgetConstruction();
+      if (!editable()) return;
       publish(G.empty());
       setHistory({ past: [], future: [] });
       setSelection([]); setPending([]); setOverlay(null);
@@ -1115,9 +1108,8 @@ export function createGeometryPage(React, G, ctx, t, shared) {
         key: q.id, 'data-point': q.id, role: 'button', tabIndex: 0, 'aria-label': label, 'aria-pressed': picked,
         onKeyDown: (event) => {
           if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelection([q.id]); }
-          // An open overlay or active tour claims the keyboard: Delete must not reach the canvas.
-          if (picker.overlayBlocksKey(overlay, event)
-              || (tour && (event.key === 'Delete' || event.key === 'Backspace'))) {
+          // An open overlay claims the keyboard: Delete must not reach the canvas.
+          if (picker.overlayBlocksKey(overlay, event)) {
             event.preventDefault();
             return;
           }
@@ -1158,7 +1150,8 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     // the drawing, so nothing is cropped; a fit puts the whole board, reserve included,
     // inside the frame. `non-scaling-stroke` is deliberately not used: a magnified figure
     // must look magnified, exactly as the quantity board's zoom scales its artwork.
-    const canvas = h('div', { ref: canvasRef, className: 'eb-canvas-scroll', 'data-tour-id': 'geometry-canvas' },
+    const canvas = h('div', { ref: canvasRef, className: 'eb-canvas-scroll', 'data-tour-id': 'geometry-canvas',
+      onScroll: props.practice ? () => { const next=practiceRef.current.saveFrame(practiceFrame()); if(next.persistence!==progress.persistence) setProgress(next); } : undefined },
       h('svg', {
         ref: svgRef, className: `eb-artboard eb-geometry${grid ? ' eb-grid' : ''}`,
         style: { width: frame.box.width, height: frame.box.height },
@@ -1237,7 +1230,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       }, icon('midpoint')),
       h('button', {
         type: 'button', className: 'eb-tool eb-switch', role: 'switch', 'aria-checked': auxiliary,
-        title: t('auxiliary'), 'aria-label': t('auxiliary'), onClick: () => setAuxiliary((on) => !on),
+        title: t('auxiliary'), 'aria-label': t('auxiliary'), onClick: () => { if (editable()) setAuxiliary((on) => !on); },
       }, h('span', { className: 'eb-switch-track', 'aria-hidden': true },
         h('span', { className: 'eb-switch-knob' })),
       h('span', { className: 'eb-label' }, t('auxiliary'))));
@@ -1268,28 +1261,27 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       controls.menuItem(icon('open'), t('import'), openFile),
       controls.menuItem(icon('save'), t('export'), saveFile),
       picker.fileNameState && h('p', { className: 'eb-menu-note' }, picker.fileNameState),
-      TutorialOverlay && h(React.Fragment, null,
+      !props.practice && practiceChapters.length > 0 && h(React.Fragment, null,
         h('div', { className: 'eb-menu-line' }),
         controls.menuItem(null, t('tutorialReplay'), () => startGeometryTour())));
     // The student dock, in the same order as the quantity tab: the one shared 返回对话,
     // the shared undo/redo icons, the tab's own toggles, the shared zoom pair, then the
     // note, clear, more and insert controls this tab owns.
     const dock = h('nav', { className: 'eb-dock', 'aria-label': t('canvasTools') },
-      controls.backButton(() => props.close?.(), { icon }),
+      controls.backButton(closePage, { icon }),
       controls.divider(),
       dockButton('undo', undo, { disabled: !history.past.length }),
       dockButton('redo', redo, { disabled: !history.future.length, className: 'eb-icon-button eb-redo', title: t('redo') }),
       controls.divider(),
-      modeToggle(grid, 'gridOn', 'gridOff', () => setGrid(!grid)),
-      modeToggle(snap, 'snapOn', 'snapOff', () => setSnap(!snap)),
+      modeToggle(grid, 'gridOn', 'gridOff', () => { if (editable()) setGrid(!grid); }),
+      modeToggle(snap, 'snapOn', 'snapOff', () => { if (editable()) setSnap(!snap); }),
       controls.divider(),
       // A − or ＋ press is a request to enlarge or shrink what is on screen, so it leaves
       // the fit; 适应宽度 returns to it. Every page docks the same pair, from board-kit.
-      ...controls.zoomPair({ zoom, fit, setFit: (nextFit, nextZoom) => { setFit(nextFit); if (nextZoom !== undefined) setZoom(nextZoom); } }, { min: 1, max: 4 }),
+      ...controls.zoomPair({ zoom, fit, setFit: (nextFit, nextZoom) => { if (!editable()) return; setFit(nextFit); if (nextZoom !== undefined) setZoom(nextZoom); } }, { min: 1, max: 4 }),
       h('span', { className: 'eb-grow' }),
       controls.button(h(React.Fragment, null, icon('note', 19), noteHasText ? h('span', { className: 'eb-note-dot' }) : null), () => {
         requestOverlay({ kind: 'note' });
-        signalTour('geometry-note-open');
       }, {
         className: `eb-note-button${noteTarget ? ' eb-contextual' : ''}`,
         title: noteTarget ? `${t('note')} · ${noteTarget.label}` : `${t('note')} · ${t('noteGeneral')}`,
@@ -1299,9 +1291,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       controls.moreMenu(moreOpen, () => setMoreOpen(!moreOpen), icon('more', 19)),
       button(h(React.Fragment, null, icon('insert', 17), h('span', null, t('insert'))), () => insertGeometry(), {
         className: 'eb-primary', title: t('insert'), 'aria-label': t('insert'), 'data-tour-id': 'geometry-insert',
-        disabled: phase !== 'plain'
-          || shared.tourInsertMode?.(tour) === 'block'
-          || (!tour && !board.points.length && !board.elements.length && !board.note),
+        disabled: !props.practice && (phase !== 'plain' || (!board.points.length && !board.elements.length && !board.note)),
       }));
     const overlayNode = overlay && h('div', { className: 'eb-overlay', onPointerDown: (event) => { if (event.target === event.currentTarget) dismissOverlay(); } },
       h('div', {
@@ -1344,25 +1334,30 @@ export function createGeometryPage(React, G, ctx, t, shared) {
           h('button', { type: 'button', onClick: () => { setWriting(null); setTool('select'); } }, t('cancel')),
           h('button', { type: 'button', className: 'eb-primary', onClick: applyText }, t('save')))));
     const statusNode = controls.status(status);
-    const tourNode = tour && TutorialOverlay && h(TutorialOverlay, {
-      step: tour.steps[tour.index], stepIndex: tour.index, stepCount: tour.steps.length,
-      t, hole: tourHole, onSkip: finishGeometryTour,
-    });
-    // A press outside the shared dialog uses the same close as 返回对话.
-    if (props.bindClose) props.bindClose(() => props.close?.());
-    if (props.bindAppend) props.bindAppend(appendFigure);
+    const practiceCoach = props.practice && h('section', {className:'eb-practice-coach', 'aria-label':t('geometryPracticeBasics'),
+      'data-practice-step':practiceState?.step},
+      h('div',{role:'status','aria-live':'polite'},h('strong',null,t('geometryPracticeBasics')),
+        h('p',null,t(practiceState?.completed && progress.chapters.find(c=>c.id===progress.current)?.status!=='completed'
+          ? 'practiceSkippedEnd' : `geometryPracticeGoal_${practiceState?.step || 'point'}`)),
+        PracticeNavigation && progress?.goal && h(PracticeNavigation,{progress,chapters:practiceChapters,onNavigate:navigatePractice})),
+      button(t('practiceExit'),()=>props.onPracticeExit(),{className:'eb-practice-exit'}));
+    if (props.bindClose) props.bindClose(practiceOpen ? () => {setPracticeOpen(false);props.close?.();} : closePage);
+    if (props.bindAppend && !props.practice) props.bindAppend(appendFigure);
     return h(React.Fragment, null,
-      h('div', {
+      h('div',{className:'eb-geometry-owner',hidden:practiceOpen}, practiceCoach, h('div', {
         className: 'eb-workspace eb-geometry-workspace', ref: workspaceRef,
         onKeyDown: (event) => {
           // An open overlay owns the keyboard, so the shortcuts below never fire under it.
-          if (overlay || writing || tour) return;
+          if (overlay || writing) return;
           // Undo/redo shortcuts work from anywhere inside the geometry tab.
           if (!(event.metaKey || event.ctrlKey)) return;
           if (event.key === 'z' || event.key === 'Z') { event.preventDefault(); if (event.shiftKey) redo(); else undo(); }
           if (event.key === 'y' || event.key === 'Y') { event.preventDefault(); redo(); }
         },
-      }, tools, stage, dock, moreMenuNode, statusNode, overlayNode, renameNode, writingNode, tourNode),
-      h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: fileInputRef, onChange: importInput }));
-  };
+      }, tools, stage, dock, moreMenuNode, statusNode, overlayNode, renameNode, writingNode),
+      h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: fileInputRef, onChange: importInput })),
+      practiceOpen && h(PracticeBoard,{...props,practice:true,onPracticeExit:()=>setPracticeOpen(false),bindAppend:undefined}));
+  }
+  function PracticeBoard(props) { return Board(props); }
+  return Board;
 }

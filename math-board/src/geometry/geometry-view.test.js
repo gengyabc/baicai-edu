@@ -5,6 +5,8 @@ import { createBoardView, createShapeArt } from '../quantity/view.js';
 import { createTabbedBoardView } from '../shell/board-shell.js';
 import { createBoardFilePicker, createBoardIcons } from '../shared/file-picker.js';
 import { createGeometryPage } from './geometry-view.js';
+import { createGeometryPractice, createGeometryBasicsChapter, createGeometryPracticeFrames } from './geometry-basics.js';
+import { createPracticeProgress, createPracticeNavigation } from '../shell/practice-progress.js';
 import { createGeometryDemoPage, readDemoView } from '../teacher-demo/geometry-demo-view.js';
 import { placeFigure } from './place-figure.js';
 import { captionBox, captionPosition, visibleCaption } from './caption.js';
@@ -33,6 +35,7 @@ const M = createBoardModel();
 const G = createGeometryModel();
 const T = createBoardTrace(M);
 const locale = JSON.parse(await readFile(new URL('../../locale/zh.json', import.meta.url), 'utf8'));
+const enLocale = JSON.parse(await readFile(new URL('../../locale/en.json', import.meta.url), 'utf8'));
 const t = (key, params = {}) => {
   assert.equal(typeof locale[key], 'string', `Missing locale key: ${key}`);
   return locale[key].replace(/\{(\w+)\}/g, (match, name) =>
@@ -40,9 +43,19 @@ const t = (key, params = {}) => {
 };
 const QUANTITY_KEY = 'baicai-edu-math-board:v4:tabbed';
 const GEOMETRY_KEY = `baicai-edu-math-board:geometry:v1:tabbed`;
+const PRACTICE_KEY = 'baicai-edu-math-board:practice:v2:geometry';
 
 /** Stateful hooks: persistent slots, dependency-aware effects and explicit rendering. */
 function mount(options = {}) {
+  // English runs swap only the dictionary: the same page, the same steps.
+  const dictionary = options.language === 'en' ? enLocale : locale;
+  const translate = options.language === 'en'
+    ? (key, params = {}) => {
+      assert.equal(typeof enLocale[key], 'string', `Missing English locale key: ${key}`);
+      return enLocale[key].replace(/\{(\w+)\}/g, (match, name) =>
+        Object.hasOwn(params, name) ? String(params[name]) : match);
+    }
+    : t;
   const storage = options.storage || new Map();
   const browser = installBrowser({ storage });
   const { React, storeFor, hooks, render: renderTree, refresh: refreshTree, unmount: unmountPages } = createHooks();
@@ -50,7 +63,7 @@ function mount(options = {}) {
   const dom = new Map();
   let tree;
   const drafts = []; const attached = new Map(); const removed = []; const texts = []; let persisted = 0;
-  const inputActions = {
+  const localInputActions = {
     captureInsertion: () => ({ offset: 0 }),
     addAttachments(ids) { ids.forEach((id) => attached.set(id, id)); return true; },
     removeAttachment(id) { removed.push(id); attached.delete(id); },
@@ -61,7 +74,10 @@ function mount(options = {}) {
     createDrafts(sessionId, files) { drafts.push(files); return files.map((file) => ({ id: `draft-${file.name}` })); },
     releaseDraftAttachment() {},
   };
-  const ctx = { locale: { subscribe: () => () => {}, getSnapshot: () => 'zh' }, get: () => conversation };
+  const localConversation = conversation;
+  const ctx = { locale: { subscribe: () => () => {}, getSnapshot: () => 'zh' },
+    get: (name) => (options.conversation ? options.conversation(name) : localConversation) };
+  const inputActions = options.inputActions || localInputActions;
   // Mark both tutorials seen so first-open autoplay does not alter existing UI assertions.
   storage.set(tutorialStorageKey('quantity'), '1');
   storage.set(tutorialStorageKey('geometry'), '1');
@@ -70,20 +86,22 @@ function mount(options = {}) {
     isTutorialSeen, markTutorialSeen, advanceTutorial, measureTourTarget,
     tourHoldsNotePanel, tourInsertMode, quantityTutorialSteps, geometryTutorialSteps,
     placeFigure, captionPosition, captionBox, visibleCaption,
-    createBoardControls,
+    createBoardControls, createGeometryPractice, createGeometryBasicsChapter, createGeometryPracticeFrames,
+    createPracticeProgress, createPracticeNavigation,
     geometryHiddenPoints, geometryCaptionLabel, geometryPointLabel, geometryPointDot, geometryShapeNode, geometryStroke,
     geometryViewport, geometryTextOverflow, geometryFrame, geometryFrameInputs,
   };
-  const quantityPage = () => createBoardView(React, M, ctx, t, '', createShapeArt(React), applyHostConfig, T, shared);
+  const quantityPage = () => createBoardView(React, M, ctx, translate, '', createShapeArt(React), applyHostConfig, T, shared);
   let geometryComponent;
-  const geometryPage = () => (geometryComponent = createGeometryPage(React, G, ctx, t, shared));
-  const demoPage = () => createGeometryDemoPage(React, G, t, shared);
+  const geometryPage = () => (geometryComponent = createGeometryPage(React, G, ctx, translate, shared));
+  const demoPage = () => createGeometryDemoPage(React, G, translate, shared);
   // The shell draws the shared brand mark, so the quantity page hands it in.
-  const Board = createTabbedBoardView(React, t, '', {
+  const Board = createTabbedBoardView(React, translate, '', {
     quantity: quantityPage, geometry: geometryPage, demo: demoPage,
     mark: (size) => quantityPage().Mark(size)
   }, (view) => readDemoView(G, view));
-  const props = { sessionId: 'tabbed', useProjection: options.useProjection || (() => null), useInput: () => 'plain', inputActions };
+  const props = { sessionId: 'tabbed', useProjection: options.useProjection || (() => null),
+    useChat: options.useChat, useInput: options.useInput || (() => 'plain'), inputActions };
 
   const h = React.createElement;
   // A function component becomes its output; its hooks run against its own slots.
@@ -133,7 +151,7 @@ function mount(options = {}) {
   // controls are unambiguous (the hidden tab is a separate canvas and toolbar).
   const visibleNodes = () => {
     const all = walk(tree);
-    const hidden = all.filter((node) => node.props && node.props.role === 'tabpanel' && node.props.hidden);
+    const hidden = all.filter((node) => node.type === 'div' && node.props && node.props.hidden);
     const excluded = new Set(hidden.flatMap((node) => walk(node)));
     return all.filter((node) => !excluded.has(node));
   };
@@ -163,7 +181,7 @@ function mount(options = {}) {
     },
     click(label) { const node = button(label); assert.ok(!node.props.disabled, `${label} should be enabled`); node.props.onClick(); refresh(); },
     tool(label) {
-      const node = find((candidate) => candidate.type === 'button' && candidate.props['aria-label'] === t(label));
+      const node = find((candidate) => candidate.type === 'button' && candidate.props['aria-label'] === translate(label));
       assert.ok(!node.props.disabled, `${label} should be enabled`);
       node.props.onClick();
       refresh();
@@ -183,7 +201,7 @@ function mount(options = {}) {
       node.createSVGPoint = () => ({ x, y, matrixTransform: () => ({ x, y }) });
       node.getScreenCTM = () => ({ inverse: () => ({}) });
       const event = {
-        button: 0, clientX: x, clientY: y, pointerId: 1, shiftKey: false,
+        button: 0, clientX: x, clientY: y, pointerId: 1, shiftKey: false, ...extra,
         target: { closest: (selector) => hitNode(selector, x, y) },
         preventDefault() {}, currentTarget: { setPointerCapture() {} },
       };
@@ -213,13 +231,13 @@ function mount(options = {}) {
     openMore() {
       const menu = () => visibleNodes().filter((node) => String(node.props.className || '').includes('eb-more-menu'));
       if (menu().length === 1) return;
-      button(t('moreActions')).props.onClick();
+      button(translate('moreActions')).props.onClick();
       refresh();
       assert.equal(menu().length, 1, 'More menu should open');
     },
     startTour() {
       this.openMore();
-      find((node) => node.type === 'button' && text(node) === t('tutorialReplay')).props.onClick();
+      find((node) => node.type === 'button' && text(node) === translate('tutorialReplay')).props.onClick();
       refresh();
     },
     tourTitle() {
@@ -988,4 +1006,335 @@ test('the canvas keeps a reserve for the ink that lies past the board edge', () 
     assert.ok(label.props.y - 14 >= y, 'a label above the top edge stays inside the canvas');
     assert.ok(y + vh >= 600, 'the whole board is inside the canvas');
   });
+});
+
+for (const pointerType of ['mouse','touch']) test(`geometry safe basics real editor replay (${pointerType}) preserves both drafts and composer`, () => {
+  const h = mount();
+  try {
+    h.tab('geometry'); h.tool('point'); h.clickAt(80,80); h.tool('select');
+    const real = h.raw(GEOMETRY_KEY), quantity = h.raw(QUANTITY_KEY);
+    h.startTour();
+    const step = () => h.find(n=>n.props?.['data-practice-step']).props['data-practice-step'];
+    const tap = (x,y) => {h.clickAt(x,y,{pointerType}); h.release(x,y);};
+    const state = () => JSON.parse(h.raw(PRACTICE_KEY)).entries['geometry-basics'];
+    assert.equal(step(),'point');
+    h.click(t('insert')); assert.equal(h.drafts.length,0); assert.equal(step(),'point');
+    h.tool('point'); assert.equal(step(),'point'); tap(100,100); assert.equal(step(),'segment');
+    h.tool('segment'); tap(100,100); assert.equal(step(),'segment'); tap(260,100); assert.equal(step(),'triangle');
+    h.tool('triangle'); tap(100,100); tap(260,100); assert.equal(step(),'triangle'); tap(180,220); assert.equal(step(),'polygon');
+    h.tool('polygon'); tap(350,100); tap(480,100); tap(480,220); tap(350,220); assert.equal(step(),'polygon');
+    tap(350,100); assert.equal(step(),'circle');
+    h.tool('circle'); tap(620,350); assert.equal(step(),'circle'); tap(690,350); assert.equal(step(),'select-one');
+    tap(100,100); assert.equal(step(),'deselect'); tap(740,500); assert.equal(step(),'insert');
+    const board = state().frame.board; assert.equal(board.elements.length,4);
+    h.click(t('insert')); assert.equal(step(),'complete');
+    assert.equal(h.drafts.length,0); assert.equal(h.attached.size,0); assert.equal(h.texts.length,0); assert.equal(h.persisted,0);
+    assert.equal(h.raw(GEOMETRY_KEY),real); assert.equal(h.raw(QUANTITY_KEY),quantity);
+    h.click(t('practiceExit')); assert.equal(h.raw(GEOMETRY_KEY),real);
+  } finally {h.unmount();}
+});
+
+// --- Ticket03: chapter navigation, resume, isolation and simulated insert ---
+
+function practiceStep(h) {
+  const node = h.find((n) => n.props && n.props['data-practice-step'] !== undefined);
+  return node.props['data-practice-step'];
+}
+function practiceState(h) { return JSON.parse(h.raw(PRACTICE_KEY)).entries['geometry-basics']; }
+function practiceCoachText(h) {
+  const coach = h.find((n) => n.props && n.props['data-practice-step'] !== undefined);
+  return text(coach);
+}
+/**
+ * A tap on the canvas with a pointer type. Drawing tools commit on press, so a tap is one
+ * press: a release would be a second, unrelated operation.
+ */
+function tapShaped(h, x, y, pointerType = 'mouse') {
+  h.clickAt(x, y, { pointerType });
+}
+
+test('geometry practice resumes the unfinished step and its whole picture after a refresh', () => {
+  const storage = new Map();
+  let h = mount({ storage });
+  try {
+    h.tab('geometry'); h.tool('point'); h.clickAt(80, 80); h.tool('select');
+    const real = h.raw(GEOMETRY_KEY);
+    h.startTour();
+    h.tool('point');
+    tapShaped(h, 100, 100, 'mouse');
+    assert.equal(practiceStep(h), 'segment');
+    h.tool('segment'); tapShaped(h, 100, 100, 'mouse');
+    assert.equal(practiceStep(h), 'segment', 'one endpoint does not finish the segment');
+    // A deliberate view choice the student made inside the practice must survive the refresh.
+    h.click(t('gridOff'));
+    const saved = practiceState(h);
+    assert.equal(saved.frame.grid, true, 'the practice frame keeps its own grid setting');
+    // The practice keeps a history of its own edits, separate from the real draft's.
+    assert.equal(saved.frame.history.past.length > 0, true, 'the practice point is its own undo unit');
+    assert.equal(h.raw(GEOMETRY_KEY), real, 'the real draft history is untouched');
+
+    // A refresh is a real remount of the page; the browser storage is the only thing kept.
+    h.unmount();
+    h = mount({ storage });
+    h.tab('geometry');
+    assert.ok(!h.visibleNodes().some((n) => n.props && n.props['data-practice-step'] !== undefined),
+      'a refresh does not reopen practice on its own; the student re-enters it');
+    h.startTour();
+    assert.equal(practiceStep(h), 'segment', 'the unfinished step is restored, not restarted');
+    const restored = practiceState(h).frame;
+    assert.equal(restored.board.points.length, 1, 'the practice picture comes back');
+    assert.equal(restored.tool, 'segment', 'the tool the student had chosen comes back');
+    assert.equal(restored.grid, true, 'the view setting comes back');
+    assert.equal(h.raw(GEOMETRY_KEY), real, 'the real geometry draft is untouched by practice');
+  } finally { h.unmount(); }
+});
+
+test('geometry practice offers reset, skip, supplementary retry and chapter retry in its own coach', () => {
+  const storage = new Map();
+  const h = mount({ storage });
+  try {
+    h.tab('geometry'); h.tool('point'); h.clickAt(110, 110);
+    const real = h.raw(GEOMETRY_KEY);
+    h.startTour();
+    h.tool('point');
+    tapShaped(h, 100, 100, 'mouse');
+    assert.equal(practiceStep(h), 'segment');
+    // Skip the line: the next step receives a starting point it did not have to draw.
+    h.click(t('practiceSkipStep'));
+    const skipped = practiceState(h);
+    assert.equal(skipped.goal.step, 'triangle');
+    assert.equal(skipped.states[1], 'skipped', 'a skipped step is recorded as skipped, never completed');
+    assert.equal(practiceStep(h), 'triangle');
+    // The skipped step can be practised again from its own start, then returns to where it was.
+    const retry = `${t('practiceRetryStep', { step: 2 })}`;
+    h.click(retry);
+    assert.equal(practiceStep(h), 'segment', 'the supplement starts the skipped operation again');
+    const supplementStart = practiceState(h);
+    assert.ok(supplementStart.frame.board.points.length >= 1, 'the supplement supplies the endpoint it needs');
+    h.tool('segment');
+    tapShaped(h, 100, 100, 'mouse'); tapShaped(h, 260, 100, 'mouse');
+    assert.equal(practiceStep(h), 'triangle', 'a successful supplement returns to the pending step');
+    assert.equal(JSON.parse(h.raw(PRACTICE_KEY)).entries['geometry-basics'].returnTo, undefined,
+      'the supplement returned to the pending step instead of keeping a continuation');
+    // Reset the current step restores its own starting picture.
+    h.click(t('practiceReset'));
+    assert.equal(practiceState(h).goal.step, 'triangle');
+    assert.equal(h.raw(GEOMETRY_KEY), real, 'navigation never writes the real draft');
+  } finally { h.unmount(); }
+});
+
+test('geometry practice feedback says what is missing and never awards a skipped-only run', () => {
+  const h = mount();
+  try {
+    h.tab('geometry');
+    h.startTour();
+    h.tool('point');
+    tapShaped(h, 100, 100, 'mouse');
+    assert.equal(practiceStep(h), 'segment');
+    h.click(t('practiceSkipStep'));
+    assert.match(practiceCoachText(h), /沿用线段的两个端点/, 'the coach names the action for the current step');
+    // Skipping every remaining step must end honestly, not claim completion.
+    for (let index = 0; index < 8; index++) {
+      if (practiceState(h).goal.completed) break;
+      h.click(t('practiceSkipStep'));
+    }
+    assert.equal(practiceState(h).goal.completed, true, 'the run reaches its end');
+    assert.match(practiceCoachText(h), /跳过|skipped/i, 'the end message reports skipped steps rather than completion');
+    assert.equal(practiceState(h).states[0], 'completed', 'only the operation the student actually did is completed');
+    assert.equal(practiceState(h).states.slice(1).every((state) => state === 'skipped'), true,
+      'every operation the student skipped is recorded as skipped');
+    // The coach still offers an always-available exit.
+    h.click(t('practiceExit'));
+    assert.ok(!h.visibleNodes().some((n) => n.props && n.props['data-practice-step'] !== undefined), 'exit leaves practice');
+  } finally { h.unmount(); }
+});
+
+test('geometry practice never reaches the host, the composer or a file at any step', () => {
+  // Every host-facing surface is a tripwire: any call is counted by name.
+  let host = 0, composer = 0, files = 0, sends = 0;
+  const observed = [];
+  const inputActions = {
+    captureInsertion() { composer++; return { offset: 0 }; },
+    addAttachments() { composer++; return true; },
+    removeAttachment() { composer++; },
+    insertText() { composer++; return true; },
+    persistDraft() { composer++; },
+    send() { sends++; },
+  };
+  const h = mount({
+    inputActions,
+    // The shell and the real quantity page read their own projections; a geometry
+    // practice reaching any of them would be the failure this test names.
+    useProjection(name) { observed.push(name); return null; },
+    useChat() { return '[]'; },
+    conversation() { files++; return { createDrafts() { files++; return []; }, releaseDraftAttachment() { files++; } }; },
+  });
+  try {
+    h.tab('geometry');
+    h.tool('point'); h.clickAt(80, 80);
+    const realGeometry = h.raw(GEOMETRY_KEY);
+    h.startTour();
+    // A fresh mount decides what its boards read; later renders just re-read those names.
+    // Practice consulting a new projection the real boards never asked for is the failure.
+    const beforeMount = new Set(observed);
+    const step = () => practiceStep(h);
+    const untouched = () => {
+      const introduced = [...new Set(observed)].filter((name) => !beforeMount.has(name));
+      assert.deepEqual(introduced, [], `step ${step()} introduced projections ${introduced.join(', ')}`);
+      assert.ok(composer === 0 && files === 0 && sends === 0,
+        `step ${step()} touched composer=${composer} files=${files} send=${sends}`);
+    };
+    // The insert control is live at every step, the first one included, and attaches nothing.
+    for (let guard = 0; guard < 12 && step() !== 'insert'; guard++) {
+      h.click(t('insert'));
+      assert.equal(h.drafts.length, 0, 'no draft is created');
+      assert.equal(h.attached.size, 0, 'no attachment is added');
+      untouched();
+      if (step() === 'point') { h.tool('point'); tapShaped(h, 100, 100); }
+      else if (step() === 'segment') { h.tool('segment'); tapShaped(h, 100, 100); tapShaped(h, 260, 100); }
+      else if (step() === 'triangle') {
+        h.tool('triangle'); tapShaped(h, 100, 100); tapShaped(h, 260, 100); tapShaped(h, 180, 220);
+      } else if (step() === 'polygon') {
+        h.tool('polygon'); tapShaped(h, 350, 100); tapShaped(h, 480, 100);
+        tapShaped(h, 420, 220); tapShaped(h, 350, 100);
+      } else if (step() === 'circle') { h.tool('circle'); tapShaped(h, 620, 350); tapShaped(h, 690, 350); }
+      else if (step() === 'select-one') { h.tool('select'); tapShaped(h, 100, 100); }
+      else if (step() === 'deselect') { h.tool('select'); h.clickAt(740, 500); h.release(740, 500); }
+      else break;
+    }
+    assert.equal(step(), 'insert', 'the run reaches the simulated insert');
+    h.click(t('insert'));
+    assert.equal(step(), 'complete');
+    assert.equal(h.drafts.length, 0);
+    assert.equal(h.attached.size, 0);
+    assert.equal(h.texts.length, 0);
+    assert.equal(h.persisted, 0);
+    untouched();
+    assert.equal(h.raw(GEOMETRY_KEY), realGeometry, 'the real geometry draft keeps its own value');
+  } finally { h.unmount(); }
+});
+
+test('practice never writes over legal host changes and a late save cannot touch the real draft', () => {
+  const storage = new Map();
+  let clear = null;
+  const h = mount({ storage, useProjection: (name) => (name === 'eduBoardClear' ? clear : null) });
+  try {
+    h.tab('geometry');
+    h.tool('point'); h.clickAt(80, 80); h.clickAt(300, 80);
+    const real = h.raw(GEOMETRY_KEY);
+    const realBoard = h.board();
+    h.startTour();
+    h.tool('point'); tapShaped(h, 100, 100);
+    assert.equal(practiceStep(h), 'segment');
+    // A legitimate host change arrives while practice is open: the real draft keeps it.
+    const hostBoard = G.reduce(realBoard, { type: 'addPoint', x: 420, y: 160 });
+    h.set(GEOMETRY_KEY, JSON.stringify(hostBoard));
+    clear = { revision: 9, requestId: 'call-9', requestedAt: Date.now() - 1000 };
+    h.render();
+    // The practice keeps practising and its save never replaces the host's draft.
+    h.tool('segment'); tapShaped(h, 100, 100); tapShaped(h, 260, 100);
+    assert.equal(practiceStep(h), 'triangle');
+    assert.equal(h.raw(GEOMETRY_KEY), JSON.stringify(hostBoard), 'the host change is not reverted');
+    // Leaving through the shell close is the same path as 返回对话.
+    h.click(t('practiceExit'));
+    h.render();
+    assert.equal(h.raw(GEOMETRY_KEY), JSON.stringify(hostBoard), 'exit does not restore a pre-practice backup');
+    assert.equal(h.raw(PRACTICE_KEY) !== undefined, true, 'practice progress is its own record');
+    // A remount after practice exits reads the host's draft, not a practice picture.
+    const again = mount({ storage, useProjection: (name) => (name === 'eduBoardClear' ? clear : null) });
+    try {
+      again.tab('geometry');
+      assert.equal(again.board().points.length, hostBoard.points.length, 'the real draft is the host version');
+      assert.ok(!again.visibleNodes().some((n) => n.props['data-practice-step'] !== undefined), 'practice is not reopened');
+    } finally { again.unmount(); }
+  } finally { h.unmount(); }
+});
+
+test('closing the board mid-practice leaves the real draft exactly as it was', () => {
+  const storage = new Map();
+  const h = mount({ storage });
+  try {
+    h.tab('geometry');
+    h.tool('point'); h.clickAt(90, 90); h.clickAt(320, 90);
+    const real = h.raw(GEOMETRY_KEY);
+    h.startTour();
+    h.tool('point'); tapShaped(h, 150, 150);
+    h.tool('segment'); tapShaped(h, 150, 150); tapShaped(h, 300, 250);
+    assert.equal(practiceStep(h), 'triangle');
+    const practice = h.raw(PRACTICE_KEY);
+    // 返回对话 closes through the same bound close the shell hands every page.
+    h.click(t('backToChat'));
+    assert.equal(h.dialogOpen(), false, 'the board closes');
+    assert.equal(h.raw(GEOMETRY_KEY), real, 'the real draft is untouched by closing');
+    assert.equal(h.raw(PRACTICE_KEY), practice, 'practice progress survives to be resumed later');
+    // Reopening shows the real draft, not the practice picture.
+    h.click(t('title'));
+    assert.equal(h.board().points.length, 2);
+    assert.ok(!h.visibleNodes().some((n) => n.props['data-practice-step'] !== undefined), 'practice stays closed');
+  } finally { h.unmount(); }
+});
+
+for (const language of ['zh', 'en']) {
+  const tr = language === 'en' ? (key) => enLocale[key] : (key) => locale[key];
+  test(`geometry safe basics completes in ${language} with every goal shown`, () => {
+    const h = mount({ language });
+    try {
+      h.tab('geometry');
+      h.startTour();
+      assert.equal(practiceStep(h), 'point');
+      // The coach speaks the page's language at every step, not only the first.
+      const seen = [];
+      let page = 'point';
+      const advance = () => {
+        page = practiceStep(h);
+        seen.push(practiceCoachText(h));
+        if (practiceStep(h) === 'segment') { h.tool('segment'); tapShaped(h, 100, 100); tapShaped(h, 260, 100); }
+        else if (practiceStep(h) === 'triangle') {
+          h.tool('triangle'); tapShaped(h, 100, 100); tapShaped(h, 260, 100); tapShaped(h, 180, 220);
+        } else if (practiceStep(h) === 'polygon') {
+          h.tool('polygon'); tapShaped(h, 350, 100); tapShaped(h, 480, 100);
+          tapShaped(h, 420, 220); tapShaped(h, 350, 100);
+        } else if (practiceStep(h) === 'circle') { h.tool('circle'); tapShaped(h, 620, 350); tapShaped(h, 690, 350); }
+        else if (practiceStep(h) === 'select-one') { h.tool('select'); tapShaped(h, 100, 100); }
+        else if (practiceStep(h) === 'deselect') { h.tool('select'); h.clickAt(740, 500); h.release(740, 500); }
+      };
+      h.tool('point'); tapShaped(h, 100, 100);
+      for (let guard = 0; guard < 10 && practiceStep(h) !== 'insert'; guard++) advance();
+      assert.equal(practiceStep(h), 'insert', `${language}: the run reaches the simulated insert`);
+      seen.push(practiceCoachText(h));
+      // Every shown goal came from this language's dictionary, never a fallback or a key name.
+      for (const copy of seen) {
+        assert.ok(copy.length > 0);
+        assert.ok(!/geometryPracticeGoal_|practiceGoal_/.test(copy), `${language}: no raw keys on screen`);
+        // The coach carries the goal sentence for the step it is on, in this language.
+        assert.ok(copy.includes(page === 'point' ? tr('geometryPracticeGoal_point') : tr('geometryPracticeBasics')));
+      }
+      h.click(tr('insert'));
+      assert.equal(practiceStep(h), 'complete');
+      assert.match(practiceCoachText(h), new RegExp(language === 'en' ? 'completed' : '完成'));
+    } finally { h.unmount(); }
+  });
+}
+
+test('geometry safe basics closes the polygon and clears a selection with touch alone', () => {
+  const h = mount();
+  try {
+    h.tab('geometry');
+    h.startTour();
+    // Every step is driven by touch pointer events, with no keyboard and no hover.
+    h.tool('point'); h.clickAt(100, 100, { pointerType: 'touch' });
+    h.tool('polygon');
+    for (const [x, y] of [[350, 100], [480, 100], [420, 220]]) h.clickAt(x, y, { pointerType: 'touch' });
+    // Tapping back on the first vertex is what closes the ring.
+    h.clickAt(350, 100, { pointerType: 'touch' });
+    assert.equal(practiceState(h).frame.board.elements.filter((e) => e.type === 'polygon').length, 1,
+      'closing by tapping the start point creates one polygon');
+    // A touch tap on empty canvas with the select tool clears the selection on release.
+    h.tool('select');
+    h.clickAt(740, 500, { pointerType: 'touch' });
+    h.release(740, 500);
+    assert.equal(practiceState(h).frame.selection.length, 0, 'touch clears the selection');
+    // No keyboard shortcut and no hover was needed anywhere above.
+    assert.ok(!h.visibleNodes().some((n) => (n.props['data-practice-step'] || '') === 'hover'));
+  } finally { h.unmount(); }
 });

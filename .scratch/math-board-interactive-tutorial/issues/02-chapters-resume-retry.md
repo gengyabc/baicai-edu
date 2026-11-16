@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 — 数量基础教程与安全练习闭环。
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 ## 验收条件
 
@@ -21,3 +21,13 @@
 ## 边界
 
 规格第 4、9、10 节为行为边界。进度只表明操作练习完成，不写学生档案或能力判断；不引入跨设备同步。现有“已看过”到新版首次入口的产品切换由 12 负责。
+
+## Answer
+
+- 实现提交 `03fa991`，审查补练回归后由原实现者追加修正 `d8975589aa873234fb3ae7c3f97832eddded6dcd`；非快进集成合并 `f0c504d72621d517276f5a442f5569f34f4a6a8c`。合并保留根目录已认领状态；未删除或提交任何 worktree。
+- 数量基础练习现支持章节目录、四种进度状态、完整练习画面续学、本步重置、跳过／单步补练和单章重练。独立练习所有者不回写真实草稿；真实所有者继续接收合法宿主更新。连续进入未开始章可复用前章画面，独立进入由章节提供足够起点。可选章节以独立 fixture 验证，不提前交付后续操作章。
+- 审查确认并修复：补练早先跳过步骤后不得把后续已完成状态重置为进行中。补练成功或再次跳过均恢复成对保存的继续目标与画面，不覆盖后续步骤起点；补练中刷新仍保留返回位置。编辑器同步应用恢复画面，避免目标指向旧对象而画面仍是临时补练对象。
+- 集成分支实跑 focused 命令 **128/128 通过**：`node --test math-board/src/shell/practice-progress.test.js math-board/src/quantity/practice.test.js math-board/src/quantity/view-practice.test.js math-board/src/shell/tutorial.test.js math-board/src/quantity/view-trace.test.js math-board/src/geometry/geometry-view.test.js math-board/tests/client-smoke.test.js`。`node math-board/build.mjs`、`node --check math-board/client.js`、生成客户端确定性差异检查及 `git diff --check` 均通过。
+- 全量 `npm --prefix math-board test` 为 **326/327 通过**；唯一失败仍是既有 [tool-schema.test.js:214–220](<../../../math-board/src/host/tool-schema.test.js#L214-L220>) 从共享契约提取已不存在的 fenced JSON recipe，`assert.ok(get)` 失败。未为本票改变教学规则或扩展修复范围，留给 12。
+- 中英／鼠标／触屏操作证据来自真实编辑器处理器与浏览器替身的自动回放，**不等同真实浏览器验收**。真实鼠标／触屏、小屏与旋转布局、焦点、滚动钳制、原生文件选择和当前 GUI 部署均未验证；新版首次入口／旧标志迁移、几何与演示页面接入未计作交付。上述验收复选框保持未勾，相关实机验证仍由发布验收完成。详细证据和未执行边界见 [验证记录](<../../../math-board/docs/tutorial-02-validation.md>)。
+- 共享接口与接入方式见 [安全教程扩展接口](<../../../math-board/README.md#安全教程扩展接口>)：`createPracticeProgress({mode,chapters,storage?,validateFrame?})` 和 `createPracticeNavigation(React,t)`；稳定数量基础章 `quantity-basics`。后续章使用独立工厂，经构建内联并追加至 `Browser.quantityPracticeChapters`；恢复／预置不得输入操作目标判定，几何和教师演示使用独立 mode 与独立练习所有者。
