@@ -752,16 +752,25 @@ for (const language of ['en', 'zh']) for (const pointerType of ['mouse', 'touch'
       app.click(app.t('cancel'));
       assert.equal(app.step(), 'notes-board', 'cancel does not advance');
       app.click(`${app.t('circle')} · ${app.t('value')} 1`);
+      const noteStamp = () => JSON.stringify({
+        note: board().note,
+        objects: board().objects.map((object) => [object.id, object.note]),
+        groups: board().groups.map((group) => [group.id, group.note]),
+        notes: board().notes,
+      });
+      const beforeStolen = noteStamp();
       saveNote('Stolen');
       assert.equal(app.step(), 'notes-board', 'a note on the automatically selected new object does not pass');
-      assert.notEqual(board().note, 'Stolen', 'add-then-note does not become the board note');
+      assert.equal(board().note, '', 'add-then-note does not change the board note');
       const extra = board().objects.find((object) => !ids().includes(object.id));
-      assert.equal(extra.note, 'Stolen');
+      assert.equal(extra.note, '', 'add-then-note does not store an object note');
+      assert.equal(noteStamp(), beforeStolen, 'object, group, and selection notes stay unchanged');
       openNote();
       app.find((node) => node.type === 'textarea').props.ref.current.value = '字'.repeat(501);
       app.click(app.t('save'));
       assert.equal(app.step(), 'notes-board', 'a rejected note does not advance');
-      assert.equal(extra.note, 'Stolen', 'the rejected text is not stored');
+      assert.equal(extra.note, '', 'the rejected text is not stored');
+      assert.equal(noteStamp(), beforeStolen);
       clear();
       saveNote('Whole board');
       assert.equal(app.step(), 'notes-board-read');

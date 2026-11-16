@@ -21,13 +21,13 @@ Validated 2026-11-16 on branch `feat/tutorial-05`, from integration `2405715` (t
 
 ## What the handler replay covered
 
-[practice-notes.test.js](<../src/quantity/practice-notes.test.js>) drives committed model actions: clearing a prepared selection, choosing another object, an empty or whitespace board note, cancel, a note on an object, group, or selection while the board step is current, add-then-note, a rejected 501-character note, object and group and selection writes, a member note, a different pair, opening the board during the selection check, a preset note that does not pass the write, a resumed step that keeps earlier text, skip and reset through every step, an inconsistent saved goal, reuse of a previous group, and a catalogue start of two objects and one group. Practice storage does not write `baicai-edu-math-board:v4:session`.
+[practice-notes.test.js](<../src/quantity/practice-notes.test.js>) drives committed model actions: clearing a prepared selection, choosing another object, an empty or whitespace board note, cancel, a rejected 501-character note, object and group and selection writes on their own steps, a member note, a different pair, opening the board during the selection check, a preset note that does not pass the write, a resumed step that keeps earlier text, skip and reset through every step, an inconsistent saved goal, reuse of a previous group, and a catalogue start of two objects and one group. During `notes-board`, an object, group, or selection save is not committed: the new object's note stays empty, and the board, group, and selection notes stay as they were. Practice storage does not write `baicai-edu-math-board:v4:session`.
 
 [view-practice.test.js](<../src/quantity/view-practice.test.js>) mounts the quantity editor and drives the real handlers in Chinese and English, with the stand-in pointer reported as both `mouse` and `touch`. Empty save, cancel, add-then-note, a rejected over-long note, the wrong object, a member note, ungroup, and a different pair are in that replay. The note card can still reach exit. Skip, reset, chapter retry, exit, and a remount all leave the pre-seeded real draft unchanged, and the upload count stays 0.
 
-## Model difference
+## Board-note guard
 
-The brief said an add-then-save must not store the text as the new object's note. The existing editor selects that object and `applyNote` commits an object annotation. This chapter does not change that rule. The text is stored on the object, the board note stays unchanged, and `notes-board` does not pass. Spec Q10 is met as "do not count it as the board note."
+While practice is open and the current step is `notes-board`, a note whose overlay target is an object, a group, or a selection does not call `action()`. The board note and every object, group, and selection note stay as they were, and the step stays on `notes-board`. A board note saved with nothing selected still passes. Other steps still save object, group, and selection notes. `model.js` annotate rules are unchanged.
 
 ## Unexecuted / limits
 

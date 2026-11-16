@@ -14,7 +14,7 @@ const whyKeys = ['notesDeselectExplain', 'notesEmptyExplain', 'notesBoardTarget'
   'notesObjectCheck', 'notesGroupTarget', 'notesGroupRead', 'notesSelectionTarget', 'notesSelectionCheck',
   'notesCancelExplain', 'notesMiss', 'practiceInsertBlocked'];
 
-/** A page-like driver: every action is reduced on the frame and reported as a committed event. */
+/** A page-like driver. During the board-note step an object, group, or selection save is not committed. */
 function driver(options = {}) {
   const c = options.chapter || chapter();
   const frame = c.start(options.previous === undefined ? null : options.previous);
@@ -22,10 +22,14 @@ function driver(options = {}) {
   const snap = () => goal.snapshot();
   const act = (action, extra = {}) => {
     const before = frame.board;
+    const held = snap().step === 'notes-board' && action.type === 'annotate';
     let after = before;
     let rejected = false;
-    try { after = M.reduce(before, action); } catch { rejected = true; }
-    if (!rejected) frame.board = after;
+    if (!held) {
+      try { after = M.reduce(before, action); } catch { rejected = true; }
+      if (!rejected) frame.board = after;
+    }
+    if (held) return snap();
     const kind = action.type === 'note' ? 'board' : action.target;
     const ids = action.type === 'note' ? [] : action.target === 'selection' ? [...(action.ids || [])] : [action.id];
     return goal.observe({ type: rejected ? 'reject' : action.type, action, before, after: frame.board, target: kind, ids, ...extra });
@@ -82,18 +86,27 @@ test('a board note is saved with nothing selected, then read back from that same
   d.act({ type: 'annotate', target: 'object', id: d.snap().targets[0], value: 'On the shape' });
   assert.equal(d.snap().step, 'notes-board', 'an object note is not the board note');
   assert.equal(d.frame.board.note.trim(), '', 'the object note did not become the board note');
+  assert.equal(d.frame.board.objects.find((object) => object.id === d.snap().targets[0]).note, '');
   const beforeAdd = d.frame.board.objects.length;
   d.act({ type: 'add', shape: 'star' });
   const added = d.frame.board.objects.find((object) => !d.snap().targets.includes(object.id) && object.shape === 'star');
   assert.equal(d.frame.board.objects.length, beforeAdd + 1);
+  const notesOf = () => JSON.stringify({
+    note: d.frame.board.note,
+    objects: d.frame.board.objects.map((object) => [object.id, object.note]),
+    groups: d.frame.board.groups.map((group) => [group.id, group.note]),
+    notes: d.frame.board.notes,
+  });
+  const beforeStolen = notesOf();
   d.act({ type: 'annotate', target: 'object', id: added.id, value: 'Stolen' });
   assert.equal(d.snap().step, 'notes-board', 'adding an object and then saving does not pass');
-  assert.notEqual(d.frame.board.note, 'Stolen', 'add-then-note does not become the board note');
-  assert.equal(added && d.frame.board.objects.find((object) => object.id === added.id).note, 'Stolen');
+  assert.equal(d.frame.board.note, JSON.parse(beforeStolen).note, 'add-then-note does not change the board note');
+  assert.equal(d.frame.board.objects.find((object) => object.id === added.id).note, '', 'add-then-note does not store an object note');
   d.act({ type: 'annotate', target: 'group', id: d.snap().groupId, value: 'Grouped' });
   assert.equal(d.snap().step, 'notes-board', 'a group note does not pass the board step');
   d.act({ type: 'annotate', target: 'selection', ids: [...d.snap().targets], value: 'Pair' });
   assert.equal(d.snap().step, 'notes-board', 'a selection note does not pass the board step');
+  assert.equal(notesOf(), beforeStolen, 'object, group, and selection notes stay unchanged');
   d.act({ type: 'note', value: 'Whole board' });
   assert.equal(d.snap().step, 'notes-board-read');
   assert.equal(d.frame.board.note, 'Whole board');

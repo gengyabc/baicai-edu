@@ -1922,6 +1922,11 @@ window.__ModuleLoader__.load({
       const command = !target ? { type: 'note', value }
         : target.kind === 'selection' ? { type: 'annotate', target: 'selection', ids: target.ids, value }
           : { type: 'annotate', target: target.kind, id: target.id, value };
+      // Q10: a selected object must not capture the whole-board note. Other steps still save.
+      if (props.practice && target && practiceRef.current.snapshot().goal.step === 'notes-board') {
+        setOverlay(null);
+        return;
+      }
       action(command);
       // A rejected save, or a commit that leaves the board unchanged, is not a student note.
       if (boardRef.current !== before) {
