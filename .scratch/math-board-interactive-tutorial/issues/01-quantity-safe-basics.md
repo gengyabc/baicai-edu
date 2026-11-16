@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 ## 验收条件
 
@@ -20,3 +20,18 @@
 ## 边界
 
 只检查操作，不检查数学答案；不读取或上传学生未提交草稿作为诊断证据，不调用宿主清空工具来清理练习。遵循已确认规格第 4、5、9–11 节，不改教学清空授权或提交协议。
+
+## Answer
+
+2026-11-16：已审阅并将实现提交 `95b0559`（`feat/tutorial-01`）以非快进合并提交 `9fbacd70fb3292f320c1684bcd091921e9013437` 集成到 `feat/math-board-interactive-tutorial`。未扩展实现范围，保留协调者原有本票与 map 内容，未删除工作树。
+
+交付：数量页「查看教程」显式进入独立状态所有者的安全练习，连续练习添加、松手提交移动、再次添加、指定单选／多选／取消选择和模拟放入。目标检测仅使用本步成功用户操作及精确选择；所有练习放入入口均在访问对话／附件 API 前拦截，文件打开／保存暂时拦截。真实页面保持挂载处理宿主配置与清空，练习对象、说明、记录、撤销、选择、视口和偏好不写回真实草稿。练习可退出、关闭、切页销毁；本票仅内存练习，不提供续学。中英文文案、触屏追加选择路径、生成客户端和扩展接口说明已交付。首开分流及章节续学仍由后续票负责。
+
+合并后实际执行的验证：
+
+- `node --test math-board/src/quantity/*.test.js math-board/src/shell/tutorial.test.js math-board/src/shell/board-shell.test.js`：119/119 通过。含成功闭环、拒绝添加、原地点击、移动预览／取消、错误选择、自动选择不推进、早期放入拦截、宿主配置／清空、迟到保存、退出与重挂载隔离等回归。
+- 上述测试含英文／中文 × mouse／touch 四组指针处理器回放；这是替身浏览器／hooks harness，不是真实浏览器验收。
+- `node math-board/build.mjs`、`node --check math-board/client.js`、`git diff --check`、`git diff --exit-code -- math-board/client.js` 均通过；重新构建未产生客户端差异。
+- `npm --prefix math-board test`：304 项，303 通过，1 项失败。失败是既有 `src/host/tool-schema.test.js:214` 的 shared skill JSON recipe 测试，在第 220 行 `assert.ok(get)` 失败：测试要求共享契约中的 fenced JSON recipe，但当前契约为 prose-only。已核对该测试和契约自基线 `9219009` 均无变化，与 map 记录的基线失败一致；未在本票顺手修改教学契约或测试。
+
+限制／待验收：没有执行真实浏览器、真实鼠标／触屏、小屏布局、遮罩／说明卡叠层、实际刷新与输入框附件对照验收，也未验证当前 GUI 更新；没有启动替代服务器。不把 handler harness 当作真实设备验收，也不宣称全部验收通过。上方复合验收条件保持未勾选，尤其真实浏览器回放须后续发布验证补做；resolved 表示本票实现已集成，不表示这些未执行场景已通过。
