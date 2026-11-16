@@ -15,8 +15,6 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
   // The dock's 返回对话, menu rows, more-actions trigger, status line and the board's
   // colours are shared with the geometry and demo pages.
   const controls = shared.createBoardControls(React, t);
-  const useTutorial = shared.createTutorialController(React, shared);
-  const TutorialOverlay = shared.createTutorialOverlay?.(React);
   const sameIds = (a, b) => a.length === b.length && a.every((id, index) => id === b[index]);
   const sorted = (ids) => [...ids].sort();
   function swatch(shape, colorIndex, size = 30) {
@@ -45,7 +43,18 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     const clearKey = `${key}:clear-v1`;
     const clearMark = React.useRef({ revision: 0, requestId: null });
     const lastEditAt = React.useRef(0);
-    const clearRequest = props.useProjection('eduBoardClear');
+    const clearRequest = props.practice ? null : props.useProjection('eduBoardClear');
+    // A second state owner, never a backup/restore of the live draft. The real
+    // page stays mounted to consume legitimate host updates while practice is open.
+    const [practiceOpen, setPracticeOpen] = React.useState(false);
+    const practiceOpenRef = React.useRef(false);
+    practiceOpenRef.current = practiceOpen;
+    const practiceRef = React.useRef(null);
+    if (props.practice && !practiceRef.current) practiceRef.current = shared.createQuantityPractice();
+    const [practiceState, setPracticeState] = React.useState(() => practiceRef.current?.snapshot());
+    function practiceEvent(event) {
+      if (props.practice) setPracticeState(practiceRef.current.observe(event));
+    }
     const [opened, setOpened] = React.useState(false);
     const [board, setBoard] = React.useState(M.empty);
     const boardRef = React.useRef(board);
@@ -71,7 +80,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     const workspaceRef = React.useRef(null);
     const toolLevel = board.settings.levels.find((level) => level.value === toolValue)
       || board.settings.levels.find((level) => level.value === 1) || board.settings.levels[0];
-    const config = props.useProjection('eduBoardConfig');
+    const config = props.practice ? null : props.useProjection('eduBoardConfig');
     const watermark = React.useRef(-1);
     const pendingWatermark = React.useRef(null);
     const dialog = React.useRef(null), gesture = React.useRef(null), revision = React.useRef(0);
@@ -125,15 +134,21 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     const reference = references.find((item) => item.key === questionKey) || references.at(-1);
     React.useEffect(() => { setQuestionExpanded(false); }, [reference?.key]);
 
-    const tabActive = props.split ? props.tabActive === true : opened;
-    const { tour, hole: tourHole, start: startQuantityTour, finish: finishQuantityTour, signal: signalTour } = useTutorial({
-      mode: 'quantity', steps: shared.quantityTutorialSteps, active: tabActive, ready, rootRef: workspaceRef,
-      onStart() { setMoreOpen(false); setOverlay(null); },
-      onFinish() { setStatus(t('tutorialDone')); },
-      layoutDeps: [overlay, board.objects.length, selection.length],
-    });
+    const pageActive = props.split ? props.tabActive === true : opened;
+    const tabActive = pageActive && !practiceOpen;
+    // Quantity safe basics is explicitly entered; first-run routing belongs to
+    // the later release ticket, not the legacy v1 'seen' flag.
+    const startQuantityTour = () => {
+      practiceOpenRef.current = true;
+      gesture.current = null; setPreview(null); setDragShape(null);
+      setMoreOpen(false); setOverlay(null); setPracticeOpen(true);
+    };
+    React.useEffect(() => {
+      if (!pageActive) setPracticeOpen(false);
+    }, [pageActive]);
 
     React.useEffect(() => {
+      if (props.practice) { setReady(true); return undefined; }
       revision.current++;
       try {
         const envelope = JSON.parse(localStorage.getItem(clearKey) || 'null');
@@ -167,7 +182,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     }, [key]);
 
     React.useEffect(() => {
-      if (!ready || storageBlocked) return;
+      if (props.practice || !ready || storageBlocked) return;
       let live = true;
       withDraftLock(() => {
       // Selection and file pickers change the interaction revision, not the draft.
@@ -282,7 +297,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     }, [opened]);
     React.useEffect(() => () => { if (dialog.current?.open) dialog.current.close(); }, []);
     // Show the remembered file name right away; a missing memory is not an error.
-    React.useEffect(() => { picker.rememberName().catch(() => {}); }, []);
+    React.useEffect(() => { if (!props.practice) picker.rememberName().catch(() => {}); }, []);
     React.useEffect(() => {
       if (!status || [t('autoClearError'), t('autoClearSkipped'), t('autoClearDone')].includes(status)) return;
       const timer = setTimeout(() => setStatus(''), 5200);
@@ -305,12 +320,6 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       if (node) { node.focus(); if (node.select) node.select(); }
     }, [overlay]);
     function requestOverlay(next) {
-      // While note-save spotlights the note panel, refuse replace/clear so the tour
-      // does not fall back to a full-screen mask with only Skip.
-      if (overlay?.kind === 'note' && shared.tourHoldsNotePanel?.(tour)
-          && (!next || next.kind !== 'note')) {
-        return;
-      }
       setOverlay(next);
     }
     function dismissOverlay() {
@@ -322,12 +331,12 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       const onKey = (event) => {
         if (event.target?.closest?.('.eb-teacher-reference')) return;
         if (event.key === 'Delete' || event.key === 'Backspace') {
-          // An overlay or the tour owns the keyboard. A text field or the question
+          // An overlay owns the keyboard. A text field or the question
           // menu keeps the key. A focused shape outside the selection is removed on
           // its own, matching Enter and the arrow keys. Any other focus deletes the
           // current selection, so the key works after a click the way it does on
           // the geometry board.
-          if (overlay || tour) return;
+          if (overlay) return;
           const tag = event.target?.tagName;
           if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || event.target?.isContentEditable) return;
           const focusedId = event.target?.closest?.('[data-object]')?.getAttribute('data-object');
@@ -340,11 +349,10 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
           return;
         }
         if (event.key !== 'Escape') return;
-        const noteHeld = overlay?.kind === 'note' && shared.tourHoldsNotePanel?.(tour);
-        if (overlay && !noteHeld) { event.preventDefault(); dismissOverlay(); }
+        if (overlay) { event.preventDefault(); dismissOverlay(); }
         if (moreOpen) { event.preventDefault(); setMoreOpen(false); }
         if (append) { event.preventDefault(); setAppend(false); }
-        if (noteHeld || overlay || moreOpen || append) return;
+        if (overlay || moreOpen || append) return;
         if (gesture.current || dragShape) {
           event.preventDefault();
           gesture.current = null;
@@ -354,7 +362,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       };
       document.addEventListener('keydown', onKey);
       return () => document.removeEventListener('keydown', onKey);
-    }, [tabActive, overlay, moreOpen, append, tour, dragShape, selection]);
+    }, [tabActive, overlay, moreOpen, append, dragShape, selection]);
 
     function flushEditor() {
       const active = dialog.current?.ownerDocument.activeElement;
@@ -413,6 +421,10 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       if (recorded) setStatus('');
     }
     function canEdit() {
+      if (props.practice) return ready;
+      // Captured real-page callbacks can outlive the menu that entered practice.
+      // Suspend student edits, not the host effects or queued real-draft saves.
+      if (practiceOpenRef.current) return false;
       if (!ready || (clearRequest?.revision > clearMark.current.revision)) {
         setStatus(t('autoClearError')); return false;
       }
@@ -431,7 +443,10 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       catch (error) { setStatus(`${t('failed')}: ${error.message}`); return null; }
     }
     function batch(actions) { return action({ type: 'batch', actions }); }
-    function selectIds(ids) { setSelection(ids); }
+    function selectIds(ids, user = false) {
+      setSelection(ids);
+      if (user) practiceEvent({ type: 'select', selection: ids });
+    }
     function undo() {
       if (!canEdit()) return;
       const prev = history.past.at(-1); if (!prev) return;
@@ -468,8 +483,9 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     }
     function add(shape, point) {
       const extra = point ? { x: point.x, y: point.y } : {};
+      const before = boardRef.current;
       createAndReveal({ type: 'add', shape, value: creationLevel(shape).value, ...extra });
-      signalTour('quantity-add');
+      practiceEvent({ type: 'add', before, after: boardRef.current });
     }
     function updateSelected(patch) { batch(selected.map((o) => ({ type: 'update', id: o.id, patch }))); }
     function groupSelection() {
@@ -513,10 +529,10 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
         let ids = selection;
         if (e.shiftKey || append) {
           ids = selection.includes(objectId) ? selection.filter((id) => id !== objectId) : [...selection, objectId];
-          selectIds(ids); return;
+          selectIds(ids, true); return;
         }
         if (!ids.includes(objectId)) ids = whole;
-        selectIds(ids);
+        selectIds(ids, true);
         gesture.current = { kind: 'move', ids, start: p, pointer: e.pointerId, base: boardRef.current, moved: false };
       } else {
         gesture.current = { kind: 'lasso', start: p, current: p, pointer: e.pointerId, base: boardRef.current, initial: e.shiftKey || append ? selection : [], moved: false };
@@ -540,18 +556,21 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       const g = gesture.current; if (!g || g.pointer !== e.pointerId) return;
       gesture.current = null; setPreview(null);
       if (cancelled) return;
-      if (g.kind === 'move' && g.moved) action({ type: 'moveMany', ids: g.ids, dx: g.dx || 0, dy: g.dy || 0 });
+      if (g.kind === 'move' && g.moved) {
+        const before = boardRef.current;
+        const after = action({ type: 'moveMany', ids: g.ids, dx: g.dx || 0, dy: g.dy || 0 });
+        if (after) practiceEvent({ type: 'move', before, after, submitted: true });
+      }
       if (g.kind === 'lasso') {
-        if (!g.moved) { selectIds([]); return; }
+        if (!g.moved) { selectIds([], true); return; }
         const p = g.current, x1 = Math.min(p.x, g.start.x), x2 = Math.max(p.x, g.start.x), y1 = Math.min(p.y, g.start.y), y2 = Math.max(p.y, g.start.y);
         const hit = g.base.objects.filter((o) => o.x + radius >= x1 && o.x - radius <= x2 && o.y + radius >= y1 && o.y - radius <= y2).map((o) => o.id);
-        selectIds([...new Set([...g.initial, ...hit])]);
+        selectIds([...new Set([...g.initial, ...hit])], true);
       }
     }
     function objectKey(e, o) {
-      // An open overlay or active tour claims the keyboard; Delete must not edit under them.
-      if (picker.overlayBlocksKey(overlay, e)
-          || (tour && (e.key === 'Delete' || e.key === 'Backspace'))) {
+      // An open editor claims the keyboard; Delete must not edit under it.
+      if (picker.overlayBlocksKey(overlay, e)) {
         e.preventDefault();
         return;
       }
@@ -560,7 +579,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
         e.preventDefault();
         selectIds(e.shiftKey || append
           ? (selection.includes(o.id) ? selection.filter((id) => id !== o.id) : [...selection, o.id])
-          : expandGroup([o.id]));
+          : expandGroup([o.id]), true);
       } else if (arrows[e.key]) {
         e.preventDefault(); const [dx, dy] = arrows[e.key];
         action({ type: 'moveMany', ids: selection.includes(o.id) ? selection : [o.id], dx, dy });
@@ -571,6 +590,8 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       }
     }
     function close() {
+      if (props.practice) { props.onPracticeExit(); props.close?.(); return; }
+      setPracticeOpen(false);
       flushEditor(); gesture.current = null; setPreview(null); setOverlay(null);
       setMoreOpen(false); setAppend(false);
       // Persistent task notices are acknowledged once the student has seen them.
@@ -583,6 +604,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     // A press outside the shared dialog uses this same close.
     if (props.bindClose) props.bindClose(close);
     function recoverDraft(next, nextTrace, message) {
+      if (props.practice) { resetCanvas(next, nextTrace); setStatus(t(message)); return; }
       const version = revision.current;
       withDraftLock(() => {
         if (version !== revision.current) { setStatus(t('storageError')); return; }
@@ -602,16 +624,15 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       recoverDraft({ ...M.empty(), settings: boardRef.current.settings }, T.empty(), 'clearDone');
     }
     function insert() {
-      if (!canEdit()) return;
-      // Whole-tour practice: only the insert step advances; earlier steps never attach.
-      const insertMode = shared.tourInsertMode?.(tour);
-      if (insertMode === 'practice') {
-        signalTour('quantity-insert');
-        setStatus(t('tutorialInsertPractice'));
+      // This guard precedes every host/composer access, including keyboard calls
+      // and direct activation at an earlier goal or after completion.
+      if (props.practice) {
+        const step = practiceRef.current.snapshot().step;
+        practiceEvent({ type: 'insert', after: boardRef.current });
+        setStatus(t(step === 'insert' || step === 'complete' ? 'tutorialInsertPractice' : 'practiceInsertBlocked'));
         return;
       }
-      // A press under the mask is reached by keyboard: say why nothing was attached.
-      if (insertMode === 'block') { setStatus(t('tutorialInsertLater')); return; }
+      if (!canEdit()) return;
       flushEditor();
       const conversation = ctx.get('conversation');
       let drafts = [];
@@ -642,12 +663,14 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     }
 
     async function saveFile() {
+      if (props.practice) { setStatus(t('practiceFilesUnavailable')); return; }
       flushEditor();
       setStatus((await picker.saveFile()).message || '');
     }
     // The tab's own import: it validates before publishing and decides what a blocked
     // draft may do. The shared picker only owns the picker, the size cap and the memory.
     async function loadOpenedFile(file, rev, epoch = draftEpoch.current) {
+      if (props.practice) return;
       if (rev !== revision.current || epoch !== draftEpoch.current) return;
       gesture.current = null; setPreview(null);
       const next = M.validate(JSON.parse(await file.text()));
@@ -657,6 +680,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       commit(next, { type: 'import' }); selectIds([]); setAppend(false); setStatus(t('imported'));
     }
     async function openFile() {
+      if (props.practice) { setStatus(t('practiceFilesUnavailable')); return; }
       flushEditor();
       // Each open owns a revision; an answer that arrives after the student edited the
       // board is dropped instead of replacing the newer draft. The fallback input also
@@ -672,6 +696,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     const inputEpoch = React.useRef(null);
     const inputRevision = React.useRef(null);
     async function importInput(event) {
+      if (props.practice) return;
       // Only the handoff can show a "choose a plain file" hint; the opened file reports
       // its own success or failure through the tab's import.
       const epoch = inputEpoch.current ?? draftEpoch.current;
@@ -696,7 +721,6 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     function openNote() {
       const target = noteTargetFor(selected, completeGroup);
       requestOverlay({ kind: 'note', target, value: noteText(target), label: target ? target.label : t('noteGeneral') });
-      signalTour('quantity-note-open');
     }
     function openName() {
       if (completeGroup) requestOverlay({ kind: 'name', group: completeGroup, value: completeGroup.alias });
@@ -715,7 +739,6 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       else if (target.kind === 'selection') action({ type: 'annotate', target: 'selection', ids: target.ids, value });
       else action({ type: 'annotate', target: target.kind, id: target.id, value });
       setOverlay(null);
-      signalTour('quantity-note-save');
     }
     function togglePattern(shape) {
       const current = boardRef.current.settings;
@@ -748,10 +771,14 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       const picked = selection.includes(o.id), moving = preview?.kind === 'move' && preview.ids.includes(o.id);
       const dx = moving ? preview.dx : 0, dy = moving ? preview.dy : 0, r = radius;
       const fill = paletteColor(o.color);
-      const label = `${o.alias || t(o.shape)} · ${t('value')} ${o.value} · ${t(o.removed ? 'removed' : 'active')}${o.note ? ` · ${t('hasNote')}` : ''}`;
+      const practiceNumber = props.practice ? practiceState.targets.indexOf(o.id) + 1 : 0;
+      const label = `${practiceNumber ? `${t('practiceObject', { number: practiceNumber })} · ` : ''}${o.alias || t(o.shape)} · ${t('value')} ${o.value} · ${t(o.removed ? 'removed' : 'active')}${o.note ? ` · ${t('hasNote')}` : ''}`;
       const common = { fill, stroke: '#1E293B', strokeWidth: 1.2 };
       return h('g', { key: o.id, 'data-object': o.id, transform: `translate(${o.x + dx} ${o.y + dy})`, role: 'button', tabIndex: 0, 'aria-label': label, 'aria-pressed': picked, onKeyDown: (e) => objectKey(e, o) },
         h('title', null, label),
+        props.practice && practiceState.targets.includes(o.id) && h('text', {
+          x: -r, y: -r - 8, fill: '#2563EB', fontSize: 14, fontWeight: 700, pointerEvents: 'none',
+        }, String(practiceState.targets.indexOf(o.id) + 1)),
         h('rect', { className: 'eb-focus-ring', x: -r - 6, y: -r - 6, width: r * 2 + 12, height: r * 2 + 12, rx: 8, fill: picked ? '#2563EB12' : 'transparent', stroke: picked ? controls.selection : 'transparent', strokeWidth: 2.5 }),
         h('g', { opacity: o.removed ? 0.35 : 1 },
           art.node(o.shape, r, common),
@@ -867,7 +894,6 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
         h('span', { className: 'eb-color-dot', style: { background: paletteColor(level.color) } }),
         h('span', { className: 'eb-color-value' }, String(level.value))), () => {
         setToolValue(level.value);
-        signalTour('quantity-color');
       }, {
         key: level.value, 'aria-pressed': level.value === toolLevel.value, className: 'eb-color-button',
         title: `${t('creationColor')} · ${level.value}`, 'aria-label': `${t('creationColor')} · ${level.value}`,
@@ -879,7 +905,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       picker.fileNameState && h('p', { className: 'eb-menu-note' }, picker.fileNameState),
       h('div', { className: 'eb-menu-line' }),
       h('label', { className: 'eb-menu-check' }, h('input', { type: 'checkbox', checked: attachTrace, onChange: (event) => setAttachTrace(event.target.checked) }), h('span', null, t('traceAttach'))),
-      TutorialOverlay && h(React.Fragment, null,
+      !props.practice && shared.createQuantityPractice && h(React.Fragment, null,
         h('div', { className: 'eb-menu-line' }),
         controls.menuItem(null, t('tutorialReplay'), () => startQuantityTour())));
     // One dock for both tabs, in this order. This tab keeps creation colours and the
@@ -905,9 +931,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       controls.moreMenu(moreOpen, () => setMoreOpen(!moreOpen), icon('more', 19)),
       button(h(React.Fragment, null, icon('insert', 17), h('span', null, t('insert'))), insert, {
         className: 'eb-primary', title: t('insert'), 'data-tour-id': 'quantity-insert',
-        disabled: (shared.tourInsertMode?.(tour) === 'block'
-          || (!tour && !board.objects.length && !board.note && !(attachTrace && trace.totalChanges)))
-          || phase !== 'plain' }));
+        disabled: (!board.objects.length && !board.note && !(attachTrace && trace.totalChanges)) || phase !== 'plain' }));
     const overlayNode = overlay && h('div', { className: 'eb-overlay', onPointerDown: (event) => { if (event.target === event.currentTarget) dismissOverlay(); } },
       h('div', {
         className: `eb-overlay-card eb-overlay-${overlay.kind}`, role: 'dialog', 'aria-modal': 'true',
@@ -946,10 +970,16 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
             button(t('cancel'), dismissOverlay),
             button(t('confirmClear'), confirmClearBoard, { className: 'eb-primary eb-danger-solid' })))));
     const statusNode = controls.status(status);
-    const tourNode = tabActive && tour && TutorialOverlay && h(TutorialOverlay, {
-      step: tour.steps[tour.index], stepIndex: tour.index, stepCount: tour.steps.length,
-      t, hole: tourHole, onSkip: finishQuantityTour,
-    });
+    const practiceCoach = props.practice && h('section', {
+      className: 'eb-practice-coach', 'aria-label': t('practiceTitle'), 'data-practice-step': practiceState.step,
+    },
+      h('div', { role: 'status', 'aria-live': 'polite' },
+        h('strong', null, t(practiceState.completed ? 'practiceComplete' : 'practiceTitle')),
+        h('p', null, t(`practiceGoal_${practiceState.step}`)),
+        practiceState.targets.some((id) => !board.objects.some((o) => o.id === id))
+          && h('p', { role: 'alert' }, t('practiceTargetMissing')),
+        !practiceState.completed && h('small', null, t('tutorialProgress', { step: practiceState.index + 1, total: practiceState.total }))),
+      button(t('practiceExit'), () => props.onPracticeExit(), { className: 'eb-practice-exit' }));
     const editor = h(React.Fragment, null,
       h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: picker.fileInputRef, onChange: importInput }),
       h('a', { hidden: true, ref: picker.downloadAnchorRef, download: t('attachmentName') }));
@@ -960,15 +990,15 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       // The shell owns the launcher, the dialog and the top bar, including the brand mark,
       // so this page only contributes its workspace.
       return h(React.Fragment, null,
-        h('div', { className: 'eb-workspace', ref: workspaceRef },
-          palette,
-          stage,
-          dock,
-          moreMenuNode,
-          statusNode,
-          overlayNode,
-          tourNode),
-        editor);
+        h('div', { className: 'eb-quantity-owner', hidden: practiceOpen },
+          practiceCoach,
+          h('div', { className: 'eb-workspace', ref: workspaceRef },
+            palette, stage, dock, moreMenuNode, statusNode, overlayNode),
+          !props.practice && editor),
+        practiceOpen && h(PracticeBoard, {
+          ...props, practice: true, bindClose: props.bindClose,
+          onPracticeExit: () => setPracticeOpen(false),
+        }));
     }
     return h(React.Fragment, null,
       h('style', null, css),
@@ -983,7 +1013,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
         ref: dialog, className: 'eb-dialog', 'aria-label': t('title'),
         onCancel: (event) => {
           event.preventDefault();
-          if (tour) finishQuantityTour();
+          if (practiceOpen) setPracticeOpen(false);
           else if (overlay) dismissOverlay();
           else if (moreOpen) { setMoreOpen(false); }
           else if (append) setAppend(false);
@@ -993,19 +1023,19 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       },
       h('div', { className: 'eb-workbench' },
         topbar,
-        h('div', { className: 'eb-workspace', ref: workspaceRef },
-          palette,
-          stage,
-          dock,
-          moreMenuNode,
-          statusNode,
-          overlayNode,
-          tourNode)),
+        h('div', { className: 'eb-quantity-owner', hidden: practiceOpen },
+          h('div', { className: 'eb-workspace', ref: workspaceRef },
+            palette, stage, dock, moreMenuNode, statusNode, overlayNode)),
+        practiceOpen && h(PracticeBoard, { ...props, split: true, tabActive: opened,
+          practice: true, close: () => setOpened(false), onPracticeExit: () => setPracticeOpen(false) })),
         editor));
   };
   // The shell draws the shared launcher and top bar before this page mounts, so it
   // needs the mark without a live board. The default levels give the same colours the
   // page paints; a student who changed the levels still sees the page's own header.
+  // Distinct component type = independent hooks, refs, history and picker memory.
+  // Its lifetime ends at exit; asynchronous callbacks cannot target the real owner.
+  function PracticeBoard(props) { return Board(props); }
   function BoardMark(size = 18) { return brandMark(M.defaultSettings().levels, size); }
   Board.Mark = BoardMark;
   return Board;
