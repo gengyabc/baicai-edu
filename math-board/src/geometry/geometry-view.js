@@ -926,6 +926,13 @@ export function createGeometryPage(React, G, ctx, t, shared) {
         setOverlay(null);
         return;
       }
+      // A caption is 1–20 characters. A longer or empty save must not replace the
+      // short note: the saved goal would then fail to load.
+      if (props.practice && overlay?.target && practiceRef.current.snapshot().goal?.step === 'edit-caption'
+        && !shared.visibleCaption?.(value)) {
+        setOverlay(null);
+        return;
+      }
       const command = target
         ? { type: 'annotate', target: target.kind, id: target.id, value }
         : { type: 'note', value };

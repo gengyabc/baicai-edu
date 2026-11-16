@@ -3351,6 +3351,13 @@ window.__ModuleLoader__.load({
         setOverlay(null);
         return;
       }
+      // A caption is 1–20 characters. A longer or empty save must not replace the
+      // short note: the saved goal would then fail to load.
+      if (props.practice && overlay?.target && practiceRef.current.snapshot().goal?.step === 'edit-caption'
+        && !shared.visibleCaption?.(value)) {
+        setOverlay(null);
+        return;
+      }
       const command = target
         ? { type: 'annotate', target: target.kind, id: target.id, value }
         : { type: 'note', value };
@@ -4360,9 +4367,12 @@ window.__ModuleLoader__.load({
         const value = event.after?.elements?.find((element) => element.id === elementId)?.note || '';
         const previous = event.before?.elements?.find((element) => element.id === elementId)?.note || '';
         const targetId = event.id || action.id;
+        const length = trimmedLength(value);
+        // A caption is 1–20 characters. A longer note must not be stored: createGoal
+        // would then reject the snapshot, and reset would drop the practice record.
         passed = captionOpen && event.via === 'caption' && event.type === 'annotate'
           && (event.target === 'element' || action.target === 'element') && targetId === elementId
-          && changed && value.trim().length > 0 && value !== previous;
+          && changed && length >= 1 && length <= 20 && value !== previous;
         if (passed) elementNote = value;
       } else if (step === 'edit-deselect') {
         passed = event.type === 'select' && Array.isArray(event.selection) && event.selection.length === 0;

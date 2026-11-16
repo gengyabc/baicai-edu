@@ -1706,6 +1706,46 @@ test('geometry edit skip, reset, and chapter retry stay on the practice board', 
   } finally { h.unmount(); }
 });
 
+test('a caption longer than 20 characters stays on the step and the saved goal still loads', () => {
+  const h = mount();
+  try {
+    h.tab('geometry');
+    h.startTour();
+    enterEdit(h, t);
+    for (let i = 0; i < 6; i += 1) h.click(t('practiceSkipStep'));
+    assert.equal(practiceStep(h), 'edit-caption');
+    const noteOf = () => {
+      const state = editState(h);
+      return state.frame.board.elements.find((element) => element.id === state.goal.elementId).note;
+    };
+    const kept = noteOf();
+    assert.equal([...kept.trim()].length >= 1 && [...kept.trim()].length <= 20, true);
+    const caption = captionAt(h);
+    h.clickAt(caption.x, caption.y);
+    setControl(h, 'textarea', '');
+    h.click(t('save'));
+    assert.equal(practiceStep(h), 'edit-caption', 'an empty caption save does not pass');
+    assert.equal(noteOf(), kept);
+    h.clickAt(caption.x, caption.y);
+    setControl(h, 'textarea', '字'.repeat(21));
+    h.click(t('save'));
+    assert.equal(practiceStep(h), 'edit-caption');
+    assert.equal(noteOf(), kept, 'a caption longer than 20 characters is not written');
+    h.click(t('practiceReset'));
+    assert.equal(practiceStep(h), 'edit-caption');
+    const reload = createGeometryEditChapter({
+      G: createGeometryModel(),
+      emptyFrame: createGeometryPracticeFrames(createGeometryModel()).empty,
+    });
+    assert.doesNotThrow(() => reload.createGoal(editState(h).goal).snapshot());
+    const again = captionAt(h);
+    h.clickAt(again.x, again.y);
+    setControl(h, 'textarea', '短');
+    h.click(t('save'));
+    assert.equal(practiceStep(h), 'edit-deselect');
+  } finally { h.unmount(); }
+});
+
 test('the geometry note card can still reach exit', () => {
   const h = mount();
   try {

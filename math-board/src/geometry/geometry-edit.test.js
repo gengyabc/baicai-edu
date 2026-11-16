@@ -169,6 +169,43 @@ test('opening a caption without saving does not pass, and a later save must chan
   assert.equal(changed.elements.find((element) => element.id === ids.elementId).note, '改过');
 });
 
+test('a caption longer than 20 characters does not pass, and reset can still load the saved goal', () => {
+  const storage = new Map();
+  const adapter = { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) };
+  const edit = chapter();
+  const progress = createPracticeProgress({ mode: 'geometry', chapters: [edit], storage: adapter, validateFrame: frames.validate });
+  progress.enter('geometry-edit');
+  for (let i = 0; i < 6; i += 1) progress.skip();
+  const saved = progress.snapshot();
+  assert.equal(saved.goal.step, 'edit-caption');
+  const id = saved.goal.elementId;
+  const before = saved.frame.board;
+  const kept = before.elements.find((element) => element.id === id).note;
+  assert.equal([...kept.trim()].length >= 1 && [...kept.trim()].length <= 20, true);
+  const longValue = '字'.repeat(21);
+  const long = G.reduce(before, { type: 'annotate', target: 'element', id, value: longValue });
+  progress.observe({ type: 'open-caption', id }, saved.frame);
+  progress.observe({
+    type: 'annotate', via: 'caption', target: 'element', id, before, after: long,
+    action: { type: 'annotate', target: 'element', id, value: longValue },
+  }, { ...saved.frame, board: long });
+  const stuck = progress.snapshot();
+  assert.equal(stuck.goal.step, 'edit-caption');
+  assert.equal(stuck.goal.elementNote, kept);
+  assert.doesNotThrow(() => progress.reset());
+  assert.equal(progress.snapshot().goal.step, 'edit-caption');
+  assert.doesNotThrow(() => edit.createGoal(stuck.goal).snapshot());
+  assert.doesNotThrow(() => edit.createGoal(progress.snapshot().goal).snapshot());
+  const restored = progress.snapshot().frame;
+  const short = G.reduce(restored.board, { type: 'annotate', target: 'element', id, value: '短' });
+  progress.observe({ type: 'open-caption', id }, restored);
+  progress.observe({
+    type: 'annotate', via: 'caption', target: 'element', id, before: restored.board, after: short,
+    action: { type: 'annotate', target: 'element', id, value: '短' },
+  }, { ...restored, board: short });
+  assert.equal(progress.snapshot().goal.step, 'edit-deselect');
+});
+
 test('clearing the selection advances, and a board note is not stolen by a selected element', () => {
   const clearing = opened(7, { textId: 'e-9', elementNote: 'Side' });
   clearing.goal.observe({ type: 'select', selection: [clearing.ids.pointId], after: clearing.board });
