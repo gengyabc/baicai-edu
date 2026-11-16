@@ -397,5 +397,15 @@
   "geometryPracticeGoal_edit-caption": "直接点画布上的短标签（不必悬停），把这条图形说明改成别的内容并保存。只打开卡片，或改了别的图形，都不通过。",
   "geometryPracticeGoal_edit-deselect": "点画布空白处后松手，取消全部选择。",
   "geometryPracticeGoal_edit-board-note": "在没有选中任何对象时，点「我想说」，保存一条非空的整板说明。空保存不通过。写到点或图形上也不通过，包括新出现后被选中的对象。",
-  "geometryPracticeGoal_edit-complete": "编辑和说明练习已完成。文字和说明只是你自己的话，不表示几何结论或作答正确。退出后继续真实作答。"
+  "geometryPracticeGoal_edit-complete": "编辑和说明练习已完成。文字和说明只是你自己的话，不表示几何结论或作答正确。退出后继续真实作答。",
+  "geometryPracticeAdjust": "几何调整与恢复练习 — 与真实作答隔离",
+  "geometryPracticeGoal_adjust-grid": "点「网格：关」打开网格，再在网格开着时放一个新点。只打开网格、没有新点，不算完成。不检查点落在哪里，网格也不是几何对错的证据。",
+  "geometryPracticeGoal_adjust-snap": "点「吸附：开」关闭吸附，再在吸附关着时放一个新点。只关闭吸附、没有新点，不算完成。点落在哪里不表示几何关系。",
+  "geometryPracticeGoal_adjust-undo": "点「撤销」，撤掉刚才那个新点。画板回到放这个点之前，并且可以重做。撤销不可用时点击不算。练习预先放好的点不是这一步的操作。",
+  "geometryPracticeGoal_adjust-redo": "点「重做」，把同一个点放回来。重做不可用时点击不算。",
+  "geometryPracticeGoal_adjust-zoom": "点「放大画布」，让缩放数字发生变化。点当前档位，或点了但缩放数字没变，都不算。",
+  "geometryPracticeGoal_adjust-scroll": "在已经放大或未适应画面时滚动画布。滚动后位置没变，不算。",
+  "geometryPracticeGoal_adjust-fit": "点「适应宽度」，让画面重新适应。画面已经适应时再点，不算。",
+  "geometryPracticeGoal_adjust-clear": "练习画板上还有内容时，点「清空几何画布」，再点「确认清空」。练习几何画板和它的撤销历史都会空掉。只打开确认、没有确认，不算。之后撤销不能回到清空前，数量画板也不受影响。",
+  "geometryPracticeGoal_adjust-complete": "调整与恢复练习已完成。网格和吸附不是几何对错的证据。清空后的画板是新阶段，原来的撤销历史不会回来。没有附文件或发送。退出后继续真实作答。"
 }

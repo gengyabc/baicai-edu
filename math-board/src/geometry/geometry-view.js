@@ -147,6 +147,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     const constructionPoints = React.useRef([]);
     const svgRef = React.useRef(null);
     const canvasRef = React.useRef(null);
+    const scrollRef = React.useRef({ left: 0, top: 0 });
     const noteRef = React.useRef(null), nameRef = React.useRef(null);
     // An open that arrives after this tab's draft changed must not overwrite it.
     const revision = React.useRef(0);
@@ -254,6 +255,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       setAuxiliary(frame.auxiliary); setGrid(frame.grid); setSnap(frame.snap); setZoom(frame.zoom); setFit(frame.fit);
       gesture.current=null; setPreview(null); setMarquee(null); setHover(null); setHit(null);
       setOverlay(null); setRename(null); setWriting(null);
+      scrollRef.current = { left: frame.scroll.left, top: frame.scroll.top };
       if (canvasRef.current) {canvasRef.current.scrollLeft=frame.scroll.left;canvasRef.current.scrollTop=frame.scroll.top;}
     }
     function navigatePractice(command,value) {
@@ -348,14 +350,18 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     function undo() {
       if (!editable()) return;
       const prev = history.past.at(-1); if (!prev) return;
-      setHistory({ past: history.past.slice(0, -1), future: [boardRef.current, ...history.future].slice(0, HISTORY_LIMIT) });
+      const before = boardRef.current;
+      setHistory({ past: history.past.slice(0, -1), future: [before, ...history.future].slice(0, HISTORY_LIMIT) });
       forgetConstruction(); publish(prev); setSelection([]); setPending([]);
+      practiceEvent({ type: 'undo', before, after: prev });
     }
     function redo() {
       if (!editable()) return;
       const next = history.future[0]; if (!next) return;
-      setHistory({ past: [...history.past, boardRef.current].slice(-HISTORY_LIMIT), future: history.future.slice(1) });
+      const before = boardRef.current;
+      setHistory({ past: [...history.past, before].slice(-HISTORY_LIMIT), future: history.future.slice(1) });
       forgetConstruction(); publish(next); setSelection([]); setPending([]);
+      practiceEvent({ type: 'redo', before, after: next });
     }
     const pointById = (id) => board.points.find((p) => p.id === id);
     const selectedPoints = selection.map(pointById).filter(Boolean);
@@ -511,7 +517,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       const next = action({ type: 'addPoint', x: p.x, y: p.y });
       // Only the point tool counts for this goal; other tools also
       // drop free points as construction inputs and must not advance that step.
-      if (next && tool === 'point') practiceEvent({type:'draw',tool,before,after:next});
+      if (next && tool === 'point') practiceEvent({ type: 'draw', tool, before, after: next, grid, snap });
       const created = next ? next.points.at(-1) : null;
       if (created && tool !== 'point') constructionPoints.current.push(created.id);
       return created;
@@ -1061,10 +1067,14 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       // Clearing this mode resets the geometry canvas and its undo history only.
       forgetConstruction();
       if (!editable()) return;
-      publish(G.empty());
+      const before = boardRef.current;
+      const after = G.empty();
+      const nonempty = before.points.length > 0 || before.elements.length > 0 || Boolean(String(before.note || '').trim());
+      publish(after);
       setHistory({ past: [], future: [] });
       setSelection([]); setPending([]); setOverlay(null);
       setStatus(t('geometryClearDone'));
+      if (nonempty) practiceEvent({ type: 'clear', before, after });
     }
 
     // The drag preview is whatever the model computed: the dragged point, the rim points a
@@ -1210,7 +1220,16 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     // inside the frame. `non-scaling-stroke` is deliberately not used: a magnified figure
     // must look magnified, exactly as the quantity board's zoom scales its artwork.
     const canvas = h('div', { ref: canvasRef, className: 'eb-canvas-scroll', 'data-tour-id': 'geometry-canvas',
-      onScroll: props.practice ? () => { const next=practiceRef.current.saveFrame(practiceFrame()); if(next.persistence!==progress.persistence) setProgress(next); } : undefined },
+      onScroll: props.practice ? () => {
+        const after = { left: canvasRef.current?.scrollLeft || 0, top: canvasRef.current?.scrollTop || 0 };
+        const before = scrollRef.current;
+        if (before.left !== after.left || before.top !== after.top) {
+          scrollRef.current = after;
+          practiceEvent({ type: 'scroll', before: { left: before.left, top: before.top }, after });
+        }
+        const next = practiceRef.current.saveFrame(practiceFrame());
+        if (next.persistence !== progress.persistence) setProgress(next);
+      } : undefined },
       h('svg', {
         ref: svgRef, className: `eb-artboard eb-geometry${grid ? ' eb-grid' : ''}`,
         style: { width: frame.box.width, height: frame.box.height },
@@ -1340,12 +1359,30 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       dockButton('undo', undo, { disabled: !history.past.length }),
       dockButton('redo', redo, { disabled: !history.future.length, className: 'eb-icon-button eb-redo', title: t('redo') }),
       controls.divider(),
-      modeToggle(grid, 'gridOn', 'gridOff', () => { if (editable()) setGrid(!grid); }),
-      modeToggle(snap, 'snapOn', 'snapOff', () => { if (editable()) setSnap(!snap); }),
+      modeToggle(grid, 'gridOn', 'gridOff', () => {
+        if (!editable()) return;
+        const before = grid;
+        const after = !before;
+        setGrid(after);
+        if (before !== after) practiceEvent({ type: 'grid', before, after });
+      }),
+      modeToggle(snap, 'snapOn', 'snapOff', () => {
+        if (!editable()) return;
+        const before = snap;
+        const after = !before;
+        setSnap(after);
+        if (before !== after) practiceEvent({ type: 'snap', before, after });
+      }),
       controls.divider(),
       // A − or ＋ press is a request to enlarge or shrink what is on screen, so it leaves
       // the fit; 适应宽度 returns to it. Every page docks the same pair, from board-kit.
-      ...controls.zoomPair({ zoom, fit, setFit: (nextFit, nextZoom) => { if (!editable()) return; setFit(nextFit); if (nextZoom !== undefined) setZoom(nextZoom); } }, { min: 1, max: 4 }),
+      ...controls.zoomPair({ zoom, fit, setFit: (nextFit, nextZoom) => {
+        if (!editable()) return;
+        if (nextZoom !== undefined && nextZoom !== zoom) practiceEvent({ type: 'zoom', before: zoom, after: nextZoom });
+        if (nextFit !== fit) practiceEvent({ type: 'fit', before: fit, after: nextFit });
+        setFit(nextFit);
+        if (nextZoom !== undefined) setZoom(nextZoom);
+      } }, { min: 1, max: 4 }),
       h('span', { className: 'eb-grow' }),
       controls.button(h(React.Fragment, null, icon('note', 19), noteHasText ? h('span', { className: 'eb-note-dot' }) : null), () => {
         requestOverlay({ kind: 'note' });

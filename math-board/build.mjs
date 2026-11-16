@@ -16,6 +16,7 @@ import { createGeometryPage } from './src/geometry/geometry-view.js';
 import { createGeometryPractice, createGeometryBasicsChapter, createGeometryPracticeFrames } from './src/geometry/geometry-basics.js';
 import { createGeometryConstructChapter } from './src/geometry/geometry-construct.js';
 import { createGeometryEditChapter } from './src/geometry/geometry-edit.js';
+import { createGeometryAdjustChapter } from './src/geometry/geometry-adjust.js';
 import { createGeometryModel } from './src/geometry/model.js';
 import { createTeacherReferenceView } from './src/reference/reference-view.js';
 import { createDemoModel } from './src/teacher-demo/demo-model.js';
@@ -65,6 +66,7 @@ window.__ModuleLoader__.load({
     const createGeometryPracticeFrames = ${createGeometryPracticeFrames.toString()};
     const createGeometryConstructChapter = ${createGeometryConstructChapter.toString()};
     const createGeometryEditChapter = ${createGeometryEditChapter.toString()};
+    const createGeometryAdjustChapter = ${createGeometryAdjustChapter.toString()};
     const createGeoModel = ${createGeometryModel.toString()};
     const createDemoModel = ${createDemoModel.toString()};
     const readDemoView = ${readDemoView.toString()};
@@ -124,7 +126,7 @@ window.__ModuleLoader__.load({
           // Append independently inlined chapter factories here.
           quantityPracticeChapters: [createQuantityAdjustChapter, createQuantityOrganizeChapter, createQuantityNotesChapter],
           createGeometryPractice, createGeometryBasicsChapter, createGeometryPracticeFrames,
-          geometryPracticeChapters: [createGeometryConstructChapter, createGeometryEditChapter],
+          geometryPracticeChapters: [createGeometryConstructChapter, createGeometryEditChapter, createGeometryAdjustChapter],
           createTutorialController, createTutorialOverlay, isTutorialSeen, markTutorialSeen, advanceTutorial,
           measureTourTarget, tourHoldsNotePanel, tourInsertMode,
           quantityTutorialSteps, geometryTutorialSteps,

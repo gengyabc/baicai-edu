@@ -8,6 +8,7 @@ import { createGeometryPage } from './geometry-view.js';
 import { createGeometryPractice, createGeometryBasicsChapter, createGeometryPracticeFrames } from './geometry-basics.js';
 import { createGeometryConstructChapter } from './geometry-construct.js';
 import { createGeometryEditChapter } from './geometry-edit.js';
+import { createGeometryAdjustChapter } from './geometry-adjust.js';
 import { createPracticeProgress, createPracticeNavigation } from '../shell/practice-progress.js';
 import { createGeometryDemoPage, readDemoView } from '../teacher-demo/geometry-demo-view.js';
 import { placeFigure } from './place-figure.js';
@@ -89,7 +90,7 @@ function mount(options = {}) {
     tourHoldsNotePanel, tourInsertMode, quantityTutorialSteps, geometryTutorialSteps,
     placeFigure, captionPosition, captionBox, visibleCaption,
     createBoardControls, createGeometryPractice, createGeometryBasicsChapter, createGeometryPracticeFrames,
-    geometryPracticeChapters: [createGeometryConstructChapter, createGeometryEditChapter],
+    geometryPracticeChapters: [createGeometryConstructChapter, createGeometryEditChapter, createGeometryAdjustChapter],
     createPracticeProgress, createPracticeNavigation,
     geometryHiddenPoints, geometryCaptionLabel, geometryPointLabel, geometryPointDot, geometryShapeNode, geometryStroke,
     geometryViewport, geometryTextOverflow, geometryFrame, geometryFrameInputs,
@@ -1761,5 +1762,179 @@ test('the geometry note card can still reach exit', () => {
     assert.equal(h.drafts.length, 0);
     assert.equal(h.texts.length, 0);
     assert.ok(!h.visibleNodes().some((node) => node.props && node.props['data-practice-step'] !== undefined));
+  } finally { h.unmount(); }
+});
+
+function adjustState(h) {
+  return JSON.parse(h.raw(PRACTICE_KEY)).entries['geometry-adjust'];
+}
+function enterAdjust(h, tr) {
+  h.find((node) => node.type === 'button' && text(node).includes(tr('geometryPracticeAdjust'))).props.onClick();
+  h.render();
+}
+function control(h, label) {
+  return h.find((node) => node.type === 'button' && node.props['aria-label'] === label);
+}
+function scrollPractice(h, left, top) {
+  const scroller = h.find((node) => node.props.className === 'eb-canvas-scroll');
+  const node = scroller.props.ref.current;
+  node.scrollLeft = left;
+  node.scrollTop = top;
+  scroller.props.onScroll();
+  h.render();
+}
+
+for (const language of ['zh', 'en']) {
+  for (const pointerType of ['mouse', 'touch']) {
+    test(`geometry adjust replay (${language}, ${pointerType}) finishes and leaves both drafts`, () => {
+      const h = mount({ language });
+      const tr = language === 'en'
+        ? (key, params = {}) => enLocale[key].replace(/\{(\w+)\}/g, (match, name) => (Object.hasOwn(params, name) ? String(params[name]) : match))
+        : t;
+      try {
+        h.tab('quantity');
+        h.find((node) => node.type === 'button' && String(node.props['aria-label'] || '').startsWith(`${tr('circle')} ·`)).props.onClick();
+        h.render();
+        h.tab('geometry');
+        h.tool('point'); h.clickAt(90, 90); h.tool('select');
+        const real = h.raw(GEOMETRY_KEY);
+        const quantity = h.raw(QUANTITY_KEY);
+        h.startTour();
+        enterAdjust(h, tr);
+        assert.equal(practiceStep(h), 'adjust-grid');
+        const heading = h.find((node) => node.props && node.props['data-practice-step'] !== undefined);
+        assert.equal(text(walk(heading).find((node) => node.type === 'strong')), tr('geometryPracticeAdjust'));
+        assert.equal(practiceParagraph(h), tr('geometryPracticeGoal_adjust-grid'));
+        const seen = [practiceParagraph(h)];
+        const undoAtStart = control(h, tr('undo'));
+        assert.equal(undoAtStart.props.disabled, true);
+        const boardAtStart = adjustState(h).frame.board;
+        undoAtStart.props.onClick();
+        h.render();
+        assert.equal(practiceStep(h), 'adjust-grid', 'a click while undo is disabled does not pass');
+        assert.deepEqual(adjustState(h).frame.board, boardAtStart);
+        h.click(tr('gridOff'));
+        assert.equal(practiceStep(h), 'adjust-grid', 'turning the grid on without a new point does not pass');
+        h.tool('point');
+        h.clickAt(320, 220, { pointerType });
+        assert.equal(practiceStep(h), 'adjust-snap');
+        seen.push(practiceParagraph(h));
+        h.click(tr('snapOn'));
+        assert.equal(practiceStep(h), 'adjust-snap', 'turning snap off without a new point does not pass');
+        h.clickAt(460, 300, { pointerType });
+        assert.equal(practiceStep(h), 'adjust-undo');
+        seen.push(practiceParagraph(h));
+        const latest = adjustState(h).goal.pointId;
+        assert.equal(adjustState(h).frame.board.points.some((point) => point.id === latest), true);
+        const redoBeforeUndo = control(h, tr('redo'));
+        assert.equal(redoBeforeUndo.props.disabled, true);
+        const boardBeforeUndo = adjustState(h).frame.board;
+        redoBeforeUndo.props.onClick();
+        h.render();
+        assert.equal(practiceStep(h), 'adjust-undo', 'a click while redo is disabled does not pass');
+        assert.deepEqual(adjustState(h).frame.board, boardBeforeUndo);
+        h.click(tr('undo'));
+        assert.equal(practiceStep(h), 'adjust-redo');
+        assert.equal(adjustState(h).frame.board.points.some((point) => point.id === latest), false);
+        assert.equal(control(h, tr('redo')).props.disabled, false, 'the undone point stays available to redo');
+        seen.push(practiceParagraph(h));
+        h.click(tr('redo'));
+        assert.equal(practiceStep(h), 'adjust-zoom');
+        assert.equal(adjustState(h).frame.board.points.some((point) => point.id === latest), true);
+        seen.push(practiceParagraph(h));
+        assert.equal(control(h, tr('zoomOut')).props.disabled, true);
+        h.click(tr('fitView'));
+        assert.equal(practiceStep(h), 'adjust-zoom', 'a control that leaves the zoom number unchanged does not pass');
+        h.click(tr('zoomIn'));
+        assert.equal(practiceStep(h), 'adjust-scroll');
+        assert.equal(text(control(h, tr('fitView'))), '125%');
+        seen.push(practiceParagraph(h));
+        scrollPractice(h, 0, 0);
+        assert.equal(practiceStep(h), 'adjust-scroll', 'a scroll that leaves the position unchanged does not pass');
+        scrollPractice(h, 36, 18);
+        assert.equal(practiceStep(h), 'adjust-fit');
+        assert.equal(adjustState(h).frame.scroll.left, 36);
+        assert.equal(adjustState(h).frame.scroll.top, 18);
+        seen.push(practiceParagraph(h));
+        h.click(tr('fitView'));
+        assert.equal(practiceStep(h), 'adjust-clear');
+        assert.equal(control(h, tr('fitView')).props['aria-pressed'], true);
+        seen.push(practiceParagraph(h));
+        h.click(tr('clearGeometry'));
+        h.click(tr('cancel'));
+        assert.equal(practiceStep(h), 'adjust-clear', 'opening confirm without confirming does not pass');
+        h.click(tr('clearGeometry'));
+        h.click(tr('confirmClear'));
+        assert.equal(practiceStep(h), 'adjust-complete');
+        seen.push(practiceParagraph(h));
+        const cleared = adjustState(h);
+        assert.equal(cleared.frame.board.points.length, 0);
+        assert.equal(cleared.frame.board.elements.length, 0);
+        assert.deepEqual(cleared.frame.history, { past: [], future: [] });
+        assert.equal(cleared.goal.undoBoard, null);
+        const undoAfterClear = control(h, tr('undo'));
+        assert.equal(undoAfterClear.props.disabled, true);
+        const boardAfterClear = cleared.frame.board;
+        undoAfterClear.props.onClick();
+        h.render();
+        const afterLateUndo = adjustState(h);
+        assert.equal(practiceStep(h), 'adjust-complete', 'undo after clear does not pass another step');
+        assert.deepEqual(afterLateUndo.frame.board, boardAfterClear, 'undo after clear does not restore the old board');
+        assert.deepEqual(afterLateUndo.frame.history, { past: [], future: [] });
+        assert.equal(afterLateUndo.goal.undoBoard, null);
+        for (const copy of seen) {
+          assert.ok(copy.length > 0);
+          assert.ok(!/geometryPracticeGoal_|practiceGoal_/.test(copy), `${language}: no raw keys on screen`);
+        }
+        assert.equal(h.drafts.length, 0);
+        assert.equal(h.attached.size, 0);
+        assert.equal(h.texts.length, 0);
+        assert.equal(h.persisted, 0);
+        assert.equal(h.raw(GEOMETRY_KEY), real);
+        assert.equal(h.raw(QUANTITY_KEY), quantity);
+        h.click(tr('practiceExit'));
+        assert.equal(h.raw(GEOMETRY_KEY), real, 'exit leaves the real geometry draft unchanged');
+        assert.equal(h.raw(QUANTITY_KEY), quantity, 'exit leaves the quantity draft unchanged');
+        assert.ok(!h.visibleNodes().some((node) => node.props && node.props['data-practice-step'] !== undefined));
+      } finally { h.unmount(); }
+    });
+  }
+}
+
+test('geometry adjust skip, reset, chapter retry, and refresh stay on the practice board', () => {
+  const storage = new Map();
+  let h = mount({ storage });
+  try {
+    h.tab('geometry');
+    h.tool('point'); h.clickAt(90, 90);
+    const real = h.raw(GEOMETRY_KEY);
+    h.startTour();
+    enterAdjust(h, t);
+    h.click(t('practiceSkipStep'));
+    assert.equal(practiceStep(h), 'adjust-snap');
+    assert.equal(adjustState(h).states[0], 'skipped');
+    assert.equal(adjustState(h).frame.grid, false, 'skip does not turn the grid on');
+    h.click(t('practiceReset'));
+    assert.equal(practiceStep(h), 'adjust-snap');
+    h.click(`${t('practiceRetryStep', { step: 1 })}`);
+    assert.equal(practiceStep(h), 'adjust-grid');
+    h.click(t('practiceSkipStep'));
+    assert.equal(practiceStep(h), 'adjust-snap');
+    h.click(t('practiceRetryChapter'));
+    assert.equal(practiceStep(h), 'adjust-grid');
+    assert.equal(JSON.parse(h.raw(PRACTICE_KEY)).entries['geometry-basics'].states[0], 'in-progress');
+    h.click(t('gridOff'));
+    h.tool('point');
+    h.clickAt(320, 220);
+    assert.equal(practiceStep(h), 'adjust-snap');
+    h.unmount();
+    h = mount({ storage });
+    h.tab('geometry');
+    h.startTour();
+    assert.equal(practiceStep(h), 'adjust-snap', 'refresh resumes the unfinished adjust step');
+    assert.equal(adjustState(h).frame.grid, true);
+    assert.equal(h.raw(GEOMETRY_KEY), real);
+    h.click(t('practiceExit'));
+    assert.equal(h.raw(GEOMETRY_KEY), real);
   } finally { h.unmount(); }
 });
