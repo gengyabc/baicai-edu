@@ -52,7 +52,10 @@ The segment writes only the skill name; when finalize writes a `confirmed_skills
 
 | Domain | Example skills |
 |---|---|
+| `number_and_operations` | counting on, number comparison, making ten, basic fact fluency |
 | `addition_subtraction_word_problems` | make-ten strategy, subtraction regrouping, inverse of addition and subtraction, understanding the problem, finding key information, writing the equation |
 | `multiplication_division` | multiplication facts, meaning of division, concept of remainder |
 | `fractions` | fraction meaning, common denominators, simplifying |
 | `place_value_and_multidigit` | place-value understanding, carrying and borrowing |
+| `measurement_and_geometry` | length comparison, area beginnings, shape attributes |
+| `patterns_and_data` | repeating patterns, reading a simple table or pictograph |

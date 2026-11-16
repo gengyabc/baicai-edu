@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
-// Independent finite mathematics checks of installed worked examples, not model/student replays.
+// Independent finite method fixtures, not installed examples or model/student replays.
 const material = readFileSync(new URL('../math-primary-high/skills/math-high-core/references/elementary-games.md', import.meta.url), 'utf8')
 const legalMoves = (pile) => [1, 2].filter((take) => take <= pile)
 
@@ -35,14 +35,18 @@ function countWinningLeaves(pile, turn, lastWins, policy, history = []) {
   return leaves
 }
 
-test('last-wins and last-loses checked tables match exhaustive legal-move backward evaluation', () => {
-  const documented = [...material.matchAll(/States 1–7 are ([WL,]+);|states 1–7 are ([WL,]+) for/g)]
-    .map((match) => (match[1] ?? match[2]).split(','))
-  assert.equal(documented.length, 2)
-  assert.deepEqual(documented[0], ['W', 'W', 'L', 'W', 'W', 'L', 'W'])
-  assert.deepEqual(documented[1], ['L', 'W', 'W', 'L', 'W', 'W', 'L'])
-  assert.deepEqual(outcomes(true, 7), documented[0])
-  assert.deepEqual(outcomes(false, 7), documented[1])
+test('abstract game method requires terminal checks and complete legal-reply coverage', () => {
+  for (const rule of ['## Private strategy verification', 'Terminal rules', 'Winning-state claim',
+    'Losing-state claim', 'every legal opponent reply', 'Correct bases',
+    'strict progress/finite termination', 'Changed winner or legal action']) {
+    assert.ok(material.includes(rule), rule)
+  }
+  assert.doesNotMatch(material, /States 1–7|states 1–7/, 'worked state tables belong in test fixtures')
+})
+
+test('last-wins and last-loses fixtures match exhaustive legal-move backward evaluation', () => {
+  assert.deepEqual(outcomes(true, 7), ['W', 'W', 'L', 'W', 'W', 'L', 'W'])
+  assert.deepEqual(outcomes(false, 7), ['L', 'W', 'W', 'L', 'W', 'W', 'L'])
 })
 
 test('7 take 1 and 8 take 2 win against all four opponent continuations, not one cooperative play', () => {

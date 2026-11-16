@@ -84,20 +84,13 @@ In existing `context.turn_state`, retain only the current claim/scope, goal, pro
 
 Completion: the record states what the student established, under what support, and what remains unknown without turning completion of the teaching process into a mastery claim.
 
-## 6. Micro-examples (adapt, do not recite)
+## 6. Strategic checks
 
-### Implication: square even implies integer even
+**Over-leading during construction:** supplying the strategy, candidate and steps leaves execution, not independent proof construction. Preserve the strategic decision being assessed.
 
-For every integer n, if n² is even then n is even.
-
-- **Over-leading during construction:** “Use contrapositive, write n = 2k+1, expand, and fill in the last line.” All strategic choices were supplied.
-- **Reachable hint when parity is available:** “Going from the square back to the integer is the obstacle. What could studying the square of an odd integer tell us?” Wait. Once the student establishes that relation, ask why it settles the original claim as a separate thinking task.
-- **Missing logical tool:** explicitly teach why `P → Q` and `¬Q → ¬P` are equivalent using a small separate example, then reconnect. Expansion of `(2k+1)²` is execution evidence; explaining why this route proves the original implication is strategy evidence.
-
-### Circularity versus legitimate assumptions
-
-To prove the sum of two odd integers is even, a student says “let their sum be 2k; therefore it is even.” Ask what licenses writing the sum in that form: the conclusion was assumed. The repair starts with the known forms of the two odd integers, not the assumed form of their sum. In contrast, explicitly assuming a negated conclusion for contradiction is legitimate when the resulting contradiction is justified and the assumption discharged.
-
-### Construction and alternative routes
-
-A parallel auxiliary line cannot be justified merely by “it makes the proof easy.” Connect the missing angle relation to the parallel-line property; if the construction is new, supply and label it, then let the student justify its consequences. If the student instead gives a valid area-based proof under the given assumptions, verify and follow it. Do not require the planned auxiliary line or record its discovery as the student's.
+| Trigger | Action | Acceptance |
+|---|---|---|
+| Direct implication is blocked | Consider a reachable contrapositive. **Missing logical tool:** teach an unavailable logical equivalence in a separate tool child | The student connects `¬Q → ¬P` back to `P → Q`; executing its algebra alone is not strategy evidence |
+| A representation already asserts the conclusion | Ask what licenses that representation; restart from established premises | No unproved target-equivalent assumption remains; contradiction/induction assumptions are explicitly discharged |
+| An auxiliary object seems arbitrary | Connect the missing relation to a property that could supply it; label any new teacher construction | Constructibility and consequences are justified, with route source retained |
+| The student offers another route | Verify and follow it | Validity under the actual assumptions, not agreement with the teacher's route |

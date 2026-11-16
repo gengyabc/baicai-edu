@@ -18,13 +18,17 @@ test('legal-operation and coverage structures reach invariants through the exist
 
 test('invariants inherit proof, tool recovery, solution choice and attribution boundaries', () => {
   const content = ref('references/invariants-coloring.md')
-  for (const phrase of ['I0:', 'I1:', 'I2:', 'IB1,', 'IB2,', 'IB3,', 'IB4,',
+  for (const phrase of ['## Validate the invariant and its direction',
     'every legal operation type', 'necessary condition is not sufficient',
     'who supplied the coloring/state quantity', 'Return one layer',
     'informed full-solution choice', 'same-task warning/confirmation',
     'no prerequisite or compulsory exercise', 'session_segment: null',
     'respect refusal, pause, end']) assert.ok(content.includes(phrase), phrase)
-  assert.match(content, /## Teacher-only checked cases[\s\S]*30 black and 32 white/)
+  for (const rule of ['## Private verification', 'initial/target classes',
+    'each legal orientation\'s contribution generally', 'sampled failures alone',
+    'no gaps or overlaps', 'counterexample meeting every premise',
+    'Recheck every new contribution']) assert.ok(content.includes(rule), rule)
+  assert.doesNotMatch(content, /30 black and 32 white/, 'fixed board counts remain test fixtures')
 })
 
 // Independent finite mathematical checks, not model/student teaching replays.

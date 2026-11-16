@@ -42,26 +42,21 @@ Check the resulting quantities against the original conditions: units, event ord
 
 Completion: the relationship is justified for its interval and any computed result satisfies the original task, not merely the last equation.
 
-## 5. Micro-examples (teacher planning is not the opening reply)
+## 5. Interval-sensitive route checks
 
-### Delayed chase
+| Trigger | Action | Acceptance |
+|---|---|---|
+| Different departure times | Connect the target and an evidenced distance–speed–time relation; leave one useful intermediate quantity or representation open | A justified equation, timeline or gap route is accepted without a compulsory complete plan |
+| No connection yet | A shared-event state may be offered as the smallest route hint | Record teacher selection of that direction; reuse an already-established state |
+| A separation is established | Investigate its change over a common interval, then connect that relation to the target | Keep the next inference student-owned; follow a valid equation route instead if supplied |
+| A numerical time is given | Resolve its origin before judging it | Equivalent event times with different origins remain mathematically compatible; check the requested origin separately |
+| Stops or rate changes occur | Split at each relevant event, preserve endpoint states, and locate the solution interval | Moving times, elapsed times and total distances/work reconcile across all segments |
+| The teacher has supplied every intermediate relation | Treat later arithmetic as supported execution | A chain of answer-bearing hints is still a supplied solution, not independent route selection |
 
-**Textbook task:** A leaves a point at 60 m/min. B leaves the same point 5 minutes later in the same direction at 80 m/min. Both maintain these speeds without stops. How long after B's departure does B catch A?
-
-**Private verified route:** at B's departure A is 300 m ahead; while both move the gap shrinks by 20 m/min; catch is 15 minutes after B leaves, or 20 minutes after A leaves. Check: B travels 1200 m and A travels 1200 m. An equation using B's elapsed time t, `80t = 60(t+5)`, is equally valid.
-
-- **Over-leading for independent solving:** give the head start, speed difference, and division, then ask for the quotient.
-- **Route-finding opening when basic distance calculation is available:** put the requested catch-up time and the student's usable distance–speed–time relationship in view, then ask for one intermediate quantity or representation that could connect them. Accept a justified equation, timeline or gap route; do not require a complete plan. If a route is already shown, skip this opening.
-- **More directed bridge when that connection remains unclear:** “They did not start together. At the moment B starts, where is A relative to B?” This selects the shared-event/head-start direction for the student, so record it as a route hint, not independent selection. Wait for the response; if that state is already established, reuse it rather than re-asking.
-- Once the student establishes the gap, investigate how it changes during a common minute as a separate task. Only after that relation is established connect it to catch-up time. If the student writes the valid equation first, follow it rather than requiring the gap method.
-- A reply of “20 minutes” needs its time origin interpreted before being judged wrong: 20 after A leaves and 15 after B leaves name the same event, but the requested time origin still matters.
-
-### A stop changes the interval
-
-If B in the same problem stops for 2 minutes immediately after moving for 10 minutes, the constant-closing-rate shortcut no longer covers the chase. At the stop the gap is 100 m; A adds 120 m during the stop; after B resumes, closing 220 m takes 11 more minutes. Total since B's departure is 23 minutes. Check distances: B moves for 21 minutes and A for 28 minutes, both traveling 1680 m. Keep these values for private verification; any student-visible demonstration must pass the shared reveal gate. A chain of answer-bearing hints is still a supplied solution.
+Privately verify the full route before teaching. Shared reveal rules govern any student-visible demonstration; teacher planning is not the opening reply.
 
 ## 6. Evidence and continuation
 
 For an independent-solving goal seek the student's reason for selecting an intermediate relationship, the inference connecting it to the target, and a check against the task. A correct quotient alone does not show route selection; a complete teacher explanation alone is not student evidence. A demonstration or informed full solution allowed by the shared rules needs no forced exit test and is not independent solving evidence.
 
-Use existing `context.turn_state` continuation descriptions for the problem, time origin/current interval, established relationships, current bridge, support, and pending question. Keep the current act/leaf owner and lifecycle resume rules. Record student-owned selections, teacher-supplied bridges, execution, and checking separately in `strategy_summary` per `references/math-segment-fields.md`; no new persistent fields for ability, submode, or general ability stage is added. Recursive tool learning uses the shared optional task-recovery plan, distinct from these ability records.
+Use existing `context.turn_state` continuation descriptions for the problem, time origin/current interval, established relationships, current bridge, support, and pending question. Keep the current act/leaf owner and lifecycle resume rules. Record student-owned selections, teacher-supplied bridges, execution, and checking separately in `strategy_summary` per `references/math-segment-fields.md`; add no new persistent fields, submode, or general ability stage. Recursive tool learning uses the shared optional task-recovery plan, distinct from these ability records.

@@ -45,9 +45,7 @@ These are revisable descriptions in existing `strategy_summary`, not a new diagn
 
 **Monitor and justify:** which constraint stayed fixed? Does each replacement have the same contribution change? Does the calculated number fit the count and both original totals? If unit change varies, reconsider the model rather than keep dividing. An equation or a justified trial table is equally valid.
 
-**Teacher-only checked case:** 20 chickens/rabbits and 56 legs: all chickens give 40, discrepancy 16, replacement adds 2; 8 rabbits and 12 chickens. Do not disclose this route in an independent opening. If the student gives 12/8 by trial, record trial as their method; help them explain it without rewriting their history as independent assumption-method discovery.
-
-**Transfer:** near transfer can use 20 tickets priced 2 and 5, total 64: 8 dearer, 12 cheaper. For a boundary contrast, introduce a quantity-dependent discount and ask whether the fixed unit adjustment still holds. The contrast tests applicability, not a compulsory new lesson.
+**Verification and transfer:** privately check the baseline, discrepancy, fixed replacement change, integer range and original totals; keep the route out of an independent opening. Preserve a student's valid trial method rather than rewriting it as assumption-method discovery. Near transfer retains fixed unit adjustment; an agreed boundary contrast varies that condition and tests applicability, not a compulsory new lesson.
 
 Completion: the student explains the useful assumption/change and checks conditions, or the unverified part remains explicit; a correct quotient alone is not strategy evidence.
 
@@ -59,9 +57,7 @@ Completion: the student explains the useful assumption/change and checks conditi
 
 **Monitor and justify:** classes must be exhaustive and mutually exclusive; within each class, account for every allowed choice. Classification adds disjoint counts; stepwise multiplication counts choice sequences when their correspondence with wanted objects and branch counts are justified. Varying later choice counts may require separate branches, not a single unjustified product. A finite exhaustive list can be a complete argument, not merely a guess from examples.
 
-**Teacher-only checked case:** digits 1,2,3,4, no repetition, two-digit numbers: four tens classes with three units each, 12 total. If the student lists tens 1,2,3 and omits tens 4, ask about coverage without listing the missing class and all its numbers for them. If they get 4×3 but cannot justify completeness, examine the unique class containing any proposed number.
-
-**Transfer:** near transfer: select captain and deputy from four people, 12 ordered role choices. Boundary: select two unranked group members, only 6 pairs. 12 and 21 are distinct numbers, but the same two people in an unranked pair are not two objects. Diagnose the counting unit before prescribing deduplication.
+**Verification and transfer:** privately verify class coverage, branch counts and the one-to-one correspondence with counted objects. For a missing class, probe coverage without supplying its cases; for an unexplained product, inspect where an arbitrary object belongs. Near transfer retains the counting unit. An agreed ordered/unranked contrast changes that unit; identify it before prescribing deduplication.
 
 Completion: the student can explain why the organization has neither omissions nor duplicates; knowing a product or a formula name is insufficient.
 
@@ -69,13 +65,11 @@ Completion: the student can explain why the organization has neither omissions n
 
 **Structure and tools:** a stated repeat rule or a justified returning state, a complete cycle, and a position relative to its start. Link to `whole-number-division`, `operation-meaning`, `factors-multiples`, and `patterns-generalize`. For a confirmed division/remainder gap, enter the nearest tool child; do not silently give a modulus algorithm inside the parent.
 
-**Bridge:** connect complete groups to the remaining position. Distinguish an arithmetic gap from not recognizing a repeat or not knowing why it persists. Reuse “three per group, 33 remainder 1” if already shown rather than restarting basic division. Ask for the meaning of the remainder before awarding method understanding.
+**Bridge:** connect complete groups to the remaining position. Distinguish an arithmetic gap from not recognizing a repeat or not knowing why it persists. Reuse an already-shown grouping and remainder rather than restarting basic division. Ask for the meaning of the remainder before awarding method understanding.
 
 **Monitor and justify:** locate cycle length, start position, and the mapping for remainder zero. An observed finite prefix does not determine a unique continuation. A problem's explicit endless repeat rule supplies general structure; examples alone do not prove one. For an operation-generated cycle, justify that the state and transition repeat, not just that a few outputs match.
 
-**Teacher-only checked case:** endless red/blue/green: 100=3×33+1, position 100 is red; position 99 has remainder zero and is green. A correct red answer from ten sampled positions still needs the general positional connection. Avoid teaching students that zero means the first color.
-
-**Transfer:** near transfer: endless A/B/C/D shifts, day 102 is B. Boundary contrasts: change the start to blue/green/red, or provide only a finite prefix without a repeat rule. The original remainder-to-color mapping or extrapolation is then not licensed.
+**Verification and transfer:** privately check complete cycles and the position mapping, including remainder zero as the end of a complete cycle rather than automatically its first item. Sampled positions do not establish the general connection. Near transfer retains a justified repeat and start mapping; an agreed contrast changes that mapping or removes the repeat rule, requiring fresh justification.
 
 Completion: the student connects complete groups, remaining position and repeat justification over the agreed range; computing a remainder alone is not selecting or explaining the strategy.
 

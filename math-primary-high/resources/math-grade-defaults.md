@@ -36,6 +36,8 @@ Domains are parallel and chosen by the student's explicit goal and problem-solvi
 
 Grade 4 (`grade: 4`, `upper_primary`):
 
+- `number_and_operations`: number sense that still supports grade-4 work
+- `addition_subtraction_word_problems`: multi-step add/subtract contexts when the goal needs them
 - `multiplication_division`: equal groups, factors, multiplicative comparison
 - `place_value_and_multidigit`: multi-digit operations, place value, estimation
 - `fractions`: unit fractions, equal partition, simple equivalence and comparison
@@ -44,6 +46,7 @@ Grade 4 (`grade: 4`, `upper_primary`):
 
 Grades 5–6 (`grade: 5` or `grade: 6`, `upper_primary`):
 
+- `number_and_operations` / `addition_subtraction_word_problems`: available when a file or explicit goal needs them; not the default opening domain
 - `fractions`: quotient meaning, equivalence, operations, decimals as quantities
 - `ratio_rate_percent`: ratio, unit rate, percent of an identified base
 - `place_value_and_multidigit`: multi-digit operations and estimation in context

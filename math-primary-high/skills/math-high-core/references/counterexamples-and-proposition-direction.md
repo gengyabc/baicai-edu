@@ -35,16 +35,20 @@ Choose one useful next action: clarify an uncertain claim, check the missing pre
 
 ## Record and stop
 
-Use the Proof Evidence conventions in `references/math-segment-fields.md`: claim and scope, student reasoning, supplied help, and what remains unproven. Record at most one merged segment for actual student performance; teacher-only explanation, a process choice or a plan has `session_segment: null`. These observations add no long-term label or score.
+Use the Proof Evidence conventions in `references/math-segment-fields.md`: claim and scope, student reasoning, supplied help, and what remains unproven.
 
-Further search is optional: the student may return to the problem, continue or end. A confirmed tool gap follows `references/prerequisite-learning.md`; the existing session and lifecycle retain recovery and exit control.
+Recording: `references/math-segment-fields.md` — at most one merged performance segment per turn for actual student work; teacher-only explanation, a choice or a plan uses `session_segment: null`. Tool children and recovery: `references/prerequisite-learning.md`. This supplement adds no method scores, obstacle labels or plan fields. Further search is optional; the student may return, continue or end.
 
-## Teacher-only checked cases
+## Private counterexample checks
 
-Use these for private verification, not answers or routes to disclose in an independent opening. Full-solution requests follow the shared Informed full-solution choice; a confirmed solution stays teacher-supplied, with no compulsory prerequisites or extra cases.
+Keep answers/routes private in independent work. Full-solution requests follow shared Informed full-solution choice; confirmed solutions stay teacher-supplied, with no compulsory prerequisites or extra cases.
 
-**Case A — colour balance and tiling.** On a 4×4 board, colour (r,c) black when r+c is even and white otherwise. Delete (1,2), (2,1), (3,3) and (4,4): two white and two black cells. The remaining cells are 6 black and 6 white, but (1,1) has no remaining neighbour, so no adjacent two-cell piece can cover it. Thus balance is necessary, because each legal piece covers one cell of each colour, but not sufficient. A full 2×2 board is balanced and tileable, so the refutation does not mean all balanced regions fail.
+| Proposed refutation | Required checks |
+|---|---|
+| A balanced region has no legal covering | Verify class balance and prove that every legal covering fails; adjacency or an isolated required part can supply an obstruction |
+| A local degree condition does not guarantee a continuous edge-once traversal | Verify every stated degree condition and a separate global obstruction; retain any connectivity premise already in the claim |
+| Connectivity does not guarantee an edge-once traversal | Verify connectivity and the entry/exit obstruction from too many odd-degree vertices |
+| A strengthened claim adds a missing premise | Recheck the counterexample against that premise; do not reuse an object now outside scope |
+| A necessary condition was refuted as sufficient | Preserve its valid necessity argument; a working instance can prevent overgeneralizing the refutation, but cannot rescue the universal converse |
 
-**Case B — even degrees and one-stroke drawing.** For finite simple undirected graphs, require one continuous stroke to use every edge exactly once. Two disjoint triangles have degree 2 at every vertex but cannot be covered by one stroke. This refutes “all degrees even is enough”, not the strengthened claim requiring all vertices incident to edges to lie in one connected component. With that connectivity condition, all-even degrees suffice for a closed edge-covering stroke; invoking the general theorem still needs usable justification under the proof rules.
-
-**Case C — odd vertices.** The three-arm star K1,3 has four odd-degree vertices: the centre has degree 3 and each leaf degree 1. Internal visits pair arrival and departure edges, so at most its two endpoints can be odd. No one-stroke drawing uses every edge exactly once. Connectivity alone is therefore insufficient; check connectivity and odd-degree conditions separately.
+Invoking a general sufficiency theorem still requires its applicable conditions and usable justification under `references/proof-teaching.md`.

@@ -40,15 +40,21 @@ Use paired objects plus a possible leftover before symbols if helpful. Two odd n
 
 2 is prime and even, refuting “all primes are odd”; every other even positive integer has divisor 2 besides 1 and itself, so 2 is the only even prime. Keep 1 outside the prime definition. Operation-preserving invariants and geometric chessboard coloring are separate topics, not consequences established by these sum examples.
 
-## Teacher-only checked cases
+## Private verification
 
-Use these to verify work, not to supply answers/routes in an independent opening. Reveal under the current guidance rules; explicit full-solution requests use `learn-core`'s informed full-solution choice, including its wait and same-task confirmation. This reference adds no prerequisite or compulsory exercise to that path.
+Keep answers/routes private in independent work. Explicit full-solution requests use `learn-core`'s informed full-solution choice (`references/informed-full-solution-choice.md`), with its warning, wait and same-task confirmation; add no prerequisite or compulsory exercise.
 
-- **All positive divisors of 36:** pairs (1,36), (2,18), (3,12), (4,9), (6,6); 5 fails divisibility. If the smaller factor exceeded 6, both factors would exceed 6 and their product would exceed 36. Thus 1,2,3,4,6,9,12,18,36: 9 divisors, with 6 once. Alternatively 36=2²×3²: choose 0/1/2 copies of 2 and 0/1/2 copies of 3, giving 3×3=9 through the correspondence above.
-- **36 to a cube:** 36=2×2×3×3 needs one more 2 and one more 3. Every completing positive factor must contain both, hence is a multiple of 6; 6 is feasible since 36×6=216=6³. Alternatively check 1 through 5: products 36,72,108,144,180 are between consecutive cubes and not cubes. This excludes all smaller positive factors.
-- **36 to a square:** 36=6² already, so the least positive factor is 1, not a factor forced to be greater than 1.
-- **Near transfer, 24:** positive divisors 1,2,3,4,6,8,12,24, from pairs (1,24), (2,12), (3,8), (4,6); a smaller factor at least 5 would give product at least 25. Or 24=2³×3 gives 4×2=8 choices with object correspondence. For a cube the three 2s are ready; two more 3s are necessary, so any completing factor is a multiple of 9 and 24×9=216. Least factor 9, not merely a feasible witness.
+| Route | Acceptance |
+|---|---|
+| Factor pairs | Every divisor has one partner; the smaller-factor range is justified; a coincident pair contributes one divisor |
+| Prime-factor choices | Each allowable choice produces exactly one divisor and every divisor is covered; a product of choice counts alone is insufficient |
+| Completing a square/cube | Each prime's copies form equal groups of the required size; verify the product |
+| Least completing factor | Every allowed completion contains the required missing factors, or every smaller allowed factor is exhaustively excluded |
+| Already a required power | Include the allowed factor 1 rather than imposing a larger factor |
+| Changed number/domain/power | Recheck factor structure, allowed range and minimality; preserve a valid finite-check alternative |
 
 ## Completion and evidence
 
-According to the agreed goal, the student explains a complete nonduplicating correspondence, excludes smaller factors, or gives a general pairing/expression over the stated scope. Saying 9 or 6, a correct decomposition, and teacher-provided reasoning are distinct from independent structural selection. Repeating a supplied construction is supported work. Follow the existing segment rules: teacher-only explanation has no performance segment; record actual student work, supplied hints and still-unknown reasoning separately. Near transfer and changed-condition checks are different evidence and remain optional; respect refusal or end without inventing a result.
+According to the agreed goal, the student explains a complete nonduplicating correspondence, excludes smaller factors, or gives a general pairing/expression over the stated scope. A bare correct value, a correct decomposition, and teacher-provided reasoning are distinct from independent structural selection.
+
+Recording: `references/math-segment-fields.md` — at most one merged performance segment per turn for actual student work; teacher-only explanation, a choice or a plan uses `session_segment: null`. Tool children and recovery: `references/prerequisite-learning.md`. This supplement adds no method scores, obstacle labels or plan fields. Near transfer and changed-condition checks remain optional; respect refusal or end without inventing a result.

@@ -21,10 +21,14 @@ test('extremal tasks reach a conditional reference through the existing method i
 test('extremal supplement delegates recursion, full solutions and evidence to their existing owners', () => {
   const extremal = read(`${base}references/extremal-optimization.md`)
   for (const rule of ['exactly one parent', 'informed full-solution choice', 'same-task confirmation',
-    'session_segment: null', 'one merged performance segment', 'Teacher-only checked cases']) {
+    'session_segment: null', 'one merged performance segment', 'Private bound checks']) {
     assert.ok(extremal.includes(rule), rule)
   }
   assert.doesNotMatch(extremal, /ui\.solution\.|"(?:frames|schema_version)"\s*:/)
+  for (const rule of ['every feasible value ≤ M', 'a feasible object attaining M',
+    'an old bound may remain true without being attained',
+    'an unattained lower bound is not a minimum', 'boundary attainment',
+    'Recheck range, bound and attaining object']) assert.ok(extremal.includes(rule), rule)
 })
 
 // Mathematical example checks only: no student/model performance is simulated.

@@ -1,45 +1,39 @@
 # Equality and Relational Thinking
 
-CGI's early-algebra work (Carpenter, Franke & Levi) starts from the student's own arithmetic: the equals sign states that two sides are the same amount, and a student who looks at how the numbers relate can find an unknown or judge a sentence without computing both sides. In this package that work stays inside arithmetic: equality, relational strategies, and properties stated in the student's own words. Letters and variables are not a goal; a student who asks to use a symbol is followed with an accessible representation, and that work is recorded as supported exploration.
+CGI early algebra starts from the student's arithmetic: `=` states that both sides are the same amount; number relationships can determine an unknown or truth without computing both sides. Keep the goal within arithmetic: equality, relational strategies, and student-stated properties. Letters/variables are not a goal; follow requested symbols with an accessible representation and record supported exploration.
 
-## When to Read
+## Triggers and Task Choice
 
-- A number sentence, open number sentence, or true/false sentence is the task.
-- The student treats `=` as "the answer comes next" (for example writes 3+5=8+6=14 for 3+5=□+6, or says 8=3+5 is "backwards").
-- The student sees a relation between the two sides without computing, such as "this 9 is one less than 10, so the other number is one more".
-- The student states a property-like idea, such as "swapping the numbers gives the same total" or "adding zero changes nothing".
-
-## Task Forms
-
-These are sentences, not stories; they suit an explicit equality goal or a follow-up after a story relationship is explained. Each task still follows "Stop at the Question When Posing a Problem" in `references/math-teaching-core.md`: present one sentence and its question, then stop at the question.
-
-| Purpose | Example (small numbers; not a fixed sequence) |
+| Trigger/goal | Action |
 |---|---|
-| Is it true or false? | `8=3+5`, `7=7`, `3+5=4+4`, `4+4=8+2` |
-| Open number sentence | `3+5=□+6`, `8+4=□+5`, `□=6+2` |
-| Relation between the sides | `9+6=10+□`, `12−5=13−□` |
-| Student-made sentences | "Make another true sentence like `3+5=4+4`." |
+| Number sentence, open sentence, or true/false task | Present one sentence and stop at the question per `references/math-teaching-core.md` |
+| Student treats `=` as an answer cue or rejects reversed equality | Apply the misconception probe below |
+| Student relates the sides without full computation | Follow the relation actually shown |
+| Student states an arithmetic property | Invite testing and describing its scope |
 
-Choose numbers that make computing both sides possible, so a relational answer is a choice the student makes and not the only route. Do not write "compensation", "balance", or any other strategy name in a task, and do not hint at the relation in the stem.
+Choose among true/false judgments, an unknown on either side, relations between sides, and student-made true sentences. These suit an explicit equality goal or follow-up to an explained story. Use computable numbers so relational reasoning is a choice; keep strategy names and relation hints out of the stem.
 
-## Questioning
+## Advance One Evidence Gap
 
-In guided problem solving, follow the student's actual work; agreed new learning may use the shared separate-example gate in `references/math-teaching-core.md`. Ask only for evidence that can change the next decision, reusing relations already shown.
+1. Reuse shown relations. If strategy evidence changes the next decision, ask how the student decided; accept computing both sides and valid nonoral evidence.
+2. Ask about only a gap in the student's actual relation. A clear relation needs no repeat check.
+3. Compare only student-used methods or clearly labeled examples; preserve their method choice.
+4. Offer a student-made similar sentence only when it serves the goal, not as an acceptance ritual.
 
-1. If strategy evidence is needed, ask how they decided; accept computing both sides and valid nonoral evidence.
-2. If their relation has a gap, ask about that detail: "You said 9 is one less than 10; what did that tell you about the other number?" A relation already clear needs no repeat check.
-3. Compare only methods the student actually used, or ones clearly labeled "example"; do not invent classmates' answers or ask them to switch.
-4. A student-made similar sentence is an optional next task when it serves the goal, not a required acceptance ritual after an explained answer.
-
-For a property-like idea, ask whether it works for another pair of numbers they choose, and whether it works for subtraction. Let the student test and say what they found; stating that a property holds for all numbers is not required, and examples are recorded as examples.
+For property-like claims, let the student choose another number pair, test subtraction, and describe findings. Universal claims are optional; tested cases remain examples. Guided work follows actual student work; agreed new learning uses a separate example under **Guide before revealing** in `learn-core`'s `references/pedagogy-core.md` (support level per `references/scaffold-calibration.md`).
 
 ## Misconception Probe
 
-One wrong open-sentence answer does not establish "equals means write the answer". Apply the minimal discriminating-evidence rule in `references/strategy-diagnosis-rules.md`: reuse existing work and, only if needed, choose a contrasting form such as `8=3+5` (true/false) rather than requiring a fixed two-item sequence. Record `error_type: concept` only when evidence distinguishes the misconception from a slip or expression gap. Choose guidance or a labeled separate new-learning example under the shared pedagogy gate; leave unresolved causes unknown.
+One wrong open-sentence answer does not establish an equals-sign misconception. Apply the minimal discriminating-evidence rule (**Gathering Evidence** in `references/strategy-diagnosis-rules.md`): reuse work and add only the smallest contrasting form needed, rather than requiring a fixed two-item sequence. Record `error_type: concept` only when evidence distinguishes misconception from a slip or expression gap; unresolved causes stay unknown. Choose guidance or a labeled separate example under the shared pedagogy gate, not a fixed probe sequence.
 
 ## Recording
 
-- `strategy_summary` states the sentence form, whether the student computed both sides or used a relation, and the relation in their words. Relational thinking is recorded here, not as a stage, per `references/progression-map.md`.
-- A relation found after a hint is supported. A student-made sentence provides independent relation evidence when their drawing, action, writing, or explanation shows why it is true. Credit generalization only when they show what varies, what stays true, and why it extends beyond listed cases; solving an open sentence alone is not generalization.
-- A fast correct answer with no explanation leaves the strategy unknown.
-- When writing the student's reasoning as an equation, follow "Recording" in `references/math-teaching-core.md`: never chain equals signs across different quantities.
+| Evidence | Record/boundary |
+|---|---|
+| Sentence solved/judged | `strategy_summary`: sentence form, computation versus relation, and relation in the student's words; not a new stage, per `references/progression-map.md` |
+| Relation found after a hint | Supported evidence |
+| Student-made sentence with drawing, action, writing, or explanation showing why true | Independent relation evidence |
+| What varies, what stays true, and why beyond listed cases are shown | May support generalization; solving an open sentence alone does not |
+| Fast correct answer without reasoning | Strategy unknown |
+
+When transcribing reasoning, follow “Recording” in `references/math-teaching-core.md`: equals signs connect equal quantities only.

@@ -31,10 +31,10 @@ Use history to tell one-off from repeated. `diagnosis.label` states the specific
 
 ## Conservative Conclusion
 
-- `strategy_summary` states the problem type, unknown, and actual actions; `next_target` is one small goal that can be tried immediately.
+- `strategy_summary` states the problem type, unknown, and actual actions; `next_target` is one small goal that can be tried immediately (the session merges it as `next_step_candidate` per `references/math-segment-fields.md`).
 - `current_levels` updates only `arithmetic_strategy_stage` / `multidigit_strategy_stage` / `fraction_strategy_stage` / `symbolic_strategy_stage` with current evidence, with values only from those listed in `references/progression-map.md`; when the stage is unclear, keep the original value.
 - `confidence`: `low` for self-report or ambiguous performance; `medium` for one clear showing, stable but to be verified; `high` when key evidence across multiple independent tasks agrees, or an independent transfer to a changed scene also holds.
-- A single correct answer never justifies a stage change; after a correct answer, one check is enough. Do not silently overwrite a conclusion to a higher level because of one success.
+- A single correct answer never justifies a stage change. After a correct answer, ask at most one additional discriminating check only if it can change the next decision; stop when evidence suffices. Stage changes require the strategy evidence in `references/progression-map.md`; `confidence` follows the evidence conditions above. Item count alone authorizes neither update. Do not silently overwrite a conclusion to a higher level because of one success.
 
 Completion condition: every conclusion is traceable or explicitly unknown, supported performance is not passed off as independent, and there is only one next step; stop when evidence suffices. The student sees only the ideas already observed and one question or next step.
 
@@ -42,7 +42,7 @@ Completion condition: every conclusion is traceable or explicitly unknown, suppo
 
 These are hypotheses to probe, not labels to apply:
 
-- Place value compared by digit count (`0.9` vs `0.87`, `1.5` vs `1.05`).
+- Place value compared by digit count rather than quantity.
 - Remaining units larger than the divisor, or the remainder ignored in a packing or measurement context.
 - Fraction denominator compared alone, or numerator and denominator changed separately in equivalence.
 - Fraction operations done as separate procedures (components added or "flip and multiply" without checking unit meaning).

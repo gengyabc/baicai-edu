@@ -1,42 +1,57 @@
 # Choosing Problems by Quantity Relationship
 
-Use CGI problem types (join, separate, part-part-whole, compare, multiplication, measurement (quotitive) division, partitive (equal-sharing) division, multi-step, non-routine) with the unknown in any position. Student-solving stems and illustrations leave operation and strategy to the student; a labeled teaching example in an agreed micro-lesson may explicitly connect relation, representation, and method under the shared contract loaded by session. Success on one type or unknown position does not imply the others.
+Use CGI types: join, separate, part-part-whole, compare, multiplication, measurement (quotitive) division, partitive (equal-sharing) division, multi-step, and non-routine; vary the unknown's position. Success on one type or position does not establish the others. Student problems leave operation and strategy to the student; an agreed, labeled micro-lesson example may connect relation, representation, and method under session's shared contract.
 
 ## Representation Ownership
 
-For geometry-related teaching or a geometry problem, including given geometric shapes and dimensions, or before deciding whether the teacher supplies a diagram or the student draws, load `math-common` and read its `references/representation-contract.md`. Call `geometry_board_draw` so the related figure is on the Teacher demo tab, and apply its construction-goal exceptions within the current reveal gate and activity.
+For geometry teaching, given geometric shapes and dimensions, or deciding who supplies a diagram, load `math-common` and read `references/representation-contract.md`. Call `geometry_board_draw` for the Teacher demo tab; apply construction-goal exceptions within the current reveal gate and activity.
 
-## The Current Problem
+## Select the Task
 
-Choose one focused unknown from the explicit goal or evidence. Prefer an everyday-life story ending at one final question for quantity meaning and unknown roles. For calculation, equality, measurement, or representation goals, choose a bare calculation, number line, open sentence, or diagram when more useful and less language-heavy; a format the student explicitly asks for takes priority. Equality and relational sentences follow `references/relational-thinking.md`. Use number choice for calculation or strategy goals, without naming a strategy; you may offer two or three sets of numbers for the student to choose from. If the student cannot do it, easier numbers in the same story are allowed, then return to the original numbers; see `references/scaffold-calibration.md`.
+| Trigger | Action |
+|---|---|
+| Explicit format request | Use that format |
+| Quantity meaning or unknown roles | Prefer a concise everyday story with one focused unknown and final question |
+| Calculation, equality, measurement, or representation goal | Choose the least language-heavy useful calculation, number line, open sentence, or diagram; equality follows `references/relational-thinking.md` |
+| Calculation/strategy goal | Select useful number structure without naming the strategy; optionally offer two or three sets of numbers for the student to choose from |
+| Student cannot continue | May simplify numbers in the same story, then return to originals; follow `references/scaffold-calibration.md` |
 
-## Teaching Examples Versus Student Problems
+### Teaching Versus Eliciting
 
-An example teaches one observable relation; a student problem elicits it. For new equality meaning, a short comparison such as `3+2=5` and `5=3+2` with equal quantities can be more useful than a life story. For number composition, show the same total as two parts using objects, grouped dots, or equations. Match representations to known foundations; neither CGI stories nor a prescribed concrete-to-symbolic ladder is mandatory.
-
-Keep example, guided decision, and fresh independent check distinguishable. Choose a guided step that requires a real decision rather than copying the shown answer. A new independent item changes enough to require the target relation, with comparable non-target load and no named method or worked template. Merely replacing numbers in an already exposed solution does not establish independent selection. With a pending original, use a separate example that preserves its decisive inference and return to its recorded step; never relabel the original as a demonstration.
+- An example teaches one observable relation; a student problem elicits it. Match representation to known foundations: equal quantities for equality; objects, grouped dots, or equations for composition. Neither stories nor a fixed concrete-to-symbolic ladder are mandatory.
+- Keep example, guided decision, and fresh independent check distinct. Guided work requires a decision, not copying. Independent work requires the target relation with comparable non-target load and no named method/worked template; number substitution in an exposed solution does not establish independent selection.
+- With a pending original, use a separate example preserving its decisive inference, then return to the recorded step. Keep the original learner-owned.
 
 ## Relationship Complexity Before Number Size
 
-Keep calculation load (number size, regrouping) separate from relationship complexity (quantity roles, unknown position, comparison, linked changes). CGI types are design choices, not an easiest-to-hardest ladder.
+Separate calculation load (size, regrouping) from relationship complexity (quantity roles, unknown position, comparison, linked changes). CGI types are choices, not a difficulty ladder.
 
-- For "harder", "more complex", or an open addition/subtraction goal, make one meaningful relationship change within familiar numbers and keep everything else stable. For explicit calculation-only practice, vary number structure instead. "More complex, especially subtraction with regrouping" keeps regrouping as a calculation constraint inside a richer relationship, not a run of result-unknown drills.
-- A clear multi-step request may start there; a one-step problem is an evidence-based starting option, not a prerequisite. If only one arithmetic step is uncertain, support it inside the current story.
-- Complexity comes from coordinating quantities, not longer wording; extra names and decorative details add none, unless relevance selection is the explicit goal.
-
-| Structural change | Example on one scene (not a fixed sequence) |
+| Request/evidence | Action |
 |---|---|
-| Unknown position | From "52 books, 27 borrowed, how many remain?" move the unknown to the start or the change |
-| Part-part-whole or comparison | "52 storybooks and 27 science books; how many fewer science books?" Make referent and direction clear; subtraction words do not fix the operation |
-| Linked changes | "52 books, 27 borrowed, then 6 returned; how many now?" |
-| Unknown within linked changes | "52 books, some borrowed, 6 returned, 31 now; how many were borrowed?" |
+| Harder, more complex, or open addition/subtraction goal | Make one meaningful relationship change within familiar numbers; keep other demands stable |
+| Calculation goal | For explicit calculation-only practice, vary number structure |
+| Complexity plus regrouping | Enrichment keeps regrouping as a calculation constraint in a natural solution |
+| Explicit multi-step request | May start multi-step; a one-step problem is an evidence-based starting option, not a prerequisite |
+| One uncertain arithmetic step | Support that step inside the current story |
 
-Completion criterion before posing (internal, not student evidence or new log fields): identify the knowns, the unknown, their relation, and for linked changes the intermediate quantity; solve it and confirm any requested calculation feature occurs in a natural solution; know which structural change serves the request. The student gets a coherent story and one final question; operation, step order, and intermediate steps are theirs.
+| Structural change | Action |
+|---|---|
+| Unknown position | Move the unknown to start/change/result |
+| Part-part-whole or comparison | Change quantity roles; make referent/direction clear |
+| Linked changes | Coordinate successive changes |
+| Unknown within linked changes | Make one change unknown |
+
+Operation words alone do not determine the operation. Complexity comes from coordinating quantities, not decorative wording, unless relevance selection is the goal.
+
+Completion criterion before posing: internally identify knowns, unknown, relation, any linked-change intermediate quantity, and the structural change serving the request. Solve and verify requested calculation features. These checks add no log fields or student evidence. Present one coherent task and one final question; leave operation, step order, and intermediate steps to the student.
 
 ## Variation and Transfer
 
-Change mainly one thing at a time: number structure, unknown position, problem type, or scene; a change in number structure also counts as variation. When developing a strategy you may keep the scene and may deliberately repeat numbers or results. Keep the original scene until the current problem is finished.
+| Purpose | Design and evidence boundary |
+|---|---|
+| Strategy development | Change mainly one of number structure, unknown position, type, or scene; a change in number structure also counts as variation. You may deliberately repeat numbers or results; keep the current scene until the problem finishes |
+| Diagnostic contrast | Vary the target feature; keep other demands comparable |
+| Clarify meaning/reduce reading load | A scene change that clarifies meaning or reduces language load is instruction, not transfer evidence |
+| Context transfer check | Use a genuinely different everyday activity, objects, and actions; preserve relation, unknown position, and comparable number/language load, without a revealing cue. Renaming alone is not a new context |
 
-For a diagnostic comparison, vary the target feature while keeping other demands comparable. A scene change that clarifies meaning or reduces language load is instruction, not transfer evidence. To check context transfer, use a fresh, meaningfully different everyday activity, objects, and actions, preserving the target relationship, unknown position, and comparable number/language load, without a revealing cue. Renaming alone is not a new context. Accept a valid drawing, action, written relation, or explanation showing the preserved relationship; success only in the original scene remains local evidence.
-
-Pace by the student's request and demonstrated relationships, not grade. Once evidence suffices, move to the next meaningful structural change rather than another numeric variant; same-type numeric practice is for an identified calculation gap or an explicit practice request, under the practice contract's stop rule.
+Accept valid drawings, actions, written relations, or explanations of the preserved relationship. Original-scene success stays local. Pace by requests and evidence, not grade: once evidence suffices, choose a meaningful structural change. Same-type numeric practice requires an identified calculation gap or explicit practice request and follows the practice stop rule.

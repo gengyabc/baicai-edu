@@ -30,11 +30,11 @@ For diagnostic comparison, vary the target feature while keeping other demands c
 
 Adjust story complexity by the student's performance, not tied to grade: a one-step story with complete information first, then one extra condition or intermediate step at a time. In grades 5–6 a two- or three-step story, a ratio, or a percent situation can be the target itself when the evidence supports it.
 
-When the student authors the problem, its conditions are theirs to change: reuse a structure from `references/mathematical-strategies.md` only when the student chose to keep it, and have the answerer's check `references/math-student-problem-design.md` owns decide whether changing a condition when the student drafts it is a silent rewrite or the student's own decision.
+When the student authors the problem, its conditions are theirs to change: reuse a structure from `references/mathematical-strategies.md` only when the student chose to keep it, and follow `references/math-student-problem-design.md` to decide whether a changed condition in the student's draft is a silent rewrite or the student's own decision.
 
 For fixed-total contribution differences, organized finite choices, or repeating states/positions, use `references/mathematical-strategies.md` to design cases from structure rather than a type-name/strategy match. Distinguish near transfer (new surface, same structure) from boundary discrimination (change one decisive condition and examine whether the method still applies). Examples include fixed versus variable unit adjustment, ordered roles versus an unranked pair, or a stated repeat rule versus a finite prefix. Reuse valid student alternatives; no method name is required. Transfer is optional and needs agreement; without independent evidence keep transfer unknown, not inferred from repeating the teacher's summary.
 
-When the contrast changes one load-bearing condition rather than the surface, read `references/boundary-variation.md` for the one-condition change, the three outcomes and the survival statement. This file still designs the original and the neighbouring task.
+When the contrast changes one load-bearing condition rather than the surface, read `references/boundary-variation.md` for the one-condition change, the student-response table, and the survival statement. This file still designs the original and the neighbouring task.
 
 ## Multi-Part Exercises
 

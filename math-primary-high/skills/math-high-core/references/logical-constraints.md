@@ -1,6 +1,6 @@
 # Logical Constraints and Solution Completeness
 
-Read when finite candidate assignments interact through several conditions, a student needs justified elimination or propagation, or the number of solutions matters. Use Ordered enumeration in `references/mathematical-strategies.md` for exhaustive organization and `references/proof-teaching.md` for scope and the first load-bearing gap. This is a task-selected supplement to the existing Pólya/derivation/proof methods, not another lesson sequence or teaching owner.
+Read when finite candidate assignments interact through several conditions, a student needs justified elimination or propagation, or the number of solutions matters. Use Ordered enumeration in `references/mathematical-strategies.md` for exhaustive organization and `references/proof-teaching.md` for scope and the first load-bearing gap. Keep the current act; `math-high-session` remains the teaching owner. This is a task-selected supplement, not another lesson sequence.
 
 ## Establish the candidate space
 
@@ -22,7 +22,7 @@ Keep the student's valid assignments, exclusions and chosen representation. Use 
 | Gives a valid final assignment but cannot explain uniqueness | Preserve the result. Separate its condition check from why any other candidate must fail; examine just the missing completeness reason. |
 | Crosses out a blank or says “it looks impossible” | Ask which condition rules that candidate out. Keep it open until a reason or a complete branch check resolves it. |
 
-Unknown tool use needs only a discriminating probe if it changes the next decision. For example, if applying “once each” remains unclear, use a two-person/two-color assignment to observe its use, not a vocabulary quiz. A confirmed gap follows `references/prerequisite-learning.md` through `math-high-session`: preserve the parent problem, original answer, exclusions and their reasons, supplied support and pending position before entering the nearest tool child. Reuse that contract for recursion, saving/restoring and one-layer return; this supplement adds no plan fields or dispatcher. A verified alternative can remove a dependency. Tool readiness alone does not show independent selection in the parent.
+Unknown tool use needs only a discriminating probe if it changes the next decision. For example, if applying “once each” remains unclear, use a two-person/two-color assignment to observe its use, not a vocabulary quiz. A confirmed gap follows `references/prerequisite-learning.md` through session dispatch: synchronize the parent problem, original answer, exclusions and their reasons, supplied support and pending position with that contract before entering the nearest tool child. Reuse it for recursion, saving/restoring and one-layer return; this supplement adds no plan fields or dispatcher. A verified alternative can remove a dependency. Tool readiness alone does not show independent selection in the parent.
 
 ## Check the strength of the conclusion
 
@@ -34,22 +34,23 @@ Unknown tool use needs only a discriminating probe if it changes the next decisi
 
 At an actual completeness decision, ask what has been established and which possibilities remain, using the student's work. A teacher's rebuilt table is not student monitoring. A valid verbal propagation argument can replace the planned enumeration.
 
-## Teacher-only checked cases
+## Private verification
 
-These keys verify the mathematics; do not disclose their answers or complete routes in an independent opening. Guided work and explicit full-solution requests follow `learn-core`'s informed full-solution choice via `references/proof-teaching.md`; apply it to parent and child alike. After valid same-task confirmation, give the checked full solution without compulsory prerequisites or exercises. A hint request does not authorize it. Pause, exit and refusal of transfer remain available.
+Keep answers and complete routes private in an independent opening. Guided work follows **Guide before revealing** in `learn-core`'s `references/pedagogy-core.md`. Only explicit full-solution requests use `learn-core`'s informed full-solution choice (`references/informed-full-solution-choice.md`), for parent and child tasks alike. Valid same-task confirmation permits the checked full solution without compulsory prerequisites or exercises; a hint request does not trigger that choice. Pause, exit and refusal of transfer remain available.
 
-**Base problem:** A, B, C each take one of red, blue, green; each color is used exactly once. A≠red, B≠blue, C=red.
-
-C uses red, so A and B use blue/green. A=green would force B=blue, contradicting B≠blue. Thus A=blue, B=green, C=red. Check existence separately: one color per person, all three colors once, A not red, B not blue, C red. Completeness: A's only two remaining values were blue and green; green fails and blue forces B. Equivalent route: B cannot use red (C uses it) or blue (given), so B=green; then A=blue. Both routes justify uniqueness without claiming that one successful substitution did so.
-
-**LB1 — remove C=red:** keep all other conditions including each color once. Enumerate by A. If A=blue, B may be red or green, yielding (blue,red,green) and (blue,green,red). If A=green, B cannot be blue or green, yielding (green,red,blue). A=red is forbidden. These are exactly three assignments in (A,B,C) order; each passes the remaining conditions. The old unique assignment is still valid but no longer unique.
-
-**LB2 — add A=red to the base problem:** A=red directly contradicts A≠red; no assignment can satisfy both. No need to enumerate all six permutations, change a clue, or offer a noncompliant answer.
-
-**Near transfer:** rename A/B/C to Lin/Bo/Chen and red/blue/green to cat/dog/fish, preserving the same once-only rules and corresponding clues. The unique assignment becomes Lin=dog, Bo=fish, Chen=cat. Observe whether the student uses the once-only rule rather than memorizes a color placement. A changed story is not boundary evidence; LB1/LB2 change conditions and require rechecking. Offer transfer only when useful and agreed, not as a compulsory closing test.
+| Change or result | Verify |
+|---|---|
+| One forced assignment | Every exclusion follows from an original condition or justified propagation; check the resulting full assignment against all conditions |
+| Claimed uniqueness | Every alternative branch is excluded; a successful substitution alone establishes existence |
+| A clue is removed | Keep old valid solutions, reopen only exclusions dependent on that clue, and recheck the full count |
+| A contradictory clue is added | Identify the incompatible conditions; no exhaustive enumeration or silent clue repair is needed |
+| Labels/settings change with structure preserved | Observe use of the constraints, not memorized placements; changed surface alone is not boundary discrimination |
+| A decisive condition changes | Recheck feasibility and completeness; offer this contrast only when useful and agreed |
 
 ## Attribution and completion
 
-Follow `references/math-segment-fields.md` for the existing evidence fields and at most one merged performance segment per turn. Keep student exclusions/reasons, supported execution, teacher tables/key deductions, and untested completeness or transfer distinct. A supplied elimination copied afterward is supported work, not independent discovery; teacher-only explanation or process choice without student performance has `session_segment: null`. These are revisable local observations, not new long-term obstacle labels or scores.
+Keep student exclusions/reasons, supported execution, teacher tables/key deductions, and untested completeness or transfer distinct. A supplied elimination copied afterward is supported work, not independent discovery.
+
+Recording: `references/math-segment-fields.md` — at most one merged performance segment per turn for actual student work; teacher-only explanation, a choice or a plan uses `session_segment: null`. Tool children and recovery: `references/prerequisite-learning.md`. This supplement adds no method scores, obstacle labels or plan fields.
 
 Completion: the actual student's conclusion has its supported strength (one witness, unique, multiple, none, or still unresolved), with the first missing reason explicit. Correct placement alone does not establish completeness or durable mastery; the student may stop with that part untested.

@@ -6,7 +6,7 @@ This file owns the configurable thresholds and the hard constraints for grade 4â
 
 | Setting | Default | Meaning |
 |---|---|---|
-| `difficulty_levels` | `L1`, `L2`, `L3` | `L1` concept/direct application; `L2` multi-step, variation, or transfer; `L3` open inquiry, reasoning, or proof |
+| `difficulty_levels` | `L1`, `L2`, `L3` | `L1` concept/direct application; `L2` multi-step, variation, or transfer; `L3` open inquiry, reasoning, or proof. `profile.current_levels.overall` uses these same labels; change it only under `promotion_independent_successes` and the demotion/struggle rules below |
 | `starting_level` | `auto` | Start from observed evidence, never from grade alone |
 | `promotion_independent_successes` | `2` | Soft trigger to consider one nearby challenge after distinct independent successes; not a mastery or transfer threshold. Evidence must match the goal |
 | `difficulty_review_after_struggles` | `2` | Meaningful struggles before simplifying one demand or probing prerequisites |

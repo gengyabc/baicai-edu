@@ -112,6 +112,39 @@ test('opening-expectation replay cases include continuation, new learning and ov
     '先看图，再接手一步', '先不换', '卡片恢复', '不强制退出测验'])
 })
 
+test('mainline teaching remains reachable and lesson state stays scoped to micro-lessons', () => {
+  const low = text('math-primary-low/skills/math-low-session/SKILL.md')
+  const dispatch = low.split('## Central Dispatch Contract')[1].split('### Entry Events')[0]
+  contains(dispatch, ['Mainline teaching and micro-lessons run here',
+    'dispatch a leaf only when its branch trigger applies'])
+  assert.doesNotMatch(dispatch, /then a leaf/)
+
+  const high = text('math-primary-high/skills/math-high-session/SKILL.md')
+  const lesson = high.split('### Micro-Lesson in This Session')[1].split('### Opening Hint')[0]
+  contains(lesson, ['Only while executing `micro_lesson`', 'mode: learn',
+    'context.activity: teaching', 'submode: learn'])
+  const opening = high.split('### Opening Hint')[1].split('### Branch Triggers')[0]
+  contains(opening, ['never resets mode or activity', "preserve the caller's mode",
+    'actual activity', 'existing merge rules'])
+  assert.doesNotMatch(opening, /`mode: learn`|`context\.activity: teaching`|`submode: learn`/)
+})
+
+test('diagnostic check limits are not promotion evidence and hints do not request full solutions', () => {
+  const refs = 'math-primary-high/skills/math-high-core/references/'
+  const diagnosis = text(`${refs}strategy-diagnosis-rules.md`)
+    .split('## Conservative Conclusion')[1].split('## Expected Error Types')[0]
+  contains(diagnosis, ['at most one additional discriminating check',
+    'Stage changes require the strategy evidence', 'confidence',
+    'Item count alone authorizes neither update'])
+  assert.doesNotMatch(diagnosis, /check is enough before raising/)
+
+  const guidance = text(`${refs}logical-constraints.md`)
+    .split('## Private verification')[1].split('## Attribution and completion')[0]
+  contains(guidance, ['Guided work follows **Guide before revealing**',
+    'Only explicit full-solution requests', 'a hint request does not trigger that choice'])
+  assert.doesNotMatch(guidance, /Guided work and explicit full-solution requests follow/)
+})
+
 test('manual replay checklists cover failed writes, restore and original-task branches', () => {
   contains(text('learn/tests/guided-teaching-scenarios.md'), ['selected_id 写失败',
     'math_opening_hint', 'Feynman', '静态字符串检查不验证写失败'])

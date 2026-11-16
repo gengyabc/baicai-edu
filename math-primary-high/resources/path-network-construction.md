@@ -36,17 +36,20 @@ For the examples below the graph is finite and undirected, every required edge m
 
 All vertices incident to required edges must be in one connected component: a continuous route cannot jump between components. Isolated vertices matter only if the task also requires visiting them. At an internal visit, arrival and departure use a pair of edges; only the two endpoints of an open route may have an unpaired edge. Thus a route has zero or two odd-degree vertices; a closed one has zero. These are necessary conditions, not individually sufficient tests. Recheck conditions for directed graphs or prescribed endpoints. A general joint sufficiency theorem requires its own applicable conditions and usable justification; concrete construction is enough for an existence task.
 
-## Teacher-only checked cases
+## Private verification
 
-Use these for private verification, not to supply answers/routes in an independent opening. Reveal only under the current guidance rules; explicit full-solution requests use `learn-core`'s informed full-solution choice with its wait and same-task confirmation. Add no prerequisite study or compulsory exercise to that path.
+Keep answers/routes private in independent work. Explicit full-solution requests use `learn-core`'s informed full-solution choice (`references/informed-full-solution-choice.md`), with its warning, wait and same-task confirmation; add no prerequisite study or compulsory exercise.
 
-- **W0–W2, right/up from (0,0) to (2,2):** rows y=0,1,2, increasing x, are [1,1,1], [1,2,3], [1,3,6]. There are 6 routes. With no idea, study 1×1 first. If the student lists RRUU, RURU, RUUR, keep all three and inspect the branch starting U, leaving its routes to them. “6, left plus below” needs the unique-last-edge explanation above, not a restart of computation or a combination formula.
-- **WB1, forbid (1,1):** its count is 0; rows become [1,1,1], [1,0,1], [1,1,2], hence 2 routes (RRUU, UURR). Subtracting one forbidden point from 6 does not count forbidden routes.
-- **WB2, allow left and repeated vertices without a length bound:** on the same lattice insert (0,0)→(1,0)→(0,0) any number of times before a right/up route to (2,2). These walks are distinct by length, so infinitely many; the original recurrence is inapplicable. First clarify any missing stopping/length restriction rather than assume this interpretation for every changed task.
-- **WB3, two disconnected triangles:** every vertex has degree 2, but no continuous route covers edges in both components. Even degrees alone are insufficient.
-- **WB4, connected K1,3:** center degree 3 and three leaves degree 1 give four odd vertices. Entry/exit pairing permits at most two, so no such route exists; connectedness alone is insufficient.
-- **WB5, triangle ABC:** A→B→C→A uses AB, BC, CA once and revisits A legally. This proves a feasible route, not that it is unique or that all routes have been counted.
+| Route condition | Check |
+|---|---|
+| Acyclic last-step count | Correct start/boundary values and a unique-last-edge correspondence covering all routes |
+| Blocked vertex | Count routes avoiding it through the allowed transitions; subtracting a count of forbidden points is not counting forbidden routes |
+| Added directions/repetition | Check a finite stopping bound or a reachable repeatable cycle that can still lead to the destination; only the latter establishes infinitely many walks |
+| Edge-once network traversal | Check connectivity of required edges and entry/exit parity separately; either condition alone may be insufficient |
+| Concrete route offered | Verify every edge, multiplicity, endpoint and coverage requirement; a valid witness establishes feasibility, not uniqueness or complete counting |
 
 ## Completion and evidence
 
-For construction, check every requirement of the witness. For counting, also check the object correspondence, disjointness, coverage and initial/boundary conditions; retain any unverified generalization as unknown. Teacher-supplied routes, classifications and reasons remain help, and subsequent repetition is supported work. Use the existing turn state and segment rules: at most one merged performance segment per turn; teacher-only explanation or plan/choice-only turns have no performance segment. Do not introduce a network ability level or new diagnosis field. Optional near transfer and changed-condition checks give different evidence; respect refusal, pause and end through the existing owner.
+For construction, check every requirement of the witness. For counting, also check the object correspondence, disjointness, coverage and initial/boundary conditions; retain any unverified generalization as unknown. Teacher-supplied routes remain help; repeating them is supported work.
+
+Recording: `references/math-segment-fields.md` — at most one merged performance segment per turn for actual student work; teacher-only explanation, a choice or a plan uses `session_segment: null`. Tool children and recovery: `references/prerequisite-learning.md`. This supplement adds no method scores, obstacle labels or plan fields. Optional near transfer and changed-condition checks give different evidence; respect refusal, pause and end.

@@ -1,41 +1,54 @@
 # Representation Ownership and Fading
 
-Use when deciding whether to supply a mathematical diagram, invite student drawing, or fade a supplied representation. The current teaching owner keeps the activity, pending task, shared reveal gate, and evidence attribution. A diagram is a support decision, not a required board activity or a new teaching mode.
-
-Geometry-related teaching and geometry problems prioritize the Teacher demo tab. When the turn teaches or poses a figure made of points, segments, polygons, circles, parallelograms, or rectangles, call `geometry_board_draw` before the thinking question: `get`, then `show` with `expectedRevision`. Do this on opening or resuming and on any later turn that introduces such a figure, without waiting for a drawing request or a failed attempt. Rules that new tasks do not trigger board tools do not block this call; those rules cover student-draft clears and reads. Show the figure being taught or the problem's given figure. Respect an explicit text-only preference. If no usable representation is already present, supply this figure; if one is already present, keep it. The sections below still decide how much of the solution that figure may contain.
-
-## Verify Placement and Recover
-
-Use this checkpoint before referring the student to the Teacher demo tab, when restoring a task whose diagram is only described in a log, or when the student says the page is empty.
-
-1. **Read the teacher state:** call `get` to inspect the current teacher figure. A log's support_shown is not a tool receipt. If `figure: null` or the figure belongs to a different task, call `show` with the returned revision and only the original task's given conditions. If the matching figure is already present, keep it rather than rewriting it. These calls read teacher material only, never a student draft.
-2. **Report the actual result:** only a successful `show` receipt permits saying the drawing request was recorded; invite the student to check the Teacher demo tab without claiming it is visibly rendered. A matching `get` result confirms stored teacher material, not browser display. If the student still sees nothing, acknowledge the display problem and retain the same mathematical task; do not insist the student must have seen or copied the figure.
-3. **Recover availability:** consult the current tool catalog rather than treating a historical unknown-tool error as permanent. If `geometry_board_draw` is currently listed, attempt `get` once for this recovery request. If it fails, report that concrete limitation and use concise text conditions; do not repeatedly retry within the same turn. If absent, use the same fallback; do not substitute a command, shell write, or student-board edit to manufacture a drawing or receipt.
-4. **Preserve continuation:** keep the original task and pending question, record only the support actually provided and any correction of an earlier placement claim. This technical recovery is not a student performance segment and does not authorize clearing a board. End a technical-help reply with the tool/display result, not another demand to solve the pending problem.
-
-Completion: the reply distinguishes a planned figure, a successfully recorded figure, and a student-confirmed visible figure. Never infer one from another.
+Use when supplying, requesting, or fading a mathematical representation. The current teaching owner keeps the activity, pending task, reveal gate, and evidence attribution. **Reveal gate** means `learn-core`'s **Guide before revealing** in `references/pedagogy-core.md`; representations support the task, not a new mode or required board activity.
 
 ## Choose by the Learning Goal
 
-1. Identify the consequential thinking to leave with the student: interpreting quantities, choosing a representation, constructing a shape, computing, comparing cases, or justifying a claim. Use existing work and explicit wishes; grade, drawing neatness, and a short reply do not establish readiness.
-2. Choose the least support that makes that thinking accessible:
-   - **Supplied representation:** when geometric shapes and their dimensions are already given, the goal is calculation, comparison, or reasoning about those conditions, and no usable representation is already present, proactively supply a simple, labeled diagram before the thinking question. Do this on opening or resuming the task, without waiting for a drawing request or a failed attempt; a discovery goal does not make drawing the given conditions the student's job. Respect an explicit text-only preference. For other tasks, offer a diagram when understanding given conditions is the goal and construction adds irrelevant motor/interface load. State what the marks represent and place each label near its object. Keep one relevant view, without decorative detail. This is a conditional default, not a universal first step.
-   - **Student-generated representation:** when deciding what to represent, constructing, organizing quantities, or testing a conjecture is the learning goal, invite the student to draw or describe their own model. Leave its load-bearing choices open. A teacher-completed model would remove the very evidence being sought.
-   - **Partial support:** when the student has a specific representational obstacle, supply only the missing starting point or a separate example under the shared reveal gate; return one meaningful decision to the student. Distinguish following a supplied construction from independently choosing it.
-3. Reading and drawing diagrams also consume attention; reduced cognitive load is a possibility, not a guarantee. If an already usable sketch, equation, table, or verbal account expresses the relationship, keep it. Offer paper, speech, or equations when the board's primitives or interface get in the way; using the board is never an entrance or exit requirement. Clarify only if the answer would change the next action, without a mandatory preference menu.
+Leave the consequential thinking with the student; choose the least support that makes it accessible. Use existing work and explicit wishes, not grade, neatness, or reply length as readiness evidence.
+
+| Goal / condition | Action and completion |
+|---|---|
+| **Supplied representation**: interpreting given conditions; construction adds irrelevant load | Keep a usable representation. If no usable representation is already present, proactively supply labeled conditions before the thinking question, on opening or resuming, without waiting for a drawing request or a failed attempt. Respect an explicit text-only preference. Conditions are visible; target reasoning stays open. This is not a universal first step. |
+| **Student-generated representation**: choosing, constructing, organizing, or testing a model is the goal | Invite the student's drawing or description; leave load-bearing choices open. The student's choices provide the evidence. |
+| **Partial support**: one representational obstacle blocks progress | Supply only the missing starting point or a separate demonstration under the reveal gate; return one meaningful decision to the student. |
+
+Keep one relevant view with labels beside their objects. Reduced cognitive load is not a guarantee: retain a usable sketch, equation, table, or verbal account. Offer paper, speech, or equations when the interface obstructs thinking. Clarify only when the answer changes the next action; board use is optional.
 
 ## Preserve the Task
 
-A provided picture can reveal a solution just as readily as words. On a learner-owned task, include stated conditions only; preserve the unknown, decisive auxiliary line, grouping, partition, formula, and conclusion for student reasoning unless the shared reveal gate authorizes that specific support. A diagram paired with a leading question is not independent discovery. An agreed discovery goal remains discovery even when teacher authoring tools are available.
+On a learner-owned task, show stated conditions only. Leave the unknown, decisive auxiliary line, grouping, partition, formula, and conclusion to the student unless the reveal gate authorizes that specific support. A leading diagram/question is supported reasoning, not independent discovery; tool availability does not change an agreed discovery goal.
 
-For comparing two rectangles whose dimensions are already supplied, show both outlines with their stated side lengths at a common display scale, unless a usable diagram is already present or the student requests text only. For example, given 9 cm × 1 cm and 6 cm × 4 cm, label those sides and the rectangle names; leave areas and the comparison unfilled. Keep unit grids, area-counting partitions, formulas, and conclusions out of this initial conditions-only diagram. A common display scale communicates the given lengths, not a measurement or correctness judgment of student geometry. For finding another rectangle under a fixed-perimeter condition, the student's choice of dimensions is part of the task: do not prefill all cases or the maximizing shape. A few checked cases generate a conjecture, not a proof over all lengths.
+| Task structure | Conditions-only representation | Keep open |
+|---|---|---|
+| Compare given rectangles | Show labeled outlines at a common display scale; leave areas and the comparison unfilled. | Exclude unit grids, area-counting partitions, formulas, and conclusions from the initial diagram. |
+| Find dimensions under a fixed constraint | Show the constraint; the student's choice of dimensions is part of the task. | Candidate set and optimum remain open. Checked cases suggest a conjecture, not a proof over all lengths. |
+
+Display scale communicates given lengths; it does not measure or judge student geometry.
+
+## Geometry Dispatch
+
+Geometry-related teaching and geometry problems prioritize the Teacher demo tab. On opening, resuming, or introducing a figure, read `references/board-contract.md`, **Teacher Geometry Demonstration**, and call `geometry_board_draw` before the thinking question; keep matching teacher material and respect text-only preference. New-task restrictions on student-draft reads/clears do not block this call.
+
+The board contract owns supported figures, call recipes, receipts, fallback, and the submitted-geometry boundary. For non-geometric conditions use conversation text; the separate reference is not shown on the quantity tab or the geometry tab. The provider's submitted-geometry boundary is unchanged: use student statements, not coordinate-based judgments.
+
+## Verify Placement and Recover
+
+Before referring to the Teacher demo tab, restoring a logged diagram, or responding to an empty-page report:
+
+1. **Inspect:** follow the board contract's live `get` / keep / `show` recipe, using only the original task's allowed conditions. A log's support_shown is not a tool receipt. Check the current tool catalog on each recovery request; a historical unknown-tool error is not permanent. Attempt `get` once if available; on absence/failure use the board contract's fallback.
+2. **Report:** distinguish planned material, recorded material, and student-confirmed visibility; none implies another. Invite checking the tab without claiming the student saw or copied the figure.
+3. **Continue:** keep the original task and pending question. Record actual support and correct any earlier placement claim. Technical recovery is not a student performance segment or clear authorization; end with the display result, not another solving demand.
 
 ## Fade by Evidence, Not Schedule
 
-Distinguish withdrawing teacher completion from withdrawing diagrams themselves. When the student can use the representation and explain its relevant connection, offer less completed support on a later step: supplied diagram, partial diagram, or student-chosen representation as appropriate. Moving to no diagram additionally requires usable abstract understanding and execution for this goal; being able to draw independently is not a reason to remove that useful strategy. This is a set of choices, not a compulsory sequence. An expert may start without a diagram; a novice may need a supplied one. Restore only the missing support when it stops helping, and allow return to diagrams when useful. No fixed number of turns, illustrations, or successful copies triggers withdrawal.
+| Evidence | Support decision |
+|---|---|
+| Student uses the representation and explains its relevant connection | Offer less teacher completion on a later step. |
+| Abstract understanding and execution are usable for this goal | May offer no diagram. Independent drawing alone does not justify removing a useful strategy. |
+| A specific obstacle returns | Restore only the missing support; allow diagrams again when useful. |
 
-## Evidence and Tool Boundary
+Supplied, partial, student-chosen, and no-diagram options are not a compulsory sequence. No turn count, illustration count, or successful copy triggers fading.
 
-Teacher drawing is exposure, not student performance. A student filling or explaining a supplied diagram is supported work under the actual conditions; independent construction and independent mathematical reasoning are separate claims. Do not require copying a supplied picture to count participation. Record consequential exposed support in the existing pending-task state only when needed for honest continuation; no new score, profile field, or mandatory segment is introduced.
+## Evidence Attribution
 
-For a teacher diagram in the math board, read `references/board-contract.md`, sections **Teacher Reference** and **Teacher Geometry Demonstration**, first. A geometric figure made of points, segments, polygons, circles, parallelograms, or rectangles uses `geometry_board_draw` when that tool is available: `get`, then `show` with `expectedRevision`. It appears on the read-only Teacher demo tab. The student copies it onto the geometry board only by choosing that action; the model cannot see the click and does not read an unsent draft. `recorded` means the request was stored, not that the student saw or copied it. Say in the conversation that the figure is on the Teacher demo tab. For a diagram that is not one of those geometry figures, state the known conditions in the conversation. That separate read-only reference is not shown on the quantity tab or the geometry tab; do not tell the student to look for it there. Describing a planned drawing or asking the student to draw it is not supplying it. It is separate teaching material, not a student snapshot or an edit to either student canvas. If the tool is absent or fails, provide a conversational diagram when supported, otherwise concise text conditions, and continue the same thinking question; state the limitation briefly when board placement was requested, without claiming placement. The provider's submitted-geometry boundary is unchanged: use student statements, not coordinate-based measurements or geometric correctness judgments.
+Teacher drawing is exposure, not student performance. Filling or explaining a supplied diagram is supported work; independent construction and independent mathematical reasoning are separate claims. Copying is optional, not participation evidence; assisted use requires the student's report, as specified in the board contract. Preserve consequential exposed support in existing pending-task state for honest continuation; add no score, profile field, or mandatory segment.

@@ -28,21 +28,21 @@ Completion: the student connects each term or transformation to a region or a ju
 
 ## Evidence
 
-Use `references/math-segment-fields.md` for the existing single merged segment and continuation descriptions. Keep student route selection, supported calculation, teacher-supplied constructions and still-unknown explanation or transfer separate. Teacher-only demonstrations have `session_segment: null`; repeating a supplied partition or formula is supported work. Local tool readiness does not establish independent parent construction or long-term mastery. Near transfer and changed-condition boundaries serve different purposes; offer them only when useful and agreed, and respect refusal or ending under the existing lifecycle.
+Keep student route selection, supported calculation, teacher-supplied constructions and still-unknown explanation or transfer separate. Repeating a supplied partition or formula is supported work; local tool readiness does not establish independent parent construction.
 
-## Opening contrast: deriving parallelogram area
+Recording: `references/math-segment-fields.md` — at most one merged performance segment per turn for actual student work; teacher-only explanation, a choice or a plan uses `session_segment: null`. Tool children and recovery: `references/prerequisite-learning.md`. This supplement adds no method scores, obstacle labels or plan fields. Near transfer and changed-condition boundaries remain optional; respect refusal or ending.
 
-If existing evidence shows rectangle-area calculation and area-preserving paper movement, reuse it. For a goal of **finding a transformation**, a supported opening can ask: “Can you show a way to turn this into a shape whose area you can calculate, without adding or losing any paper?” It supplies the familiar-shape and preservation directions, not a destination rectangle, cut line or movement. The teacher figure shows only the known starting shape, not those still-open choices. Asking which formula comes first would miss the unformed overall relationship.
+## Opening and private route checks
 
-If the student instead proposes completing a larger rectangle and subtracting extra pieces, investigate that route: the extra regions must have computable areas, and the proposed removal must exactly recover the target. Follow it when justified rather than requiring cut-and-move. If it relies on a still-unknown triangle-area relation, keep the route provisional and identify that dependency; neither reject the alternative automatically nor assume its tools. For **learning an assigned cut-and-move operation**, explicit guidance may fit, but record teacher route selection and student execution separately. For a genuinely absent direction, a permitted separate-example demonstration follows `references/scaffold-calibration.md`; choose one whose prerequisites do not depend on the target formula.
+| Goal or route | Teaching action | Acceptance |
+|---|---|---|
+| Find an area-preserving transformation | Reuse evidenced area/movement tools; invite a computable transformation while leaving destination, partition and movement open | The teacher figure contains only known conditions, not the protected construction |
+| Follow a student complement route | Check containment, computable extra regions and exact recovery of the target | Keep the route if justified; identify any missing area tool without rejecting the route or assuming readiness |
+| Learn an assigned transformation | Give permitted explicit guidance | Record teacher route selection separately from student execution |
+| Supply a separate-example demonstration | Follow `references/scaffold-calibration.md` | Its prerequisites do not depend on the protected target formula |
+| Verify a partition/rearrangement | Check the region represented by every term, coverage and preservation | Equal numerical results alone do not validate the partition |
+| Verify equal triangle areas | Establish equal bases and perpendicular heights from stated/justified conditions | Common base alone is insufficient; an external perpendicular foot is allowed |
+| A condition or dimension changes | Recheck the affected base, height, containment or coverage | Changed numbers alone do not establish boundary discrimination |
+| Only appearance suggests a relation | Ask for the relevant stated condition and wait | No pixel measurement or board layout establishes it |
 
-## Teacher-only checked cases
-
-Keep these checks private during independent exploration; select a next question from the actual obstacle rather than reciting a worked route. The shared reveal rules in the derivation/proof references determine when a supplied demonstration or informed full solution is appropriate.
-
-- **L-region:** an 8 cm by 6 cm rectangle with its upper-right 3 cm by 2 cm rectangle removed has area 48−6=42 square centimetres. A horizontal split gives 8×4+5×2=42; a vertical split gives 5×6+3×4=42. In the horizontal route the lower full-width strip is 8 by 4 and the upper-left strip is 5 by 2; in the vertical route the left full-height strip is 5 by 6 and the lower-right strip is 3 by 4. All three are legal. Equal arithmetic values alone do not establish a correct partition.
-- **Near transfer:** a 10 by 7 cm rectangle with its upper-right 4 by 3 cm rectangle removed gives 70−12=58 square centimetres. Check the student's selected partition or complement and term meanings; changing numbers alone does not test the method's limits.
-- **Equal-area triangles:** AB is 6 cm; C and D lie on a stated parallel line whose perpendicular distance from line AB is 4 cm. Both triangles have area 6×4÷2=12 square centimetres. This includes an external perpendicular foot. Drawing a perpendicular can express the given common distance; it cannot create a distance absent from the conditions. If the height or area tool is confirmed missing, use the prerequisite child and its one-layer return, leaving parent line selection unconfirmed until shown.
-- **Changed height:** same base 6 cm but perpendicular distances 4 and 5 cm give 12 and 15 square centimetres. A shared base is insufficient for equal area.
-- **Equal area boundary:** take A=(0,0), B=(6,0), C=(0,4), D=(3,4) in a teacher-only mathematical check. Each triangle has area 12, but ABC has side lengths 6, 4 and √52, whereas ABD has lengths 6, 5 and 5. They are not congruent and have different perimeters (10+√52 versus 16). Coordinates and radicals are verification tools here, not student prerequisites or board primitives.
-- **Appearance only:** if the supplied diagram merely looks parallel, the common-height relation stays unknown. Ask for the relevant stated condition; no pixel measurement or board layout establishes it.
+Keep checked answers private during independent exploration. Shared reveal rules in the derivation/proof references govern demonstrations and informed full solutions. Coordinates or advanced calculations used privately for verification do not become student prerequisites or board primitives.

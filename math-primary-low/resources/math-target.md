@@ -4,7 +4,7 @@ For the shared `target_context` shape and the handling of empty text and file pa
 
 ## Remaining Text
 
-When it is neither empty text nor a path: `type: topic`, `source: manual_topic`, and `topic` is the student's mathematical theme, keeping their meaningful wording rather than a graph ID. Separate theme from action: “教我等号是什么意思，我没学过” has topic “等号是什么意思”; its explicit new-learning request may be kept verbatim in `target_context.intent`. “给我等号练习” and “我想自己探索等号” share a theme but different requested actions; do not encode those actions as topic names.
+For nonempty, non-path text: `type: topic`, `source: manual_topic`; `topic` keeps the student's mathematical theme/meaningful wording, not a graph ID. Keep requested action separate: preserve explicit learning, practice, or discovery requests in `target_context.intent`, not the topic name.
 
 Classify only when lifecycle already resolves a target. On a restored task or a same-goal action change, session reads the latest message and pending step directly; do not reparse the goal or create a new `scope_id`. `intent` is an input clue, not a micro-lesson switch: session decides from the goal, request, evidence, and pending task. Preserve any original intent already carried by errors or attachments; system recommendation reasons do not replace it. A candidate's optional `math_opening_hint` stays temporary and advisory under the recommendation contract.
 

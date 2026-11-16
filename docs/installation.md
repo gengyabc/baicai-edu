@@ -154,7 +154,7 @@ DSH_INTEGRATION_TEST=1 node --test scripts/install.integration.test.mjs
 node scripts/install.mjs all --dry-run
 node scripts/check-skills.mjs
 node --test scripts/skill-contracts.test.mjs
-node --test math-board/*.test.js
+npm --prefix math-board test
 ```
 
 隔离实测时可指定临时 `DSH_HOME`，避免修改正在使用的 profile。新建 profile 只安装高年级数学后，dependencies 与 `dsh.profile.bundles` 中应同时看到 `baicai-edu-learn`、`baicai-edu-math`、`baicai-edu-math-primary-high`，没有 `baicai-edu-math-board`；显式选装画板后才增加它。低年级数学仍同时安装 `baicai-edu-learn`、`baicai-edu-math`、`baicai-edu-math-board`、`baicai-edu-math-primary-low`。重复安装或组合安装时 `baicai-edu-math` 仍只出现一次。重装及加入其他学科后，每个教育 bundle 仍只出现一次。通过配置展开确认各技能 provider 及已选装的画板各注册一次；实际工具栏显示与交互仍需在真实 Web 页面验收。

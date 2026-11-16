@@ -14,7 +14,7 @@ The lower-primary `likes_visual`, `likes_story_context`, and `likes_direct_calcu
 
 ## current_levels
 
-- `overall`
+- `overall`: `L1` / `L2` / `L3`, same meanings as `difficulty_levels` in `references/adaptive-thresholds.md`; change only by that file's promotion and demotion rules
 - `arithmetic_strategy_stage`
 - `multidigit_strategy_stage`
 - `fraction_strategy_stage`
@@ -24,7 +24,7 @@ For stage values and how to read old values see `references/progression-map.md`.
 
 ## Domain for File Analysis
 
-`fractions`, `place_value_and_multidigit`, `multiplication_division`, `addition_subtraction_word_problems`, `measurement_and_geometry`, `patterns_and_data`, `ratio_rate_percent`, `geometry`, `beginning_symbolic_relations`, `proportional_and_graphical_relations`.
+`number_and_operations`, `addition_subtraction_word_problems`, `multiplication_division`, `fractions`, `place_value_and_multidigit`, `measurement_and_geometry`, `patterns_and_data`, `ratio_rate_percent`, `geometry`, `proportional_and_graphical_relations`, `beginning_symbolic_relations` (same set as Content Domains in `references/progression-map.md`).
 
 For the classification of `error_type` and `diagnosis.label` see `references/strategy-diagnosis-rules.md`. When finalize writes a `confirmed_skills` object, its `domain` is the narrowest domain from this same list that fits the actual confirmed skill; never invent a broader category.
 

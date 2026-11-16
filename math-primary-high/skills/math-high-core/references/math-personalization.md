@@ -19,7 +19,7 @@ Interests may also select a real situation for the application-modeling act (a b
 Subject `profile.preferences` only change presentation:
 
 - `likes_step_by_step`: when working a multi-step problem, present the plan as clearly separated steps; do not pre-compute them for the student.
-- `likes_examples`: when a concept is opaque, start from a worked or half-worked example, then return to the student's problem.
+- `likes_examples`: when a concept is opaque and **Guide before revealing** permits an example (agreed new learning or a separate example), start from a worked or half-worked example, then return to the student's problem; otherwise give a smaller cue.
 - `likes_real_world`: prefer a real situation for the application-modeling act; still ask the student to state assumptions.
 
 ## Fatigue, Choice, and Pacing

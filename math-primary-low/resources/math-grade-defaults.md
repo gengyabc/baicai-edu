@@ -35,12 +35,16 @@ Lower primary (grades 1–3, `lower_primary`):
 - `fractions`: fair-sharing stories, starting from equal partition
 - `place_value_and_multidigit`: starting from stories of grouping by tens and larger numbers
 - `number_and_operations`: number sense and basic operations
+- `measurement_and_geometry`: length, area beginnings, shapes, and spatial language
+- `patterns_and_data`: patterns, simple data, and early algebraic structure
 
 Upper primary (grades 4–6, `upper_primary`):
 
+- `number_and_operations` / `addition_subtraction_word_problems`: available when a file or explicit goal needs them
 - `fractions`: equal partition, quotient meaning, comparison, equivalence, operations
 - `multiplication_division`: multiplication/division structure and relational reasoning
 - `place_value_and_multidigit`: multi-digit operations and place value
+- `measurement_and_geometry`: units, area and perimeter with one relationship
 - `patterns_and_data`: patterns, data, and early algebraic structure
 
 For stage values see `references/progression-map.md`.

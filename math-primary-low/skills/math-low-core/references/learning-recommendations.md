@@ -1,60 +1,60 @@
 # Math Learning Recommendations
 
-Read by `learn-recommend` through the subject contract. This file decides content, difficulty, reasons, ordering, and advisory openings; shared lifecycle owns selection, save, and handoff. A cold math opening follows lifecycle's gate, not an automatic profile-goal lesson. An unfinished task or micro-lesson resumes first.
+`learn-recommend` reads this subject contract for content, difficulty, reasons, ranking, and advisory openings. Lifecycle owns selection, save, handoff, and the cold-opening gate. Resume an unfinished task/micro-lesson first; profile goals alone do not start teaching.
 
 ## Evidence Window
 
-Use the supplied snapshot and latest real performance only: the baseline includes at most the latest 5 session summaries and 20 recent error items, not full turn histories. Do not scan originals or old logs to reconstruct missing support conditions. Use “independent”, “supported”, “delayed”, or “due” only when the record actually establishes the condition; otherwise keep it unknown. A single error or self-report does not establish a stable gap, and a stored mastery label alone is not fresh evidence.
+Use the supplied snapshot and latest real performance only: at most the latest 5 session summaries and 20 recent error items. Do not reconstruct support conditions from originals or old logs. Mark independence, support, delay, or due status only when established; otherwise unknown. One error/self-report does not establish a stable gap; a mastery label is not fresh evidence.
 
-Check the specific methods, problem types, unknown positions, numbers, and support conditions in `strategy_summary`, then `priority_targets`, `developing_topics`, recent errors, and historical next steps. Latest comparable independent performance can correct an old suggestion; hinted completion cannot establish independent mastery.
+Inspect methods, types, unknown positions, numbers, and support in `strategy_summary`, then `priority_targets`, `developing_topics`, recent errors, and old next steps. Latest comparable independent work may supersede old suggestions; hinted completion is not independent mastery.
 
 ## Candidates: Relationship × Strategy × Number Structure
 
-Find one relationship that can move forward and write it as a small actionable goal, not “learn addition and subtraction”. Usually give 2–3 distinct justified candidates and one first choice; keep one if only one fits. Recommendation describes a task without presenting a full unanswered problem.
+Usually offer 2–3 distinct justified small goals and one first choice; keep one if only one fits. Name an actionable relationship, not a broad subject, and describe the task without posing a full unanswered problem.
 
-Read `references/progression-map.md` for local progression cues, not an entire graph search; arithmetic, multi-digit, and fractions are independent tracks. Unknown stages support low-load exploration, not age-based diagnosis. Read `references/problem-design.md` for its relationship-complexity decision and number load. Change mainly one load at a time; stages guide number choice, not access to content.
+Read `references/progression-map.md` for local progression cues, not a whole graph search: arithmetic, multi-digit, and fractions are separate tracks. Unknown stages permit low-load exploration, not age-based diagnosis. Use `references/problem-design.md` for the relationship-complexity decision and number load; vary mainly one load. Stages guide numbers, not content access.
 
-| Existing evidence | Small goal and suitable opening |
+| Evidence | Goal/opening |
 |---|---|
-| Multiple comparable performances or diagnosis confirm a particular blocking relation | Repair the smallest relevant gap; a short example may fit a clear gap (`micro_lesson`), while unresolved causes call for one discriminating item (`probe`) |
-| Recently completed after hints, no independent evidence yet | Consolidate the same relation with a fresh unhinted check (`practice`), adding support only if needed; do not jump to harder content |
-| Independently understood or selected a method in comparable tasks | Offer one adjacent new relation (`micro_lesson`) or an unhinted structural variation/transfer (`challenge`), rather than ranking redundant drills first |
-| A recorded future check, or prior success without recent comparable performance | Offer a fresh unhinted revisit (`practice`); say “let's check again”, not “you forgot”; claim a check is due only with comparable dates and an explicit agreement |
-| One error, self-report alone, grade/interests only, or no history | Local clarification or light exploration (`probe` when a distinction matters), or the explicit learning goal; describe the basis honestly, without stable weakness/mastery claims |
+| Multiple comparable performances or diagnosis confirm a blocker | Repair the smallest relevant gap; `micro_lesson` for a supported clear gap, `probe` for unresolved causes |
+| Hinted completion without independent evidence | Fresh unhinted same-relation check (`practice`); support only as needed, without jumping harder |
+| Comparable independent understanding/method selection | Adjacent relation (`micro_lesson`) or unhinted structural variation/transfer (`challenge`), ahead of redundant drills |
+| Agreed future check, or prior success without recent comparable work | Fresh unhinted revisit (`practice`); describe checking, not forgetting. “Due” requires comparable dates and explicit agreement |
+| One error, self-report, grade/interests only, or no history | Local clarification/light exploration (`probe` if a distinction matters), or the explicit goal; no stable weakness/mastery claim |
 
-Band examples, not a fixed ladder:
+Lower-primary neighboring goals, not a ladder:
 
-| Relation/strategy evidence | One feasible neighboring goal |
+| Current relation/strategy | Neighboring goal |
 |---|---|
-| Small-number one-by-one modeling | Explore where counting can continue within the same join/separate relation; keep the student's right to model directly |
-| Count-on available, near-ten relation not connected | Explore a near-ten relation such as 8+7; preserve discovery unless new-learning teaching is agreed |
-| Multi-digit one-by-one counting, tens/ones not connected | Relate whole tens and leftovers, with adjacent structures such as 30+20 and 30+24; no automatic column-method drills |
-| Independently explains tens and ones in 36+20 | Explore what changes in 36+24, increasing only one load |
-| Equal-sharing experience, shares and amount each not coordinated | Connect people, total, and each share using small manipulable quantities, such as 3 pancakes among 4 people |
-| Explains a relation independently in one scene | Test that relation in a genuinely new activity with comparable numbers and unknown position; recommendation is not itself transfer evidence |
+| Small-number direct modeling | Explore count-on within the same join/separate relation; retain direct modeling as valid |
+| Count-on without near-ten connection | Explore the near-ten relation; preserve discovery unless new-learning teaching is agreed |
+| Multi-digit counting without tens/ones connection | Relate whole tens and leftovers; no automatic column-method drills |
+| Independent tens/ones explanation | Add a comparable ones demand, increasing one load |
+| Sharing without coordination of people and share size | Connect people, total, and each share with small manipulable quantities |
+| Independent explanation in one scene | Check the same relation in a genuinely new activity with comparable numbers/unknown position; recommendation itself is not transfer evidence |
 
-For fraction candidates read `references/fraction-relations.md`; equality reads `references/relational-thinking.md`. Geometry, measurement, and data use their actual domain evidence rather than forcing arithmetic progression. `personal.interests` and preferences affect context/representation only under `references/math-personalization.md`; `material_difficulty` adjusts one load, not strategy conclusions.
+Fractions: `references/fraction-relations.md`; equality: `references/relational-thinking.md`. Geometry, measurement, and data use their own domain evidence. `personal.interests`/preferences follow `references/math-personalization.md`; `material_difficulty` adjusts one load, not stage conclusions.
 
-## Ranking and Reasons
+## Rank and Explain
 
-1. **Scope first.** An explicit reliable goal goes directly to teaching. If the student wants different content, prefer a different relation/domain instead of renaming the old sticking point.
-2. **Resolve conflicts.** Latest comparable independent evidence can supersede an old next-step suggestion. Different task scopes or prompting conditions remain separate; easier success does not erase a harder gap.
-3. **Choose a useful next step.** A confirmed blocker relevant to the goal takes priority. Otherwise compare consolidation, neighboring new learning, transfer, and an agreed revisit by recent evidence and goals. Recent independent success without a revisit need keeps redundant same-structure practice out of first place.
-4. **Make reasons verifiable.** State one real performance and why it supports this next step, in the active UI locale from `learn-data`'s `references/ui-locale.md`. With no evidence, explicitly describe exploration rather than inventing a past observation.
-
-Example: “Last time you explained what changes when adding two tens; let's see what happens when a few more ones come along.” If the record only says “answered correctly”, keep independence unknown rather than embellishing the reason. Existing profile `next_step` is a reorderable candidate, not a command to repeat old work.
+1. Explicit reliable goal → teaching directly. A request for different content → prefer a different relation/domain, not a renamed sticking point.
+2. Resolve conflicts by comparable independent evidence; retain differences in scope/support. Easier success does not erase a harder gap.
+3. Prioritize a goal-relevant confirmed blocker; otherwise compare consolidation, neighboring learning, transfer, and agreed revisit. Recent independent success without a revisit need keeps redundant same-structure practice out of first place.
+4. Give one verifiable observation and its next-step reason in the active UI locale (`learn-data`'s `references/ui-locale.md`). With no evidence, describe exploration honestly. Correctness alone leaves independence unknown. Profile `next_step` remains a reorderable candidate.
 
 ## Advisory Opening Handoff
 
-Keep the existing candidate fields `id / focus / target_context / reason / basis`; preserve student theme wording and original `target_context.intent`. Reasons generated here never overwrite that intent. For new candidates, describe the goal and first activity in `reason`, and pair a proposed fresh opening with `target_context.math_opening_hint` per **Selected opening expectation** in `learn-data`'s `references/target-parsing.md`. A continuation instead retains the current scope and pending point without a fresh hint. Choose from evidence, not a rule that every learning session starts with a problem:
+Preserve `id / focus / target_context / reason / basis`, student theme wording, and original `target_context.intent`; reasons never overwrite intent. For new candidates, describe goal and first activity in `reason`, paired with optional `target_context.math_opening_hint` per **Selected opening expectation** in `learn-data`'s `references/target-parsing.md`:
 
-- `micro_lesson`: a new relation or clearly supported repair suitable for a brief agreed example.
-- `practice`: a fresh unhinted consolidation/revisit item under practice purpose rules.
-- `probe`: one low-burden discriminating item when an important distinction is unknown.
-- `challenge`: a fresh unhinted structural variation or transfer opportunity, with no method cue.
+| Hint | Suitable activity |
+|---|---|
+| `micro_lesson` | New relation or supported repair suitable for a brief agreed example |
+| `practice` | Fresh unhinted consolidation/revisit under practice purpose rules |
+| `probe` | One low-burden discriminating item |
+| `challenge` | Fresh unhinted structural variation/transfer without a method cue |
 
-The hint is advice for this opening, not authorization, a global mode, or performance. Old candidates without it remain valid. Store it only with the candidate and selected current target, never long-term summaries/profile/evidence. “Continue current” resumes its pending step; it does not restart the same goal. A new explicit action request overrides a stale hint.
+A continuation instead retains the current scope and pending point without a fresh hint. Hints are temporary advice, not authorization, mode, or performance; keep only with candidate/selected target, never long-term summaries/profile/evidence. Old candidates without hints remain valid; latest explicit action overrides stale advice.
 
-Shared flow saves `selected_id` first and preserves originals/old task saves on target changes. Failed writes leave selection available for retry and do not start new teaching. Session chooses the real opening; lifecycle consumes the hint only in the same successful context write that records the advanced activity and pending point. Resume uses that activity, not a replayed opening. Candidate display, selection, and AI demonstrations produce no performance segment. At end, use existing `next_step_candidate` for one evidence-based suggestion, not a separate recommendation store.
+Shared flow saves `selected_id` first, preserving originals/old-task saves on target changes. Failed writes retain selection for retry and start no teaching. Session chooses the actual opening; lifecycle consumes the hint in the same successful context write recording the advanced activity/pending point. Resume uses that activity, not the hint. Candidate display/selection and AI demonstrations produce no performance segment. End suggestions use existing `next_step_candidate`, not a new recommendation store.
 
-Completion standard: each candidate has an actionable relation, an honest basis, a suitable advisory opening if supplied, and one first choice; recommendation itself yields no strategy evidence.
+Acceptance: each candidate has an actionable relation, honest basis, suitable hint if supplied, and one first choice; recommendation yields no strategy evidence.

@@ -23,6 +23,6 @@ For stage values and how to read old values see `references/progression-map.md`.
 
 ## Domain for File Analysis
 
-`fractions`, `place_value_and_multidigit`, `multiplication_division`, `addition_subtraction_word_problems`, `measurement_and_geometry`, `patterns_and_data`.
+`number_and_operations`, `addition_subtraction_word_problems`, `multiplication_division`, `fractions`, `place_value_and_multidigit`, `measurement_and_geometry`, `patterns_and_data` (same set as Content Domains in `references/progression-map.md`).
 
 For the classification of `error_type` and `diagnosis.label` see `references/strategy-diagnosis-rules.md`.

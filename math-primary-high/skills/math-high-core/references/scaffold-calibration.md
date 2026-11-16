@@ -16,7 +16,7 @@ Choose one main cognitive goal with at most one pending question, then wait when
 
 For conception tasks, apply **先搭桥，再推导**, including **Step back: strategy → candidate → execution** and its candidate-source check, in step 4 of `references/derivation-teaching.md` before choosing help. A **route hint** supports a strategy or a way to generate or screen candidates; specifying the particular intermediate quantity or construction supplies that choice. An **execution hint** helps carry out a route already selected. Calibrate and record them separately: independent arithmetic after a route hint does not show independent route selection. After a correctly interpreted trial, use that reference's **Clue-first pause** before narrowing the search dimension. If the student can execute but asks why this candidate was chosen, repair that selection bridge before assigning more execution.
 
-Prefer an opening that connects usable knowledge to the unknown while preserving the chosen consequential decision. “What familiar area could help here without changing the amount of paper?” supports conception; specifying the destination shape, cut and movement supplies the route, even if presented as several easy questions. If the student already has a workable route, support its execution or unresolved condition rather than adding a route-finding interview.
+Prefer an opening that connects usable knowledge to the unknown while preserving the consequential decision. State relevant constraints and a useful direction without specifying the construction and steps; splitting those choices into easy questions still supplies the route. If the student already has a workable route, support its execution or unresolved condition rather than adding a route-finding interview.
 
 When the student cannot generate a direction and a demonstration is appropriate under the shared gate, use a **separate problem** to model **visible clue → known tool → expected benefit → check**, including why the choice is worth trying. Use tools already available or explicitly taught there; the example must not depend on the original task's still-unknown result or disclose its decisive construction. Return to the protected original and leave one substantive choice. If the original route was exposed, record later work as supported reconstruction, not rediscovery. Examples are an option, not a required response to every “no ideas”.
 
@@ -30,7 +30,7 @@ Choose the smallest useful option, not a required sequence:
 4. Give an analogous example with different numbers and a partially completed step.
 5. Give a verified worked example with a reason for the key step, followed on later turns by faded support and a fresh independent check.
 
-If a student has tried and has no way forward, one interest detail may restate the same relationship per `references/math-personalization.md`; return to the target when they can continue. Repeated sticking goes to diagnosis and sustained non-response to shared rules.
+If a student has tried and has no way forward, one interest detail may restate the same relationship under all bridging conditions in `references/math-personalization.md` (at most once per problem); return to the target when they can continue. Repeated sticking goes to diagnosis and sustained non-response to shared rules.
 
 ## Evidence
 

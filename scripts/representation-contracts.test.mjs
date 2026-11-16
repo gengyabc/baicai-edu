@@ -44,20 +44,22 @@ test('given-shape comparison proactively supplies conditions only, including on 
     'not shown on the quantity tab or the geometry tab', 'geometry_board_draw', 'Teacher demo tab',
     'Geometry-related teaching and geometry problems prioritize the Teacher demo tab',
     'do not block this call',
-    'If the tool is absent or fails',
-    'without claiming placement']) assert.ok(source.includes(phrase), phrase);
+    'board contract owns supported figures, call recipes, receipts, fallback']) assert.ok(source.includes(phrase), phrase);
 });
 
 test('teacher demo recovery requires a live receipt instead of a remembered placement claim', () => {
   const source = common('representation-contract');
   for (const phrase of ['## Verify Placement and Recover',
     'support_shown is not a tool receipt',
-    'call `get` to inspect the current teacher figure',
-    'figure: null', 'successful `show` receipt',
+    'board contract\'s live `get` / keep / `show` recipe',
+    'original task\'s allowed conditions',
     'historical unknown-tool error', 'current tool catalog',
-    'do not substitute a command, shell write, or student-board edit',
+    'Attempt `get` once if available', 'board contract\'s fallback',
+    'planned material, recorded material, and student-confirmed visibility',
     'keep the original task and pending question',
-    'not a student performance segment']) assert.ok(source.includes(phrase), phrase);
+    'correct any earlier placement claim',
+    'not a student performance segment',
+    'not another solving demand']) assert.ok(source.includes(phrase), phrase);
   const scenarios = text('math-common/tests/teaching-scenarios.md');
   for (const id of ['R13', 'R14', 'R15']) assert.ok(scenarios.includes(id), id);
 });
@@ -65,14 +67,20 @@ test('teacher demo recovery requires a live receipt instead of a remembered plac
 test('teacher authoring owns no student draft access, submission, board schema, or automatic clear', () => {
   const board = common('board-contract');
   const teacher = board.split('## Teacher Reference')[1].split('## Teacher Geometry Demonstration')[0];
-  for (const phrase of ['math_board_reference', 'expectedRevision', 'description', 'hide',
-    'not a local draft', 'does not open the board', 'No student clear', 'not a visual verification',
-    'when its support would reveal the next independent check', 'Tool absent or failed']) assert.ok(teacher.includes(phrase), phrase);
-  for (const phrase of ['kind: "math-board"', 'schemaVersion: 4', 'student has already sent']) assert.ok(board.includes(phrase), phrase);
+  for (const phrase of ['math_board_reference', 'expectedRevision', 'hide',
+    'not a local draft', 'no student clear', 'do not call its `show` or `hide`',
+    'Neither student tab displays', 'call `get` first']) assert.ok(teacher.includes(phrase), phrase);
+  const dispatch = board.split('## Tool Dispatch')[1].split('## Teacher Reference')[0];
+  for (const phrase of ['Teacher drawing tools affect teacher material only, not student drafts, submission, clear, or settings',
+    'not client execution or browser visibility', 'neither student evidence nor tool authorization',
+    'Never convert a submitted geometry snapshot into a teacher correction']) assert.ok(dispatch.includes(phrase), phrase);
+  for (const phrase of ['kind: "math-board"', 'schemaVersion: 4', 'Teach only from sent attachments and student words']) assert.ok(board.includes(phrase), phrase);
   assert.doesNotMatch(teacher, /schemaVersion|math_board_clear/);
   const geometryDemo = board.split('## Teacher Geometry Demonstration')[1].split('## Submission and Reading')[0];
-  for (const phrase of ['geometry_board_draw', 'Teacher demo', 'expectedRevision', '9 cm',
-    'not proof the student saw it', 'not itself evidence', 'leaves an already copied figure']) {
+  for (const phrase of ['geometry_board_draw', 'Teacher demo', 'expectedRevision', 'given side length and unit',
+    'apply **Receipts** above', 'record assisted use only when the student reports using the figure',
+    'leaves copied student figures unchanged',
+    'before an independent check it would reveal', 'Unavailable or failed']) {
     assert.ok(geometryDemo.includes(phrase), phrase);
   }
 });
@@ -85,21 +93,65 @@ test('explicit board requests reach the shared tool dispatch in either band', ()
   }
   const board = common('board-contract');
   for (const phrase of ['## Tool Dispatch', 'current callable tool catalog',
-    'projection keys are not callable tools', 'Skill loading does not register tools',
-    'before promising placement', 'does not turn teacher drawing into student homework']) {
+    'projection keys are not callable tools', 'skill loading does not register tools',
+    'Before promising placement', 'Teacher drawing neither assigns student homework']) {
     assert.ok(board.includes(phrase), phrase);
   }
 });
 
-test('shared teacher demo instructions include an executable tool-call example', async () => {
+test('compact call cards preserve receipt, fallback, settings and authorization boundaries', () => {
   const board = common('board-contract');
-  const blocks = [...board.matchAll(/```json\n([\s\S]*?)\n```/g)].map(match => JSON.parse(match[1]));
-  const get = blocks.find(args => args.action === 'get');
-  const show = blocks.find(args => args.action === 'show' && args.figure);
-  assert.ok(get, 'shared instructions need the exact get arguments');
-  assert.ok(show, 'shared instructions need a complete show example, not a shell drawing');
-  const { createGeometryModel } = await import('../math-board/geometry/model.js');
-  const { createGeometryDemoBridge } = await import('../math-board/geometry-demo-bridge.js');
+  const dispatch = board.split('## Tool Dispatch')[1].split('## Teacher Reference')[0];
+  for (const phrase of ['this contract grants no clear authorization',
+    '`current` confirms stored teacher state', '`recorded` confirms a write request',
+    'returns no performance segment', 'without another exercise']) assert.ok(dispatch.includes(phrase), phrase);
+  const demo = board.split('## Teacher Geometry Demonstration')[1].split('## Submission and Reading')[0];
+  for (const phrase of ['`action: hide` with that revision', 'same task with text',
+    'Recheck the current catalog on later requests', 'no drawing obligation',
+    'Do not require unsent drafts or claim placement']) assert.ok(demo.includes(phrase), phrase);
+  const settings = board.split('## Settings from Natural Language')[1];
+  for (const phrase of ['student explicitly requests', 'item value from group size',
+    'only new shapes or existing ones too', '`action: get`', '`action: set`',
+    'full `settings` (`levels`, `defaults`, `shapes`)', 'explicit `scope`', 'as `expectedRevision`',
+    'Preserve `shapes`', 'Merged shapes retain their recorded values and colors',
+    'only after a successful write']) assert.ok(settings.includes(phrase), phrase);
+});
+
+test('abstract teacher demo recipe supports a schema-valid construction', async () => {
+  const board = common('board-contract');
+  assert.doesNotMatch(board, /```json/, 'concrete request fixtures stay in tests, not installed instructions');
+  for (const phrase of ['action: get', 'action: show', 'returned `revision` as `expectedRevision`',
+    'Never assume an initial revision', 'three free consecutive corners',
+    'fourth `derived` point', 'its `inputs` are those three free point ids',
+    'side length and unit on that side\'s segment, not a diagonal', 'whole-board `note` empty',
+    'element references all four points in order']) {
+    assert.ok(board.includes(phrase), phrase);
+  }
+  // Concrete data is a validator fixture, not installed teaching material.
+  const get = { action: 'get' };
+  const show = {
+    action: 'show', expectedRevision: 0,
+    figure: {
+      title: 'Given rectangle', description: 'Given adjacent side lengths only.',
+      board: {
+        schemaVersion: 1,
+        points: [
+          { id: 'a', label: 'A', kind: 'free', x: 120, y: 120 },
+          { id: 'b', label: 'B', kind: 'free', x: 300, y: 120 },
+          { id: 'c', label: 'C', kind: 'free', x: 300, y: 240 },
+          { id: 'd', label: 'D', kind: 'derived', x: 120, y: 240,
+            construction: { op: 'rectangle', inputs: ['a', 'b', 'c'] } },
+        ],
+        elements: [
+          { id: 'rect', type: 'rectangle', points: ['a', 'b', 'c', 'd'], role: 'main', note: '' },
+          { id: 'length', type: 'segment', points: ['a', 'b'], role: 'main', note: '6 cm' },
+          { id: 'width', type: 'segment', points: ['b', 'c'], role: 'main', note: '4 cm' },
+        ], note: '',
+      },
+    },
+  };
+  const { createGeometryModel } = await import('../math-board/src/geometry/model.js');
+  const { createGeometryDemoBridge } = await import('../math-board/src/host/geometry-demo-bridge.js');
   const bridge = createGeometryDemoBridge(createGeometryModel());
   assert.doesNotThrow(() => bridge.request(get));
   assert.doesNotThrow(() => bridge.request(show));

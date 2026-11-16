@@ -10,124 +10,149 @@ Teach from the student's reasoning with the task-selected methods in `math-high-
 
 ## Start and Input
 
-Load `math-high-core` (reuse it when this session already has it) and follow its "Start and Input"; read only the references that have not been read yet in this session per the condition table. The delivery language, grade-band notes, and personalization boundaries come from `math-high-core`.
+Load `math-high-core` (or reuse it if already loaded this session) and follow its "Start and Input". Read each reference its condition table requires once per session. Delivery language, grade-band notes, and personalization boundaries come from `math-high-core`. Unqualified `references/...` paths in this file belong to `math-high-core`; an explicitly named skill or returned base directory overrides that default.
 
 ## Learning-Recommendation Gate
 
-Before entering teaching, resuming a leaf, or handling a new-problem board boundary, first detect whether the student does not know what to learn, asks "what should I learn", wants to change content without giving a concrete goal, or picks `ui.stage.switch_content` at a stage menu. If so, load `learn-recommend` and hand it the snapshot the entry already has, the current focus, and the latest real performance this turn; it reads the "Learning recommendation" role of the `math-high-core` contract. This branch stops at the recommendation choice: it produces no `session_segment`, does not call diagnosis/practice/problem-making/modeling or teaching, does not modify `context.focus` or the long-term profile, and does not run the board task boundary or a board clear. If a new goal is already explicit, hand it to the shared lifecycle; do not require a recommendation choice.
+Check this gate before teaching, before resuming a leaf, and before a new-problem board boundary:
 
-A cold ordinary-math opening with valid identity but no unfinished activity, pending choice, explicit/authorized goal enters this same gate through lifecycle before a profile fallback. Resume an existing recommendation unchanged; silence or skipping never selects the first choice. Feynman, support-only chat, save recovery, and unfinished prerequisite tasks keep lifecycle priority.
+| Trigger | Action |
+|---|---|
+| The student does not know what to learn, asks "what should I learn", wants different content without a concrete goal, or picks `ui.stage.switch_content` | Load `learn-recommend` with the entry snapshot, the current focus, and this turn's latest real performance; it reads the "Learning recommendation" role of `math-high-core` |
+| Cold math entry: valid identity, but no unfinished activity, pending choice, or explicit/authorized goal | The lifecycle routes into this same gate before any profile fallback |
+| A recommendation is already pending | Show it again unchanged; silence or skipping never selects the first choice |
+| The student states a new goal | Hand it to the shared lifecycle; no recommendation choice is needed |
 
-After the student chooses, hand the goal off per the shared flow: persist `selected_id`, finalize an old different target when required, and enter this mainline only after the new context write succeeds. Failed writes preserve the choice for retry without teaching the new target or regenerating candidates. A recommendation card is not a new task, and starting the chosen task does not trigger automatic board clearing. Candidates and ordering are decided by the role file; do not reuse the fixed candidate order of ordinary resume.
+Feynman, support-only chat, save recovery, and unfinished prerequisite tasks keep lifecycle priority. The gate ends when the student is offered the choice: it produces no `session_segment`, does not modify `context.focus` or the long-term profile, and runs no leaf, teaching, board task boundary, or board clear.
+
+After the student chooses, follow the shared flow: persist `selected_id`, finalize an old different target when required, and enter this mainline only after the new context write succeeds. A failed write keeps the choice for retry; do not teach the new target or regenerate candidates. A recommendation card is not a new task, and starting the chosen task does not clear the board. The role file decides candidates and order; do not reuse the ordinary resume order.
 
 ## Central Dispatch Contract
 
-Math always enters through lifecycle → `math-high-session`; this skill is the sole dispatcher of `math-high-diagnose`, `math-high-practice`, `math-high-student-problem`, and `math-high-application-modeling`. The leaves only run their own playbooks and return evidence and suggestions; they do not load each other or reload this skill. Skill loading is only instruction loading; the signals below are internal logic conventions, not runtime function returns or permission isolation, and are never shown to the student.
+Math always enters through the lifecycle, then this skill. This skill is the sole dispatcher of `math-high-diagnose`, `math-high-practice`, `math-high-student-problem`, and `math-high-application-modeling`. Leaves run their own playbooks and return evidence and suggestions; they never load each other or this skill. Loading a skill only loads instructions: the signals below are internal conventions, not runtime function returns or permission isolation, and are never shown to the student.
 
 ### Recursive Prerequisite Tasks
 
-For a confirmed missing tool, a nested gap, or a restored/overburdened learning plan, read `math-high-core`'s `references/prerequisite-learning.md` before the next action. A leaf returns the tool evidence, current task and pending position as a suggestion; only this session enters or returns from a child task. It reuses existing leaf triggers or teaches in the mainline, preserving the two-dispatch limit and immediate `await_student` stop. Keep the resolved owner and root scope; lifecycle records the optional `context.learning_plan` and active frame projection. Local frame identifiers do not create a new teaching implementation or segment. Resume only the active frame after lifecycle handles explicit end, target/mode change, and save recovery; a child-first plan is not an ordinary topic change.
+For a confirmed missing tool, a nested gap, or a restored or overburdened learning plan, read `math-high-core`'s `references/prerequisite-learning.md` before the next action. A leaf only suggests a child task by returning the tool evidence, current task, and pending position; only this session enters or leaves a child task. The child task reuses existing leaf triggers or the mainline, and keeps the two-dispatch limit and the immediate stop on `await_student`. Keep the resolved owner and root scope; the lifecycle records the optional `context.learning_plan` and the active frame. Frame identifiers create no new teaching implementation or segment. After the lifecycle handles explicit end, target or mode changes, and save recovery, resume only the active frame; a child-first plan is not an ordinary topic change.
 
 ### Entry Events
 
-New problems, activities, topics, and leaf dispatches do not trigger board tools. That ban covers `math_board_clear` and reads of an unsent student draft. It does not block `geometry_board_draw`: geometry-related teaching and geometry problems call that tool so the related figure is on the Teacher demo tab, without clearing or writing the student draft. On a topic change, lifecycle first finalizes the old topic before starting the new one. Read `math-high-core`'s `references/board-task-boundary.md` only for an explicit student clear request or when reusing a submitted representation; read `references/batch-board-boundary.md` for multi-part answer attribution. A board attachment does not authorize clearing.
+New problems, activities, topics, and leaf dispatches do not trigger board tools: no `math_board_clear` and no reading of an unsent student draft. This does not block `geometry_board_draw`; geometry teaching and geometry problems call it to put the figure on the Teacher demo tab, without clearing or writing the student draft. On a topic change, the lifecycle finalizes the old topic before the new one starts. Read `math-high-core`'s `references/board-task-boundary.md` only for an explicit student clear request or when reusing a submitted representation, and `references/batch-board-boundary.md` for multi-part answer attribution. A board attachment does not authorize clearing.
 
 ### Micro-Lesson in This Session
 
-On goal entry or an explicit same-goal method change, distinguish topic from intent using the latest request, existing evidence, and pending task. Explicit new learning with a usable small goal can start directly; a bare topic uses history or one short clarification only if the answer changes the opening. Requests for practice, self-derivation, reference lookup, original full solutions, and local help keep their existing paths. Ordinary answers, brief replies, and empty continuation do not reclassify a restored activity.
+On goal entry or an explicit method change on the same goal, tell a topic apart from an intent using the latest request, existing evidence, and the pending task. Explicit new learning with a usable small goal can start directly; a bare topic uses history, or one short clarification only if the answer would change the opening. Requests for practice, self-derivation, reference lookup, an original full solution, or local help keep their own paths. Ordinary answers, brief replies, and empty continuations do not reclassify a restored activity.
 
-When selecting or restoring `active_act: micro_lesson`, load `math-common` and read `references/micro-lesson-contract.md` from its returned base directory, then use `math-high-core`'s support and task-design rules. Only this branch loads that contract. If unavailable, keep the original guided mainline and do not claim a lesson occurred. This session executes the lesson, not a new leaf: one observable goal, task-selected explanation/example, meaningful guided action, and a fresh unhinted check as appropriate. The shared contract owns the teaching sequence and evidence boundaries; phases are not mandatory turn quotas.
+Only on this branch, when selecting or restoring `active_act: micro_lesson`, load `math-common` and read `references/micro-lesson-contract.md` from its returned base directory, then use `math-high-core`'s support and task-design rules. If it cannot be loaded, keep the guided mainline and do not claim a lesson happened. This session runs the lesson itself, not a leaf: one observable goal, a task-selected explanation or example, a meaningful guided action, and a fresh unhinted check when appropriate. The shared contract owns the sequence and evidence boundaries; its phases are not turn quotas. Only while executing `micro_lesson`, keep `mode: learn`, `context.activity: teaching`, and ordinary lesson `submode: learn`.
 
-For a selected recommendation with `target_context.math_opening_hint`, read and apply **Selected opening expectation** in `learn-data`'s `references/target-parsing.md` before choosing the first action; this is the goal-and-activity offer the student accepted, subject to the existing safety, intent, and pending-task gates. An optional selected `target_context.math_opening_hint` (`micro_lesson`, `practice`, `probe`, `challenge`) advises only the first opening: respectively consider a lesson, fresh practice, one discriminating probe, or an unhinted structural/transfer challenge. Real intent and evidence choose the action. “Continue current” returns to its pending point; a late hint never reopens it. A new explicit “let me think” or “practice only” wins. A local explanation stays on the original obstacle; for an explicitly requested separate example with a pending original, use at most a single-turn analogy that preserves the original and its decisive inference, then return to the original pending point without inventing a second task stack.
+### Opening Hint
 
-Return the actual opening and continuation state to lifecycle. Consume the hint only in the **first successful opening context write**, atomically with the advanced task/pending point and chosen act; ignore/remove it there even when the real action differs. Before success leave it available for recovery; do not start an unrecorded new target, claim consumption on a failed write, or consume it on a recommendation card/selection alone. Subsequent restore follows recorded activity, not the hint. Keep `mode: learn`, `context.activity: teaching`, and ordinary lesson `submode: learn`.
+When a selected recommendation carries `target_context.math_opening_hint`, first read and apply **Selected opening expectation** in `learn-data`'s `references/target-parsing.md`: the goal-and-activity offer the student accepted, still subject to the safety, intent, and pending-task gates. The hint advises only the first opening; real intent and evidence choose the action:
+
+| Hint | Consider |
+|---|---|
+| `micro_lesson` | A micro-lesson under the branch above |
+| `practice` | Fresh practice |
+| `probe` | One discriminating probe |
+| `challenge` | An unhinted structural or transfer challenge |
+| Continue current | Return to the pending point; a late hint never reopens it |
+
+A new explicit "let me think" or "practice only" wins over the hint. A local explanation stays on the original obstacle. If an original problem is pending and the student explicitly asks for a separate example, give at most a single-turn analogy that keeps the original and its decisive inference private, then return to the original pending point without creating a second task.
+
+Return the actual opening and continuation state to the lifecycle. Consume the hint only in the **first successful opening context write**, together with the advanced task, pending point, and chosen act, even when the real action differs from the hint. Until then keep it for recovery: do not start an unrecorded new target, do not consume it on a failed write, and do not consume it on a card or selection alone. Later restores follow the recorded activity, not the hint. An opening hint never resets mode or activity: preserve the caller's mode and the actual activity, and derive `submode` from the existing merge rules.
 
 ### Branch Triggers
 
-Enter a leaf using only the table below; the stage menu does not change the trigger conditions of the other rows.
+Enter a leaf only through this table; a stage choice does not widen the other rows.
 
-| Trigger | This skill's action |
+| Trigger | Action |
 |---|---|
-| `mode: feynman` | Takes precedence over transfer resume and the rows below; per the shared Feynman rules, hand the lead back to the student as presenter, and do not automatically enter the problem-making flow |
-| Resumed as `context.activity: transfer` | Load `math-high-student-problem` and continue from the recorded step |
-| Stage option `ui.stage.transfer`, or the student proactively makes problems to test the AI | Have the entry record the transfer state, then load `math-high-student-problem` |
-| Agreed new learning or a restored `active_act: micro_lesson`, with no higher-priority lifecycle, Feynman, pending-original, or explicit non-lesson request | Execute the micro-lesson here under the branch above; do not activate another act or dispatch a lesson leaf |
-| Stage option `ui.stage.practice`, requested practice or review, a taught skill needs Consolidate / Revisit for unstable retrieval/execution, an accepted saved `next_step_candidate` calls for a later check, an exercise sheet with sub-questions is brought, or the focus this turn is a wrong quantity expression | Load `math-high-practice`; a partly wrong first answer on a batch routes to practice with the recorded error pattern |
-| The starting point truly needs more evidence, guidance is stuck for two consecutive rounds, the student submits error items, the self-report does not match performance, or the error cause is unclear | Load `math-high-diagnose`; do not test every new topic first by default. For derivation or proof goals, use targeted prerequisite evidence per `math-high-core`'s `references/derivation-teaching.md` and proof-specific checks in `references/proof-teaching.md`; a request to justify the teacher's method choice first calls for repairing that choice's rationale, not diagnosing a calculation gap |
-| An agreed real-world decision needs a mathematical model with assumptions or data choices | Load `math-high-application-modeling` (stage option `ui.stage.modeling` or explicit student request); a fully specified textbook journey/work-rate problem stays in its current act and uses relationship derivation when needed |
-| The student reports fatigue, asks to switch activity, or explicitly asks for an explanation | Do not load a new leaf; adjust support, offer a stop/simplify choice per the shared rules, or support the current obstacle per `math-high-core`'s `references/scaffold-calibration.md`; explanations and demonstrations follow shared Guide before revealing, including **Informed full-solution choice** for explicit complete-solution requests; formula goals also use the Formula-goal gate |
-| A promotion or a fallback is being considered after the current answer | Read `math-high-core`'s `references/adaptive-thresholds.md` first; one answer never moves a level or a knowledge point |
-| Leaf return signal | Follow the table below |
+| `mode: feynman` | Takes precedence over transfer resume and every row below. Per the shared Feynman rules the student presents; do not start problem-making automatically |
+| Resumed `context.activity: transfer` | Load `math-high-student-problem` at the recorded step |
+| Stage option `ui.stage.transfer`, or the student starts making problems to test the AI | The entry records the transfer state, then load `math-high-student-problem` |
+| Agreed new learning or a restored `active_act: micro_lesson`, with no higher-priority lifecycle, Feynman, pending-original, or explicit non-lesson request | Run the micro-lesson here; do not dispatch a leaf |
+| Stage option `ui.stage.practice`; requested practice or review; a taught skill needs Consolidate / Revisit; an accepted saved `next_step_candidate` calls for a later check; a multi-part exercise is brought; or this turn's focus is a wrong quantity expression | Load `math-high-practice`. A partly wrong first answer on a batch goes to practice with the recorded error pattern |
+| The starting point truly needs more evidence, guidance stalls two rounds in a row, the student submits error items, self-report conflicts with performance, or the error cause is unclear | Load `math-high-diagnose`; do not pretest every topic. For derivation or proof goals use targeted prerequisite evidence (`references/derivation-teaching.md`) and proof checks (`references/proof-teaching.md`). A request to justify the teacher's method choice calls for repairing that choice's rationale, not diagnosing a calculation gap |
+| An agreed real-world decision needs a model with assumptions or data choices (stage option `ui.stage.modeling` or an explicit request) | Load `math-high-application-modeling`. A fully specified textbook journey or work-rate problem stays in its current act |
+| The student reports fatigue, asks to switch activity, or explicitly asks for an explanation | Load no leaf. Adjust support, offer a stop or simplify choice, or support the current obstacle per `references/scaffold-calibration.md`. Explanations follow the shared Guide-before-revealing rules, including **Informed full-solution choice**; formula goals also use the Formula-goal gate |
+| A promotion or fallback is considered after the current answer | Read `references/adaptive-thresholds.md` first; one answer never moves a level or a knowledge point |
+| A leaf returns | Follow the signal table below |
 
 ### Leaf Return Signals
 
-| Signal | Source | This skill's action |
+| Signal | Sent when | Action |
 |---|---|---|
-| `await_student` | Any leaf has asked a question or shown a flow menu | Keep the current leaf and the pending step, stop this turn; the next reply resumes that leaf |
-| `continue_diagnose` | practice / student-problem needs to clarify an error cause | Assess existing evidence, then load `math-high-diagnose` |
-| `continue_practice` | diagnose needs consolidation, a contrast is needed, or a modeling plan failed | Assess existing evidence, then load `math-high-practice` |
-| `continue_student_problem` | The student-problem menu choice is to continue making problems | Continue that leaf's next problem |
-| `continue_modeling` | The application act needs a new situation or the student asks for another one | Load `math-high-application-modeling` with the new situation |
-| `return_teaching` | Any leaf wraps up or the student chooses to return to the original learning | Return to the mainline teaching on the original focus |
-| `request_end` | Any leaf receives an explicit end choice | Hand back to lifecycle's end judgment and finalize; do not save on its own |
+| `await_student` | A leaf asked a question or showed a menu | Keep the leaf and its step and stop; the next reply resumes that leaf |
+| `continue_diagnose` | Practice or student-problem needs the error cause clarified | Assess existing evidence, then load `math-high-diagnose` |
+| `continue_practice` | Diagnosis needs consolidation, a contrast is needed, or a modeling plan failed | Assess existing evidence, then load `math-high-practice` |
+| `continue_student_problem` | The student chose to keep making problems | Continue that leaf with the next problem |
+| `continue_modeling` | The modeling act needs a new situation, or the student asks for one | Load `math-high-application-modeling` with the new situation |
+| `return_teaching` | A leaf finished, or the student chose to return to learning | Resume mainline teaching on the original focus |
+| `request_end` | The student explicitly chose to end | Hand back to lifecycle's end judgment and finalize; do not save on its own |
 
-A return carries one signal, the observed evidence, and a concrete suggestion; when waiting it also carries the current problem, step, and pending question. A question still awaiting a new reply accepts only `await_student`; a wrap-up signal does not override the wait. When the student's reply explicitly asks for help or says they are stuck, that can close the old follow-up and suggest diagnosis without requiring a correct answer first. Explicit ending, topic change, or mode switch is handled first per lifecycle.
+A leaf returns one signal, its evidence, and one concrete suggestion. When waiting, it also returns the current problem, step, and pending question. While a question is pending, only `await_student` is valid; a wrap-up signal cannot override it. If the student explicitly asks for help or says they are stuck, the old follow-up may close and diagnosis may be suggested without a correct answer first. Explicit end, topic change, or mode switch is handled by the lifecycle first.
 
 ### Same-Turn Dispatch Limit
 
-At most two leaf dispatches per turn. Entering or resuming any leaf counts as one, regardless of whether the load tool is called again; reuse already loaded skill content. After each leaf return, check in order:
+At most two leaf dispatches per turn; entering or resuming a leaf counts even without another load call. Reuse already loaded content. After each leaf returns, check in order:
 
-1. Signal is `await_student`: stop this turn, no more dispatch.
-2. Two dispatches already made this turn: dispatch no more; if the return still suggests another branch, keep the suggestion as the next step and do not jump back or start a third dispatch in the same turn.
-3. Signal is `continue_*`: perform this one follow-up dispatch (such as diagnose → practice, modeling → practice, or problem-making → diagnose) only if existing evidence suffices to move forward and no question is pending.
-4. Other signals follow the return-signal table.
+1. `await_student`: stop this turn.
+2. Two dispatches already used: keep any suggested branch as the next step; do not jump back or start a third dispatch in the same turn.
+3. `continue_*`: make the one follow-up dispatch (for example diagnose to practice, modeling to practice, or problem-making to diagnose) only if existing evidence suffices to move forward and no question is pending.
+4. Otherwise follow the signal table.
 
-Judgments that need a new student reply wait until the next turn; do not rehearse the student's answer.
+Anything that needs a new student reply waits for the next turn; never rehearse the student's answer.
 
 ### Waiting and Resume
 
-- Write: when waiting, this skill has lifecycle write `context.turn_state`, reusing the shared current-problem / answer / pending-question fields and adding `active_leaf`, `leaf_step`, `active_act`, and any presented explanation and support that matter; transfer additionally keeps source and stage; a batch keeps the sub-question index and which sub-items were already judged.
-- Resume: first handle lifecycle's explicit requests (end, topic change, mode switch), then continue the recorded micro-lesson or `active_leaf` at `leaf_step`; when an old log lacks these markers, resume from the existing problem and step without reopening the problem or inferring consent to a lesson.
-- Micro-lesson state: when needed for recovery, use optional `turn_state.active_act: micro_lesson` and `turn_state.micro_lesson: {goal, phase, exposed_support}`, with `phase: example | guided | independent`. Store only the small goal, current phase, and already exposed critical help; reuse existing problem/answer/pending fields rather than duplicating them. On completion, transfer to practice/another act, or ending/target exit, clear `micro_lesson` and replace/clear `active_act` through lifecycle. A pause retains the waiting lesson state for restore. An unanswered original remains protected; mode/topic changes, pause/end, and prerequisite plans keep their existing save/restore rules.
-- Clear: after a leaf wraps up, clear `active_leaf`, `leaf_step`, and `active_act`; when transfer completes, lifecycle restores activity to teaching. A batch's sub-question index is cleared only when the batch ends, is saved, or is explicitly abandoned.
-- A leaf may only change the mathematical task inside its own act; when the next step needs another act, return the signal and let this skill decide. Do not let the student believe an act change was a new lesson.
+- **Wait**: have the lifecycle write `context.turn_state`, reusing the shared problem, answer, and pending-question fields and adding `active_leaf`, `leaf_step`, `active_act`, and any explanation or support already shown. Transfer also keeps its source and stage; a batch keeps the sub-question index and which sub-items were already judged.
+- **Resume**: first handle explicit end, topic change, or mode switch; then continue the recorded micro-lesson or `active_leaf` at `leaf_step`. An old log without these markers resumes its existing problem and step, without reopening the problem or inferring consent to a lesson.
+- **Micro-lesson state**: when restore needs it, use optional `turn_state.active_act: micro_lesson` and `turn_state.micro_lesson: {goal, phase, exposed_support}` with `phase: example | guided | independent`. Store only the small goal, the phase, and critical help already shown; keep the problem, answer, and pending question in their existing fields. On completion, moving to practice or another act, or ending, clear `micro_lesson` and replace or clear `active_act` through the lifecycle. A pause keeps the waiting lesson state. An unanswered original stays protected; mode and topic changes, pause or end, and prerequisite plans keep their existing save and restore rules.
+- **Clear**: when a leaf finishes, clear `active_leaf`, `leaf_step`, and `active_act`; when transfer completes, the lifecycle restores the teaching activity. Clear a batch's sub-question index only when the batch ends, is saved, or is explicitly abandoned.
+- A leaf may change the mathematical task only inside its own act; when the next step needs another act, it returns a signal and this skill decides. Do not let the student think an act change is a new lesson.
 
-Control signals never enter the student reply or segment fields; all leaf evidence is merged by this skill.
+Control signals never enter the student reply or segment fields; this skill merges all leaf evidence.
 
 ## Stage Options
 
 At the stage exit of ordinary learning, return `stage_options`; after the student chooses, follow the branch-trigger table:
 
-- `label: ui.stage.transfer`, `action: transfer`: invite the student to make problems and check the AI's answers, handled by `math-high-student-problem`; "make problems to test me" is a synonymous request.
-- `label: ui.stage.practice`, `action: practice`: do neighboring practice or non-Tier Consolidate / Revisit around the current relationship, handled by `math-high-practice`.
+- `label: ui.stage.transfer`, `action: transfer`: the student makes problems and checks the AI's answers, handled by `math-high-student-problem`; "make problems to test me" means the same.
+- `label: ui.stage.practice`, `action: practice`: neighboring practice, or non-Tier Consolidate / Revisit on the current relationship, handled by `math-high-practice`.
 - `label: ui.stage.modeling`, `action: modeling`: turn a real situation into a model and a decision, handled by `math-high-application-modeling`.
 
-Labels resolve through the active UI locale (see `learn-data` `references/ui-locale.md`); do not hard-code a language-specific literal. When the student has brought a multi-part exercise, the practice option is shown as working through the exercise's sub-questions rather than a generic phrase.
+Resolve labels through the active UI locale (`learn-data`'s `references/ui-locale.md`); never hard-code a language-specific literal. When the student brought a multi-part exercise, show the practice option as working through its sub-questions.
 
 ## 1. Set Focus and Branch
 
-1. Restore the recorded activity before choosing any new opening. For a newly authorized goal, evaluate the Micro-Lesson branch before defaulting to an entry problem. A saved later-check suggestion uses a fresh unhinted item without first repeating the method, once that next step is actually accepted/entered. Record delay only from the later observed attempt; a saved suggestion is not a schedule or retention evidence. Prefer `target_context.topic`; otherwise use the focus and action restored by the lifecycle; if there is still no goal, return to lifecycle's recommendation gate rather than automatically opening a profile candidate; the default domain and grade defaults come from `math-high-core`'s `references/math-grade-defaults.md`.
-2. File target: from the extracted analysis that `material_refs` points to, choose the focus by most recent → current domain → student-stated difficulty. For a handwritten submission, use only what the extraction actually found and keep unclear symbols unknown; do not silently correct the student's writing.
-3. Before choosing an opening or revealing a formula, apply the Formula-goal gate in `math-high-core`'s `references/math-teaching-core.md` when the topic involves a formula or efficient general method. For other broad goals, select one small target and choose guided work or an agreed new-learning example using that core's shared-gate rule before posing an item; do not require a diagnostic failure before a qualifying example. If a term could name different mathematical targets, resolve it from the existing context or ask one short clarification; preserve the intended expression before choosing an opening.
-   For a multi-condition or multi-stage word problem whose obstacle is linking relationships, choosing an intermediate quantity, or justifying an equation, read `math-high-core`'s `references/derivation-teaching.md` and `references/word-problem-derivation.md` before the next action. Keep the current act/leaf and resume from the established relationships and pending task; neither the Formula-goal gate nor a proof/modeling lesson is automatic for a concrete word problem.
-   For constructing, understanding, checking, repairing, or writing up a proof, read `math-high-core`'s `references/derivation-teaching.md` and `references/proof-teaching.md` before the next action. Keep the agreed proof goal and claim scope; on resume use the pending task and new response rather than restarting claim analysis. Proof remains a method within the current act, with no new leaf or submode.
-   For fixed-total contribution comparisons, finite choices requiring organization, repeating states and positions, or finite terminating deterministic perfect-information two-player alternating games, read `math-high-core`'s `references/mathematical-strategies.md`. Build on the actual student route, select one purposeful bridge, and check student monitoring and justification; these methods do not create a new leaf or compulsory strategy label.
-   For any conception task, use step 4 **先搭桥，再推导** of `math-high-core`'s `references/derivation-teaching.md` to select the first action from the student's known tools and the consequential decision still theirs. Reuse a viable route already shown; routine practice needs no added plan elicitation. This changes teaching within the current act, not dispatch or lifecycle ownership.
-4. Set the initial `submode`: new topic `learn`, consolidation/neighboring variation `practice`, error correction `review`, modeling `modeling`, Feynman `feynman`; the final value after a leaf intervenes follows the merge rules in Section 3.
-5. Select the act per `math-high-core`'s `references/learn-act-allocation.md`; record it in `context.turn_state.active_act`. Whether to enter a leaf is decided only by the branch-trigger table; after a sub-flow wraps up, return to the original focus.
+1. Restore the recorded activity before choosing any new opening. Otherwise prefer `target_context.topic`, then the focus and action the lifecycle restored. With still no goal, go back to the lifecycle's recommendation gate instead of opening a profile candidate; the default domain and grade defaults come from `references/math-grade-defaults.md`. For a newly authorized goal, consider the micro-lesson branch before defaulting to an entry problem.
+2. A saved later-check suggestion, once actually accepted, uses a fresh unhinted item without repeating the method first. Record delay only from the later observed attempt; a saved suggestion is neither a schedule nor retention evidence.
+3. For a file target, pick the focus from the `material_refs` analysis: most recent first, then the current domain, then the difficulty the student named. For a handwritten submission use only what extraction actually found, keep unclear symbols unknown, and never silently correct the student's writing.
+4. Before choosing an opening or revealing a formula, apply the Formula-goal gate (named in `references/math-teaching-core.md`, defined in step 1 of `references/derivation-teaching.md`) whenever the topic involves a formula or an efficient general method. For other broad goals, pick one small target and choose guided work or an agreed new-learning example by **Guide before revealing** in `learn-core`'s `references/pedagogy-core.md`; a qualifying example needs no prior diagnostic failure. If a term could name different targets, resolve it from context or ask one short clarification, and preserve the intended expression before choosing an opening.
+5. When the obstacle matches a method below, read its references before the next action. These change teaching inside the current act or leaf; they never create a leaf, submode, or lesson:
 
-Completion condition: one focus, a clear mode, act, and next action; if a sub-flow already has an action, keep it.
+   | Obstacle | Read | Keep |
+   |---|---|---|
+   | A multi-condition or multi-stage word problem: linking relationships, choosing an intermediate quantity, or justifying an equation | `references/derivation-teaching.md`, `references/word-problem-derivation.md` | Resume from the established relationships; the Formula-goal gate, proof, and modeling are not automatic |
+   | Constructing, understanding, checking, repairing, or writing up a proof | `references/derivation-teaching.md`, `references/proof-teaching.md` | The agreed proof goal and claim scope; on resume use the pending task, not a fresh claim analysis |
+   | Fixed-total contribution comparisons, finite choices needing organization, repeating states and positions, or finite terminating deterministic perfect-information two-player alternating games | `references/mathematical-strategies.md` | Build on the student's route with one purposeful bridge; check their monitoring and justification; no compulsory strategy label |
+   | Any conception task | Step 4 **先搭桥，再推导** of `references/derivation-teaching.md` | Pick the first action from the student's known tools and the decision still theirs; reuse a viable route already shown; routine practice needs no plan elicitation |
+
+6. Set the initial `submode`: new topic `learn`, consolidation or neighboring variation `practice`, error correction `review`, modeling `modeling`, Feynman `feynman`. Section 3 decides the final value after a leaf intervenes.
+7. Select the act per `references/learn-act-allocation.md` and record it in `context.turn_state.active_act`. Only the branch-trigger table decides whether to enter a leaf; after a leaf finishes, return to the original focus.
+
+Completion condition: one focus with a clear mode, act, and next action; if a leaf already has an action, keep it.
 
 ## 2. Advance One Action
 
-Follow `math-high-core`'s `references/math-teaching-core.md`. Before judging whether there is an answer, check the full message per the shared confirmation protocol, including any math-board or edit-history attachment and any multi-part answer; problem count follows evidence, with no fixed number of extra problems. Before presenting a new or easier problem, apply the internal check for correctness; attribute any submitted representation to its actual task rather than reusing old quantities.
+Follow `references/math-teaching-core.md`. Before judging whether there is an answer, read the full message per the shared confirmation protocol, including any board or edit-history attachment and every part of a multi-part answer. The number of problems follows evidence. Run the internal correctness check before presenting a new or easier problem, and attribute a submitted representation to its actual task rather than reusing old quantities.
 
-Completion condition: pose one pending question, or handle the current answer and give the next action; confirm understanding or mastery only on evidence.
+Completion condition: one pending question, or handling of the current answer plus the next action; confirm understanding or mastery only on evidence.
 
 ## 3. Wrap Up and Return
 
-When relationship evidence exists, summarize in one sentence the student can retell, and give one small next step; when waiting for an answer, keep the current question. Do not turn an unsure point into a mastery claim because the student gave an answer.
+When there is evidence about the relationship, summarize it in one sentence the student can retell and give one small next step; while waiting for an answer, keep the current question. An answer alone does not turn an unsure point into mastery.
 
-Read `math-high-core`'s `references/math-segment-fields.md`. With no actual student mathematical performance this turn, teacher-only examples, recommendation/act choices, or unanswered tasks return `session_segment: null`; record continuation context instead. For actual student mathematical performance return the single `session_segment`: `subject: math`, `mode` inherited from the caller, `submode` decided by that reference's multi-branch merge rules, `source` aligned to `target_context.source` (file sources are normalized per the shared target protocol), and sub-flow evidence merged into the same record. Modeling acts record their assumptions and validation in `strategy_summary`; they do not add new required fields.
+Read `references/math-segment-fields.md`. With no actual student mathematical performance this turn (teacher-only examples, recommendation or act choices, unanswered tasks), return `session_segment: null` and record continuation context. Otherwise return the single `session_segment`: `subject: math`, `mode` from the caller, `submode` by that reference's merge rules, `source` matching `target_context.source` (file sources normalized per the shared target protocol), and all leaf evidence merged into it. Modeling records its assumptions and validation in `strategy_summary`; it adds no required fields.
 
-Completion condition: all required fields present, with evidence for strategy, confirmation, difficulty, and the optional stage/diagnosis.
+Completion condition: all required fields present, with evidence for strategy, confirmation, difficulty, and the optional stage and diagnosis.
