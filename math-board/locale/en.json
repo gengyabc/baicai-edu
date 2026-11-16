@@ -377,5 +377,14 @@
   "geometryPracticeGoal_select-one": "Choose Select and tap only the first point (A). You can also drag a selection rectangle on mouse or touch, without a keyboard. Wrong selections do not count.",
   "geometryPracticeGoal_deselect": "Tap empty canvas and release to clear all selection. A hover does not count.",
   "geometryPracticeGoal_insert": "Tap Add to answer to simulate. Real geometry insertion has only a geometry snapshot and your whole-board note, no geometry modification record. Nothing here uploads or sends.",
-  "geometryPracticeGoal_complete": "Basic operation practice completed, not mathematical mastery or completion of other chapters. Nothing was attached or sent. Exit to continue your real answer."
+  "geometryPracticeGoal_complete": "Basic operation practice completed, not mathematical mastery or completion of other chapters. Nothing was attached or sent. Exit to continue your real answer.",
+  "geometryPracticeConstruct": "Geometry construct practice — separate from your answer",
+  "geometryPracticeGoal_construct-parallelogram": "Choose Parallelogram and finish a new parallelogram in three clicks. Choosing the tool, an unfinished preview, or a plain polygon does not count. Lengths, angles, and parallel sides are not judged.",
+  "geometryPracticeGoal_construct-rectangle": "Choose Rectangle and finish a new rectangle in three clicks. A parallelogram or an unfinished preview does not count. Right angles and side lengths are not judged.",
+  "geometryPracticeGoal_construct-select-side": "Choose Select and click one segment, or one edge of a polygon, rectangle, or parallelogram. Both ends must be free points and must not already have a midpoint. A point, a circle, or an empty selection does not count.",
+  "geometryPracticeGoal_construct-midpoint": "Keep that side selected and tap Midpoint so the side gains its midpoint. A free point, or a click while Midpoint is disabled, does not count.",
+  "geometryPracticeGoal_construct-drag": "Drag the marked free point and release after it moves. A press that does not move does not count. A derived point cannot be dragged directly and is not this step's target.",
+  "geometryPracticeGoal_construct-auxiliary": "Turn Auxiliary on, then draw a new auxiliary figure yourself. Turning the switch on, with no new auxiliary figure, does not count.",
+  "geometryPracticeGoal_construct-auxiliary-off": "After the auxiliary figure is on the board, turn Auxiliary off. Turning it off before that figure exists does not finish the drawing step.",
+  "geometryPracticeGoal_construct-complete": "Construct practice is finished. That records the operations only, not a measured relation or a mathematical conclusion. Exit to continue your real answer."
 }

@@ -6,6 +6,7 @@ import { createTabbedBoardView } from '../shell/board-shell.js';
 import { createBoardFilePicker, createBoardIcons } from '../shared/file-picker.js';
 import { createGeometryPage } from './geometry-view.js';
 import { createGeometryPractice, createGeometryBasicsChapter, createGeometryPracticeFrames } from './geometry-basics.js';
+import { createGeometryConstructChapter } from './geometry-construct.js';
 import { createPracticeProgress, createPracticeNavigation } from '../shell/practice-progress.js';
 import { createGeometryDemoPage, readDemoView } from '../teacher-demo/geometry-demo-view.js';
 import { placeFigure } from './place-figure.js';
@@ -87,6 +88,7 @@ function mount(options = {}) {
     tourHoldsNotePanel, tourInsertMode, quantityTutorialSteps, geometryTutorialSteps,
     placeFigure, captionPosition, captionBox, visibleCaption,
     createBoardControls, createGeometryPractice, createGeometryBasicsChapter, createGeometryPracticeFrames,
+    geometryPracticeChapters: [createGeometryConstructChapter],
     createPracticeProgress, createPracticeNavigation,
     geometryHiddenPoints, geometryCaptionLabel, geometryPointLabel, geometryPointDot, geometryShapeNode, geometryStroke,
     geometryViewport, geometryTextOverflow, geometryFrame, geometryFrameInputs,
@@ -272,7 +274,16 @@ function mount(options = {}) {
   // double cannot drift away from the code it stands in for.
   function hitNode(selector, x, y) {
     if (!String(selector).includes('data-point')) return null;
-    const state = api.board();
+    // Practice draws on its own board. The real draft stays put, so a hit has to use
+    // the board that is actually on screen.
+    let state = null;
+    if (visibleNodes().some((node) => node.props && node.props['data-practice-step'] !== undefined)) {
+      try {
+        const saved = JSON.parse(storage.get(PRACTICE_KEY));
+        state = saved.entries[saved.current].frame.board;
+      } catch { state = null; }
+    }
+    if (!state) state = api.board();
     const hit = state.points.find((point) => Math.hypot(point.x - x, point.y - y) <= POINT_HIT_RADIUS);
     return hit ? { getAttribute: () => hit.id } : null;
   }
@@ -1336,5 +1347,168 @@ test('geometry safe basics closes the polygon and clears a selection with touch 
     assert.equal(practiceState(h).frame.selection.length, 0, 'touch clears the selection');
     // No keyboard shortcut and no hover was needed anywhere above.
     assert.ok(!h.visibleNodes().some((n) => (n.props['data-practice-step'] || '') === 'hover'));
+  } finally { h.unmount(); }
+});
+
+function constructState(h) {
+  return JSON.parse(h.raw(PRACTICE_KEY)).entries['geometry-construct'];
+}
+function enterConstruct(h, tr) {
+  h.find((node) => node.type === 'button' && text(node).includes(tr('geometryPracticeConstruct'))).props.onClick();
+  h.render();
+}
+function practiceParagraph(h) {
+  const coach = h.find((node) => node.props && node.props['data-practice-step'] !== undefined);
+  return text(walk(coach).find((node) => node.type === 'p'));
+}
+
+for (const language of ['zh', 'en']) {
+  for (const pointerType of ['mouse', 'touch']) {
+    test(`geometry construct replay (${language}, ${pointerType}) finishes and leaves the real draft`, () => {
+      const h = mount({ language });
+      const tr = language === 'en'
+        ? (key, params = {}) => enLocale[key].replace(/\{(\w+)\}/g, (match, name) => (Object.hasOwn(params, name) ? String(params[name]) : match))
+        : t;
+      try {
+        h.tab('geometry');
+        h.tool('point'); h.clickAt(90, 90); h.tool('select');
+        const real = h.raw(GEOMETRY_KEY);
+        const quantity = h.raw(QUANTITY_KEY);
+        h.startTour();
+        enterConstruct(h, tr);
+        assert.equal(practiceStep(h), 'construct-parallelogram');
+        const heading = h.find((node) => node.props && node.props['data-practice-step'] !== undefined);
+        assert.equal(text(walk(heading).find((node) => node.type === 'strong')), tr('geometryPracticeConstruct'));
+        assert.equal(practiceParagraph(h), tr('geometryPracticeGoal_construct-parallelogram'));
+        const seen = [practiceParagraph(h)];
+        const tap = (x, y) => h.clickAt(x, y, { pointerType });
+        const drag = (x, y, nx, ny) => { h.clickAt(x, y, { pointerType }); h.moveTo(nx, ny); h.release(nx, ny); };
+        h.tool('polygon');
+        tap(80, 80); tap(200, 80); tap(140, 140); tap(80, 80);
+        assert.equal(practiceStep(h), 'construct-parallelogram', 'a plain polygon is not a parallelogram');
+        h.tool('parallelogram');
+        tap(400, 180); tap(560, 180); tap(480, 300);
+        assert.equal(practiceStep(h), 'construct-rectangle');
+        seen.push(practiceParagraph(h));
+        h.tool('rectangle');
+        tap(200, 400); tap(400, 400);
+        assert.equal(practiceStep(h), 'construct-rectangle', 'two clicks are still a preview');
+        tap(400, 520);
+        assert.equal(practiceStep(h), 'construct-select-side');
+        seen.push(practiceParagraph(h));
+        const midpoint = h.find((node) => node.type === 'button' && node.props['aria-label'] === tr('midpoint'));
+        assert.equal(midpoint.props.disabled, true);
+        midpoint.props.onClick();
+        h.render();
+        assert.equal(practiceStep(h), 'construct-select-side', 'a disabled midpoint click does not advance');
+        h.tool('select');
+        tap(300, 180);
+        assert.equal(practiceStep(h), 'construct-midpoint');
+        seen.push(practiceParagraph(h));
+        h.tool('midpoint');
+        assert.equal(practiceStep(h), 'construct-drag');
+        seen.push(practiceParagraph(h));
+        assert.match(practiceParagraph(h), language === 'en' ? /derived point cannot be dragged directly/ : /派生点不能直接拖动/);
+        drag(300, 180, 330, 220);
+        assert.equal(practiceStep(h), 'construct-drag', 'dragging the midpoint does not pass');
+        h.clickAt(200, 180, { pointerType });
+        h.release(200, 180);
+        assert.equal(practiceStep(h), 'construct-drag', 'a press that does not move does not pass');
+        drag(200, 180, 240, 220);
+        assert.equal(practiceStep(h), 'construct-auxiliary');
+        seen.push(practiceParagraph(h));
+        h.tool('auxiliary');
+        assert.equal(practiceStep(h), 'construct-auxiliary', 'the switch alone is not an auxiliary figure');
+        h.tool('segment');
+        tap(520, 240); tap(680, 240);
+        assert.equal(practiceStep(h), 'construct-auxiliary-off');
+        assert.equal(constructState(h).frame.board.elements.some((item) => item.role === 'auxiliary'), true);
+        seen.push(practiceParagraph(h));
+        h.tool('auxiliary');
+        assert.equal(practiceStep(h), 'construct-complete');
+        seen.push(practiceParagraph(h));
+        for (const copy of seen) {
+          assert.ok(copy.length > 0);
+          assert.ok(!/geometryPracticeGoal_|practiceGoal_/.test(copy), `${language}: no raw keys on screen`);
+        }
+        assert.equal(h.drafts.length, 0);
+        assert.equal(h.attached.size, 0);
+        assert.equal(h.texts.length, 0);
+        assert.equal(h.persisted, 0);
+        assert.equal(h.raw(GEOMETRY_KEY), real);
+        assert.equal(h.raw(QUANTITY_KEY), quantity);
+        h.click(tr('practiceExit'));
+        assert.equal(h.raw(GEOMETRY_KEY), real, 'exit leaves the real geometry draft unchanged');
+        assert.ok(!h.visibleNodes().some((node) => node.props && node.props['data-practice-step'] !== undefined));
+      } finally { h.unmount(); }
+    });
+  }
+}
+
+test('geometry construct skip, reset, and chapter retry stay on the practice board', () => {
+  const h = mount();
+  try {
+    h.tab('geometry');
+    h.tool('point'); h.clickAt(90, 90);
+    const real = h.raw(GEOMETRY_KEY);
+    h.startTour();
+    enterConstruct(h, t);
+    h.click(t('practiceSkipStep'));
+    assert.equal(practiceStep(h), 'construct-rectangle');
+    assert.equal(constructState(h).states[0], 'skipped');
+    assert.equal(constructState(h).frame.board.elements.some((item) => item.type === 'parallelogram'), false);
+    assert.ok(constructState(h).frame.board.points.filter((point) => point.kind === 'free').length >= 3);
+    h.click(t('practiceReset'));
+    assert.equal(practiceStep(h), 'construct-rectangle');
+    h.click(`${t('practiceRetryStep', { step: 1 })}`);
+    assert.equal(practiceStep(h), 'construct-parallelogram');
+    assert.equal(constructState(h).returnTo === undefined, false);
+    h.click(t('practiceSkipStep'));
+    assert.equal(practiceStep(h), 'construct-rectangle');
+    assert.equal(constructState(h).returnTo, undefined);
+    h.click(t('practiceRetryChapter'));
+    assert.equal(practiceStep(h), 'construct-parallelogram');
+    assert.equal(JSON.parse(h.raw(PRACTICE_KEY)).entries['geometry-basics'].states[0], 'in-progress');
+    assert.equal(h.raw(GEOMETRY_KEY), real);
+    h.click(t('practiceExit'));
+    assert.equal(h.raw(GEOMETRY_KEY), real);
+  } finally { h.unmount(); }
+});
+
+test('geometry construct reset keeps the drag step marked on the free point', () => {
+  const h = mount();
+  try {
+    h.tab('geometry');
+    h.startTour();
+    enterConstruct(h, t);
+    const tap = (x, y) => h.clickAt(x, y);
+    h.tool('parallelogram');
+    tap(400, 180); tap(560, 180); tap(480, 300);
+    h.tool('rectangle');
+    tap(200, 400); tap(400, 400); tap(400, 520);
+    h.tool('select');
+    tap(300, 180);
+    assert.equal(practiceStep(h), 'construct-midpoint');
+    h.tool('midpoint');
+    assert.equal(practiceStep(h), 'construct-drag');
+    const pointId = constructState(h).goal.pointId;
+    const derived = constructState(h).frame.board.points.find((point) => point.construction?.op === 'midpoint');
+    assert.ok(derived, 'the midpoint commit is on the drag step board');
+    assert.notEqual(derived.id, pointId);
+    h.click(t('practiceReset'));
+    assert.equal(practiceStep(h), 'construct-drag');
+    const restored = constructState(h);
+    assert.deepEqual(restored.frame.selection, [pointId], 'reset marks the free point, not the derived midpoint');
+    assert.equal(restored.goal.pointId, pointId);
+    const marked = h.find((node) => node.props && node.props['data-point'] === pointId);
+    const midpoint = h.find((node) => node.props && node.props['data-point'] === derived.id);
+    assert.equal(marked.props['aria-pressed'], true);
+    assert.equal(midpoint.props['aria-pressed'], false);
+    const point = restored.frame.board.points.find((item) => item.id === pointId);
+    assert.equal(point.kind, 'free');
+    h.clickAt(point.x, point.y);
+    h.moveTo(point.x + 40, point.y + 40);
+    h.release(point.x + 40, point.y + 40);
+    assert.equal(practiceStep(h), 'construct-auxiliary', 'moving the marked free point still advances');
   } finally { h.unmount(); }
 });
