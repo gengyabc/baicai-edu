@@ -386,5 +386,16 @@
   "geometryPracticeGoal_construct-drag": "Drag the marked free point and release after it moves. A press that does not move does not count. A derived point cannot be dragged directly and is not this step's target.",
   "geometryPracticeGoal_construct-auxiliary": "Turn Auxiliary on, then draw a new auxiliary figure yourself. Turning the switch on, with no new auxiliary figure, does not count.",
   "geometryPracticeGoal_construct-auxiliary-off": "After the auxiliary figure is on the board, turn Auxiliary off. Turning it off before that figure exists does not finish the drawing step.",
-  "geometryPracticeGoal_construct-complete": "Construct practice is finished. That records the operations only, not a measured relation or a mathematical conclusion. Exit to continue your real answer."
+  "geometryPracticeGoal_construct-complete": "Construct practice is finished. That records the operations only, not a measured relation or a mathematical conclusion. Exit to continue your real answer.",
+  "geometryPracticeEdit": "Geometry edit and notes practice — separate from your answer",
+  "geometryPracticeGoal_edit-rename": "With the marked point selected, choose Rename point and save a new non-empty name. An empty name, cancel, an unchanged name, or a duplicate the board rejects does not count. Shapes keep the same point.",
+  "geometryPracticeGoal_edit-text-add": "Choose Text, click empty canvas, and save non-empty writing. Cancel or an empty save does not count. The words are your own; they are not graded as geometry.",
+  "geometryPracticeGoal_edit-text-change": "Choose Edit text and save a different wording of that same writing. A second text, cancel, or an empty save does not count.",
+  "geometryPracticeGoal_edit-delete": "Keep the marked object selected and choose Delete selected. Something else that was already here must remain. Deleting a different object, or clearing the whole board, does not count.",
+  "geometryPracticeGoal_edit-point-note": "With the marked point selected, choose My explanation and save a non-empty note on that point. A text element or a note on a shape does not count. The note is your own words.",
+  "geometryPracticeGoal_edit-element-note": "With the marked shape selected, choose My explanation and save a shape note of 1 to 20 characters so a short label can appear. A point note, a text element, an empty note, or a longer note does not count.",
+  "geometryPracticeGoal_edit-caption": "Click the short label on the canvas, without hovering, and save a different note on that same shape. Opening the card without saving, or editing a different shape, does not count.",
+  "geometryPracticeGoal_edit-deselect": "Click empty canvas and release to clear the selection.",
+  "geometryPracticeGoal_edit-board-note": "With nothing selected, choose My explanation and save a non-empty note for the whole board. An empty save does not count. A note on a point or a shape does not count, including one taken by a newly selected object.",
+  "geometryPracticeGoal_edit-complete": "Edit and notes practice is finished. Text and notes are your own words, not a geometry verdict or a right answer. Exit to continue your real answer."
 }

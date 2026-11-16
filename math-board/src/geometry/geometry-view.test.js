@@ -7,6 +7,7 @@ import { createBoardFilePicker, createBoardIcons } from '../shared/file-picker.j
 import { createGeometryPage } from './geometry-view.js';
 import { createGeometryPractice, createGeometryBasicsChapter, createGeometryPracticeFrames } from './geometry-basics.js';
 import { createGeometryConstructChapter } from './geometry-construct.js';
+import { createGeometryEditChapter } from './geometry-edit.js';
 import { createPracticeProgress, createPracticeNavigation } from '../shell/practice-progress.js';
 import { createGeometryDemoPage, readDemoView } from '../teacher-demo/geometry-demo-view.js';
 import { placeFigure } from './place-figure.js';
@@ -88,7 +89,7 @@ function mount(options = {}) {
     tourHoldsNotePanel, tourInsertMode, quantityTutorialSteps, geometryTutorialSteps,
     placeFigure, captionPosition, captionBox, visibleCaption,
     createBoardControls, createGeometryPractice, createGeometryBasicsChapter, createGeometryPracticeFrames,
-    geometryPracticeChapters: [createGeometryConstructChapter],
+    geometryPracticeChapters: [createGeometryConstructChapter, createGeometryEditChapter],
     createPracticeProgress, createPracticeNavigation,
     geometryHiddenPoints, geometryCaptionLabel, geometryPointLabel, geometryPointDot, geometryShapeNode, geometryStroke,
     geometryViewport, geometryTextOverflow, geometryFrame, geometryFrameInputs,
@@ -1510,5 +1511,215 @@ test('geometry construct reset keeps the drag step marked on the free point', ()
     h.moveTo(point.x + 40, point.y + 40);
     h.release(point.x + 40, point.y + 40);
     assert.equal(practiceStep(h), 'construct-auxiliary', 'moving the marked free point still advances');
+  } finally { h.unmount(); }
+});
+
+function editState(h) {
+  return JSON.parse(h.raw(PRACTICE_KEY)).entries['geometry-edit'];
+}
+function enterEdit(h, tr) {
+  h.find((node) => node.type === 'button' && text(node).includes(tr('geometryPracticeEdit'))).props.onClick();
+  h.render();
+}
+function setControl(h, type, value) {
+  const node = h.find((item) => item.type === type && item.props.type !== 'file');
+  node.props.ref.current.value = value;
+}
+function captionAt(h) {
+  const state = editState(h);
+  const board = state.frame.board;
+  const element = board.elements.find((item) => item.id === state.goal.elementId);
+  const caption = captionPosition(element, (id) => {
+    const point = board.points.find((item) => item.id === id);
+    return point ? { x: point.x, y: point.y } : null;
+  }, { width: 1280, height: 640 });
+  assert.ok(caption, 'the short note is drawn as a caption');
+  return caption;
+}
+
+for (const language of ['zh', 'en']) {
+  for (const pointerType of ['mouse', 'touch']) {
+    test(`geometry edit replay (${language}, ${pointerType}) finishes and leaves the real draft`, () => {
+      const h = mount({ language });
+      const tr = language === 'en'
+        ? (key, params = {}) => enLocale[key].replace(/\{(\w+)\}/g, (match, name) => (Object.hasOwn(params, name) ? String(params[name]) : match))
+        : t;
+      try {
+        h.tab('geometry');
+        h.tool('point'); h.clickAt(90, 90); h.tool('select');
+        const real = h.raw(GEOMETRY_KEY);
+        const quantity = h.raw(QUANTITY_KEY);
+        h.startTour();
+        enterEdit(h, tr);
+        assert.equal(practiceStep(h), 'edit-rename');
+        const heading = h.find((node) => node.props && node.props['data-practice-step'] !== undefined);
+        assert.equal(text(walk(heading).find((node) => node.type === 'strong')), tr('geometryPracticeEdit'));
+        assert.equal(practiceParagraph(h), tr('geometryPracticeGoal_edit-rename'));
+        const seen = [practiceParagraph(h)];
+        const tap = (x, y) => h.clickAt(x, y, { pointerType });
+        h.click(tr('renamePoint'));
+        h.click(tr('cancel'));
+        assert.equal(practiceStep(h), 'edit-rename', 'cancel does not rename');
+        h.click(tr('renamePoint'));
+        setControl(h, 'input', '');
+        h.click(tr('apply'));
+        assert.equal(practiceStep(h), 'edit-rename', 'an empty name does not pass');
+        const other = editState(h).frame.board.points.find((point) => point.id !== editState(h).goal.pointId);
+        h.click(tr('renamePoint'));
+        setControl(h, 'input', other.label);
+        h.click(tr('apply'));
+        assert.equal(practiceStep(h), 'edit-rename', 'a duplicate name does not pass');
+        h.click(tr('renamePoint'));
+        setControl(h, 'input', '甲');
+        h.click(tr('apply'));
+        assert.equal(practiceStep(h), 'edit-text-add');
+        seen.push(practiceParagraph(h));
+        h.tool('text');
+        tap(300, 480);
+        h.click(tr('cancel'));
+        assert.equal(practiceStep(h), 'edit-text-add', 'cancel does not add text');
+        h.tool('text');
+        tap(300, 480);
+        setControl(h, 'textarea', '   ');
+        h.click(tr('save'));
+        assert.equal(practiceStep(h), 'edit-text-add', 'an empty save does not add text');
+        h.tool('text');
+        tap(300, 480);
+        setControl(h, 'textarea', '面积');
+        h.click(tr('save'));
+        assert.equal(practiceStep(h), 'edit-text-change');
+        seen.push(practiceParagraph(h));
+        h.tool('text');
+        tap(360, 500);
+        setControl(h, 'textarea', '另一份');
+        h.click(tr('save'));
+        assert.equal(practiceStep(h), 'edit-text-change', 'a second text does not pass');
+        h.click(tr('editText'));
+        setControl(h, 'textarea', '周长');
+        h.click(tr('save'));
+        assert.equal(practiceStep(h), 'edit-delete');
+        seen.push(practiceParagraph(h));
+        const deleteId = editState(h).goal.deleteId;
+        assert.deepEqual(editState(h).frame.selection, [deleteId]);
+        h.click(tr('trash'));
+        assert.equal(practiceStep(h), 'edit-point-note');
+        assert.equal(editState(h).frame.board.points.some((point) => point.id === deleteId)
+          || editState(h).frame.board.elements.some((element) => element.id === deleteId), false);
+        const kept = editState(h).goal.keepId;
+        assert.equal(editState(h).frame.board.points.some((point) => point.id === kept)
+          || editState(h).frame.board.elements.some((element) => element.id === kept), true);
+        seen.push(practiceParagraph(h));
+        h.click(tr('note'));
+        setControl(h, 'textarea', '起点');
+        h.click(tr('save'));
+        assert.equal(practiceStep(h), 'edit-element-note');
+        seen.push(practiceParagraph(h));
+        h.click(tr('note'));
+        setControl(h, 'textarea', '字'.repeat(21));
+        h.click(tr('save'));
+        assert.equal(practiceStep(h), 'edit-element-note', 'a note longer than 20 characters does not pass');
+        h.click(tr('note'));
+        setControl(h, 'textarea', '边');
+        h.click(tr('save'));
+        assert.equal(practiceStep(h), 'edit-caption');
+        seen.push(practiceParagraph(h));
+        const caption = captionAt(h);
+        h.moveTo(caption.x, caption.y);
+        assert.equal(practiceStep(h), 'edit-caption', 'hovering the caption does not pass');
+        h.clickAt(caption.x, caption.y, { pointerType });
+        h.click(tr('cancel'));
+        assert.equal(practiceStep(h), 'edit-caption', 'opening the caption without saving does not pass');
+        h.clickAt(caption.x, caption.y, { pointerType });
+        setControl(h, 'textarea', '改过');
+        h.click(tr('save'));
+        assert.equal(practiceStep(h), 'edit-deselect');
+        seen.push(practiceParagraph(h));
+        h.clickAt(740, 500, { pointerType });
+        h.release(740, 500);
+        assert.equal(practiceStep(h), 'edit-board-note');
+        seen.push(practiceParagraph(h));
+        h.tool('text');
+        tap(300, 520);
+        setControl(h, 'textarea', '新的');
+        h.click(tr('save'));
+        assert.equal(practiceStep(h), 'edit-board-note');
+        h.click(tr('note'));
+        setControl(h, 'textarea', 'Stolen');
+        h.click(tr('save'));
+        assert.equal(practiceStep(h), 'edit-board-note', 'a note on the newly selected text does not pass');
+        const stolen = editState(h).frame.board;
+        assert.equal(stolen.note, '');
+        assert.equal(stolen.elements.filter((element) => element.type === 'text').every((element) => element.note === ''), true);
+        h.clickAt(740, 500, { pointerType });
+        h.release(740, 500);
+        h.click(tr('note'));
+        setControl(h, 'textarea', '');
+        h.click(tr('save'));
+        assert.equal(practiceStep(h), 'edit-board-note', 'an empty board note does not pass');
+        h.click(tr('note'));
+        setControl(h, 'textarea', language === 'en' ? 'Whole board' : '整板');
+        h.click(tr('save'));
+        assert.equal(practiceStep(h), 'edit-complete');
+        seen.push(practiceParagraph(h));
+        for (const copy of seen) {
+          assert.ok(copy.length > 0);
+          assert.ok(!/geometryPracticeGoal_|practiceGoal_/.test(copy), `${language}: no raw keys on screen`);
+        }
+        assert.equal(h.drafts.length, 0);
+        assert.equal(h.attached.size, 0);
+        assert.equal(h.texts.length, 0);
+        assert.equal(h.persisted, 0);
+        assert.equal(h.raw(GEOMETRY_KEY), real);
+        assert.equal(h.raw(QUANTITY_KEY), quantity);
+        h.click(tr('practiceExit'));
+        assert.equal(h.raw(GEOMETRY_KEY), real, 'exit leaves the real geometry draft unchanged');
+        assert.ok(!h.visibleNodes().some((node) => node.props && node.props['data-practice-step'] !== undefined));
+      } finally { h.unmount(); }
+    });
+  }
+}
+
+test('geometry edit skip, reset, and chapter retry stay on the practice board', () => {
+  const h = mount();
+  try {
+    h.tab('geometry');
+    h.tool('point'); h.clickAt(90, 90);
+    const real = h.raw(GEOMETRY_KEY);
+    h.startTour();
+    enterEdit(h, t);
+    h.click(t('practiceSkipStep'));
+    assert.equal(practiceStep(h), 'edit-text-add');
+    assert.equal(editState(h).states[0], 'skipped');
+    assert.equal(editState(h).frame.board.elements.some((element) => element.type === 'text'), false);
+    h.click(t('practiceReset'));
+    assert.equal(practiceStep(h), 'edit-text-add');
+    h.click(`${t('practiceRetryStep', { step: 1 })}`);
+    assert.equal(practiceStep(h), 'edit-rename');
+    h.click(t('practiceSkipStep'));
+    assert.equal(practiceStep(h), 'edit-text-add');
+    h.click(t('practiceRetryChapter'));
+    assert.equal(practiceStep(h), 'edit-rename');
+    assert.equal(JSON.parse(h.raw(PRACTICE_KEY)).entries['geometry-basics'].states[0], 'in-progress');
+    assert.equal(h.raw(GEOMETRY_KEY), real);
+    h.click(t('practiceExit'));
+    assert.equal(h.raw(GEOMETRY_KEY), real);
+  } finally { h.unmount(); }
+});
+
+test('the geometry note card can still reach exit', () => {
+  const h = mount();
+  try {
+    h.tab('geometry');
+    h.tool('point'); h.clickAt(90, 90);
+    const real = h.raw(GEOMETRY_KEY);
+    h.startTour();
+    enterEdit(h, t);
+    h.click(t('note'));
+    assert.equal(h.find((node) => node.type === 'textarea').type, 'textarea');
+    h.click(t('practiceExit'));
+    assert.equal(h.raw(GEOMETRY_KEY), real, 'exit from the note card leaves the real draft');
+    assert.equal(h.drafts.length, 0);
+    assert.equal(h.texts.length, 0);
+    assert.ok(!h.visibleNodes().some((node) => node.props && node.props['data-practice-step'] !== undefined));
   } finally { h.unmount(); }
 });
