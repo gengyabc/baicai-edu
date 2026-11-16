@@ -10,6 +10,7 @@ import { createBoardControls } from '../shared/board-kit.js';
 import * as tutorial from '../shell/tutorial.js';
 import * as practice from './practice.js';
 import { createQuantityAdjustChapter } from './practice-adjust.js';
+import { createQuantityOrganizeChapter } from './practice-organize.js';
 import { createPracticeProgress, createPracticeNavigation } from '../shell/practice-progress.js';
 import { createHooks, installBrowser, text } from '../testing/test-harness.js';
 
@@ -555,6 +556,138 @@ for (const language of ['en', 'zh']) test(`adjust chapter real editor replay, cl
     app.click(app.t('practiceExit')); assert.deepEqual(realStorage(storage), real);
   } finally { app.dispose(); }
 });
+
+for (const language of ['en', 'zh']) for (const pointerType of ['mouse', 'touch']) {
+  test(`organize chapter real editor replay (${language}, ${pointerType}; not a browser replay)`, () => {
+    const storage = new Map(), chapters = [createQuantityOrganizeChapter];
+    const progressKey = 'baicai-edu-math-board:practice:v2:quantity';
+    const entry = () => JSON.parse(storage.get(progressKey)).entries['quantity-organize'];
+    const board = () => entry().frame.board;
+    const ids = () => entry().goal.targets;
+    let app = mount({ storage, chapters, language });
+    const coach = () => text(app.find((node) => node.props['data-practice-step']));
+    const tap = (id) => { app.pointer(id, 40, 40, 'Down', pointerType); app.pointer(id, 40, 40, 'Up', pointerType); };
+    const selectOnly = (id) => {
+      app.pointer(null, 400, 250, 'Down', pointerType);
+      app.pointer(null, 400, 250, 'Up', pointerType);
+      tap(id);
+    };
+    const buttonText = (label) => app.nodes().find((node) => node.type === 'button' && text(node) === label);
+    const pickMany = (list) => {
+      if (buttonText(app.t('appendDone'))) buttonText(app.t('appendDone')).props.onClick();
+      app.refresh();
+      tap(list[0]);
+      app.click(app.t('appendSelect'));
+      for (const id of list.slice(1)) tap(id);
+      app.click(app.t('appendDone'));
+    };
+    const rename = (value) => {
+      app.click(app.t('alias'));
+      app.find((node) => node.type === 'input' && node.props.type === 'text').props.ref.current.value = value;
+      app.click(app.t('apply'));
+    };
+    try {
+      app.add();
+      const real = realStorage(storage);
+      app.start();
+      app.click(`${app.t('practiceOrganize')} · ${app.t('practiceStatus_not-started')} · 1/11`);
+      assert.equal(app.step(), 'organize-name');
+      assert.equal(board().objects.length, 2, 'catalogue entry supplies a pair without a previous frame');
+      assert.ok(!coach().includes('practiceGoal_'), 'the goal is translated');
+      const [first, second] = ids();
+      tap(first); rename('');
+      assert.equal(app.step(), 'organize-name', 'an empty name does not advance');
+      tap(second); rename('Other');
+      assert.equal(app.step(), 'organize-name', 'naming a different object does not advance');
+      tap(first); rename('Team');
+      assert.equal(app.step(), 'organize-reselect');
+      assert.equal(board().objects.find((object) => object.id === first).alias, 'Team');
+      tap(second);
+      assert.equal(app.step(), 'organize-reselect', 'selecting the other object does not read the name back');
+      tap(first);
+      assert.equal(app.step(), 'organize-peer');
+      tap(second); rename('Team');
+      assert.equal(app.step(), 'organize-group');
+      assert.ok(coach().includes(language === 'zh' ? '分组不是合并' : 'Grouping is not merging'));
+      app.click(`${app.t('circle')} · ${app.t('value')} 1`);
+      assert.equal(app.step(), 'organize-group', 'adding another object is not grouping');
+      tap(first); app.click(app.t('makeGroup'));
+      assert.equal(app.step(), 'organize-group', 'a one-member group does not pass');
+      pickMany([first, second]); app.click(app.t('makeGroup'));
+      assert.equal(app.step(), 'organize-group-name');
+      rename(app.t('defaultGroup'));
+      assert.equal(app.step(), 'organize-group-name', 'keeping the current group name does not pass');
+      rename('Together');
+      assert.equal(app.step(), 'organize-ungroup');
+      assert.equal(board().groups.find((group) => group.alias === 'Together').alias, 'Together');
+      app.click(app.t('ungroup'));
+      assert.equal(app.step(), 'organize-merge');
+      assert.ok(coach().includes(language === 'zh' ? '灰色结果不是错误' : 'gray result is not a mistake'));
+      tap(second); rename('Other');
+      pickMany(ids());
+      const merge = app.find((node) => node.type === 'button' && text(node) === app.t('merge'));
+      assert.equal(merge.props.disabled, true, 'different names disable merge');
+      merge.props.onClick(); app.refresh();
+      assert.equal(app.step(), 'organize-merge', 'a disabled merge does not advance');
+      selectOnly(second); rename('Team');
+      pickMany(ids()); app.click(app.t('merge'));
+      assert.equal(app.step(), 'organize-split');
+      const merged = board().objects.find((object) => object.sources.length === 2);
+      assert.equal(merged.color, 9, 'an off-level total is gray, not a failed step');
+      const extra = board().objects.find((object) => object.id !== merged.id);
+      tap(extra.id);
+      assert.equal(app.nodes().some((node) => node.type === 'button' && text(node) === app.t('split')), false);
+      assert.equal(app.step(), 'organize-split', 'an object that cannot split does not advance');
+      tap(merged.id); app.click(app.t('split'));
+      assert.equal(app.step(), 'organize-copy');
+      assert.equal(board().objects.find((object) => object.id === first).alias, 'Team', 'split restores the recorded name');
+      const beforeCopy = board().objects.length;
+      tap(second); app.click(app.t('copy'));
+      assert.equal(app.step(), 'organize-copy', 'copying a different object does not pass');
+      assert.equal(board().objects.length, beforeCopy + 1, 'the other copy is real, but it is not this step');
+      tap(first); app.click(app.t('copy'));
+      assert.equal(app.step(), 'organize-crossout');
+      assert.equal(board().objects.length, beforeCopy + 2);
+      assert.ok(board().objects.some((object) => object.id === first), 'the original stays');
+      tap(second); app.click(app.t('crossOut'));
+      assert.equal(app.step(), 'organize-crossout', 'crossing out another object does not pass');
+      tap(first); app.click(app.t('crossOut'));
+      assert.equal(app.step(), 'organize-delete');
+      assert.equal(board().objects.find((object) => object.id === first).removed, true);
+      assert.ok(board().objects.some((object) => object.id === first), 'cross-out leaves the object on the board');
+      const other = board().objects.find((object) => object.id !== first);
+      tap(other.id); app.click(app.t('trash'));
+      assert.equal(app.step(), 'organize-delete', 'deleting a different object does not pass');
+      app.click(app.t('clear')); app.click(app.t('cancel'));
+      assert.equal(app.step(), 'organize-delete', 'cancelling a clear is not deleting the marked object');
+      tap(first);
+      assert.equal(app.step(), 'organize-delete', 'selecting the marked object is not deleting it');
+      app.click(app.t('trash'));
+      assert.equal(app.step(), 'complete');
+      assert.ok(board().objects.every((object) => object.id !== first));
+      assert.ok(board().objects.length > 0, 'the rest of the board stays');
+      app.click(app.t('practiceExit'));
+      assert.deepEqual(realStorage(storage), real, 'exit leaves the pre-seeded real draft unchanged');
+      assert.equal(app.uploads, 0);
+      app.dispose(); app = mount({ storage, chapters, language }); app.start();
+      assert.equal(app.step(), 'complete', 'resume stays on this chapter');
+      assert.deepEqual(realStorage(storage), real);
+      app.click(app.t('practiceRetryChapter'));
+      assert.equal(app.step(), 'organize-name');
+      app.click(app.t('practiceSkipStep'));
+      assert.equal(app.step(), 'organize-reselect');
+      assert.ok(entry().goal.name.trim(), 'skip supplies the name the next step reads');
+      app.click(app.t('practiceRetryStep', { step: 1 }));
+      assert.equal(app.step(), 'organize-name');
+      tap(ids()[0]); rename('Supplement');
+      assert.equal(app.step(), 'organize-reselect', 'a finished supplement returns to the pending step');
+      app.click(app.t('practiceReset'));
+      assert.equal(app.step(), 'organize-reselect', 'reset keeps the supplemented position');
+      app.click(app.t('practiceExit'));
+      assert.deepEqual(realStorage(storage), real);
+    } finally { app.dispose(); }
+  });
+}
 
 test('explicit entry owns a separate practice board and blocks every real insert', () => {
   const app = mount();
