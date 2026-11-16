@@ -33,7 +33,7 @@ function factoryBody(text, name) {
 
 test('the built client registers the quantity adjust chapter as an independent factory', () => {
   assert.match(bundle, /const createQuantityAdjustChapter = function createQuantityAdjustChapter/, 'build.mjs must inline the chapter factory');
-  assert.match(bundle, /quantityPracticeChapters: \[createQuantityAdjustChapter, createQuantityOrganizeChapter\]/, 'the built browser map keeps adjust and appends later chapters');
+  assert.match(bundle, /quantityPracticeChapters: \[createQuantityAdjustChapter, createQuantityOrganizeChapter, createQuantityNotesChapter\]/, 'the built browser map keeps adjust and appends later chapters');
   // The shipped copy is the source factory, not a stale hand-edited variant.
   assert.equal(factoryBody(bundle, 'createQuantityAdjustChapter'), factoryBody(source, 'createQuantityAdjustChapter'));
 });

@@ -11,6 +11,7 @@ import * as tutorial from '../shell/tutorial.js';
 import * as practice from './practice.js';
 import { createQuantityAdjustChapter } from './practice-adjust.js';
 import { createQuantityOrganizeChapter } from './practice-organize.js';
+import { createQuantityNotesChapter } from './practice-notes.js';
 import { createPracticeProgress, createPracticeNavigation } from '../shell/practice-progress.js';
 import { createHooks, installBrowser, text } from '../testing/test-harness.js';
 
@@ -683,6 +684,151 @@ for (const language of ['en', 'zh']) for (const pointerType of ['mouse', 'touch'
       assert.equal(app.step(), 'organize-reselect', 'a finished supplement returns to the pending step');
       app.click(app.t('practiceReset'));
       assert.equal(app.step(), 'organize-reselect', 'reset keeps the supplemented position');
+      app.click(app.t('practiceExit'));
+      assert.deepEqual(realStorage(storage), real);
+    } finally { app.dispose(); }
+  });
+}
+
+for (const language of ['en', 'zh']) for (const pointerType of ['mouse', 'touch']) {
+  test(`notes chapter real editor replay (${language}, ${pointerType}; not a browser replay)`, () => {
+    const storage = new Map(), chapters = [createQuantityNotesChapter];
+    const progressKey = 'baicai-edu-math-board:practice:v2:quantity';
+    const entry = () => JSON.parse(storage.get(progressKey)).entries['quantity-notes'];
+    const board = () => entry().frame.board;
+    const ids = () => entry().goal.targets;
+    let app = mount({ storage, chapters, language });
+    const coach = () => text(app.find((node) => node.props['data-practice-step']));
+    const tap = (id) => { app.pointer(id, 40, 40, 'Down', pointerType); app.pointer(id, 40, 40, 'Up', pointerType); };
+    const clear = () => { app.pointer(null, 400, 250, 'Down', pointerType); app.pointer(null, 400, 250, 'Up', pointerType); };
+    const buttonText = (label) => app.nodes().find((node) => node.type === 'button' && text(node) === label);
+    const noteButton = () => app.find((node) => node.type === 'button' && String(node.props.className || '').includes('eb-note-button'));
+    const openNote = () => { noteButton().props.onClick(); app.refresh(); };
+    const saveNote = (value) => {
+      openNote();
+      app.find((node) => node.type === 'textarea').props.ref.current.value = value;
+      app.click(app.t('save'));
+    };
+    const selectOnly = (id) => {
+      const other = ids().find((item) => item !== id);
+      if (buttonText(app.t('appendDone'))) { buttonText(app.t('appendDone')).props.onClick(); app.refresh(); }
+      clear();
+      tap(id);
+      app.click(app.t('appendSelect'));
+      tap(other);
+      app.click(app.t('appendDone'));
+    };
+    const selectGroup = (id) => {
+      clear();
+      if (buttonText(app.t('appendDone'))) { buttonText(app.t('appendDone')).props.onClick(); app.refresh(); }
+      tap(id);
+    };
+    const pickMany = (list) => {
+      if (buttonText(app.t('appendDone'))) { buttonText(app.t('appendDone')).props.onClick(); app.refresh(); }
+      clear();
+      tap(list[0]);
+      app.click(app.t('appendSelect'));
+      for (const id of list.slice(1)) tap(id);
+      app.click(app.t('appendDone'));
+    };
+    try {
+      app.add();
+      const real = realStorage(storage);
+      app.start();
+      app.click(`${app.t('practiceNotes')} · ${app.t('practiceStatus_not-started')} · 1/9`);
+      assert.equal(app.step(), 'notes-deselect');
+      assert.equal(board().objects.length, 2, 'catalogue entry supplies two objects and a group');
+      assert.equal(board().groups.length, 1);
+      assert.ok(entry().frame.selection.length > 0, 'the step does not start already cleared');
+      assert.ok(!coach().includes('practiceGoal_'), 'the goal is translated');
+      assert.match(coach(), language === 'zh' ? /自己的话/ : /your own words/i);
+      clear();
+      assert.equal(app.step(), 'notes-board');
+      openNote();
+      app.find((node) => node.type === 'textarea').props.ref.current.value = '';
+      app.click(app.t('save'));
+      assert.equal(app.step(), 'notes-board', 'an empty note does not advance');
+      openNote();
+      app.click(app.t('cancel'));
+      assert.equal(app.step(), 'notes-board', 'cancel does not advance');
+      app.click(`${app.t('circle')} · ${app.t('value')} 1`);
+      saveNote('Stolen');
+      assert.equal(app.step(), 'notes-board', 'a note on the automatically selected new object does not pass');
+      assert.notEqual(board().note, 'Stolen', 'add-then-note does not become the board note');
+      const extra = board().objects.find((object) => !ids().includes(object.id));
+      assert.equal(extra.note, 'Stolen');
+      openNote();
+      app.find((node) => node.type === 'textarea').props.ref.current.value = '字'.repeat(501);
+      app.click(app.t('save'));
+      assert.equal(app.step(), 'notes-board', 'a rejected note does not advance');
+      assert.equal(extra.note, 'Stolen', 'the rejected text is not stored');
+      clear();
+      saveNote('Whole board');
+      assert.equal(app.step(), 'notes-board-read');
+      assert.equal(board().note, 'Whole board');
+      openNote();
+      assert.equal(app.find((node) => node.type === 'textarea').props.defaultValue, 'Whole board');
+      assert.equal(app.step(), 'notes-object');
+      app.click(app.t('cancel'));
+      const [first, second] = ids();
+      selectOnly(second);
+      saveNote('Other');
+      assert.equal(app.step(), 'notes-object', 'a note on the other object does not pass');
+      selectOnly(first);
+      saveNote('');
+      assert.equal(app.step(), 'notes-object', 'an empty object note does not pass');
+      saveNote('Just this one');
+      assert.equal(app.step(), 'notes-object-check');
+      assert.equal(board().objects.find((object) => object.id === first).note, 'Just this one');
+      selectOnly(second);
+      assert.equal(app.step(), 'notes-group');
+      assert.notEqual(board().objects.find((object) => object.id === second).note, 'Just this one');
+      selectOnly(first);
+      saveNote('Member only');
+      assert.equal(app.step(), 'notes-group', 'a member note is not the group note');
+      selectGroup(first);
+      saveNote('The group');
+      assert.equal(app.step(), 'notes-group-read');
+      assert.equal(board().groups.find((group) => group.id === entry().goal.groupId).note, 'The group');
+      selectGroup(first);
+      openNote();
+      assert.equal(app.find((node) => node.type === 'textarea').props.defaultValue, 'The group');
+      assert.equal(app.step(), 'notes-selection');
+      app.click(app.t('cancel'));
+      selectGroup(first);
+      app.click(app.t('ungroup'));
+      assert.equal(app.step(), 'notes-selection', 'dissolving the group is not the selection note');
+      pickMany([first, extra.id]);
+      saveNote('Different pair');
+      assert.equal(app.step(), 'notes-selection', 'a different pair is not the marked set');
+      pickMany(ids());
+      saveNote('Both of them');
+      assert.equal(app.step(), 'notes-selection-check');
+      clear();
+      openNote();
+      assert.equal(app.find((node) => node.type === 'textarea').props.defaultValue, 'Whole board');
+      assert.notEqual(app.find((node) => node.type === 'textarea').props.defaultValue, 'Both of them');
+      assert.equal(app.step(), 'complete');
+      assert.equal(board().notes.find((note) => note.text === 'Both of them').objectIds.length, 2);
+      app.click(app.t('practiceExit'));
+      assert.deepEqual(realStorage(storage), real, 'exit leaves the pre-seeded real draft unchanged');
+      assert.equal(app.uploads, 0);
+      app.dispose();
+      app = mount({ storage, chapters, language });
+      app.start();
+      assert.equal(app.step(), 'complete', 'resume stays on this chapter');
+      assert.deepEqual(realStorage(storage), real);
+      app.click(app.t('practiceRetryChapter'));
+      assert.equal(app.step(), 'notes-deselect');
+      openNote();
+      app.click(app.t('practiceReset'));
+      assert.equal(app.step(), 'notes-deselect', 'reset from the note card stays on this step');
+      assert.ok(entry().frame.selection.length > 0);
+      openNote();
+      app.click(app.t('practiceSkipStep'));
+      assert.equal(app.step(), 'notes-board');
+      assert.equal(board().note, '', 'skip does not write the board note for the student');
+      openNote();
       app.click(app.t('practiceExit'));
       assert.deepEqual(realStorage(storage), real);
     } finally { app.dispose(); }
