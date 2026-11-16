@@ -848,7 +848,11 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     }
     function openNote() {
       const target = noteTargetFor(selected, completeGroup);
-      requestOverlay({ kind: 'note', target, value: noteText(target), label: target ? target.label : t('noteGeneral') });
+      const value = noteText(target);
+      const kind = target ? target.kind : 'board';
+      const ids = !target ? [] : target.kind === 'selection' ? target.ids.slice() : [target.id];
+      requestOverlay({ kind: 'note', target, value, label: target ? target.label : t('noteGeneral') });
+      practiceEvent({ type: 'open-note', target: kind, ids, value, after: boardRef.current });
     }
     function openName() {
       if (completeGroup) requestOverlay({ kind: 'name', group: completeGroup, value: completeGroup.alias });
@@ -869,9 +873,22 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     function applyNote() {
       const value = noteRef.current?.value ?? '';
       const target = overlay?.target;
-      if (!target) action({ type: 'note', value });
-      else if (target.kind === 'selection') action({ type: 'annotate', target: 'selection', ids: target.ids, value });
-      else action({ type: 'annotate', target: target.kind, id: target.id, value });
+      const before = boardRef.current;
+      const command = !target ? { type: 'note', value }
+        : target.kind === 'selection' ? { type: 'annotate', target: 'selection', ids: target.ids, value }
+          : { type: 'annotate', target: target.kind, id: target.id, value };
+      // Q10: a selected object must not capture the whole-board note. Other steps still save.
+      if (props.practice && target && practiceRef.current.snapshot().goal.step === 'notes-board') {
+        setOverlay(null);
+        return;
+      }
+      action(command);
+      // A rejected save, or a commit that leaves the board unchanged, is not a student note.
+      if (boardRef.current !== before) {
+        const kind = target ? target.kind : 'board';
+        const ids = !target ? [] : target.kind === 'selection' ? target.ids.slice() : [target.id];
+        practiceEvent({ type: command.type, before, after: boardRef.current, action: command, target: kind, ids });
+      }
       setOverlay(null);
     }
     function togglePattern(shape) {
