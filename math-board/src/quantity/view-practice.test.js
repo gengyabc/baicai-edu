@@ -12,6 +12,8 @@ import * as practice from './practice.js';
 import { createQuantityAdjustChapter } from './practice-adjust.js';
 import { createQuantityOrganizeChapter } from './practice-organize.js';
 import { createQuantityNotesChapter } from './practice-notes.js';
+import { createQuantityFilesChapter } from './practice-files.js';
+import { createGeometryModel } from '../geometry/model.js';
 import { createPracticeProgress, createPracticeNavigation } from '../shell/practice-progress.js';
 import { createHooks, installBrowser, text } from '../testing/test-harness.js';
 
@@ -57,6 +59,8 @@ function mount(options = {}) {
     }
     return { ...node, children: node.children.flat(Infinity).map((child) => expand(child)) };
   }
+  const walkAll = (node) => (!node || typeof node !== 'object' ? []
+    : [node, ...(node.children || []).flat(Infinity).flatMap(walkAll)]);
   const refresh = () => hooks.refresh(() => {
     rendering = new Set();
     const tree = expand(React.createElement(Board, { ...props, tabActive: active }));
@@ -74,7 +78,7 @@ function mount(options = {}) {
   const find = (predicate) => { const matches = nodes().filter(predicate); assert.equal(matches.length, 1); return matches[0]; };
   const click = (label) => { const node = find((n) => n.type === 'button' && (text(n) === label || n.props['aria-label'] === label)); node.props.onClick(); refresh(); };
   refresh();
-  return { browser, refresh, nodes, find, click, t, get uploads() { return uploads; },
+  return { browser, refresh, nodes, find, click, t, all: () => walkAll(hooks.tree), get uploads() { return uploads; },
     start() { click(t('moreActions')); click(t('tutorialReplay')); },
     add() { find((n) => n.type === 'button' && n.props['aria-label'] === `${t('circle')} · ${t('value')} 1`).props.onClick(); refresh(); },
     step() { return find((n) => n.props['data-practice-step']).props['data-practice-step']; },
@@ -867,3 +871,238 @@ test('explicit entry owns a separate practice board and blocks every real insert
     assert.deepEqual(realStorage(app.browser.storage), real);
   } finally { app.dispose(); }
 });
+
+function installFileDb(records) {
+  const puts = [];
+  const opens = [];
+  const previous = globalThis.indexedDB;
+  const later = (run) => queueMicrotask(run);
+  globalThis.indexedDB = {
+    open(name) {
+      opens.push(name);
+      const request = {};
+      const db = {
+        objectStoreNames: { contains: () => true },
+        close() {},
+        transaction() {
+          const tx = {
+            objectStore() {
+              return {
+                get(key) {
+                  const got = {};
+                  later(() => { got.result = records[key] || null; got.onsuccess?.(); });
+                  return got;
+                },
+                put(value, key) {
+                  puts.push(key);
+                  records[key] = value;
+                  later(() => { tx.oncomplete?.(); });
+                },
+              };
+            },
+          };
+          return tx;
+        },
+      };
+      later(() => { request.result = db; request.onsuccess?.(); });
+      return request;
+    },
+  };
+  return { puts, opens, restore() { globalThis.indexedDB = previous; } };
+}
+
+for (const language of ['en', 'zh']) for (const pointerType of ['mouse', 'touch']) {
+  test(`quantity file chapter replay (${language}, ${pointerType}; not a system file dialog)`, async () => {
+    const G = createGeometryModel();
+    let realWrites = 0;
+    const realHandle = {
+      name: 'real-quantity.json',
+      queryPermission: async () => 'granted',
+      requestPermission: async () => 'granted',
+      createWritable: async () => { realWrites += 1; throw new Error('real handle written'); },
+    };
+    const db = installFileDb({ 'last-board-file': realHandle });
+    const storage = new Map();
+    const chapters = [createQuantityNotesChapter, createQuantityFilesChapter];
+    let app = mount({ storage, chapters, language });
+    const progressKey = 'baicai-edu-math-board:practice:v2:quantity';
+    const entry = () => JSON.parse(storage.get(progressKey)).entries['quantity-files'];
+    const toast = () => {
+      const node = app.nodes().find((node) => node.props.className === 'eb-status-toast');
+      return node ? text(node) : '';
+    };
+    const coach = () => text(app.find((node) => node.props['data-practice-step']));
+    const practiceNode = (type) => app.all().find((node) => node.type === type && node.props['data-practice-file'] === 'quantity');
+    let downloads = 0;
+    let inputClicks = 0;
+    const arm = () => {
+      const anchor = practiceNode('a').props.ref.current;
+      if (!anchor.armed) {
+        const click = anchor.click.bind(anchor);
+        anchor.click = () => { downloads += 1; click(); };
+        anchor.armed = true;
+      }
+      const input = practiceNode('input').props.ref.current;
+      if (!input.armed) {
+        const click = input.click.bind(input);
+        input.click = () => { inputClicks += 1; click(); };
+        input.armed = true;
+      }
+    };
+    const choose = async (label) => {
+      if (!app.nodes().some((node) => String(node.props.className || '').includes('eb-more-menu'))) app.click(app.t('moreActions'));
+      const item = app.find((node) => node.props.role === 'menuitem' && text(node) === label);
+      await item.props.onClick({ pointerType, pointerId: 1, button: 0 });
+      app.refresh();
+    };
+    try {
+      app.add();
+      for (let i = 0; i < 4; i += 1) await new Promise((resolve) => setTimeout(resolve, 0));
+      app.refresh();
+      const real = realStorage(storage);
+      const opens = db.opens.length;
+      app.click(app.t('moreActions'));
+      assert.equal(text(app.find((node) => node.props.className === 'eb-menu-note')), 'real-quantity.json');
+      app.click(app.t('moreActions'));
+      app.start();
+      let saveCalls = 0;
+      window.showSaveFilePicker = async () => { saveCalls += 1; throw Object.assign(new Error('cancel'), { name: 'AbortError' }); };
+      await choose(app.t('export'));
+      assert.equal(saveCalls, 0, 'basics does not reach a file picker');
+      assert.equal(toast(), app.t('practiceFilesUnavailable'));
+      assert.equal(app.step(), 'add');
+      app.click(`${app.t('practiceNotes')} · ${app.t('practiceStatus_not-started')} · 1/9`);
+      await choose(app.t('export'));
+      assert.equal(saveCalls, 0, 'notes does not reach a file picker');
+      assert.equal(toast(), app.t('practiceFilesUnavailable'));
+      app.click(`${app.t('quantityPracticeFiles')} · ${app.t('practiceStatus_not-started')} · ${app.t('practiceOptional')} · 1/2`);
+      assert.equal(app.step(), 'files-save');
+      assert.ok(coach().includes(app.t('practiceGoal_files-save')));
+      assert.equal(entry().frame.trace.totalChanges, 0);
+      arm();
+      const anchor = practiceNode('a').props.ref.current;
+      const wrapped = anchor.click;
+      anchor.click = undefined;
+      window.showSaveFilePicker = async () => undefined;
+      await choose(app.t('export'));
+      assert.equal(app.step(), 'files-save', 'no handle and no download click does not pass');
+      assert.equal(downloads, 0);
+      anchor.click = wrapped;
+      window.showSaveFilePicker = async () => { throw Object.assign(new Error('cancel'), { name: 'AbortError' }); };
+      await choose(app.t('export'));
+      assert.equal(app.step(), 'files-save', 'picker cancel does not fall through to a download');
+      assert.equal(downloads, 0);
+      assert.notEqual(toast(), app.t('practiceFileSaved'));
+      delete window.showSaveFilePicker;
+      await choose(app.t('export'));
+      assert.equal(downloads, 1);
+      assert.equal(app.step(), 'files-open');
+      assert.equal(entry().goal.via, 'download');
+      assert.equal(toast(), app.t('practiceFileDownloaded'));
+      assert.notEqual(toast(), app.t('fileDownloaded'));
+      const savedText = entry().goal.text;
+      assert.equal(JSON.parse(savedText).kind, 'math-board');
+      assert.equal(await app.browser.exports.at(-1).text(), savedText);
+      assert.equal(entry().frame.trace.totalChanges, 0);
+      window.showOpenFilePicker = async () => [{ getFile: async () => ({ size: savedText.length, text: async () => savedText }) }];
+      await choose(app.t('import'));
+      assert.equal(app.step(), 'files-open', 'opening the unchanged practice board does not pass');
+      const beforeAdd = entry().frame.board.objects.length;
+      app.add();
+      assert.equal(app.step(), 'files-open', 'adding an object is not the open');
+      assert.equal(entry().frame.board.objects.length, beforeAdd + 1);
+      const changed = JSON.stringify(entry().frame.board);
+      let openOptions;
+      window.showOpenFilePicker = async (options) => { openOptions = options; throw Object.assign(new Error('cancel'), { name: 'AbortError' }); };
+      const clicksBefore = inputClicks;
+      await choose(app.t('import'));
+      assert.equal(app.step(), 'files-open');
+      assert.equal(inputClicks, clicksBefore, 'cancel does not open the fallback input');
+      assert.equal(openOptions.startIn, undefined);
+      window.showOpenFilePicker = async () => [{ getFile: async () => ({ size: 1, text: async () => '{' }) }];
+      await choose(app.t('import'));
+      assert.equal(JSON.stringify(entry().frame.board), changed, 'invalid JSON keeps the practice board');
+      const geometryFile = G.serialize(G.reduce(G.empty(), { type: 'addPoint', x: 200, y: 180 }));
+      window.showOpenFilePicker = async () => [{ getFile: async () => ({ size: geometryFile.length, text: async () => geometryFile }) }];
+      await choose(app.t('import'));
+      assert.equal(JSON.stringify(entry().frame.board), changed, 'a geometry file is refused');
+      assert.notEqual(toast(), app.t('practiceFileLoaded'));
+      window.showOpenFilePicker = async () => [{ getFile: async () => ({ size: 262145, text: async () => savedText }) }];
+      await choose(app.t('import'));
+      assert.equal(toast(), app.t('fileTooLarge'));
+      assert.equal(JSON.stringify(entry().frame.board), changed);
+      window.showOpenFilePicker = async () => { throw Object.assign(new Error('denied'), { name: 'NotAllowedError' }); };
+      await choose(app.t('import'));
+      assert.equal(app.step(), 'files-open', 'permission denial alone does not pass');
+      assert.equal(inputClicks, clicksBefore + 1);
+      const input = practiceNode('input');
+      await input.props.onChange({ target: { files: [], value: 'stale' } });
+      app.refresh();
+      assert.equal(app.step(), 'files-open', 'the fallback input without a file does not pass');
+      const traceBeforeOpen = JSON.stringify(entry().frame.trace);
+      await input.props.onChange({ target: { files: [{ size: savedText.length, text: async () => savedText }], value: 'picked' } });
+      app.refresh();
+      assert.equal(app.step(), 'files-complete');
+      assert.equal(entry().goal.via, 'download', 'opening the download does not turn it into a verified disk save');
+      assert.equal(entry().goal.text, savedText);
+      assert.equal(M.serialize(entry().frame.board), savedText);
+      assert.equal(JSON.stringify(entry().frame.trace), traceBeforeOpen, 'opening a file does not fill the trace');
+      assert.equal(entry().frame.trace.entries.some((item) => item.type === 'import'), false);
+      assert.equal(toast(), app.t('practiceFileLoaded'));
+      app.click(app.t('practiceRetryChapter'));
+      assert.equal(app.step(), 'files-save');
+      app.click(app.t('practiceSkipStep'));
+      assert.equal(app.step(), 'files-open');
+      assert.equal(entry().goal.via, null, 'skip does not write a handle');
+      assert.notEqual(M.serialize(entry().frame.board), entry().goal.text);
+      app.click(app.t('practiceReset'));
+      assert.equal(app.step(), 'files-open');
+      app.click(app.t('practiceRetryStep', { step: 1 }));
+      assert.equal(app.step(), 'files-save');
+      app.click(app.t('practiceRetryChapter'));
+      assert.equal(app.step(), 'files-save');
+      let written = '';
+      window.showSaveFilePicker = async () => ({
+        name: 'practice.json',
+        createWritable: async () => ({ write: async (value) => { written = value; }, close: async () => {} }),
+      });
+      await choose(app.t('export'));
+      assert.equal(downloads, 1, 'a handle save does not also download');
+      assert.equal(app.step(), 'files-open');
+      assert.equal(entry().goal.via, 'handle');
+      assert.equal(written, entry().goal.text);
+      assert.equal(toast(), app.t('practiceFileSaved'));
+      assert.notEqual(toast(), app.t('fileSaved'));
+      app.click(app.t('moreActions'));
+      assert.equal(app.nodes().some((node) => node.props.className === 'eb-menu-note'), false, 'practice save does not adopt a file name');
+      app.click(app.t('moreActions'));
+      const handleText = written;
+      app.add();
+      const traceBeforeHandleOpen = JSON.stringify(entry().frame.trace);
+      window.showOpenFilePicker = async (options) => {
+        openOptions = options;
+        return [{ getFile: async () => ({ size: handleText.length, text: async () => handleText }) }];
+      };
+      await choose(app.t('import'));
+      assert.equal(app.step(), 'files-complete');
+      assert.equal(entry().goal.via, 'handle');
+      assert.equal(openOptions.startIn, undefined, 'practice open does not start in the real handle');
+      assert.equal(M.serialize(entry().frame.board), handleText);
+      assert.equal(JSON.stringify(entry().frame.trace), traceBeforeHandleOpen, 'opening a file does not fill the trace');
+      assert.equal(realWrites, 0);
+      assert.equal(db.puts.length, 0);
+      assert.equal(db.opens.length, opens);
+      assert.equal(app.uploads, 0);
+      app.click(app.t('practiceExit'));
+      assert.deepEqual(realStorage(storage), real, 'exit leaves the real draft and trace');
+      app.click(app.t('moreActions'));
+      assert.equal(text(app.find((node) => node.props.className === 'eb-menu-note')), 'real-quantity.json');
+      app.dispose();
+      app = mount({ storage, chapters, language });
+      app.start();
+      assert.equal(app.step(), 'files-complete', 'resume stays on this chapter');
+      app.click(app.t('practiceExit'));
+      assert.deepEqual(realStorage(storage), real);
+    } finally { app.dispose(); db.restore(); }
+  });
+}

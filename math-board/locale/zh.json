@@ -111,6 +111,9 @@
   "done": "完成",
   "fileSaved": "已保存到上次的位置。",
   "fileDownloaded": "已下载画板文件。",
+  "practiceFileSaved": "练习文件已保存。真实草稿没有改动。",
+  "practiceFileDownloaded": "已开始下载练习文件。磁盘写入尚未验证。",
+  "practiceFileLoaded": "已载入练习画板。真实草稿没有载入。",
   "fileOpenFallback": "将使用普通文件选择，浏览器可能无法记住上次的位置。",
   "undo": "撤销",
   "redo": "重做",
@@ -407,5 +410,13 @@
   "geometryPracticeGoal_adjust-scroll": "在已经放大或未适应画面时滚动画布。滚动后位置没变，不算。",
   "geometryPracticeGoal_adjust-fit": "点「适应宽度」，让画面重新适应。画面已经适应时再点，不算。",
   "geometryPracticeGoal_adjust-clear": "练习画板上还有内容时，点「清空几何画布」，再点「确认清空」。练习几何画板和它的撤销历史都会空掉。只打开确认、没有确认，不算。之后撤销不能回到清空前，数量画板也不受影响。",
-  "geometryPracticeGoal_adjust-complete": "调整与恢复练习已完成。网格和吸附不是几何对错的证据。清空后的画板是新阶段，原来的撤销历史不会回来。没有附文件或发送。退出后继续真实作答。"
+  "geometryPracticeGoal_adjust-complete": "调整与恢复练习已完成。网格和吸附不是几何对错的证据。清空后的画板是新阶段，原来的撤销历史不会回来。没有附文件或发送。退出后继续真实作答。",
+  "quantityPracticeFiles": "练习文件",
+  "practiceGoal_files-save": "打开「更多操作」，保存这份练习画板。只有练习文件真正保存，或已经开始下载，这一步才通过。只点「保存 JSON」不够。下载只表示下载已经开始，磁盘写入尚未验证。真实作答和它的文件都不变。",
+  "practiceGoal_files-open": "打开一份数量练习文件。练习画板会变成那份文件里的内容。取消、这份画板读不了的文件，或几何文件，都不通过，当前练习保持原样。真实草稿不会被载入。打开文件也不会恢复修改记录。",
+  "practiceGoal_files-complete": "文件练习已完成。下载只表示下载已经开始，不是已经验证的磁盘保存。没有附文件或发送。退出后继续真实作答。跳过本章不阻塞数量基础章。",
+  "geometryPracticeFiles": "几何文件练习 — 与真实作答隔离",
+  "geometryPracticeGoal_files-save": "打开「更多操作」，保存这份练习几何画板。只有练习文件真正保存，或已经开始下载，这一步才通过。只点「保存 JSON」不够。下载只表示下载已经开始，磁盘写入尚未验证。真实几何作答和它的文件都不变。",
+  "geometryPracticeGoal_files-open": "打开一份几何练习文件。练习画板会变成那份文件里的内容。取消、这份画板读不了的文件，或数量文件，都不通过，当前练习保持原样。真实草稿不会被载入。几何不会因此多出修改记录。",
+  "geometryPracticeGoal_files-complete": "几何文件练习已完成。下载只表示下载已经开始，不是已经验证的磁盘保存。没有附文件或发送。退出后继续真实作答。跳过本章不阻塞几何基础章。"
 }

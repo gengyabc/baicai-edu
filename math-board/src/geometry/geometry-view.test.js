@@ -9,6 +9,7 @@ import { createGeometryPractice, createGeometryBasicsChapter, createGeometryPrac
 import { createGeometryConstructChapter } from './geometry-construct.js';
 import { createGeometryEditChapter } from './geometry-edit.js';
 import { createGeometryAdjustChapter } from './geometry-adjust.js';
+import { createGeometryFilesChapter } from './geometry-files.js';
 import { createPracticeProgress, createPracticeNavigation } from '../shell/practice-progress.js';
 import { createGeometryDemoPage, readDemoView } from '../teacher-demo/geometry-demo-view.js';
 import { placeFigure } from './place-figure.js';
@@ -90,7 +91,7 @@ function mount(options = {}) {
     tourHoldsNotePanel, tourInsertMode, quantityTutorialSteps, geometryTutorialSteps,
     placeFigure, captionPosition, captionBox, visibleCaption,
     createBoardControls, createGeometryPractice, createGeometryBasicsChapter, createGeometryPracticeFrames,
-    geometryPracticeChapters: [createGeometryConstructChapter, createGeometryEditChapter, createGeometryAdjustChapter],
+    geometryPracticeChapters: [createGeometryConstructChapter, createGeometryEditChapter, createGeometryAdjustChapter, createGeometryFilesChapter],
     createPracticeProgress, createPracticeNavigation,
     geometryHiddenPoints, geometryCaptionLabel, geometryPointLabel, geometryPointDot, geometryShapeNode, geometryStroke,
     geometryViewport, geometryTextOverflow, geometryFrame, geometryFrameInputs,
@@ -1938,3 +1939,237 @@ test('geometry adjust skip, reset, chapter retry, and refresh stay on the practi
     assert.equal(h.raw(GEOMETRY_KEY), real);
   } finally { h.unmount(); }
 });
+
+function installGeometryFileDb(records) {
+  const puts = [];
+  const opens = [];
+  const previous = globalThis.indexedDB;
+  const later = (run) => queueMicrotask(run);
+  globalThis.indexedDB = {
+    open(name) {
+      opens.push(name);
+      const request = {};
+      const db = {
+        objectStoreNames: { contains: () => true },
+        close() {},
+        transaction() {
+          const tx = {
+            objectStore() {
+              return {
+                get(key) {
+                  const got = {};
+                  later(() => { got.result = records[key] || null; got.onsuccess?.(); });
+                  return got;
+                },
+                put(value, key) {
+                  puts.push(key);
+                  records[key] = value;
+                  later(() => { tx.oncomplete?.(); });
+                },
+              };
+            },
+          };
+          return tx;
+        },
+      };
+      later(() => { request.result = db; request.onsuccess?.(); });
+      return request;
+    },
+  };
+  return { puts, opens, restore() { globalThis.indexedDB = previous; } };
+}
+
+for (const language of ['zh', 'en']) for (const pointerType of ['mouse', 'touch']) {
+  test(`geometry file chapter replay (${language}, ${pointerType}; not a system file dialog)`, async () => {
+    let realWrites = 0;
+    const handle = (name) => ({
+      name,
+      queryPermission: async () => 'granted',
+      requestPermission: async () => 'granted',
+      createWritable: async () => { realWrites += 1; throw new Error('real handle written'); },
+    });
+    const db = installGeometryFileDb({
+      'last-board-file': handle('real-quantity.json'),
+      'last-geometry-board-file': handle('real-geometry.json'),
+    });
+    const storage = new Map();
+    let h = mount({ storage, language });
+    const tr = language === 'en'
+      ? (key, params = {}) => enLocale[key].replace(/\{(\w+)\}/g, (match, name) => (Object.hasOwn(params, name) ? String(params[name]) : match))
+      : t;
+    const filesState = () => JSON.parse(h.raw(PRACTICE_KEY)).entries['geometry-files'];
+    const toast = () => {
+      const nodes = h.visibleNodes().filter((node) => node.props.className === 'eb-status-toast');
+      return nodes.length ? text(nodes[0]) : '';
+    };
+    const practiceNode = (type) => h.visibleNodes().filter((node) => node.type === type && node.props['data-practice-file'] === 'geometry');
+    let downloads = 0;
+    let inputClicks = 0;
+    const arm = () => {
+      const anchor = practiceNode('a')[0].props.ref.current;
+      if (!anchor.armed) {
+        const click = anchor.click.bind(anchor);
+        anchor.click = () => { downloads += 1; click(); };
+        anchor.armed = true;
+      }
+      const input = practiceNode('input')[0].props.ref.current;
+      if (!input.armed) {
+        const click = input.click.bind(input);
+        input.click = () => { inputClicks += 1; click(); };
+        input.armed = true;
+      }
+    };
+    const choose = async (label) => {
+      h.openMore();
+      const item = h.find((node) => node.props.role === 'menuitem' && text(node) === label);
+      await item.props.onClick({ pointerType, pointerId: 1, button: 0 });
+      h.render();
+    };
+    try {
+      h.tab('quantity');
+      h.find((node) => node.type === 'button' && String(node.props['aria-label'] || '').startsWith(`${tr('circle')} ·`)).props.onClick();
+      h.render();
+      h.tab('geometry');
+      h.tool('point');
+      h.clickAt(90, 90);
+      for (let i = 0; i < 6; i += 1) await new Promise((resolve) => setTimeout(resolve, 0));
+      h.render();
+      const realGeometry = h.raw(GEOMETRY_KEY);
+      const realQuantity = h.raw(QUANTITY_KEY);
+      const kept = [...storage].filter(([name]) => !name.startsWith('baicai-edu-math-board:practice:'));
+      const opens = db.opens.length;
+      h.startTour();
+      window.showSaveFilePicker = async () => { throw Object.assign(new Error('cancel'), { name: 'AbortError' }); };
+      await choose(tr('export'));
+      assert.equal(practiceStep(h), 'point');
+      assert.equal(toast(), tr('practiceFilesUnavailable'));
+      h.find((node) => node.type === 'button' && text(node).includes(tr('geometryPracticeAdjust'))).props.onClick();
+      h.render();
+      await choose(tr('export'));
+      assert.equal(practiceStep(h), 'adjust-grid');
+      assert.equal(toast(), tr('practiceFilesUnavailable'));
+      h.find((node) => node.type === 'button' && text(node).includes(tr('geometryPracticeFiles'))).props.onClick();
+      h.render();
+      assert.equal(practiceStep(h), 'files-save');
+      const coach = text(h.find((node) => node.props['data-practice-step']));
+      assert.ok(coach.includes(tr('geometryPracticeGoal_files-save')));
+      assert.equal(filesState().frame.trace, undefined);
+      arm();
+      window.showSaveFilePicker = async () => { throw Object.assign(new Error('cancel'), { name: 'AbortError' }); };
+      await choose(tr('export'));
+      assert.equal(practiceStep(h), 'files-save');
+      assert.equal(downloads, 0);
+      const anchor = practiceNode('a')[0].props.ref.current;
+      const wrapped = anchor.click;
+      anchor.click = undefined;
+      window.showSaveFilePicker = async () => undefined;
+      await choose(tr('export'));
+      assert.equal(practiceStep(h), 'files-save', 'no handle and no download click does not pass');
+      anchor.click = wrapped;
+      delete window.showSaveFilePicker;
+      await choose(tr('export'));
+      assert.equal(downloads, 1);
+      assert.equal(practiceStep(h), 'files-open');
+      assert.equal(filesState().goal.via, 'download');
+      assert.equal(toast(), tr('practiceFileDownloaded'));
+      const savedText = filesState().goal.text;
+      assert.equal(JSON.parse(savedText).kind, 'geometry-board');
+      assert.equal(JSON.parse(savedText).schemaVersion, 1);
+      window.showOpenFilePicker = async () => [{ getFile: async () => ({ size: savedText.length, text: async () => savedText }) }];
+      await choose(tr('import'));
+      assert.equal(practiceStep(h), 'files-open', 'opening the unchanged practice board does not pass');
+      const beforeAdd = G.serialize(filesState().frame.board);
+      h.tool('point');
+      h.clickAt(48, 420, { pointerType });
+      assert.equal(practiceStep(h), 'files-open');
+      assert.notEqual(G.serialize(filesState().frame.board), beforeAdd);
+      const changed = G.serialize(filesState().frame.board);
+      let openOptions;
+      window.showOpenFilePicker = async (options) => { openOptions = options; throw Object.assign(new Error('cancel'), { name: 'AbortError' }); };
+      const clicksBefore = inputClicks;
+      await choose(tr('import'));
+      assert.equal(practiceStep(h), 'files-open');
+      assert.equal(inputClicks, clicksBefore);
+      assert.equal(openOptions.startIn, undefined);
+      window.showOpenFilePicker = async () => [{ getFile: async () => ({ size: 1, text: async () => '{' }) }];
+      await choose(tr('import'));
+      assert.equal(G.serialize(filesState().frame.board), changed);
+      const quantityFile = M.serialize(M.reduce(M.empty(), { type: 'add', shape: 'circle' }));
+      window.showOpenFilePicker = async () => [{ getFile: async () => ({ size: quantityFile.length, text: async () => quantityFile }) }];
+      await choose(tr('import'));
+      assert.equal(toast(), tr('otherBoardFile'));
+      assert.equal(G.serialize(filesState().frame.board), changed);
+      window.showOpenFilePicker = async () => [{ getFile: async () => ({ size: 262145, text: async () => savedText }) }];
+      await choose(tr('import'));
+      assert.equal(toast(), tr('fileTooLarge'));
+      window.showOpenFilePicker = async () => { throw Object.assign(new Error('denied'), { name: 'NotAllowedError' }); };
+      await choose(tr('import'));
+      assert.equal(practiceStep(h), 'files-open');
+      assert.equal(inputClicks, clicksBefore + 1);
+      const input = practiceNode('input')[0];
+      await input.props.onChange({ target: { files: [], value: '' } });
+      h.render();
+      assert.equal(practiceStep(h), 'files-open');
+      await input.props.onChange({ target: { files: [{ size: savedText.length, text: async () => savedText }], value: '' } });
+      h.render();
+      assert.equal(practiceStep(h), 'files-complete');
+      assert.equal(filesState().goal.via, 'download');
+      assert.equal(G.serialize(filesState().frame.board), savedText);
+      assert.equal(filesState().frame.trace, undefined);
+      assert.equal(toast(), tr('practiceFileLoaded'));
+      h.click(tr('practiceRetryChapter'));
+      assert.equal(practiceStep(h), 'files-save');
+      h.click(tr('practiceSkipStep'));
+      assert.equal(practiceStep(h), 'files-open');
+      assert.equal(filesState().goal.via, null);
+      assert.notEqual(G.serialize(filesState().frame.board), filesState().goal.text);
+      h.click(tr('practiceReset'));
+      assert.equal(practiceStep(h), 'files-open');
+      h.click(tr('practiceRetryStep', { step: 1 }));
+      assert.equal(practiceStep(h), 'files-save');
+      h.click(tr('practiceRetryChapter'));
+      assert.equal(practiceStep(h), 'files-save');
+      let written = '';
+      window.showSaveFilePicker = async () => ({
+        name: 'practice-geometry.json',
+        createWritable: async () => ({ write: async (value) => { written = value; }, close: async () => {} }),
+      });
+      await choose(tr('export'));
+      assert.equal(downloads, 1);
+      assert.equal(filesState().goal.via, 'handle');
+      assert.equal(written, filesState().goal.text);
+      assert.equal(toast(), tr('practiceFileSaved'));
+      h.tool('point');
+      h.clickAt(64, 440, { pointerType });
+      window.showOpenFilePicker = async (options) => {
+        openOptions = options;
+        return [{ getFile: async () => ({ size: written.length, text: async () => written }) }];
+      };
+      await choose(tr('import'));
+      assert.equal(practiceStep(h), 'files-complete');
+      assert.equal(filesState().goal.via, 'handle');
+      assert.equal(openOptions.startIn, undefined);
+      assert.equal(G.serialize(filesState().frame.board), written);
+      assert.equal(filesState().frame.trace, undefined);
+      assert.equal(realWrites, 0);
+      assert.equal(db.puts.length, 0);
+      assert.equal(db.opens.length, opens);
+      assert.equal(h.drafts.length, 0);
+      assert.equal(h.texts.length, 0);
+      assert.equal(h.persisted, 0);
+      assert.equal(h.attached.size, 0);
+      h.click(tr('practiceExit'));
+      assert.equal(h.raw(GEOMETRY_KEY), realGeometry);
+      assert.equal(h.raw(QUANTITY_KEY), realQuantity);
+      assert.deepEqual([...storage].filter(([name]) => !name.startsWith('baicai-edu-math-board:practice:')), kept);
+      h.unmount();
+      h = mount({ storage, language });
+      h.tab('geometry');
+      h.startTour();
+      assert.equal(practiceStep(h), 'files-complete');
+      h.click(tr('practiceExit'));
+      assert.equal(h.raw(GEOMETRY_KEY), realGeometry);
+      assert.equal(h.raw(QUANTITY_KEY), realQuantity);
+    } finally { h.unmount(); db.restore(); }
+  });
+}
