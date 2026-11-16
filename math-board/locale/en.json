@@ -397,5 +397,15 @@
   "geometryPracticeGoal_edit-caption": "Click the short label on the canvas, without hovering, and save a different note on that same shape. Opening the card without saving, or editing a different shape, does not count.",
   "geometryPracticeGoal_edit-deselect": "Click empty canvas and release to clear the selection.",
   "geometryPracticeGoal_edit-board-note": "With nothing selected, choose My explanation and save a non-empty note for the whole board. An empty save does not count. A note on a point or a shape does not count, including one taken by a newly selected object.",
-  "geometryPracticeGoal_edit-complete": "Edit and notes practice is finished. Text and notes are your own words, not a geometry verdict or a right answer. Exit to continue your real answer."
+  "geometryPracticeGoal_edit-complete": "Edit and notes practice is finished. Text and notes are your own words, not a geometry verdict or a right answer. Exit to continue your real answer.",
+  "geometryPracticeAdjust": "Geometry adjust and recover practice — separate from your answer",
+  "geometryPracticeGoal_adjust-grid": "Tap Grid: off to turn the grid on, then place a new point while the grid is on. Turning the grid on without a new point does not count. The point's position is not checked, and the grid is not a geometry verdict.",
+  "geometryPracticeGoal_adjust-snap": "Tap Snap: on to turn snap off, then place a new point while snap is off. Turning snap off without a new point does not count. Where the point lands is not a geometric relation.",
+  "geometryPracticeGoal_adjust-undo": "Tap Undo to remove that latest point. The board returns to the state before it, and Redo can bring the point back. A click while Undo is unavailable does not count. A point the practice prepared is not this step.",
+  "geometryPracticeGoal_adjust-redo": "Tap Redo to restore that same point. A click while Redo is unavailable does not count.",
+  "geometryPracticeGoal_adjust-zoom": "Tap Zoom in so the zoom number changes. Tapping the current level, or a control that leaves the zoom number unchanged, does not count.",
+  "geometryPracticeGoal_adjust-scroll": "Scroll the canvas while it is zoomed or not fitted. A scroll that leaves the position unchanged does not count.",
+  "geometryPracticeGoal_adjust-fit": "Tap Fit width so the view is fitted again. Tapping it while the view is already fitted does not count.",
+  "geometryPracticeGoal_adjust-clear": "With something on the practice board, tap Clear geometry canvas and then Confirm clear. The practice board and its undo history become empty. Opening the question without confirming does not count. Undo cannot bring the old board back, and the quantity board is left alone.",
+  "geometryPracticeGoal_adjust-complete": "Adjust and recover practice is finished. Grid and snap are not a geometry verdict. The cleared board is a new stage, and its old undo history stays empty. Nothing was attached or sent. Exit to continue your real answer."
 }
