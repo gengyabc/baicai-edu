@@ -1474,3 +1474,41 @@ test('geometry construct skip, reset, and chapter retry stay on the practice boa
     assert.equal(h.raw(GEOMETRY_KEY), real);
   } finally { h.unmount(); }
 });
+
+test('geometry construct reset keeps the drag step marked on the free point', () => {
+  const h = mount();
+  try {
+    h.tab('geometry');
+    h.startTour();
+    enterConstruct(h, t);
+    const tap = (x, y) => h.clickAt(x, y);
+    h.tool('parallelogram');
+    tap(400, 180); tap(560, 180); tap(480, 300);
+    h.tool('rectangle');
+    tap(200, 400); tap(400, 400); tap(400, 520);
+    h.tool('select');
+    tap(300, 180);
+    assert.equal(practiceStep(h), 'construct-midpoint');
+    h.tool('midpoint');
+    assert.equal(practiceStep(h), 'construct-drag');
+    const pointId = constructState(h).goal.pointId;
+    const derived = constructState(h).frame.board.points.find((point) => point.construction?.op === 'midpoint');
+    assert.ok(derived, 'the midpoint commit is on the drag step board');
+    assert.notEqual(derived.id, pointId);
+    h.click(t('practiceReset'));
+    assert.equal(practiceStep(h), 'construct-drag');
+    const restored = constructState(h);
+    assert.deepEqual(restored.frame.selection, [pointId], 'reset marks the free point, not the derived midpoint');
+    assert.equal(restored.goal.pointId, pointId);
+    const marked = h.find((node) => node.props && node.props['data-point'] === pointId);
+    const midpoint = h.find((node) => node.props && node.props['data-point'] === derived.id);
+    assert.equal(marked.props['aria-pressed'], true);
+    assert.equal(midpoint.props['aria-pressed'], false);
+    const point = restored.frame.board.points.find((item) => item.id === pointId);
+    assert.equal(point.kind, 'free');
+    h.clickAt(point.x, point.y);
+    h.moveTo(point.x + 40, point.y + 40);
+    h.release(point.x + 40, point.y + 40);
+    assert.equal(practiceStep(h), 'construct-auxiliary', 'moving the marked free point still advances');
+  } finally { h.unmount(); }
+});

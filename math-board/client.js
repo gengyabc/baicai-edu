@@ -2561,7 +2561,6 @@ window.__ModuleLoader__.load({
     });
     const [progress,setProgress] = React.useState(() => practiceRef.current?.snapshot());
     const practiceEvents = React.useRef([]);
-    const markedDrag = React.useRef(null);
     const practiceState = progress?.goal;
     function editable() { return alive.current && (props.practice || !practiceOpenRef.current); }
     function practiceEvent(event) { if (props.practice && alive.current) { practiceEvents.current.push(event); setProgress({...practiceRef.current.snapshot()}); } }
@@ -2694,13 +2693,12 @@ window.__ModuleLoader__.load({
       else next=practiceRef.current.saveFrame(practiceFrame());
       if (wasSupplementing && !next.supplementing) applyPracticeFrame(next.frame);
       if (events.length || next.persistence!==progress?.persistence) setProgress(next);
-      // Select the drag step's free point once, so the mark is not the midpoint just created.
+      // The midpoint commit selects the derived point, and progress stores that selection
+      // as this step's start. Reset puts it back. Re-apply the free point whenever this
+      // step is showing and the selection is not exactly that point.
       const marked = next.goal?.step === 'construct-drag' ? next.goal.pointId : null;
-      if (marked !== markedDrag.current) {
-        markedDrag.current = marked;
-        const point = marked && boardRef.current.points.find((item) => item.id === marked && item.kind === 'free');
-        if (point && !(selection.length === 1 && selection[0] === marked)) setSelection([marked]);
-      }
+      const point = marked && boardRef.current.points.find((item) => item.id === marked && item.kind === 'free');
+      if (point && !(selection.length === 1 && selection[0] === marked)) setSelection([marked]);
     },[ready,board,history,selection,tool,pending,auxiliary,grid,snap,zoom,fit,progress]);
     function closePage() { if (props.practice) props.onPracticeExit(); else setPracticeOpen(false); props.close?.(); }
 
