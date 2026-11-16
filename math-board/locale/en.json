@@ -301,5 +301,16 @@
   "text": "Text",
   "addText": "Add text",
   "editText": "Edit text",
-  "textHint": "e.g. area = length × width. Save to write it; Esc cancels."
+  "textHint": "e.g. area = length × width. Save to write it; Esc cancels.",
+  "geometryPracticeBasics": "Geometry safe basics — separate from your answer",
+  "geometryPracticeInsert": "Simulation only: a real geometry insert contains one geometry snapshot and your whole-board note, with no geometry modification record. Nothing uploaded, attached, inserted or sent.",
+  "geometryPracticeGoal_point": "Choose Point, then tap empty canvas to create a free point. Choosing the tool alone is not enough. Exit anytime; browser storage enables resume.",
+  "geometryPracticeGoal_segment": "Choose Segment. Tap your first point, then another position to finish a segment. A first endpoint or failed drawing does not count.",
+  "geometryPracticeGoal_triangle": "Choose Triangle. Reuse the segment endpoints and tap a third position to finish the shape. No lengths or angles are judged.",
+  "geometryPracticeGoal_polygon": "Choose Polygon. Tap at least three vertices in a free area, then tap the starting point again to close it. An unfinished outline does not count.",
+  "geometryPracticeGoal_circle": "Choose Circle. In a free area tap the centre, then a point on the circle to finish it. A centre alone does not count.",
+  "geometryPracticeGoal_select-one": "Choose Select and tap only the first point (A). You can also drag a selection rectangle on mouse or touch, without a keyboard. Wrong selections do not count.",
+  "geometryPracticeGoal_deselect": "Tap empty canvas and release to clear all selection. A hover does not count.",
+  "geometryPracticeGoal_insert": "Tap Add to answer to simulate. Real geometry insertion has only a geometry snapshot and your whole-board note, no geometry modification record. Nothing here uploads or sends.",
+  "geometryPracticeGoal_complete": "Basic operation practice completed, not mathematical mastery or completion of other chapters. Nothing was attached or sent. Exit to continue your real answer."
 }
