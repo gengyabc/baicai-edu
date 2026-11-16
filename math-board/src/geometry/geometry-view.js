@@ -166,7 +166,10 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       ...paperBounds, board,
       captionOf: (element) => shared.captionPosition?.(element,
         (id) => board.points.find((point) => point.id === id), paperBounds) || null,
-      textBox: (element) => shared.geometryTextBox(element.text.split('\n'), textMetrics),
+      textBox: (element) => {
+        const hit = textBoxOf(element);
+        return { x: hit.x0 - element.x, y: hit.y0 - element.y, width: hit.x1 - hit.x0, height: hit.y1 - hit.y0 };
+      },
     }), viewport, { value: zoom, fit, fill: true });
     const { width, height } = frame.paper;
     // Growing paper is layout, not a student action. Preserve it in the snapshot so
@@ -274,6 +277,16 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       const marked = next.goal?.step === 'construct-drag' ? next.goal.pointId : null;
       const point = marked && boardRef.current.points.find((item) => item.id === marked && item.kind === 'free');
       if (point && !(selection.length === 1 && selection[0] === marked)) setSelection([marked]);
+      // The previous commit selects whatever it just made. These steps name one object,
+      // so the selection bar keeps pointing at that object while the step is showing.
+      const editStep = next.goal?.step;
+      const editMark = editStep === 'edit-rename' || editStep === 'edit-point-note' ? next.goal.pointId
+        : editStep === 'edit-text-change' ? next.goal.textId
+          : editStep === 'edit-delete' ? next.goal.deleteId
+            : editStep === 'edit-element-note' ? next.goal.elementId : null;
+      const editLive = editMark && (boardRef.current.points.some((item) => item.id === editMark)
+        || boardRef.current.elements.some((item) => item.id === editMark));
+      if (editLive && !(selection.length === 1 && selection[0] === editMark)) setSelection([editMark]);
     },[ready,board,history,selection,tool,pending,auxiliary,grid,snap,zoom,fit,progress]);
     function closePage() { if (props.practice) props.onPracticeExit(); else setPracticeOpen(false); props.close?.(); }
 
@@ -643,6 +656,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
             kind: 'note', selectOnClose: target.id,
             target: shape ? { id: shape.id, label: `${t(shape.type)} · ${t('hasNote')}` } : null,
           });
+          practiceEvent({ type: 'open-caption', id: target.id });
           setHit(null);
           event.preventDefault();
           return;
@@ -837,7 +851,9 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       if (!editable()) return;
       if (!selection.length) return;
       const ids = selection.slice();
-      action({ type: 'delete', ids });
+      const before = boardRef.current;
+      const next = action({ type: 'delete', ids });
+      if (next && boardRef.current !== before) practiceEvent({ type: 'delete', before, after: boardRef.current, ids });
       setSelection([]);
     }
     function requestOverlay(next) {
@@ -904,15 +920,40 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       if (!editable()) return;
       const value = noteRef.current?.value ?? '';
       const target = noteCardTarget;
-      if (target) action({ type: 'annotate', target: target.kind, id: target.id, value });
-      else action({ type: 'note', value });
+      const before = boardRef.current;
+      // G16: a selected point or element must not capture the whole-board note.
+      if (props.practice && target && practiceRef.current.snapshot().goal?.step === 'edit-board-note') {
+        setOverlay(null);
+        return;
+      }
+      // A caption is 1–20 characters. A longer or empty save must not replace the
+      // short note: the saved goal would then fail to load.
+      if (props.practice && overlay?.target && practiceRef.current.snapshot().goal?.step === 'edit-caption'
+        && !shared.visibleCaption?.(value)) {
+        setOverlay(null);
+        return;
+      }
+      const command = target
+        ? { type: 'annotate', target: target.kind, id: target.id, value }
+        : { type: 'note', value };
+      action(command);
+      if (boardRef.current !== before) {
+        practiceEvent({
+          type: command.type, before, after: boardRef.current, action: command,
+          target: target ? target.kind : 'board', id: target?.id, ids: target ? [target.id] : [],
+          via: overlay?.target ? 'caption' : undefined,
+        });
+      }
       if (overlay?.selectOnClose) setSelection([overlay.selectOnClose]);
       setOverlay(null);
     }
     function applyRename() {
       if (!editable()) return;
       const value = nameRef.current?.value ?? '';
-      if (rename) action({ type: 'renamePoint', id: rename.id, label: value });
+      const before = boardRef.current;
+      const id = rename?.id;
+      if (rename) action({ type: 'renamePoint', id, label: value });
+      if (id && boardRef.current !== before) practiceEvent({ type: 'renamePoint', before, after: boardRef.current, id, label: value });
       setRename(null);
     }
     // Writing is the one editor a text has: a new one is created on save, an existing
@@ -926,11 +967,15 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       if (!editable()) return;
       const value = (textRef.current?.value ?? '').trim();
       if (!value) { setWriting(null); return; }
-      if (writing?.id) action({ type: 'editText', id: writing.id, text: value });
-      else if (writing) {
+      const before = boardRef.current;
+      if (writing?.id) {
+        action({ type: 'editText', id: writing.id, text: value });
+        if (boardRef.current !== before) practiceEvent({ type: 'editText', before, after: boardRef.current, id: writing.id });
+      } else if (writing) {
         const next = action({ type: 'addText', x: writing.x, y: writing.y, text: value });
-        const created = next?.elements.filter((e) => e.type === 'text').at(-1);
+        const created = next?.elements.filter((e) => e.type === 'text' && !before.elements.some((old) => old.id === e.id)).at(-1);
         if (created) setSelection([created.id]);
+        if (created && boardRef.current !== before) practiceEvent({ type: 'addText', before, after: boardRef.current, id: created.id });
       }
       setWriting(null);
       setTool('select');

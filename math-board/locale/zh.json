@@ -386,5 +386,16 @@
   "geometryPracticeGoal_construct-drag": "拖动标出的自由点，移动后松手。只按下而不移动不算。派生点不能直接拖动，也不是这一步的目标。",
   "geometryPracticeGoal_construct-auxiliary": "打开「辅助线」，再亲手画出一个辅助图形。只拨动开关、没有新的辅助图形，不算完成。",
   "geometryPracticeGoal_construct-auxiliary-off": "辅助图形已经画上之后，再关闭「辅助线」。还没有辅助图形时关掉开关，不能当作这一步已经完成。",
-  "geometryPracticeGoal_construct-complete": "构造练习已完成。这只说明这些操作做过了，不表示边角关系或数学结论正确。退出后继续真实作答。"
+  "geometryPracticeGoal_construct-complete": "构造练习已完成。这只说明这些操作做过了，不表示边角关系或数学结论正确。退出后继续真实作答。",
+  "geometryPracticeEdit": "几何编辑与说明练习 — 与真实作答隔离",
+  "geometryPracticeGoal_edit-rename": "选中标出的点，点「重命名的点」，保存一个新的非空名称。空名称、取消、名称不变，或与别的点重名，都不通过。原来的图形仍引用这个点。",
+  "geometryPracticeGoal_edit-text-add": "选「文字」，在空白处点一下，保存一段非空文字。取消或空保存不通过。这些文字是你自己的话，不判断几何对错。",
+  "geometryPracticeGoal_edit-text-change": "点「修改文字」，改刚才那一段并保存。再写一段新的、取消或空保存，都不能代替修改。",
+  "geometryPracticeGoal_edit-delete": "保持选中标出的对象，点「删除所选」。画板上还要留下别的对象。删掉别的对象，或清空整板，都不通过。",
+  "geometryPracticeGoal_edit-point-note": "选中标出的点，点「我想说」，为这个点保存一条非空说明。写在文字上，或写在图形上，都不通过。说明是你自己的话。",
+  "geometryPracticeGoal_edit-element-note": "选中标出的图形，点「我想说」，保存一条 1 到 20 字的图形说明，短标签才会出现。点的说明、文字、空说明或更长的说明都不通过。",
+  "geometryPracticeGoal_edit-caption": "直接点画布上的短标签（不必悬停），把这条图形说明改成别的内容并保存。只打开卡片，或改了别的图形，都不通过。",
+  "geometryPracticeGoal_edit-deselect": "点画布空白处后松手，取消全部选择。",
+  "geometryPracticeGoal_edit-board-note": "在没有选中任何对象时，点「我想说」，保存一条非空的整板说明。空保存不通过。写到点或图形上也不通过，包括新出现后被选中的对象。",
+  "geometryPracticeGoal_edit-complete": "编辑和说明练习已完成。文字和说明只是你自己的话，不表示几何结论或作答正确。退出后继续真实作答。"
 }
