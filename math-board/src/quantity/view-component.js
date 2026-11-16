@@ -417,7 +417,10 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
           const live = ids.filter((id) => boardRef.current.objects.some((object) => object.id === id));
           if (!live.length) return;
           event.preventDefault();
-          batch(live.map((id) => ({ type: 'delete', id })));
+          const before = boardRef.current;
+          const actions = live.map((id) => ({ type: 'delete', id }));
+          batch(actions);
+          if (boardRef.current !== before) practiceEvent({ type: 'batch', before, after: boardRef.current, action: { type: 'batch', actions } });
           selectIds([]);
           return;
         }
@@ -565,26 +568,65 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       practiceEvent({ type: 'add', before, after: boardRef.current });
     }
     function updateSelected(patch) { batch(selected.map((o) => ({ type: 'update', id: o.id, patch }))); }
+    // A rejected action leaves the board reference unchanged, so it is not reported.
+    function practiceCommit(type, before, command) {
+      if (boardRef.current === before) return;
+      practiceEvent({ type, before, after: boardRef.current, action: command });
+    }
     function groupSelection() {
       const current = boardRef.current;
       const before = new Set(current.groups.map((item) => item.id));
       const touched = [...new Set(current.objects.filter((item) => selection.includes(item.id)).map((item) => item.groupId).filter(Boolean))];
       const previous = touched.length === 1 ? current.groups.find((item) => item.id === touched[0]) : null;
       const alias = previous ? previous.alias : t('defaultGroup');
-      const next = action({ type: 'groupSelected', ids: selected.map((item) => item.id), alias });
+      const command = { type: 'groupSelected', ids: selected.map((item) => item.id), alias };
+      const next = action(command);
       if (!next) return;
+      practiceCommit('groupSelected', current, command);
       const created = next.groups.find((item) => !before.has(item.id));
       if (created) setSelection(next.objects.filter((item) => item.groupId === created.id).map((item) => item.id));
     }
-    function ungroup() { if (completeGroup) { action({ type: 'deleteGroup', id: completeGroup.id }); setSelection([]); } }
-    function duplicate() { createAndReveal({ type: 'duplicateSelected', ids: selection }); }
-    function mergeSelection() {
-      const next = action({ type: 'merge', ids: activeSelected.map((o) => o.id) });
-      if (next) selectIds([]);
+    function ungroup() {
+      if (!completeGroup) return;
+      const before = boardRef.current;
+      const command = { type: 'deleteGroup', id: completeGroup.id };
+      action(command);
+      practiceCommit('deleteGroup', before, command);
+      setSelection([]);
     }
-    function splitSelection() { createAndReveal({ type: 'split', id: single.id }, false); }
-    function removeSelected() { batch(selected.map((o) => ({ type: 'delete', id: o.id }))); selectIds([]); }
-    function crossOut() { batch(activeSelected.map((o) => ({ type: 'update', id: o.id, patch: { removed: true } }))); }
+    function duplicate() {
+      const before = boardRef.current;
+      const command = { type: 'duplicateSelected', ids: selection.slice() };
+      createAndReveal(command);
+      practiceCommit('duplicateSelected', before, command);
+    }
+    function mergeSelection() {
+      const before = boardRef.current;
+      const command = { type: 'merge', ids: activeSelected.map((o) => o.id) };
+      const next = action(command);
+      if (!next) return;
+      practiceCommit('merge', before, command);
+      selectIds([]);
+    }
+    function splitSelection() {
+      const before = boardRef.current;
+      const command = { type: 'split', id: single.id };
+      createAndReveal(command, false);
+      practiceCommit('split', before, command);
+    }
+    function removeSelected() {
+      const before = boardRef.current;
+      const actions = selected.map((o) => ({ type: 'delete', id: o.id }));
+      batch(actions);
+      practiceCommit('batch', before, { type: 'batch', actions });
+      selectIds([]);
+    }
+    function crossOut() {
+      const before = boardRef.current;
+      const actions = activeSelected.map((o) => ({ type: 'update', id: o.id, patch: { removed: true } }));
+      batch(actions);
+      practiceCommit('batch', before, { type: 'batch', actions });
+    }
 
     function point(e) {
       const svg = svgRef.current, p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
@@ -814,8 +856,14 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     }
     function applyName() {
       const value = nameRef.current?.value ?? '';
-      if (overlay?.group) action({ type: 'renameGroup', id: overlay.group.id, alias: value });
-      if (overlay?.object) action({ type: 'update', id: overlay.object.id, patch: { alias: value } });
+      const before = boardRef.current;
+      const naming = overlay?.group
+        ? { type: 'renameGroup', id: overlay.group.id, alias: value }
+        : overlay?.object
+          ? { type: 'update', id: overlay.object.id, patch: { alias: value } }
+          : null;
+      if (naming) action(naming);
+      if (naming) practiceCommit(naming.type, before, naming);
       setOverlay(null);
     }
     function applyNote() {
