@@ -527,6 +527,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       gesture.current = null; setPreview(null); revision.current++;
       setHistory({ past: history.past.slice(0, -1), future: [boardRef.current, ...history.future].slice(0, 40) });
       const recorded = recordChange(boardRef.current, prev, { type: 'undo' });
+      practiceEvent({ type: 'undo', before: boardRef.current, after: prev });
       publish(prev); selectIds([]); setAppend(false); if (recorded) setStatus('');
     }
     function redo() {
@@ -536,6 +537,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       gesture.current = null; setPreview(null); revision.current++;
       setHistory({ past: [...history.past, boardRef.current].slice(-40), future: history.future.slice(1) });
       const recorded = recordChange(boardRef.current, next, { type: 'redo' });
+      practiceEvent({ type: 'redo', before: boardRef.current, after: next });
       publish(next); selectIds([]); setAppend(false); if (recorded) setStatus('');
     }
     const button = controls.button;
@@ -556,6 +558,8 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     }
     function add(shape, point) {
       const extra = point ? { x: point.x, y: point.y } : {};
+      // add() is only a student tap or drop; programmatic creation (duplicate, split,
+      // or a tutorial seed) never comes through here, so it cannot satisfy a goal.
       const before = boardRef.current;
       createAndReveal({ type: 'add', shape, value: creationLevel(shape).value, ...extra });
       practiceEvent({ type: 'add', before, after: boardRef.current });
@@ -694,6 +698,15 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       }, () => setStatus(t('storageError')));
     }
     function confirmClearBoard() {
+      if (props.practice) {
+        const before = boardRef.current;
+        recoverDraft({ ...M.empty(), settings: boardRef.current.settings }, T.empty(), 'clearDone');
+        // The frame below is the editor's post-clear state, not the stale pre-clear one.
+        practiceEvent({ type: 'clear', confirmed: true, before,
+          frame: { board: boardRef.current, trace: traceRef.current, history: { past: [], future: [] }, selection: [],
+            zoom, fit, attachTrace, toolValue, append, scroll: practiceFrame().scroll } });
+        return;
+      }
       recoverDraft({ ...M.empty(), settings: boardRef.current.settings }, T.empty(), 'clearDone');
     }
     function insert() {
@@ -814,13 +827,14 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       setOverlay(null);
     }
     function togglePattern(shape) {
-      const current = boardRef.current.settings;
+      const current = boardRef.current.settings, before = boardRef.current;
       if (current.shapes.includes(shape)) {
         if (current.shapes.length === 1) return;
         action({ type: 'configure', settings: { ...current, shapes: current.shapes.filter((item) => item !== shape) }, scope: 'future' });
       } else {
         action({ type: 'configure', settings: { ...current, shapes: [...current.shapes, shape] }, scope: 'future' });
       }
+      practiceEvent({ type: 'pattern', shape, before, after: boardRef.current });
     }
     function defaultColorIndex(shape) {
       const entry = board.settings.defaults.find((item) => item.shape === shape);
@@ -970,6 +984,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       levels.map((level) => button(h(React.Fragment, null,
         h('span', { className: 'eb-color-dot', style: { background: paletteColor(level.color) } }),
         h('span', { className: 'eb-color-value' }, String(level.value))), () => {
+        practiceEvent({ type: 'color', before: toolLevel.value, after: level.value, board: boardRef.current });
         setToolValue(level.value);
       }, {
         key: level.value, 'aria-pressed': level.value === toolLevel.value, className: 'eb-color-button',
@@ -981,7 +996,10 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       controls.menuItem(icon('save'), t('export'), saveFile),
       picker.fileNameState && h('p', { className: 'eb-menu-note' }, picker.fileNameState),
       h('div', { className: 'eb-menu-line' }),
-      h('label', { className: 'eb-menu-check' }, h('input', { type: 'checkbox', checked: attachTrace, onChange: (event) => setAttachTrace(event.target.checked) }), h('span', null, t('traceAttach'))),
+      h('label', { className: 'eb-menu-check' }, h('input', { type: 'checkbox', checked: attachTrace, onChange: (event) => {
+        practiceEvent({ type: 'attach-trace', before: attachTrace, after: event.target.checked, frame: { ...practiceFrame(), attachTrace: event.target.checked } });
+        setAttachTrace(event.target.checked);
+      } }), h('span', null, t('traceAttach'))),
       !props.practice && shared.createQuantityPractice && h(React.Fragment, null,
         h('div', { className: 'eb-menu-line' }),
         controls.menuItem(null, t('tutorialReplay'), () => startQuantityTour())));
@@ -995,9 +1013,9 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       controls.divider(),
       colorChoices,
       controls.divider(),
-      button('−', () => { setFit(false); setZoom(Math.max(0.75, zoom - 0.25)); }, { className: 'eb-zoom-button eb-zoom-out', 'aria-label': t('zoomOut'), title: t('zoomOut') }),
-      button(fit ? t('fitView') : `${Math.round(zoom * 100)}%`, () => setFit(!fit), { className: 'eb-zoom-label', 'aria-label': t('fitView'), 'aria-pressed': fit, title: t('fitView') }),
-      button('＋', () => { setFit(false); setZoom(Math.min(2, zoom + 0.25)); }, { className: 'eb-zoom-button eb-zoom-in', 'aria-label': t('zoomIn'), title: t('zoomIn') }),
+      button('−', () => { practiceEvent({ type: 'zoom', before: zoom, after: Math.max(0.75, zoom - 0.25) }); setFit(false); setZoom(Math.max(0.75, zoom - 0.25)); }, { className: 'eb-zoom-button eb-zoom-out', 'aria-label': t('zoomOut'), title: t('zoomOut') }),
+      button(fit ? t('fitView') : `${Math.round(zoom * 100)}%`, () => { practiceEvent({ type: 'fit', before: fit, after: !fit }); setFit(!fit); }, { className: 'eb-zoom-label', 'aria-label': t('fitView'), 'aria-pressed': fit, title: t('fitView') }),
+      button('＋', () => { practiceEvent({ type: 'zoom', before: zoom, after: Math.min(2, zoom + 0.25) }); setFit(false); setZoom(Math.min(2, zoom + 0.25)); }, { className: 'eb-zoom-button eb-zoom-in', 'aria-label': t('zoomIn'), title: t('zoomIn') }),
       h('span', { className: 'eb-grow' }),
       button(h(React.Fragment, null, icon('note', 19), noteHasText ? h('span', { className: 'eb-note-dot' }) : null), openNote, {
         className: `eb-note-button${noteTarget ? ' eb-contextual' : ''}`, title: noteTarget ? `${t('note')} · ${noteTarget.label}` : `${t('note')} · ${t('noteGeneral')}`,
@@ -1039,7 +1057,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
               title: `${on ? t('removePattern') : t('addPattern')}: ${t(shape)}`, disabled: on && visibleShapes.length === 1,
             });
           })),
-          h('div', { className: 'eb-overlay-actions' }, button(t('done'), dismissOverlay, { className: 'eb-primary' }))),
+          h('div', { className: 'eb-overlay-actions' }, button(t('done'), dismissOverlay, { className: 'eb-primary', 'aria-label': `${t('morePatterns')} · ${t('done')}` }))),
         overlay.kind === 'clear' && h(React.Fragment, null,
           h('h2', null, t('clear')),
           h('p', { className: 'eb-muted' }, t('clearQuestion')),

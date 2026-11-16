@@ -9,6 +9,7 @@ import { createBoardFilePicker, createBoardIcons } from '../shared/file-picker.j
 import { createBoardControls } from '../shared/board-kit.js';
 import * as tutorial from '../shell/tutorial.js';
 import * as practice from './practice.js';
+import { createQuantityAdjustChapter } from './practice-adjust.js';
 import { createPracticeProgress, createPracticeNavigation } from '../shell/practice-progress.js';
 import { createHooks, installBrowser, text } from '../testing/test-harness.js';
 
@@ -459,6 +460,99 @@ test('rich real snapshot, trace and preferences survive exit and a fresh mount',
     assert.ok(!app.nodes().some((n) => n.props['data-practice-step']));
     assert.equal(app.objects().length, 3);
     assert.deepEqual(realStorage(storage), saved);
+  } finally { app.dispose(); }
+});
+
+for (const language of ['en', 'zh']) test(`adjust chapter real editor replay, clear boundary and isolated resume (${language})`, () => {
+  // The chapter is a browser-provided factory, the way build.mjs appends it to the page.
+  const storage = new Map(), chapters = [createQuantityAdjustChapter];
+  const progressKey = 'baicai-edu-math-board:practice:v2:quantity';
+  const frame = () => JSON.parse(storage.get(progressKey)).entries['quantity-adjust'].frame;
+  let app = mount({ storage, chapters, language });
+  const tile = (shape) => app.click(`${app.t(shape)} · ${app.t('value')} 10`);
+  // The library's own Done is labelled apart from the note dialog's Done; toggling the
+  // last tile out of view can leave the panel open and must still be closable.
+  const openLibrary = () => app.click(app.t('morePatterns'));
+  const press = (label) => { app.find((n) => n.type === 'button' && n.props['aria-label'] === label).props.onClick(); app.refresh(); };
+  const closeLibrary = () => press(`${app.t('morePatterns')} · ${app.t('done')}`);
+  const toggleTile = (action, shape) => { openLibrary(); press(`${app.t(action)}: ${app.t(shape)}`); return { step: hideStep() }; };
+  const hideStep = () => (app.nodes().find((n) => n.props['data-practice-step']) || { props: {} }).props['data-practice-step'];
+  const checkbox = () => app.find((n) => n.type === 'input' && n.props.type === 'checkbox');
+  const shapes = () => frame().board.objects.map((o) => o.shape);
+  try {
+    app.add(); const real = realStorage(storage);
+    app.start();
+    app.click(`${app.t('practiceAdjust')} · ${app.t('practiceStatus_not-started')} · 1/13`);
+    assert.equal(app.step(), 'adjust-color'); assert.equal(shapes().length, 0, 'the chapter starts with its own empty practice');
+    // Q14: repeating the current creation colour is not a change; the chosen level colours
+    // the new object, while the object placed before the lesson keeps its own value/colour.
+    app.click(`${app.t('creationColor')} · 1`); assert.equal(app.step(), 'adjust-color');
+    app.click(`${app.t('creationColor')} · 10`); assert.equal(app.step(), 'adjust-color-add');
+    tile('circle'); assert.equal(app.step(), 'adjust-pattern-add');
+    assert.deepEqual(frame().board.objects.map((o) => [o.shape, o.value, o.color]), [['circle', 10, 1]]);
+    // Q15: enable an absent pattern, use it, then hide it; earlier objects stay, one tile remains.
+    openLibrary(); assert.equal(app.step(), 'adjust-pattern-add', 'opening the library is not the change');
+    assert.deepEqual(toggleTile('addPattern', 'star'), { step: 'adjust-pattern-use' }, 'enabling an absent pattern advances the chapter');
+    closeLibrary(); assert.equal(app.step(), 'adjust-pattern-use');
+    assert.ok(frame().board.settings.shapes.includes('star'));
+    tile('circle'); assert.equal(app.step(), 'adjust-pattern-use', 'another pattern is not the newly enabled one');
+    tile('star'); assert.equal(app.step(), 'adjust-pattern-hide');
+    assert.deepEqual(shapes(), ['circle', 'circle', 'star'], 'existing objects survive hiding the pattern');
+    assert.equal(toggleTile('removePattern', 'star').step, 'adjust-change', 'hiding the enabled pattern advances the chapter');
+    openLibrary(); assert.ok(app.nodes().find((n) => n.type === 'button' && n.props['aria-label'] === `${app.t('addPattern')}: ${app.t('star')}`), 'hidden from the rail');
+    closeLibrary();
+    assert.deepEqual(shapes(), ['circle', 'circle', 'star'], 'existing objects survive hiding the pattern');
+    assert.ok(frame().board.settings.shapes.length >= 1);
+    // Q16: an explicit new addition, undone to its exact before board and redone to its after board.
+    tile('circle'); assert.equal(app.step(), 'adjust-undo');
+    app.click(app.t('undo'));
+    assert.equal(app.step(), 'adjust-redo'); assert.deepEqual(shapes(), ['circle', 'circle', 'star'], 'Undo removed exactly the last addition');
+    app.click(app.t('practiceExit')); app.dispose(); app = mount({ storage, chapters, language }); app.start();
+    assert.equal(app.step(), 'adjust-redo');
+    app.click(app.t('redo')); assert.equal(app.step(), 'adjust-zoom');
+    assert.deepEqual(shapes(), ['circle', 'circle', 'star', 'circle'], 'Redo restores exactly the undone addition');
+    // Q17: a real zoom change, then back to fit; clicking the current state is not a change.
+    app.click(app.t('fitView')); assert.equal(app.step(), 'adjust-zoom', 'already fitted is not the change');
+    app.click(app.t('zoomIn')); assert.equal(app.step(), 'adjust-fit');
+    assert.equal(frame().zoom, 1.25); assert.equal(frame().fit, false);
+    app.click(app.t('fitView')); assert.equal(app.step(), 'adjust-clear'); assert.equal(frame().fit, true);
+    // Q18: notes, record and undo history are present; a clear needs confirmation.
+    app.find((n) => n.type === 'button' && String(n.props.className || '').includes('eb-note-button')).props.onClick(); app.refresh();
+    app.find((n) => n.type === 'textarea').props.ref.current.value = 'Practice only';
+    app.click(app.t('save')); assert.equal(frame().board.note, 'Practice only');
+    assert.ok(frame().trace.totalChanges > 0); assert.ok(frame().history.past.length > 0);
+    app.click(app.t('clear')); app.click(app.t('cancel')); assert.equal(app.step(), 'adjust-clear', 'cancelling never clears');
+    assert.equal(frame().board.note, 'Practice only');
+    app.click(app.t('clear')); app.click(app.t('confirmClear'));
+    assert.deepEqual(frame().board.objects, []); assert.equal(frame().board.note, '');
+    assert.deepEqual(frame().board.notes, []); assert.deepEqual(frame().trace, T.empty());
+    assert.deepEqual(frame().history, { past: [], future: [] }, 'undo history cleared');
+    app.click(app.t('undo')); assert.deepEqual(shapes(), [], 'the cleared objects cannot be restored by Undo');
+    // Q19 needs a fresh, nonempty snapshot of its own; the cleared stage supplies the start.
+    tile('circle'); assert.equal(app.step(), 'adjust-trace-option'); assert.deepEqual(shapes(), ['circle']);
+    assert.equal(frame().history.past[0]?.objects.length ?? 0, 0, 'history never holds cleared work');
+    const snapshot = frame().board, trace = frame().trace;
+    app.click(app.t('moreActions')); checkbox().props.onChange({ target: { checked: true } }); app.refresh();
+    assert.equal(app.step(), 'adjust-trace-option', 'clicking the current value is not a change');
+    checkbox().props.onChange({ target: { checked: false } }); app.refresh();
+    assert.equal(app.step(), 'complete'); assert.equal(frame().attachTrace, false);
+    // Practice-only option: neither the snapshot nor the separate record is cleared.
+    assert.deepEqual(frame().board, snapshot); assert.deepEqual(frame().trace, trace, 'snapshot and record stay independent');
+    // Snapshot-only insert stays a simulation: no upload, no composer access.
+    app.find((n) => n.props['data-tour-id'] === 'quantity-insert').props.onClick(); app.refresh();
+    assert.equal(app.uploads, 0);
+    app.click(app.t('practiceExit')); assert.deepEqual(realStorage(storage), real, 'tutorial writes nothing to the real draft');
+    // Resume restores this chapter; the real draft is still the one made before practice.
+    app.dispose(); app = mount({ storage, chapters, language }); app.start();
+    assert.equal(app.step(), 'complete'); assert.equal(frame().attachTrace, false);
+    assert.deepEqual(realStorage(storage), real);
+    // Retry, skip, supplement and reset all stay inside this chapter and its practice.
+    app.click(app.t('practiceRetryChapter')); assert.equal(app.step(), 'adjust-color');
+    app.click(app.t('practiceSkipStep')); assert.equal(app.step(), 'adjust-color-add');
+    app.click(app.t('practiceRetryStep', { step: 1 })); assert.equal(app.step(), 'adjust-color');
+    app.click(`${app.t('creationColor')} · 10`); assert.equal(app.step(), 'adjust-color-add');
+    app.click(app.t('practiceReset')); assert.equal(app.step(), 'adjust-color-add', 'reset keeps the supplemented position');
+    app.click(app.t('practiceExit')); assert.deepEqual(realStorage(storage), real);
   } finally { app.dispose(); }
 });
 
