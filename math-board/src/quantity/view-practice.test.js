@@ -9,12 +9,14 @@ import { createBoardFilePicker, createBoardIcons } from '../shared/file-picker.j
 import { createBoardControls } from '../shared/board-kit.js';
 import * as tutorial from '../shell/tutorial.js';
 import * as practice from './practice.js';
+import { createPracticeProgress, createPracticeNavigation } from '../shell/practice-progress.js';
 import { createHooks, installBrowser, text } from '../testing/test-harness.js';
 
 const M = createBoardModel(), T = createBoardTrace(M);
 const locales = {};
 for (const language of ['en', 'zh']) locales[language] = JSON.parse(await readFile(new URL(`../../locale/${language}.json`, import.meta.url), 'utf8'));
 const key = 'baicai-edu-math-board:v4:practice-test';
+const realStorage = (storage) => new Map([...storage].filter(([name]) => !name.startsWith('baicai-edu-math-board:practice:')));
 function mount(options = {}) {
   const browser = installBrowser(options);
   const hooks = createHooks();
@@ -27,7 +29,7 @@ function mount(options = {}) {
   };
   const Board = createBoardView(React, options.model || M, { locale: { subscribe() {}, getSnapshot() {} }, get() { uploads++; throw Error('practice upload'); } },
     t, '', createShapeArt(React), applyHostConfig, T,
-    { createBoardFilePicker, createBoardIcons, createBoardControls, ...tutorial, ...practice });
+    { createBoardFilePicker, createBoardIcons, createBoardControls, createPracticeProgress, createPracticeNavigation, quantityPracticeChapters: options.chapters || [], ...tutorial, ...practice });
   const props = { split: true, sessionId: 'practice-test', tabActive: true,
     close: () => { closed++; active = false; }, bindClose: (fn) => { boundClose = fn; },
     useProjection: (name) => name === 'eduBoardClear' ? clear : config, useInput: () => 'plain',
@@ -86,12 +88,200 @@ function mount(options = {}) {
   };
 }
 
+test('independent fixture chapter starts with sufficient practice and retains other chapter progress on retry', () => {
+  const chapter = ({ M, emptyFrame }) => ({ id: 'fixture-independent', titleKey: 'practiceOptional', optional: true, steps: ['add'],
+    start: () => { const frame = emptyFrame(); frame.board = M.reduce(frame.board, { type: 'add', shape: 'cat' }); return frame; },
+    createGoal(saved = { index: 0 }) {
+      let index = saved.index;
+      return { snapshot: () => ({ index, targets: [], total: 1, step: index ? 'complete' : 'add', completed: index === 1 }),
+        observe(event) { if (event.type === 'add' && event.after.objects.length > event.before.objects.length) index = 1; } };
+    },
+  });
+  const storage = new Map();
+  let app = mount({ storage, chapters: [chapter] });
+  try {
+    app.add(); app.start(); app.add();
+    const choose = () => app.click(`${app.t('practiceOptional')} · ${app.t('practiceStatus_not-started')} · ${app.t('practiceOptional')} · 1/1`);
+    choose();
+    assert.equal(app.step(), 'add', 'preseed is not completion');
+    assert.equal(app.objects().length, 1, 'independent chapter provides its prerequisite');
+    app.add();
+    assert.equal(app.step(), 'complete');
+    app.dispose(); app = mount({ storage, chapters: [chapter] }); app.start();
+    assert.equal(app.step(), 'complete', 'resumes the current chapter, not basics');
+    app.click(app.t('practiceRetryChapter'));
+    assert.equal(app.step(), 'add');
+    app.click(`${app.t('practiceBasics')} · ${app.t('practiceStatus_in-progress')} · 2/7`);
+    assert.equal(app.step(), 'move');
+    assert.equal(app.objects().length, 1, 'retry another chapter did not remove basics frame');
+    app.click(app.t('practiceExit'));
+    assert.equal(app.objects().length, 1, 'real owner remains separate');
+    assert.equal(app.uploads, 0);
+  } finally { app.dispose(); }
+});
+
+for (const failure of ['denied', 'corrupt', 'incompatible', 'invalid-frame']) test(`practice storage ${failure} is honest and leaves real draft safe`, () => {
+  const storage = new Map();
+  const progressKey = 'baicai-edu-math-board:practice:v2:quantity';
+  let app = mount({ storage, storageFail: failure === 'denied' ? (name) => name === progressKey : undefined });
+  try {
+    app.add(); const real = realStorage(storage);
+    if (failure === 'corrupt') storage.set(progressKey, '{broken');
+    if (failure === 'incompatible') storage.set(progressKey, JSON.stringify({ version: 999, entries: {} }));
+    if (failure === 'invalid-frame') {
+      app.start(); app.add(); app.click(app.t('practiceExit'));
+      const saved = JSON.parse(storage.get(progressKey));
+      saved.entries['quantity-basics'].frame.board = { invalid: true };
+      storage.set(progressKey, JSON.stringify(saved));
+    }
+    app.start();
+    assert.ok(app.nodes().some((n) => n.props.role === 'alert' && text(n) === app.t('practiceStorageWarning')));
+    assert.equal(app.step(), 'add');
+    app.add(); assert.equal(app.step(), 'move');
+    app.click(app.t('practiceReset')); assert.equal(app.objects().length, 1);
+    app.click(app.t('practiceExit'));
+    assert.equal(app.objects().length, 1);
+    assert.deepEqual(realStorage(storage), real);
+    assert.equal(app.uploads, 0);
+  } finally { app.dispose(); }
+});
+
+test('a scroll-only persistence failure immediately warns that resume is unreliable', () => {
+  let denied = false;
+  const app = mount({ storageFail: (name) => denied && name.includes(':practice:') });
+  try {
+    app.start(); app.add();
+    denied = true;
+    const scroller = app.find((n) => n.props.className === 'eb-canvas-scroll');
+    scroller.props.ref.current.scrollTop = 80; scroller.props.onScroll(); app.refresh();
+    assert.ok(app.nodes().some((n) => n.props.role === 'alert' && text(n) === app.t('practiceStorageWarning')));
+    app.click(app.t('practiceExit'));
+    assert.equal(app.uploads, 0);
+  } finally { app.dispose(); }
+});
+
+test('skip repairs a removed dependency without awarding the following step', () => {
+  const app = mount();
+  try {
+    app.start(); app.add();
+    app.click(app.t('clear')); app.click(app.t('confirmClear'));
+    app.click(app.t('practiceSkipStep'));
+    assert.equal(app.step(), 'add-second');
+    assert.equal(app.objects().length, 1);
+    app.add();
+    assert.equal(app.step(), 'select-one');
+    assert.equal(app.uploads, 0);
+  } finally { app.dispose(); }
+});
+
+test('skipped add can be practised without its programmatic seed passing the goal', () => {
+  const app = mount();
+  try {
+    app.start();
+    app.click(app.t('practiceSkipStep'));
+    assert.equal(app.step(), 'move');
+    assert.equal(app.objects().length, 1);
+    const continuingTarget = app.objects()[0].props['data-object'];
+    app.click(app.t('practiceRetryStep', { step: 1 }));
+    assert.equal(app.step(), 'add');
+    assert.equal(app.objects().length, 0);
+    app.add();
+    assert.equal(app.step(), 'move');
+    assert.equal(app.objects()[0].props['data-object'], continuingTarget, 'the pending goal and visible target return together');
+    app.pointer(continuingTarget, 40, 40);
+    app.pointer(continuingTarget, 100, 80, 'Move');
+    app.pointer(continuingTarget, 100, 80, 'Up');
+    assert.equal(app.step(), 'add-second', 'the restored cursor can operate on its visible target');
+  } finally { app.dispose(); }
+});
+
+test('successful supplement restores the actual continuing editor frame and targets, then skip preserves it too', () => {
+  const app = mount();
+  try {
+    app.start(); app.click(app.t('practiceSkipStep'));
+    const first = app.objects()[0].props['data-object'];
+    app.pointer(first, 40, 40); app.pointer(first, 120, 80, 'Move'); app.pointer(first, 120, 80, 'Up');
+    app.add();
+    assert.equal(app.step(), 'select-one');
+    const continuingObjects = app.objects().map((node) => [node.props['data-object'], node.props.transform]);
+    app.click(app.t('practiceRetryStep', { step: 1 }));
+    assert.equal(app.objects().length, 0);
+    app.add();
+    assert.equal(app.step(), 'select-one');
+    assert.deepEqual(app.objects().map((node) => [node.props['data-object'], node.props.transform]), continuingObjects);
+    app.pointer(first, 120, 80); app.pointer(first, 120, 80, 'Up');
+    assert.equal(app.step(), 'select-many');
+    app.click(app.t('practiceSkipStep'));
+    assert.equal(app.step(), 'deselect');
+    app.click(app.t('practiceRetryStep', { step: 5 }));
+    assert.equal(app.step(), 'select-many');
+    app.click(app.t('practiceSkipStep'));
+    assert.equal(app.step(), 'deselect');
+    assert.deepEqual(app.objects().map((node) => [node.props['data-object'], node.props.transform]), continuingObjects);
+    assert.equal(app.uploads, 0);
+  } finally { app.dispose(); }
+});
+
+test('quantity editor resumes frame, notes, undo history, options and view after fresh mount; resets and retries safely', () => {
+  const storage = new Map();
+  let app = mount({ storage });
+  try {
+    app.add();
+    app.start(); app.add();
+    const first = app.objects()[0].props['data-object'];
+    app.click(app.t('morePatterns'));
+    app.click(`${app.t('addPattern')}: ${app.t('star')}`);
+    app.click(app.t('done'));
+    app.find((n) => n.type === 'button' && String(n.props.className || '').includes('eb-note-button')).props.onClick(); app.refresh();
+    app.find((n) => n.type === 'textarea').props.ref.current.value = 'Persisted practice note';
+    app.click(app.t('save'));
+    app.click(app.t('moreActions'));
+    app.find((n) => n.type === 'input' && n.props.type === 'checkbox').props.onChange({ target: { checked: false } }); app.refresh();
+    app.click(app.t('zoomIn'));
+    const scroller = app.find((n) => n.props.className === 'eb-canvas-scroll');
+    scroller.props.ref.current.scrollTop = 80; scroller.props.ref.current.scrollLeft = 20;
+    scroller.props.onScroll(); app.refresh();
+    app.click(app.t('practiceExit'));
+    assert.equal(app.objects().length, 1);
+    app.dispose(); app = mount({ storage });
+    assert.ok(!app.nodes().some((n) => n.props['data-practice-step']));
+    app.start();
+    assert.equal(app.step(), 'move');
+    assert.equal(app.objects()[0].props['data-object'], first);
+    assert.ok(app.nodes().some((n) => n.type === 'button' && n.props['aria-label'] === `${app.t('star')} · ${app.t('value')} 1`));
+    assert.equal(text(app.find((n) => n.props.className === 'eb-zoom-label')), '125%');
+    const restoredScroll = app.find((n) => n.props.className === 'eb-canvas-scroll').props.ref.current;
+    assert.equal(restoredScroll.scrollTop, 80); assert.equal(restoredScroll.scrollLeft, 20);
+    assert.ok(app.objects()[0].props['aria-label'].includes(app.t('hasNote')));
+    app.find((n) => n.type === 'button' && String(n.props.className || '').includes('eb-note-button')).props.onClick(); app.refresh();
+    assert.equal(app.find((n) => n.type === 'textarea').props.defaultValue, 'Persisted practice note');
+    app.click(app.t('cancel'));
+    assert.equal(app.find((n) => n.type === 'button' && n.props['aria-label'] === app.t('fitView')).props['aria-pressed'], false);
+    app.click(app.t('moreActions'));
+    assert.equal(app.find((n) => n.type === 'input' && n.props.type === 'checkbox').props.checked, false);
+    app.click(app.t('undo'));
+    app.find((n) => n.type === 'button' && String(n.props.className || '').includes('eb-note-button')).props.onClick(); app.refresh();
+    assert.equal(app.find((n) => n.type === 'textarea').props.defaultValue, '');
+    app.click(app.t('practiceReset'));
+    assert.equal(app.step(), 'move');
+    assert.equal(app.objects().length, 1);
+    app.click(app.t('practiceSkipStep'));
+    assert.equal(app.step(), 'add-second');
+    app.click(app.t('practiceRetryChapter'));
+    assert.equal(app.step(), 'add');
+    assert.equal(app.objects().length, 0);
+    app.click(app.t('practiceExit'));
+    assert.equal(app.objects().length, 1);
+    assert.equal(app.uploads, 0);
+  } finally { app.dispose(); }
+});
+
 for (const language of ['en', 'zh']) for (const pointerType of ['mouse', 'touch']) {
   test(`quantity basics pointer-handler replay: ${language}, ${pointerType} (not a browser replay)`, () => {
     const app = mount({ language });
     try {
       app.add();
-      const real = new Map(app.browser.storage);
+      const real = realStorage(app.browser.storage);
       app.start(); app.add();
       const first = app.objects()[0].props['data-object'];
       app.pointer(first, 40, 40, 'Down', pointerType);
@@ -122,7 +312,7 @@ for (const language of ['en', 'zh']) for (const pointerType of ['mouse', 'touch'
       app.find((n) => n.props['data-tour-id'] === 'quantity-insert').props.onClick(); app.refresh();
       assert.equal(app.step(), 'complete');
       assert.equal(app.uploads, 0);
-      assert.deepEqual(app.browser.storage, real);
+      assert.deepEqual(realStorage(app.browser.storage), real);
       app.click(app.t('practiceExit'));
       assert.equal(app.objects().length, 1);
     } finally { app.dispose(); }
@@ -133,14 +323,14 @@ test('workbench close exits practice even while a note editor is open', () => {
   const app = mount();
   try {
     app.add();
-    const real = new Map(app.browser.storage);
+    const real = realStorage(app.browser.storage);
     app.start(); app.add();
     app.find((n) => n.type === 'button' && String(n.props.className || '').includes('eb-note-button')).props.onClick(); app.refresh();
     app.backdropClose();
     assert.equal(app.closed, 1);
     assert.ok(!app.nodes().some((n) => n.props['data-practice-step']));
     assert.equal(app.objects().length, 1);
-    assert.deepEqual(app.browser.storage, real);
+    assert.deepEqual(realStorage(app.browser.storage), real);
   } finally { app.dispose(); }
 });
 
@@ -214,7 +404,7 @@ test('practice changes to settings, notes, history, preferences and view never e
   const app = mount();
   try {
     app.add();
-    const real = new Map(app.browser.storage);
+    const real = realStorage(app.browser.storage);
     const realSelection = app.objects().map((n) => n.props['aria-pressed']);
     app.start(); app.add();
     app.find((n) => n.type === 'button' && String(n.props.className || '').includes('eb-note-button')).props.onClick(); app.refresh();
@@ -238,7 +428,7 @@ test('practice changes to settings, notes, history, preferences and view never e
     assert.equal(app.find((n) => n.type === 'button' && n.props['aria-label'] === app.t('fitView')).props['aria-pressed'], true);
     app.click(app.t('moreActions'));
     assert.equal(app.find((n) => n.type === 'input' && n.props.type === 'checkbox').props.checked, true);
-    assert.deepEqual(app.browser.storage, real);
+    assert.deepEqual(realStorage(app.browser.storage), real);
     assert.equal(app.uploads, 0);
   } finally { app.dispose(); }
 });
@@ -257,19 +447,18 @@ test('rich real snapshot, trace and preferences survive exit and a fresh mount',
   const storage = new Map([[key, M.serialize(real)]]);
   let app = mount({ storage });
   try {
-    const saved = new Map(storage);
+    const saved = realStorage(storage);
     app.start(); app.add();
     app.click(app.t('practiceExit'));
-    assert.deepEqual(storage, saved);
+    assert.deepEqual(realStorage(storage), saved);
     app.start();
-    assert.equal(app.step(), 'add');
-    assert.equal(app.objects().length, 0);
-    app.add();
+    assert.equal(app.step(), 'move');
+    assert.equal(app.objects().length, 1);
     app.dispose();
     app = mount({ storage });
     assert.ok(!app.nodes().some((n) => n.props['data-practice-step']));
     assert.equal(app.objects().length, 3);
-    assert.deepEqual(storage, saved);
+    assert.deepEqual(realStorage(storage), saved);
   } finally { app.dispose(); }
 });
 
@@ -277,12 +466,12 @@ test('explicit entry owns a separate practice board and blocks every real insert
   const app = mount();
   try {
     app.add();
-    const real = new Map(app.browser.storage);
+    const real = realStorage(app.browser.storage);
     const staleRealAdd = app.find((n) => n.type === 'button' && n.props['aria-label'] === `${app.t('circle')} · ${app.t('value')} 1`).props.onClick;
     const staleRealInsert = app.find((n) => n.props['data-tour-id'] === 'quantity-insert').props.onClick;
     app.start();
     staleRealAdd(); staleRealInsert(); app.refresh();
-    assert.deepEqual(app.browser.storage, real, 'late real-page input is suspended during practice');
+    assert.deepEqual(realStorage(app.browser.storage), real, 'late real-page input is suspended during practice');
     assert.equal(app.objects().length, 0);
     assert.equal(app.step(), 'add');
     app.find((n) => n.props['data-tour-id'] === 'quantity-insert').props.onClick(); app.refresh();
@@ -290,9 +479,9 @@ test('explicit entry owns a separate practice board and blocks every real insert
     app.add();
     assert.equal(app.step(), 'move');
     assert.equal(app.uploads, 0);
-    assert.deepEqual(app.browser.storage, real);
+    assert.deepEqual(realStorage(app.browser.storage), real);
     app.click(app.t('practiceExit'));
     assert.equal(app.objects().length, 1);
-    assert.deepEqual(app.browser.storage, real);
+    assert.deepEqual(realStorage(app.browser.storage), real);
   } finally { app.dispose(); }
 });

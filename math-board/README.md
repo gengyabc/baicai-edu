@@ -22,15 +22,19 @@ DSH Web 输入框工具栏（模型选择按钮旁）的数学画板按钮；点
 
 数量页通过「更多操作 → 查看教程」显式进入独立的安全练习：连续添加、拖动并松手、再次添加、单选／多选／取消选择，最后模拟「放入回答」。只有本步实际操作成功且目标状态满足才推进，拖动预览、失败添加和错误选择不通过。中英文均提示触屏「追加选择」路径；练习图形标记 1、2。练习中所有放入入口都不访问输入框或上传附件，可随时「退出练习」，完成后也须退出才能继续真实作答。基础练习完成只表示完成操作，不代表数学掌握或其他章节完成。
 
-数量真实页面保持挂载，练习使用另一个状态所有者：对象、说明、修改记录、撤销历史、选择、视口、设置与选项不回写；宿主设置／清空仍作用于真实页面，退出不会恢复旧备份覆盖这些更新。数量旧版不安全自动教程已停用；新首次分流、章节目录、跳过／重置与续学由后续票交付。本票练习仅在内存中，退出、切页或刷新后回到真实草稿，重新进入从头开始。文件打开／保存暂时安全拦截，后续可选文件章再开放。
+数量真实页面保持挂载，练习使用另一个状态所有者：对象、说明、修改记录、撤销历史、选择、视口、设置与选项不回写；宿主设置／清空仍作用于真实页面，退出不会恢复旧备份覆盖这些更新。练习章节目录区分未开始、进行中、已完成与已跳过；提供重置本步、跳过、补练和单章重练。退出、切页或刷新后默认仍是真实草稿；再次显式进入教程才恢复当前章节、步骤及对应练习画面（含说明、撤销／重做、修改记录、创建颜色、图案轨、选择、缩放／滚动和附带记录选项）。重置恢复本步起点，跳过依赖操作时仅为后续步骤提供练习起点，不算亲手完成。单章重练不清其他章。浏览器存储拒绝、损坏或版本不兼容时显示续学限制，可继续／退出或重练本章；不假称保存成功。数量旧版不安全自动教程仍停用，新首次入口与旧版迁移留给 release 票。文件打开／保存仍安全拦截，后续可选文件章再开放。
 
 几何页目前仍为旧版高亮教程：首次自动播放并立即标记本机已看过，教程绘制进入几何草稿；教程内放入仅做提示。几何安全练习与新的首次分流尚未交付，不应把数量安全隔离声明套用到几何页。
 
 ### 安全教程扩展接口
 
-- [practice.js](<src/quantity/practice.js>) 的 `createQuantityPractice()` 返回 `snapshot()` 与 `observe(event)`；只输入已提交的用户成功操作前后状态（`add`、带 `submitted` 的 `move`）、明确用户选择（`select`）或模拟 `insert`。恢复、预置、宿主更新、程序自动选择和拖动预览不得喂给目标判定。目标检测只验证工具操作，不判断数学答案。
-- [view-component.js](<src/quantity/view-component.js>) 的独立 `PracticeBoard` 复用数量编辑器，但 `practice` 在组件整个生命期固定；真实 `Board` 不卸载、不换存储键、不做备份恢复。练习禁止正常持久化／投影同步／文件记忆与输入框访问，关闭只销毁练习所有者。后续章节／续学应添加独立练习存储及序列化接口，不复用真实草稿键或文件句柄；几何页应沿用独立状态所有者边界而不是切换真实草稿。
-- 工厂通过 [build.mjs](<build.mjs>) 的 `shared.createQuantityPractice` 注入，新增共享教程接口也须同步构建接线。自动测试位于相邻的 [practice.test.js](<src/quantity/practice.test.js>) 与 [view-practice.test.js](<src/quantity/view-practice.test.js>)；后者是浏览器替身下的指针处理器回放，不代表真实浏览器鼠标／触屏验收。
+- [practice.js](<src/quantity/practice.js>) 的 `createQuantityPractice(saved?)` 保留 `snapshot()`／`observe(event)` 目标接口；保存值含 `index` 与 `targets`，恢复本身不检测目标。只输入已提交的用户操作前后状态（`add`、带 `submitted` 的 `move`）、明确用户选择（`select`）或模拟 `insert`；失败操作不通过。恢复、预置、宿主更新、程序自动选择和拖动预览不得喂给目标判定，不判断数学答案。
+- [practice-progress.js](<src/shell/practice-progress.js>) 是几何、教师演示与后续数量章共用的生命周期模块：`createPracticeProgress({mode, chapters, storage?, validateFrame?})`，返回 `snapshot / enter / observe / saveFrame / reset / skip / retryStep`。`enter()` 恢复保存的当前章；`enter(id)` 进入指定章；`enter(id, {retry:true})` 仅重练该章。`observe(event, frame)` 必须传入已提交操作后的完整画面；`saveFrame(frame)` 只保存画面，绝不通过目标。`reset()` 同时恢复本步起点画面与目标状态；`retryStep(index)` 仅对已跳过步骤使用其独立起点补练；补练前原来的目标／画面作为一对保存，补练成功或再次跳过后返回原来待练步骤或结束位置，不重置后面的已完成／已跳过状态及步骤起点。该返回位置也随刷新保留，只有显式整章重练才重置整章。返回值含 `current / goal / frame / chapters / persistence / supplementing`，调用方应用返回画面但不得再把应用动作送进 `observe`；`observe` 使 `supplementing` 从 true 变 false 时，必须应用返回的继续练习画面，不能只换提示而留下临时补练对象。
+- 章节定义为 `{id, titleKey, steps:[稳定步骤ID], optional?, start(previousFrame), createGoal(saved?), skip(savedGoal, frame)?}`。目标返回 `snapshot()`／`observe(event)`；快照必须含递增 `index` 与 `completed`，一次事件最多前进一步。数量页另需 `step / total / targets` 供提示与编号。`start(null)` 必须提供独立且足够的练习起点；连续进入未开始章时会收到前章画面，可保留成果。`skip` 返回 `{goal, frame}`，其中目标已移到下一步，画面具备下一步依赖；没有依赖的章节可省略。不能让程序提供的起点自动完成操作。
+- 稳定数量基础章 ID 为 `quantity-basics`，步骤为 `add / move / add-second / select-one / select-many / deselect / insert`。后续票应各自新增独立模块，建议数量章 ID 使用 `quantity-organize / quantity-notes / quantity-adjust / quantity-insert / quantity-files`，几何使用 `geometry-*`，演示使用 `teacher-demo-basics`；不要改基础章步骤序列或复用旧 v1 教程。数量扩展工厂接收 `{M,T,emptyFrame}`，返回上述章节定义。接入仅需在 [build.mjs](<build.mjs>) 导入并内联该工厂、追加到 `Browser.quantityPracticeChapters: [factory, …]`（默认空），以及添加双语目标文案；不要改共享生命周期或真实草稿所有者。几何／演示页通过 `shared.createPracticeProgress`、`shared.createPracticeNavigation(React,t)` 直接复用，使用独立 `mode` 和对应画面校验器；不冒充彼此的完成记录。
+- [view-component.js](<src/quantity/view-component.js>) 的独立 `PracticeBoard` 复用数量编辑器，但 `practice` 在组件整个生命期固定；真实 `Board` 不卸载、不换存储键、不做备份恢复。数量练习完整 frame 为 `{board,trace,history:{past,future},selection,zoom,fit,attachTrace,toolValue,append,scroll:{left,top}}`，均经领域校验后恢复。练习禁止正常草稿持久化／投影同步／文件记忆与输入框访问，关闭只销毁练习所有者。浏览器独立键为 `baicai-edu-math-board:practice:v2:<mode>`，与会话草稿、旧 v1 seen 标志分离；当前章、目标、步骤状态、完整 frame 及各步起点目标／frame 原子保存。损坏数据不自动覆盖，显式重练才重新保存；拒绝写入仍可在内存练习。不可把文件句柄、宿主投影、真实草稿或学生档案放进 frame。
+- `createPracticeNavigation(React,t)` 渲染通用目录／步骤补练／重置／跳过／重练及存储提示；接收 `{progress,chapters,onNavigate(command,value)}`。调用方保留始终可用的退出入口，并将返回 frame 应用于独立练习所有者。目录中 optional 标志独立显示，不阻塞基础章，基础章完成不冒称整套完成。
+- 工厂通过 [build.mjs](<build.mjs>) 的 `Browser` 注入，新增工厂必须同步 toString 内联，不能依赖模块闭包。回归位于 [practice-progress.test.js](<src/shell/practice-progress.test.js>)、[practice.test.js](<src/quantity/practice.test.js>) 与 [view-practice.test.js](<src/quantity/view-practice.test.js>)；独立章节使用测试 fixture，不提前实现后续操作章。后者是浏览器替身下的指针处理器回放，不代表真实浏览器鼠标／触屏验收。实际命令、回放结果与未执行边界见 [ticket02 验证记录](<docs/tutorial-02-validation.md>)。
 
 ## 界面与交互
 

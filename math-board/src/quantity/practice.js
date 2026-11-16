@@ -1,9 +1,12 @@
 // Operation goals only, never mathematical correctness. Embedded by build.mjs.
 // Feed committed user operations, not host updates, restoration or previews.
-export function createQuantityPractice() {
+export function createQuantityPractice(saved = { index: 0, targets: [] }) {
   const steps = ['add', 'move', 'add-second', 'select-one', 'select-many', 'deselect', 'insert', 'complete'];
-  let index = 0;
-  const targets = [];
+  if (!Number.isInteger(saved.index) || saved.index < 0 || saved.index >= steps.length
+    || !Array.isArray(saved.targets) || saved.targets.length !== (saved.index === 0 ? 0 : saved.index < 3 ? 1 : 2)
+    || new Set(saved.targets).size !== saved.targets.length || !saved.targets.every((id) => typeof id === 'string' && id.length > 0)) throw Error('Invalid quantity practice goal');
+  let index = saved.index;
+  const targets = [...saved.targets];
   function snapshot() { return { step: steps[index], index, total: steps.length - 1, targets: [...targets], completed: steps[index] === 'complete' }; }
   function observe(event) {
     const step = steps[index];
