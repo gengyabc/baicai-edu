@@ -266,9 +266,13 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     React.useEffect(() => {
       if (!props.practice || !ready) return;
       const events = practiceEvents.current.splice(0);
+      const wasSupplementing = practiceRef.current.snapshot().supplementing;
       let next;
       if (events.length) for (const event of events) next = practiceRef.current.observe(event, practiceFrame());
       else next = practiceRef.current.saveFrame(practiceFrame());
+      // A one-step supplement returns to its original paired goal/frame, not to
+      // the temporary editor contents used to practise the skipped operation.
+      if (wasSupplementing && !next.supplementing) applyPracticeFrame(next.frame);
       // Do not loop an effect for a failed write or a frame-only save.
       if (events.length || next.persistence !== practiceProgress?.persistence) setPracticeProgress(next);
     }, [ready, board, trace, history, selection, zoom, fit, attachTrace, toolValue, append, practiceProgress]);

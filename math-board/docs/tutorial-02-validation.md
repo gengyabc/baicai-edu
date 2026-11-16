@@ -7,13 +7,13 @@ Validated 2026-11-16 on branch `feat/tutorial-02`, based on integration `1b10983
 - Test-first slices at the approved controller and real quantity-editor seams: resume/restore goal; exact frame and step-start reset; skipped prerequisites and skipped-step repair; current chapter restoration; independent fixture chapter entry and chapter-only retry; continuous frame reuse; denied/corrupt/incompatible storage and immediate scroll-only save-failure feedback.
 - `node math-board/build.mjs`: generated client rebuilt; `node --check math-board/client.js`: passed.
 - `git diff --check`: passed.
-- Focused command: **123/123 passed**:
+- Focused command: **128/128 passed**:
 
   ```sh
   node --test math-board/src/shell/practice-progress.test.js math-board/src/quantity/practice.test.js math-board/src/quantity/view-practice.test.js math-board/src/shell/tutorial.test.js math-board/src/quantity/view-trace.test.js math-board/src/geometry/geometry-view.test.js math-board/tests/client-smoke.test.js
   ```
 
-- `npm --prefix math-board test`: **322 tests, 321 passed, 1 pre-existing failure**. The sole failure is [tool-schema.test.js:214](<../src/host/tool-schema.test.js#L214-L220>), stale shared-skill fenced-JSON recipe extraction (`assert.ok(get)`). Left unchanged for ticket12. Package extraction/build/reproducibility test passed.
+- `npm --prefix math-board test`: **327 tests, 326 passed, 1 pre-existing failure**. The sole failure is [tool-schema.test.js:214](<../src/host/tool-schema.test.js#L214-L220>), stale shared-skill fenced-JSON recipe extraction (`assert.ok(get)`). Left unchanged for ticket12. Package extraction/build/reproducibility test passed.
 
 ## Actual interaction-handler replay (not browser E2E)
 
@@ -27,6 +27,12 @@ Validated 2026-11-16 on branch `feat/tutorial-02`, based on integration `1b10983
 - Real synthetic rich notes/merge/group state, trace, settings, selection and view survive practice. Legal host settings/clear continue to update the hidden real owner, including queued callbacks. Exit never restores an old backup over the host changes. Workbench close works with an explanation editor open.
 
 [Controller tests](<../src/shell/practice-progress.test.js>) additionally verify four progress states, optional pending chapters, per-mode storage isolation, step-start history reset and preservation of unrelated chapter completion.
+
+## Merger correction: supplementary practice preserves later progress
+
+The merger found that repairing a skipped early step reset a later completed step to in-progress. The regression was reproduced red before the correction. New controller cases cover successful observe and re-skip during supplement: a three-step `[skipped, completed, completed]` chapter returns directly to its prior terminal cursor, while mixed later completed/skipped/pending states retain their statuses, original step-reset checkpoints, and paired continuation goal/frame. Refresh during supplement preserves the return cursor. Supplementing another skipped step does not require replaying completed operations; only explicit chapter retry resets the chapter.
+
+A real editor regression first reproduced the second failure: changing only the goal cursor left temporary supplemental objects visible instead of the continuing two-object frame. The editor now applies the paired returned frame when supplementary observation ends. The regression then exercises the continuing selection target successfully, plus re-skip during another supplement. This remains handler simulation, not real browser replay.
 
 ## Unexecuted / limits
 

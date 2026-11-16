@@ -181,11 +181,44 @@ test('skipped add can be practised without its programmatic seed passing the goa
     app.click(app.t('practiceSkipStep'));
     assert.equal(app.step(), 'move');
     assert.equal(app.objects().length, 1);
+    const continuingTarget = app.objects()[0].props['data-object'];
     app.click(app.t('practiceRetryStep', { step: 1 }));
     assert.equal(app.step(), 'add');
     assert.equal(app.objects().length, 0);
     app.add();
     assert.equal(app.step(), 'move');
+    assert.equal(app.objects()[0].props['data-object'], continuingTarget, 'the pending goal and visible target return together');
+    app.pointer(continuingTarget, 40, 40);
+    app.pointer(continuingTarget, 100, 80, 'Move');
+    app.pointer(continuingTarget, 100, 80, 'Up');
+    assert.equal(app.step(), 'add-second', 'the restored cursor can operate on its visible target');
+  } finally { app.dispose(); }
+});
+
+test('successful supplement restores the actual continuing editor frame and targets, then skip preserves it too', () => {
+  const app = mount();
+  try {
+    app.start(); app.click(app.t('practiceSkipStep'));
+    const first = app.objects()[0].props['data-object'];
+    app.pointer(first, 40, 40); app.pointer(first, 120, 80, 'Move'); app.pointer(first, 120, 80, 'Up');
+    app.add();
+    assert.equal(app.step(), 'select-one');
+    const continuingObjects = app.objects().map((node) => [node.props['data-object'], node.props.transform]);
+    app.click(app.t('practiceRetryStep', { step: 1 }));
+    assert.equal(app.objects().length, 0);
+    app.add();
+    assert.equal(app.step(), 'select-one');
+    assert.deepEqual(app.objects().map((node) => [node.props['data-object'], node.props.transform]), continuingObjects);
+    app.pointer(first, 120, 80); app.pointer(first, 120, 80, 'Up');
+    assert.equal(app.step(), 'select-many');
+    app.click(app.t('practiceSkipStep'));
+    assert.equal(app.step(), 'deselect');
+    app.click(app.t('practiceRetryStep', { step: 5 }));
+    assert.equal(app.step(), 'select-many');
+    app.click(app.t('practiceSkipStep'));
+    assert.equal(app.step(), 'deselect');
+    assert.deepEqual(app.objects().map((node) => [node.props['data-object'], node.props.transform]), continuingObjects);
+    assert.equal(app.uploads, 0);
   } finally { app.dispose(); }
 });
 

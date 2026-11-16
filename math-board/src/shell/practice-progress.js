@@ -57,6 +57,10 @@ export function createPracticeProgress({ mode, chapters, storage, validateFrame 
           || !entry.states.every((s) => ['not-started', 'in-progress', 'completed', 'skipped'].includes(s))
           || !entry.starts || typeof entry.starts !== 'object' || !entry.goals || typeof entry.goals !== 'object') throw Error('Invalid practice states');
         entry.frame = validateFrame(entry.frame);
+        if (entry.returnTo) {
+          validGoal(chapter, entry.returnTo.goal);
+          entry.returnTo.frame = validateFrame(entry.returnTo.frame);
+        }
         for (const index of Object.keys(entry.starts)) {
           if (!Number.isInteger(Number(index)) || Number(index) < 0 || Number(index) >= chapter.steps.length) throw Error('Invalid step start');
           entry.starts[index] = validateFrame(entry.starts[index]);
@@ -82,7 +86,7 @@ export function createPracticeProgress({ mode, chapters, storage, validateFrame 
     } catch { persistence = 'unavailable'; }
   }
   function snapshot() {
-    return copy({ current, persistence, goal: goal?.snapshot() ?? null,
+    return copy({ current, persistence, supplementing: Boolean(current && entries[current].returnTo), goal: goal?.snapshot() ?? null,
       frame: current ? entries[current].frame : null,
       chapters: chapters.map((chapter) => {
         const entry = entries[chapter.id];
@@ -114,6 +118,15 @@ export function createPracticeProgress({ mode, chapters, storage, validateFrame 
     persist();
     return snapshot();
   }
+  function returnFromSupplement(entry, chapter) {
+    const continuation = entry.returnTo;
+    if (!continuation) return false;
+    goal = chapter.createGoal(copy(continuation.goal));
+    entry.goal = goal.snapshot();
+    entry.frame = copy(continuation.frame);
+    delete entry.returnTo;
+    return true;
+  }
   function observe(event, frame) {
     if (!current) return snapshot();
     const entry = entries[current], chapter = definition(current), before = goal.snapshot();
@@ -123,6 +136,7 @@ export function createPracticeProgress({ mode, chapters, storage, validateFrame 
     entry.frame = validateFrame(copy(frame));
     if (next.index !== before.index) {
       entry.states[before.index] = 'completed';
+      if (returnFromSupplement(entry, chapter)) { persist(); return snapshot(); }
       if (next.index < chapter.steps.length) {
         entry.states[next.index] = 'in-progress';
         entry.starts[next.index] = copy(entry.frame);
@@ -149,6 +163,7 @@ export function createPracticeProgress({ mode, chapters, storage, validateFrame 
     const chapter = definition(current), entry = entries[current], saved = goal.snapshot();
     if (saved.index >= chapter.steps.length) return snapshot();
     entry.states[saved.index] = 'skipped';
+    if (returnFromSupplement(entry, chapter)) { persist(); return snapshot(); }
     // Each chapter supplies a sufficient independent start for a skipped dependency.
     const next = chapter.skip ? chapter.skip(copy(saved), copy(entry.frame))
       : { goal: { ...saved, index: saved.index + 1 }, frame: entry.frame };
@@ -166,7 +181,9 @@ export function createPracticeProgress({ mode, chapters, storage, validateFrame 
   function retryStep(index) {
     if (!current) return snapshot();
     const entry = entries[current], chapter = definition(current);
-    if (!Number.isInteger(index) || !entry.starts[index]) throw Error('Unavailable step');
+    if (!Number.isInteger(index) || !entry.starts[index] || entry.states[index] !== 'skipped') throw Error('Unavailable skipped step');
+    if (entry.returnTo) entry.states[entry.goal.index] = 'skipped';
+    else entry.returnTo = { goal: copy(entry.goal), frame: copy(entry.frame) };
     goal = chapter.createGoal(copy(entry.goals[index]));
     entry.goal = goal.snapshot();
     entry.frame = copy(entry.starts[index]);

@@ -24,6 +24,8 @@ test('skip remains distinct, skipped steps can be practised, retry preserves ind
   assert.equal(progress.snapshot().chapters[0].status, 'skipped');
   progress.retryStep(0);
   progress.observe({ type: 'success' }, { objects: ['fixed'] });
+  assert.deepEqual(progress.snapshot().chapters[0].states, ['completed', 'skipped']);
+  progress.retryStep(1);
   progress.observe({ type: 'success' }, { objects: ['fixed'] });
   assert.equal(progress.snapshot().chapters[0].status, 'completed');
   progress.enter('basics', { retry: true });
@@ -32,6 +34,51 @@ test('skip remains distinct, skipped steps can be practised, retry preserves ind
   const geometry = createPracticeProgress({ mode: 'geometry', chapters, storage });
   assert.equal(geometry.snapshot().chapters[0].status, 'not-started');
   assert.equal(progress.snapshot().chapters[0].status, 'in-progress');
+});
+
+for (const action of ['observe', 'skip']) test(`supplement ${action} preserves later completed and skipped steps and the paired continuation cursor across refresh`, () => {
+  const chapter = { id: 'fixture', steps: ['one', 'two', 'three', 'four'], start: () => ({ object: 'start' }),
+    createGoal(saved = { index: 0, target: 'start' }) {
+      let state = { ...saved };
+      return { snapshot: () => ({ ...state, completed: state.index === 4 }),
+        observe(event) { if (event.type === 'success') state = { index: state.index + 1, target: event.nextTarget }; } };
+    },
+  };
+  const storage = memory();
+  let progress = createPracticeProgress({ mode: 'quantity', chapters: [chapter], storage });
+  progress.enter(); progress.skip();
+  progress.observe({ type: 'success', nextTarget: 'third' }, { object: 'third', history: [1, 2] });
+  progress.skip();
+  const continuation = { object: 'fourth-current', history: [1, 2, 3], zoom: 2 };
+  progress.saveFrame(continuation);
+  const continuationGoal = progress.snapshot().goal;
+  progress.retryStep(0);
+  progress = createPracticeProgress({ mode: 'quantity', chapters: [chapter], storage });
+  progress.enter();
+  if (action === 'observe') progress.observe({ type: 'success', nextTarget: 'supplement-only' }, { object: 'supplement-only' });
+  else progress.skip();
+  const result = progress.snapshot();
+  assert.deepEqual(result.chapters[0].states, [action === 'observe' ? 'completed' : 'skipped', 'completed', 'skipped', 'in-progress']);
+  assert.deepEqual(result.goal, continuationGoal, 'restore the saved pending cursor, not a fabricated target from the supplementary action');
+  assert.deepEqual(result.frame, continuation);
+  assert.deepEqual(progress.reset().frame, { object: 'third', history: [1, 2] }, 'later step reset start is not overwritten');
+});
+
+for (const action of ['observe', 'skip']) test(`supplement ${action} returns to completion without resetting later completed progress`, () => {
+  const chapter = { ...chapters[0], steps: ['one', 'two', 'three'], createGoal(saved = { index: 0 }) {
+    let index = saved.index;
+    return { snapshot: () => ({ index, completed: index === 3 }), observe(event) { if (event.type === 'success') index++; } };
+  } };
+  const progress = createPracticeProgress({ mode: 'quantity', chapters: [chapter], storage: memory() });
+  progress.enter('basics'); progress.skip();
+  progress.observe({ type: 'success' }, { objects: ['middle'] });
+  progress.observe({ type: 'success' }, { objects: ['finished'] });
+  progress.retryStep(0);
+  if (action === 'observe') progress.observe({ type: 'success' }, { objects: ['supplement'] });
+  else progress.skip();
+  assert.deepEqual(progress.snapshot().chapters[0].states, [action === 'observe' ? 'completed' : 'skipped', 'completed', 'completed']);
+  assert.equal(progress.snapshot().goal.completed, true);
+  assert.deepEqual(progress.snapshot().frame, { objects: ['finished'] });
 });
 
 for (const raw of ['{broken', JSON.stringify({ version: 999, entries: {} }), JSON.stringify({ version: 2, entries: { basics: { goal: { index: 88 } } } })]) {
