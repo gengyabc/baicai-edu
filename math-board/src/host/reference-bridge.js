@@ -1,4 +1,4 @@
-import { createReferenceModel } from './reference-model.js';
+import { createReferenceModel } from '../reference/reference-model.js';
 import { createToolProjection } from './tool-projection.js';
 
 export const REFERENCE_KEY = 'eduBoardReference';

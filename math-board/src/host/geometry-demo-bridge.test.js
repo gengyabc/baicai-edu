@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGeometryModel } from './geometry/model.js';
+import { createGeometryModel } from '../geometry/model.js';
 import { createGeometryDemoBridge, DEMO_KEY, DEMO_TOOL, DEMO_KIND } from './geometry-demo-bridge.js';
 
 const G = createGeometryModel();

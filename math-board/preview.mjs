@@ -3,8 +3,8 @@
 import { writeFile, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createShapeArt } from './view.js';
-import { createBoardModel } from './model.js';
+import { createShapeArt } from './src/quantity/view.js';
+import { createBoardModel } from './src/quantity/model.js';
 
 const React = {
   createElement(type, props, ...children) { return { type, props: props || {}, children }; },
@@ -25,7 +25,7 @@ function render(node) {
     .map(([key, value]) => `${ATTRIBUTES[key] || key}="${escape(value)}"`).join(' ');
   return `<${type} ${attrs}>${children.map(render).join('')}</${type}>`;
 }
-const zh = JSON.parse(await readFile(new URL('locale/zh.json', import.meta.url), 'utf8'));
+const zh = JSON.parse(await readFile(new URL('./locale/zh.json', import.meta.url), 'utf8'));
 const label = (shape) => zh[shape] || shape;
 const tile = (shape, radius, size, color) => `<figure><svg width="${size}" height="${size}" viewBox="-28 -28 56 56" aria-label="${label(shape)}">${render(art.node(shape, radius, { fill: color }))}</svg><figcaption>${label(shape)}</figcaption></figure>`;
 const large = M.defaultVisibleShapes.map((shape, i) => tile(shape, 22, 150, palette[i % palette.length])).join('');

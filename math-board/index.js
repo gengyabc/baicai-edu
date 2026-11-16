@@ -1,12 +1,12 @@
-import { createBoardModel } from './model.js';
-import { createClearBridge, CLEAR_KEY, CLEAR_TOOL, CLEAR_KIND } from './clear-bridge.js';
-import { createConfigBridge, CONFIG_KEY, CONFIG_TOOL, CONFIG_COMMAND } from './config-bridge.js';
-import { createReferenceBridge, REFERENCE_KEY, REFERENCE_TOOL, REFERENCE_KIND } from './reference-bridge.js';
-import { createGeometryModel } from './geometry/model.js';
-import { createGeometryDemoBridge, DEMO_KEY, DEMO_TOOL, DEMO_KIND } from './geometry-demo-bridge.js';
+import { createBoardModel } from './src/quantity/model.js';
+import { createClearBridge, CLEAR_KEY, CLEAR_TOOL, CLEAR_KIND } from './src/host/clear-bridge.js';
+import { createConfigBridge, CONFIG_KEY, CONFIG_TOOL, CONFIG_COMMAND } from './src/host/config-bridge.js';
+import { createReferenceBridge, REFERENCE_KEY, REFERENCE_TOOL, REFERENCE_KIND } from './src/host/reference-bridge.js';
+import { createGeometryModel } from './src/geometry/model.js';
+import { createGeometryDemoBridge, DEMO_KEY, DEMO_TOOL, DEMO_KIND } from './src/host/geometry-demo-bridge.js';
 import { referenceSchema, demoFigureSchema, referenceParameters, demoParameters,
-  REFERENCE_ACTION_UNION, DEMO_ACTION_UNION, withActionUnion } from './board-schema.js';
-import { registerToolIfSupported, addPromptIfSupported } from './capabilities.js';
+  REFERENCE_ACTION_UNION, DEMO_ACTION_UNION, withActionUnion } from './src/host/board-schema.js';
+import { registerToolIfSupported, addPromptIfSupported } from './src/host/capabilities.js';
 
 const M = createBoardModel();
 

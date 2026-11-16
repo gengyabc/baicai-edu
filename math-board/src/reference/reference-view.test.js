@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createReferenceModel } from './reference-model.js';
 import { createTeacherReferenceView } from './reference-view.js';
-import { createTabbedBoardView } from './board-shell.js';
+import { createTabbedBoardView } from '../shell/board-shell.js';
 
 const model = createReferenceModel();
 const reference = {
@@ -89,9 +89,11 @@ test('shell shows no teacher diagram on the quantity or geometry tab', () => {
 
 test('teacher reference has localized boundary copy and shipped modules', async () => {
   for (const lang of ['zh', 'en']) {
-    const locale = JSON.parse(await readFile(new URL(`locale/${lang}.json`, import.meta.url)));
+    const locale = JSON.parse(await readFile(new URL(`../../locale/${lang}.json`, import.meta.url)));
     for (const key of ['teacherReference', 'teacherReferenceHint', 'teacherReferenceShow', 'teacherReferenceHide', 'teacherReferenceScroll']) assert.ok(locale[key]);
   }
-  const pkg = JSON.parse(await readFile(new URL('package.json', import.meta.url)));
-  for (const path of ['reference-model.js', 'reference-bridge.js', 'reference-view.js']) assert.ok(pkg.files.includes(path));
+  const pkg = JSON.parse(await readFile(new URL('../../package.json', import.meta.url)));
+  assert.ok(pkg.files.includes('src/**/*.js'));
+  assert.ok(pkg.files.includes('!src/**/*.test.js'));
+  assert.ok(pkg.files.includes('!src/testing/**'));
 });

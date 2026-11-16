@@ -1,28 +1,28 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { createBoardView, createShapeArt } from './view.js';
-import { createTabbedBoardView } from './board-shell.js';
-import { createBoardFilePicker, createBoardIcons } from './file-picker.js';
+import { createBoardView, createShapeArt } from '../quantity/view.js';
+import { createTabbedBoardView } from '../shell/board-shell.js';
+import { createBoardFilePicker, createBoardIcons } from '../shared/file-picker.js';
 import { createGeometryPage } from './geometry-view.js';
-import { createGeometryDemoPage, readDemoView } from './geometry-demo-view.js';
-import { placeFigure } from './geometry/place-figure.js';
-import { captionBox, captionPosition, visibleCaption } from './geometry/caption.js';
+import { createGeometryDemoPage, readDemoView } from '../teacher-demo/geometry-demo-view.js';
+import { placeFigure } from './place-figure.js';
+import { captionBox, captionPosition, visibleCaption } from './caption.js';
 import {
   geometryHiddenPoints, geometryCaptionLabel, geometryPointLabel, geometryPointDot, geometryShapeNode, geometryStroke,
-} from './geometry/draw.js';
-import { geometryViewport, geometryFrameInputs, geometryTextOverflow, geometryFrame } from './geometry/frame.js';
-import { createBoardControls } from './board-kit.js';
-import { createGeometryModel } from './geometry/model.js';
-import { createBoardModel } from './model.js';
-import { createBoardTrace } from './trace.js';
-import { createHooks, installBrowser, text, walk } from './test-harness.js';
-import { applyHostConfig } from './config-bridge.js';
+} from './draw.js';
+import { geometryViewport, geometryFrameInputs, geometryTextOverflow, geometryFrame } from './frame.js';
+import { createBoardControls } from '../shared/board-kit.js';
+import { createGeometryModel } from './model.js';
+import { createBoardModel } from '../quantity/model.js';
+import { createBoardTrace } from '../quantity/trace.js';
+import { createHooks, installBrowser, text, walk } from '../testing/test-harness.js';
+import { applyHostConfig } from '../host/config-bridge.js';
 import {
   advanceTutorial, createTutorialController, createTutorialOverlay, geometryTutorialSteps, isTutorialSeen,
   markTutorialSeen, measureTourTarget, quantityTutorialSteps, tourHoldsNotePanel,
   tourInsertMode, tutorialStorageKey,
-} from './tutorial.js';
+} from '../shell/tutorial.js';
 
 // The radius the geometry page uses to decide a press landed on a point.
 const POINT_HIT_RADIUS = Number(/Math\.hypot\(q\.x - p\.x, q\.y - p\.y\) <= (\d+)/.exec(
@@ -32,7 +32,7 @@ if (!Number.isFinite(POINT_HIT_RADIUS)) throw new Error('The geometry page no lo
 const M = createBoardModel();
 const G = createGeometryModel();
 const T = createBoardTrace(M);
-const locale = JSON.parse(await readFile(new URL('./locale/zh.json', import.meta.url), 'utf8'));
+const locale = JSON.parse(await readFile(new URL('../../locale/zh.json', import.meta.url), 'utf8'));
 const t = (key, params = {}) => {
   assert.equal(typeof locale[key], 'string', `Missing locale key: ${key}`);
   return locale[key].replace(/\{(\w+)\}/g, (match, name) =>

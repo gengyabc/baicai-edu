@@ -1,4 +1,4 @@
-import { createDemoModel } from './geometry/demo-model.js';
+import { createDemoModel } from '../teacher-demo/demo-model.js';
 import { createToolProjection } from './tool-projection.js';
 
 export const DEMO_KEY = 'eduBoardGeometryDemo';

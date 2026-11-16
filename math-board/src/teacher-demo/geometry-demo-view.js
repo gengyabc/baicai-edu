@@ -1,4 +1,4 @@
-import { createDemoModel } from './geometry/demo-model.js';
+import { createDemoModel } from './demo-model.js';
 
 /** Parse a projection view. Invalid or missing projections show an empty demo tab. */
 export function readDemoView(geometry, view) {

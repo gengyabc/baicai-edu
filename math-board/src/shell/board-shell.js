@@ -4,7 +4,7 @@
 // close gesture: the tab bar, 返回对话 on every page and a press on the dimmed area around
 // the dialog all end in the shell's own `setOpened(false)`.
 // Each student tab attaches only its own file.
-import { boardQuestionReferences } from './question-reference.js';
+import { boardQuestionReferences } from '../shared/question-reference.js';
 
 /**
  * Build the tabbed board.

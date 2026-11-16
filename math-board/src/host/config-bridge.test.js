@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createBoardModel } from './model.js';
+import { createBoardModel } from '../quantity/model.js';
 import { createConfigBridge, applyHostConfig, CONFIG_KEY, CONFIG_TOOL, CONFIG_COMMAND, CONFIG_KIND } from './config-bridge.js';
 
 const M = createBoardModel();

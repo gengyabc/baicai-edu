@@ -1,6 +1,6 @@
 // Workspace-first expression board UI. Embedded into client.js by build.mjs.
 import { composerNote } from './view.js';
-import { boardQuestionReferences } from './question-reference.js';
+import { boardQuestionReferences } from '../shared/question-reference.js';
 
 /**
  * The quantity page. `shared` is required and carries the modules both tabs use

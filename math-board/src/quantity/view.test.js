@@ -4,14 +4,14 @@ import { readFile } from 'node:fs/promises';
 import { composerNote, createShapeArt, colorIndexForValue, createBoardView } from './view.js';
 import { createBoardModel } from './model.js';
 import { createBoardTrace } from './trace.js';
-import { createBoardFilePicker, createBoardIcons } from './file-picker.js';
-import { createBoardControls } from './board-kit.js';
-import { createTutorialController } from './tutorial.js';
+import { createBoardFilePicker, createBoardIcons } from '../shared/file-picker.js';
+import { createBoardControls } from '../shared/board-kit.js';
+import { createTutorialController } from '../shell/tutorial.js';
 
 const M = createBoardModel();
 const React = { createElement(type, props, ...children) { return { type, props: props || {}, children }; } };
 const art = createShapeArt(React);
-const zh = JSON.parse(await readFile(new URL('./locale/zh.json', import.meta.url), 'utf8'));
+const zh = JSON.parse(await readFile(new URL('../../locale/zh.json', import.meta.url), 'utf8'));
 const t = (key, params = {}) => zh[key].replace(/\{(\w+)\}/g, (match, name) =>
   Object.hasOwn(params, name) ? String(params[name]) : match);
 

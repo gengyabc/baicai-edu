@@ -7,10 +7,10 @@ import {
   tourHoldsNotePanel, tourInsertMode, tourMaskPads, tutorialStorageKey,
 } from './tutorial.js';
 
-import { createHooks, installBrowser } from './test-harness.js';
+import { createHooks, installBrowser } from '../testing/test-harness.js';
 
-const zh = JSON.parse(await readFile(new URL('./locale/zh.json', import.meta.url), 'utf8'));
-const en = JSON.parse(await readFile(new URL('./locale/en.json', import.meta.url), 'utf8'));
+const zh = JSON.parse(await readFile(new URL('../../locale/zh.json', import.meta.url), 'utf8'));
+const en = JSON.parse(await readFile(new URL('../../locale/en.json', import.meta.url), 'utf8'));
 const t = (key, params = {}) => {
   assert.equal(typeof zh[key], 'string', `Missing zh locale key: ${key}`);
   return zh[key].replace(/\{(\w+)\}/g, (match, name) =>

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGeometryModel } from './model.js';
-import { createBoardModel } from '../model.js';
+import { createBoardModel } from '../quantity/model.js';
 
 const G = createGeometryModel();
 const Q = createBoardModel();

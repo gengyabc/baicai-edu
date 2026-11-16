@@ -6,7 +6,7 @@ import path from 'node:path';
 // A standalone board install has no teaching bundle and no model route. The
 // plugin must still activate, keep its local projections and commands, and
 // contribute no tools or prompt text that would ride model conversations.
-const moduleUrl = pathToFileURL(path.resolve(import.meta.dirname, 'index.js')).href;
+const moduleUrl = pathToFileURL(path.resolve(import.meta.dirname, '../../index.js')).href;
 
 async function mount(services) {
   const module = await import(moduleUrl);

@@ -7,8 +7,8 @@ import { readFile } from 'node:fs/promises';
 // module-level constant it reads stays in the source and becomes a ReferenceError in the
 // browser, where the board silently fails to appear. Load the generated bundle and
 // construct both pages for real, which is the only place that failure is observable.
-const bundle = await readFile(new URL('./client.js', import.meta.url), 'utf8');
-const zh = JSON.parse(await readFile(new URL('./locale/zh.json', import.meta.url), 'utf8'));
+const bundle = await readFile(new URL('../client.js', import.meta.url), 'utf8');
+const zh = JSON.parse(await readFile(new URL('../locale/zh.json', import.meta.url), 'utf8'));
 
 function loadBundle() {
   const registered = [];
@@ -297,7 +297,7 @@ test('the inlined placeFigure places a teacher figure on an empty and an occupie
   // The demo copy button calls this exact inlined function. Exercising the bundle's own
   // copy is the only way to catch a helper that toString() left behind in the module:
   // node-side imports of geometry/place-figure.js would still see it.
-  const { createGeometryModel } = await import('./geometry/model.js');
+  const { createGeometryModel } = await import('../src/geometry/model.js');
   const G = createGeometryModel();
   const placeFigure = extractFactory(bundle, 'placeFigure');
   const figure = G.validate({

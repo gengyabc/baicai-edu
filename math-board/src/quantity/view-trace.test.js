@@ -4,14 +4,14 @@ import { readFile } from 'node:fs/promises';
 import { createBoardView, createShapeArt } from './view.js';
 import { createBoardModel } from './model.js';
 import { createBoardTrace } from './trace.js';
-import { createBoardFilePicker, createBoardIcons } from './file-picker.js';
-import { createBoardControls } from './board-kit.js';
-import { createTutorialController } from './tutorial.js';
-import { applyHostConfig } from './config-bridge.js';
+import { createBoardFilePicker, createBoardIcons } from '../shared/file-picker.js';
+import { createBoardControls } from '../shared/board-kit.js';
+import { createTutorialController } from '../shell/tutorial.js';
+import { applyHostConfig } from '../host/config-bridge.js';
 
 const M = createBoardModel();
 const T = createBoardTrace(M);
-const locale = JSON.parse(await readFile(new URL('./locale/zh.json', import.meta.url), 'utf8'));
+const locale = JSON.parse(await readFile(new URL('../../locale/zh.json', import.meta.url), 'utf8'));
 const t = (key, params = {}) => {
   assert.equal(typeof locale[key], 'string', `Missing locale key: ${key}`);
   return locale[key].replace(/\{(\w+)\}/g, (match, name) => Object.hasOwn(params, name) ? String(params[name]) : match);

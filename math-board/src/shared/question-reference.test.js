@@ -57,7 +57,7 @@ test('nonblank lines preserve Markdown list indentation, hard breaks and formula
 });
 
 test('teacher panel limits collapsed content to three lines and expanded scrolling content to five', async () => {
-  const css = await readFile(new URL('./board.css', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../shell/board.css', import.meta.url), 'utf8');
   const expanded = css.match(/\.eb-question-text\{([^}]+)\}/)[1];
   const collapsed = css.match(/\.eb-question-text\.eb-collapsed\{([^}]+)\}/)[1];
   assert.match(expanded, /line-height:1\.65/);

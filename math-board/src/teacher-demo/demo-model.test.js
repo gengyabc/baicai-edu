@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGeometryModel } from './model.js';
+import { createGeometryModel } from '../geometry/model.js';
 import { createDemoModel } from './demo-model.js';
 
 const G = createGeometryModel();

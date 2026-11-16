@@ -24,7 +24,7 @@ function harnessValidatorPath() {
 }
 
 async function registeredTool() {
-  const module = await import(pathToFileURL(path.resolve(import.meta.dirname, 'index.js')).href);
+  const module = await import(pathToFileURL(path.resolve(import.meta.dirname, '../../index.js')).href);
   const captured = { tool: null, tools: [], command: null, prompts: [], projections: [] };
   const disposer = () => {};
   const ctx = {
@@ -140,7 +140,7 @@ test('reference tool registers exact structures, plain JSON, and teaching bounda
   const replayed = withActionUnion(tool.parameters, invocation);
   assert.deepEqual(replayed.oneOf, REFERENCE_ACTION_UNION);
   assert.equal(withActionUnion(tool.parameters, { parameters: tool.parameters }), tool.parameters);
-  const { REFERENCE_PROMPT } = await import('./index.js');
+  const { REFERENCE_PROMPT } = await import('../../index.js');
   for (const boundary of ['教学门槛', '已知条件', '不读取任何学生草稿', '不是学生作答证据', '不表示客户端已显示或已目视验证', '工具不可用或失败时用文字']) {
     assert.ok(REFERENCE_PROMPT.includes(boundary), boundary);
   }
@@ -213,7 +213,7 @@ test('registered reference execute and projection replay roundtrip without stude
 
 test('shared skill JSON recipe executes through the registered geometry tool and projection', async () => {
   const { readFileSync } = await import('node:fs');
-  const source = readFileSync(new URL('../math-common/skills/math-common/references/board-contract.md', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../../../math-common/skills/math-common/references/board-contract.md', import.meta.url), 'utf8');
   const examples = [...source.matchAll(/```json\n([\s\S]*?)\n```/g)].map(match => JSON.parse(match[1]));
   const get = examples.find(args => args.action === 'get');
   const show = structuredClone(examples.find(args => args.action === 'show' && args.figure));
