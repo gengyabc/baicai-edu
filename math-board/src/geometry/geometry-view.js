@@ -136,10 +136,11 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     });
     const [progress,setProgress] = React.useState(() => practiceRef.current?.snapshot());
     const practiceEvents = React.useRef([]);
+    const markedDrag = React.useRef(null);
     const practiceState = progress?.goal;
     function editable() { return alive.current && (props.practice || !practiceOpenRef.current); }
     function practiceEvent(event) { if (props.practice && alive.current) { practiceEvents.current.push(event); setProgress({...practiceRef.current.snapshot()}); } }
-    function selectUser(ids) { setSelection(ids); practiceEvent({type:'select',selection:ids}); }
+    function selectUser(ids) { setSelection(ids); practiceEvent({type:'select',selection:ids,after:boardRef.current}); }
     const workspaceRef = React.useRef(null);
     const gesture = React.useRef(null);
     // Free points created for the unfinished shape. Escape deletes these and leaves
@@ -268,6 +269,13 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       else next=practiceRef.current.saveFrame(practiceFrame());
       if (wasSupplementing && !next.supplementing) applyPracticeFrame(next.frame);
       if (events.length || next.persistence!==progress?.persistence) setProgress(next);
+      // Select the drag step's free point once, so the mark is not the midpoint just created.
+      const marked = next.goal?.step === 'construct-drag' ? next.goal.pointId : null;
+      if (marked !== markedDrag.current) {
+        markedDrag.current = marked;
+        const point = marked && boardRef.current.points.find((item) => item.id === marked && item.kind === 'free');
+        if (point && !(selection.length === 1 && selection[0] === marked)) setSelection([marked]);
+      }
     },[ready,board,history,selection,tool,pending,auxiliary,grid,snap,zoom,fit,progress]);
     function closePage() { if (props.practice) props.onPracticeExit(); else setPracticeOpen(false); props.close?.(); }
 
@@ -485,7 +493,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       const created = next.elements.find((e) => !before.elements.some((old) => old.id === e.id));
       if (created && closedShape(created.type)) setSelection(created.points.map((_, index) => edgeKey(created.id, index)));
       else if (created) setSelection([created.id]);
-      if (created) practiceEvent({type:'draw',tool:drawing,before,after:next,closed:drawing==='polygon'});
+      if (created) practiceEvent({type:'draw',tool:drawing,before,after:next,closed:drawing==='polygon',role});
     }
     function clickEmpty(p) {
       const before = boardRef.current;
@@ -817,7 +825,15 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       const shown = preview;
       setPreview(null);
       if (cancelled || !g.moved || !shown) return;
-      action({ type: 'movePoint', id: g.id, x: shown.x, y: shown.y });
+      const before = boardRef.current;
+      const next = action({ type: 'movePoint', id: g.id, x: shown.x, y: shown.y });
+      if (!next) return;
+      const origin = before.points.find((point) => point.id === g.id);
+      const landed = next.points.find((point) => point.id === g.id);
+      // A press that stays put, and any host or system change, is not a drag.
+      if (origin && landed && (origin.x !== landed.x || origin.y !== landed.y)) {
+        practiceEvent({ type: 'move', before, after: next, id: g.id });
+      }
     }
     function deleteSelection() {
       if (!editable()) return;
@@ -1210,12 +1226,15 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       const target = midpointTarget();
       if (!target) return;
       const { a, b } = target;
+      const before = boardRef.current;
       const next = action({ type: 'addMidpoint', a, b });
       if (!next) return;
       const created = next.points.find((point) => point.construction?.op === 'midpoint'
         && point.construction.inputs[0] === a && point.construction.inputs[1] === b
-        && !board.points.some((old) => old.id === point.id));
-      if (created) setSelection([created.id]);
+        && !before.points.some((old) => old.id === point.id));
+      if (!created) return;
+      setSelection([created.id]);
+      practiceEvent({ type: 'midpoint', before, after: next, a, b, id: created.id });
     }
     const toolButton = (name) => h('button', {
       key: name, type: 'button', className: 'eb-tool', title: t(name), 'aria-label': t(name),
@@ -1230,7 +1249,12 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       }, icon('midpoint')),
       h('button', {
         type: 'button', className: 'eb-tool eb-switch', role: 'switch', 'aria-checked': auxiliary,
-        title: t('auxiliary'), 'aria-label': t('auxiliary'), onClick: () => { if (editable()) setAuxiliary((on) => !on); },
+        title: t('auxiliary'), 'aria-label': t('auxiliary'), onClick: () => {
+          if (!editable()) return;
+          const before = auxiliary;
+          setAuxiliary(!before);
+          practiceEvent({ type: 'auxiliary', before, after: !before });
+        },
       }, h('span', { className: 'eb-switch-track', 'aria-hidden': true },
         h('span', { className: 'eb-switch-knob' })),
       h('span', { className: 'eb-label' }, t('auxiliary'))));
@@ -1334,9 +1358,11 @@ export function createGeometryPage(React, G, ctx, t, shared) {
           h('button', { type: 'button', onClick: () => { setWriting(null); setTool('select'); } }, t('cancel')),
           h('button', { type: 'button', className: 'eb-primary', onClick: applyText }, t('save')))));
     const statusNode = controls.status(status);
-    const practiceCoach = props.practice && h('section', {className:'eb-practice-coach', 'aria-label':t('geometryPracticeBasics'),
+    const practiceChapter = practiceChapters.find((item) => item.id === progress?.current);
+    const practiceTitleKey = practiceChapter?.titleKey || 'geometryPracticeBasics';
+    const practiceCoach = props.practice && h('section', {className:'eb-practice-coach', 'aria-label':t(practiceTitleKey),
       'data-practice-step':practiceState?.step},
-      h('div',{role:'status','aria-live':'polite'},h('strong',null,t('geometryPracticeBasics')),
+      h('div',{role:'status','aria-live':'polite'},h('strong',null,t(practiceTitleKey)),
         h('p',null,t(practiceState?.completed && progress.chapters.find(c=>c.id===progress.current)?.status!=='completed'
           ? 'practiceSkippedEnd' : `geometryPracticeGoal_${practiceState?.step || 'point'}`)),
         PracticeNavigation && progress?.goal && h(PracticeNavigation,{progress,chapters:practiceChapters,onNavigate:navigatePractice})),

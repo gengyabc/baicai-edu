@@ -14,6 +14,7 @@ import { createTabbedBoardView } from './src/shell/board-shell.js';
 import { createBoardFilePicker, createBoardIcons } from './src/shared/file-picker.js';
 import { createGeometryPage } from './src/geometry/geometry-view.js';
 import { createGeometryPractice, createGeometryBasicsChapter, createGeometryPracticeFrames } from './src/geometry/geometry-basics.js';
+import { createGeometryConstructChapter } from './src/geometry/geometry-construct.js';
 import { createGeometryModel } from './src/geometry/model.js';
 import { createTeacherReferenceView } from './src/reference/reference-view.js';
 import { createDemoModel } from './src/teacher-demo/demo-model.js';
@@ -61,6 +62,7 @@ window.__ModuleLoader__.load({
     const createGeometryPractice = ${createGeometryPractice.toString()};
     const createGeometryBasicsChapter = ${createGeometryBasicsChapter.toString()};
     const createGeometryPracticeFrames = ${createGeometryPracticeFrames.toString()};
+    const createGeometryConstructChapter = ${createGeometryConstructChapter.toString()};
     const createGeoModel = ${createGeometryModel.toString()};
     const createDemoModel = ${createDemoModel.toString()};
     const readDemoView = ${readDemoView.toString()};
@@ -120,7 +122,7 @@ window.__ModuleLoader__.load({
           // Append independently inlined chapter factories here.
           quantityPracticeChapters: [createQuantityAdjustChapter, createQuantityOrganizeChapter, createQuantityNotesChapter],
           createGeometryPractice, createGeometryBasicsChapter, createGeometryPracticeFrames,
-          geometryPracticeChapters: [], // Geometry extensions own independent chapter modules.
+          geometryPracticeChapters: [createGeometryConstructChapter],
           createTutorialController, createTutorialOverlay, isTutorialSeen, markTutorialSeen, advanceTutorial,
           measureTourTarget, tourHoldsNotePanel, tourInsertMode,
           quantityTutorialSteps, geometryTutorialSteps,
