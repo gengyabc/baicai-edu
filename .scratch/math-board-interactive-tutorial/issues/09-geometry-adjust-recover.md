@@ -29,6 +29,6 @@
 - 清空仍走几何页自己的 `clearMode`：发布 `G.empty()`，历史设为 `{ past: [], future: [] }`。不调用宿主数量清空，也不新增几何修改记录。清空后的空画板和空历史就是新阶段，不会把清空前的历史装回去。
 - 已勾选的隔离项由本章单元测试和几何页处理器回放覆盖：退出后预置的真实几何草稿和数量草稿都不变，上传、附件和发送次数为 0。练习记录写在 `practice:v2:geometry`，不写几何草稿键。刷新后续上未完成的调整步骤。单章重练不清基础章已进入的步骤。既有的宿主迟到保存测试仍通过，本章没有另写一条迟到保存用例。
 - 最后一项未勾：中英和 `mouse`／`touch` 指针类型都有处理器回放，聚焦检查与全量测试已执行，但没有真实浏览器、真实鼠标、触屏设备或布局验收。滚动回放是在替身节点上设置 `scrollLeft`／`scrollTop` 再调用 `onScroll`。处理器回放不是浏览器通过。
-- 实现提交见本章提交。未合并，未推送。
+- 实现提交 `7d5bbfcf67e63af350fa785fe828de76705162df`。未合并，未推送。
 - 聚焦命令为 **74/74 通过**：`node --test math-board/src/geometry/geometry-adjust.test.js math-board/src/geometry/geometry-view.test.js math-board/tests/practice-geometry-adjust-bundle.test.js`。全量 `npm --prefix math-board test` 为 **452 项、451 通过、1 失败**。唯一失败是既有 [tool-schema.test.js:214–220](<../../../math-board/src/host/tool-schema.test.js#L214-L220>) 的 fenced JSON recipe，`assert.ok(get)`。未改教学契约。生成客户端仍保留基础章、构造章和编辑章，并把 `createGeometryAdjustChapter` 放在 `createGeometryEditChapter` 之后。中英词典 UI 键数相同（405）。本章新增 17 个测试：8 个章节测试、5 个处理器回放、4 个打包测试。
 - 详细命令、计数和未执行边界见 [验证记录](<../../../math-board/docs/tutorial-09-validation.md>)。接入说明见 [安全教程扩展接口](<../../../math-board/README.md#安全教程扩展接口>)。
