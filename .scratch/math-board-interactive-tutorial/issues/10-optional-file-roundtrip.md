@@ -30,5 +30,6 @@
 - 数量页原来在练习时不渲染文件输入和下载锚点。文件章才渲染它们，并标上 `data-practice-file`。几何页原来没有自己的下载锚点，共享选择器会用 `document.createElement` 临时创建，测试文档没有这个方法，而且那条路径会记住真实句柄。练习下载改为点击渲染在 `downloadAnchorRef` 上的隐藏锚点。数量打开不走 `commit`，因此不会把打开记成修改记录里的导入；几何打开会清空历史、选择、待闭合点和构造输入，这样练习帧仍能通过校验。数量教练要读 `targets`，文件目标的快照带空的 `targets`，图形不编号。数量跨模式失败沿用 `` `${failed}: ${error.message}` ``；几何把同一个 `Another board kind` 显示为 `otherBoardFile`。
 - 已勾选的项由章节测试和中英、`mouse`／`touch` 处理器回放覆盖。回放调用的是菜单项的 `onClick({ pointerType })`，并替身 `showSaveFilePicker`／`showOpenFilePicker`。这不是系统文件对话框，也不是真实磁盘写入。
 - 最后一项未勾。自动回归、构建、`node --check` 和 `git diff --check` 已执行，未测能力写在验证记录里。该项同时要求实际验证文件 API 与下载回退环境，这一部分没有做，所以整项不勾。
-- 聚焦命令为 **123/123 通过**。全量 `npm --prefix math-board test` 为 **482 项、481 通过、1 失败**。唯一失败是既有 [tool-schema.test.js:214–220](<../../../math-board/src/host/tool-schema.test.js#L214-L220>) 的 fenced JSON recipe，`assert.ok(get)`。未改教学契约。本章新增 30 个测试：14 个章节测试、8 个处理器回放、8 个打包测试。中英词典 UI 键数相同（416）。未推送。
+- 实现提交 `583c341cf6e69635a966f2fa262f96e598433efc`，集成合并 `32ff419`。未推送。
+- 聚焦命令为 **123/123 通过**。全量 `npm --prefix math-board test` 为 **482 项、481 通过、1 失败**。唯一失败是既有 [tool-schema.test.js:214–220](<../../../math-board/src/host/tool-schema.test.js#L214-L220>) 的 fenced JSON recipe，`assert.ok(get)`。未改教学契约。本章新增 30 个测试：14 个章节测试、8 个处理器回放、8 个打包测试。中英词典 UI 键数相同（416）。
 - 详细命令、计数和未执行边界见 [验证记录](<../../../math-board/docs/tutorial-10-validation.md>)。接入说明见 [安全教程扩展接口](<../../../math-board/README.md#安全教程扩展接口>)。
