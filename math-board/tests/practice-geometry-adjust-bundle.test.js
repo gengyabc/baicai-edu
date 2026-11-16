@@ -30,7 +30,7 @@ function factoryBody(text, name) {
 
 test('the built client appends the geometry adjust chapter after edit and leaves the earlier chapters', () => {
   assert.match(bundle, /const createGeometryAdjustChapter = function createGeometryAdjustChapter/, 'build.mjs must inline the chapter factory');
-  assert.match(bundle, /geometryPracticeChapters: \[createGeometryConstructChapter, createGeometryEditChapter, createGeometryAdjustChapter\]/, 'adjust is listed after edit');
+  assert.match(bundle, /geometryPracticeChapters: \[createGeometryConstructChapter, createGeometryEditChapter, createGeometryAdjustChapter, createGeometryFilesChapter\]/, 'adjust is listed after edit');
   assert.match(bundle, /const createGeometryBasicsChapter = function createGeometryBasicsChapter/);
   assert.match(bundle, /const createGeometryConstructChapter = function createGeometryConstructChapter/);
   assert.match(bundle, /const createGeometryEditChapter = function createGeometryEditChapter/);

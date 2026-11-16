@@ -111,6 +111,9 @@
   "done": "Done",
   "fileSaved": "Saved to the last location.",
   "fileDownloaded": "Board file downloaded.",
+  "practiceFileSaved": "Practice file saved. The real draft was not changed.",
+  "practiceFileDownloaded": "Practice download started. The disk write was not verified.",
+  "practiceFileLoaded": "Practice board loaded. The real draft was not.",
   "fileOpenFallback": "Using the standard file picker; the browser may not remember the last location.",
   "undo": "Undo",
   "redo": "Redo",
@@ -407,5 +410,13 @@
   "geometryPracticeGoal_adjust-scroll": "Scroll the canvas while it is zoomed or not fitted. A scroll that leaves the position unchanged does not count.",
   "geometryPracticeGoal_adjust-fit": "Tap Fit width so the view is fitted again. Tapping it while the view is already fitted does not count.",
   "geometryPracticeGoal_adjust-clear": "With something on the practice board, tap Clear geometry canvas and then Confirm clear. The practice board and its undo history become empty. Opening the question without confirming does not count. Undo cannot bring the old board back, and the quantity board is left alone.",
-  "geometryPracticeGoal_adjust-complete": "Adjust and recover practice is finished. Grid and snap are not a geometry verdict. The cleared board is a new stage, and its old undo history stays empty. Nothing was attached or sent. Exit to continue your real answer."
+  "geometryPracticeGoal_adjust-complete": "Adjust and recover practice is finished. Grid and snap are not a geometry verdict. The cleared board is a new stage, and its old undo history stays empty. Nothing was attached or sent. Exit to continue your real answer.",
+  "quantityPracticeFiles": "Practice files",
+  "practiceGoal_files-save": "Open More actions and save this practice board. The step finishes only after the practice file is saved, or after a download starts. Clicking Save JSON is not enough. A download means the download started; the disk write was not verified. Your real answer and its file stay unchanged.",
+  "practiceGoal_files-open": "Open a quantity practice file. The practice board changes to that file. Cancel, a file this board cannot read, or a geometry file does not count, and this practice board stays as it is. The real draft is not loaded. Opening a file does not restore the modification record.",
+  "practiceGoal_files-complete": "File practice is finished. A download only means a download started; it is not a verified save on disk. Nothing was attached or sent. Exit to continue your real answer. Skipping this chapter does not block quantity basics.",
+  "geometryPracticeFiles": "Geometry file practice — separate from your answer",
+  "geometryPracticeGoal_files-save": "Open More actions and save this practice geometry board. The step finishes only after the practice file is saved, or after a download starts. Clicking Save JSON is not enough. A download means the download started; the disk write was not verified. Your real geometry answer and its file stay unchanged.",
+  "geometryPracticeGoal_files-open": "Open a geometry practice file. The practice board changes to that file. Cancel, a file this board cannot read, or a quantity file does not count, and this practice board stays as it is. The real draft is not loaded. Geometry does not gain a modification record.",
+  "geometryPracticeGoal_files-complete": "Geometry file practice is finished. A download only means a download started; it is not a verified save on disk. Nothing was attached or sent. Exit to continue your real answer. Skipping this chapter does not block geometry basics."
 }

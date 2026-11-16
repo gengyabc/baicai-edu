@@ -6,6 +6,7 @@ import { createQuantityPractice } from './src/quantity/practice.js';
 import { createQuantityAdjustChapter } from './src/quantity/practice-adjust.js';
 import { createQuantityOrganizeChapter } from './src/quantity/practice-organize.js';
 import { createQuantityNotesChapter } from './src/quantity/practice-notes.js';
+import { createQuantityFilesChapter } from './src/quantity/practice-files.js';
 import { applyHostConfig } from './src/host/config-bridge.js';
 import { boardQuestionReferences } from './src/shared/question-reference.js';
 import { createReferenceModel } from './src/reference/reference-model.js';
@@ -17,6 +18,7 @@ import { createGeometryPractice, createGeometryBasicsChapter, createGeometryPrac
 import { createGeometryConstructChapter } from './src/geometry/geometry-construct.js';
 import { createGeometryEditChapter } from './src/geometry/geometry-edit.js';
 import { createGeometryAdjustChapter } from './src/geometry/geometry-adjust.js';
+import { createGeometryFilesChapter } from './src/geometry/geometry-files.js';
 import { createGeometryModel } from './src/geometry/model.js';
 import { createTeacherReferenceView } from './src/reference/reference-view.js';
 import { createDemoModel } from './src/teacher-demo/demo-model.js';
@@ -67,6 +69,7 @@ window.__ModuleLoader__.load({
     const createGeometryConstructChapter = ${createGeometryConstructChapter.toString()};
     const createGeometryEditChapter = ${createGeometryEditChapter.toString()};
     const createGeometryAdjustChapter = ${createGeometryAdjustChapter.toString()};
+    const createGeometryFilesChapter = ${createGeometryFilesChapter.toString()};
     const createGeoModel = ${createGeometryModel.toString()};
     const createDemoModel = ${createDemoModel.toString()};
     const readDemoView = ${readDemoView.toString()};
@@ -90,6 +93,7 @@ window.__ModuleLoader__.load({
     const createQuantityAdjustChapter = ${createQuantityAdjustChapter.toString()};
     const createQuantityOrganizeChapter = ${createQuantityOrganizeChapter.toString()};
     const createQuantityNotesChapter = ${createQuantityNotesChapter.toString()};
+    const createQuantityFilesChapter = ${createQuantityFilesChapter.toString()};
     const createPracticeProgress = ${createPracticeProgress.toString()};
     const createPracticeNavigation = ${createPracticeNavigation.toString()};
     const createFilePicker = ${createBoardFilePicker.toString()};
@@ -124,9 +128,9 @@ window.__ModuleLoader__.load({
           createBoardFilePicker: createFilePicker, createBoardIcons: createIcons,
           createBoardControls, createQuantityPractice, createPracticeProgress, createPracticeNavigation,
           // Append independently inlined chapter factories here.
-          quantityPracticeChapters: [createQuantityAdjustChapter, createQuantityOrganizeChapter, createQuantityNotesChapter],
+          quantityPracticeChapters: [createQuantityAdjustChapter, createQuantityOrganizeChapter, createQuantityNotesChapter, createQuantityFilesChapter],
           createGeometryPractice, createGeometryBasicsChapter, createGeometryPracticeFrames,
-          geometryPracticeChapters: [createGeometryConstructChapter, createGeometryEditChapter, createGeometryAdjustChapter],
+          geometryPracticeChapters: [createGeometryConstructChapter, createGeometryEditChapter, createGeometryAdjustChapter, createGeometryFilesChapter],
           createTutorialController, createTutorialOverlay, isTutorialSeen, markTutorialSeen, advanceTutorial,
           measureTourTarget, tourHoldsNotePanel, tourInsertMode,
           quantityTutorialSteps, geometryTutorialSteps,

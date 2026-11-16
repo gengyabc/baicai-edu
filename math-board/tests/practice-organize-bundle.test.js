@@ -30,7 +30,7 @@ function factoryBody(text, name) {
 
 test('the built client appends the quantity organize chapter after adjust', () => {
   assert.match(bundle, /const createQuantityOrganizeChapter = function createQuantityOrganizeChapter/, 'build.mjs must inline the chapter factory');
-  assert.match(bundle, /quantityPracticeChapters: \[createQuantityAdjustChapter, createQuantityOrganizeChapter, createQuantityNotesChapter\]/, 'organize is appended and adjust stays registered');
+  assert.match(bundle, /quantityPracticeChapters: \[createQuantityAdjustChapter, createQuantityOrganizeChapter, createQuantityNotesChapter, createQuantityFilesChapter\]/, 'organize is appended and adjust stays registered');
   assert.equal(factoryBody(bundle, 'createQuantityOrganizeChapter'), factoryBody(source, 'createQuantityOrganizeChapter'));
 });
 

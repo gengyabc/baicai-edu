@@ -1060,9 +1060,109 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     const report = (result) => {
       if (result?.message) setStatus(result.message);
     };
-    const saveFile = () => { setMoreOpen(false); if (!editable()) return; if (props.practice) {setStatus(t('practiceFilesUnavailable'));return;} return picker.saveFile().then(report); };
-    const openFile = () => { setMoreOpen(false); if (!editable()) return; if (props.practice) {setStatus(t('practiceFilesUnavailable'));return;} return picker.openFile({ revision: revision.current }).then(report); };
-    const importInput = (event) => {if (!editable() || props.practice) return; return picker.importInput(event, { revision: revision.current }).then(report);};
+    function practiceFiles() {
+      return Boolean(props.practice && practiceRef.current?.snapshot().current === 'geometry-files');
+    }
+    // Practice files read and write the practice board only. The shared picker is not
+    // called: it reuses fileHandleRef, startIn, and the real geometry IndexedDB key.
+    async function loadPracticeFile(file) {
+      if (!file) return;
+      if (file.size > 262144) { setStatus(t('fileTooLarge')); return; }
+      let next;
+      try { next = G.validate(JSON.parse(await file.text())); }
+      catch (error) {
+        setStatus(error?.message === 'Another board kind' ? t('otherBoardFile') : `${t('failed')}: ${error.message}`);
+        return;
+      }
+      const before = boardRef.current;
+      if (JSON.stringify(before) === JSON.stringify(next)) return;
+      forgetConstruction();
+      publish(next);
+      setHistory({ past: [], future: [] });
+      setSelection([]);
+      setPending([]);
+      setStatus(t('practiceFileLoaded'));
+      practiceEvent({ type: 'open', before, after: next });
+    }
+    async function savePracticeFile() {
+      setStatus('');
+      const text = G.serialize(boardRef.current);
+      const savePicker = typeof window !== 'undefined' ? window.showSaveFilePicker : undefined;
+      if (typeof savePicker === 'function') {
+        try {
+          const handle = await savePicker({ suggestedName: t('geometryAttachmentName'), types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }] });
+          if (!handle || typeof handle.createWritable !== 'function') throw Object.assign(new Error('refused'), { name: 'NotAllowedError' });
+          const writable = await handle.createWritable();
+          await writable.write(text);
+          await writable.close();
+          setStatus(t('practiceFileSaved'));
+          practiceEvent({ type: 'save', via: 'handle', text });
+          return;
+        } catch (error) {
+          if (error?.name === 'AbortError') return;
+        }
+      }
+      const anchor = picker.downloadAnchorRef.current;
+      if (!anchor || typeof anchor.click !== 'function') return;
+      const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+      anchor.href = url;
+      anchor.download = t('geometryAttachmentName');
+      anchor.click();
+      setStatus(t('practiceFileDownloaded'));
+      practiceEvent({ type: 'save', via: 'download', text });
+    }
+    async function openPracticeFile() {
+      setStatus('');
+      const openPicker = typeof window !== 'undefined' ? window.showOpenFilePicker : undefined;
+      if (typeof openPicker === 'function') {
+        try {
+          const handles = await openPicker({ multiple: false, types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }] });
+          const handle = handles && handles[0];
+          if (!handle || typeof handle.getFile !== 'function') return;
+          await loadPracticeFile(await handle.getFile());
+          return;
+        } catch (error) {
+          if (error?.name === 'AbortError') return;
+          if (!['NotAllowedError', 'SecurityError', 'NotSupportedError'].includes(error?.name)) {
+            setStatus(error?.message === 'Another board kind' ? t('otherBoardFile') : `${t('failed')}: ${error.message}`);
+            return;
+          }
+        }
+      }
+      const input = fileInputRef.current;
+      if (!input || typeof input.click !== 'function') return;
+      input.click();
+      setStatus(t('fileOpenFallback'));
+    }
+    const saveFile = () => {
+      setMoreOpen(false);
+      if (!editable()) return;
+      if (props.practice) {
+        if (!practiceFiles()) { setStatus(t('practiceFilesUnavailable')); return; }
+        return savePracticeFile();
+      }
+      return picker.saveFile().then(report);
+    };
+    const openFile = () => {
+      setMoreOpen(false);
+      if (!editable()) return;
+      if (props.practice) {
+        if (!practiceFiles()) { setStatus(t('practiceFilesUnavailable')); return; }
+        return openPracticeFile();
+      }
+      return picker.openFile({ revision: revision.current }).then(report);
+    };
+    const importInput = (event) => {
+      if (!editable()) return;
+      if (props.practice) {
+        if (!practiceFiles()) return;
+        const file = event.target.files && event.target.files[0];
+        event.target.value = '';
+        if (!file) return;
+        return loadPracticeFile(file);
+      }
+      return picker.importInput(event, { revision: revision.current }).then(report);
+    };
     function clearMode() {
       // Clearing this mode resets the geometry canvas and its undo history only.
       forgetConstruction();
@@ -1461,7 +1561,10 @@ export function createGeometryPage(React, G, ctx, t, shared) {
           if (event.key === 'y' || event.key === 'Y') { event.preventDefault(); redo(); }
         },
       }, tools, stage, dock, moreMenuNode, statusNode, overlayNode, renameNode, writingNode),
-      h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: fileInputRef, onChange: importInput })),
+      h('a', { hidden: true, ref: picker.downloadAnchorRef, download: t('geometryAttachmentName'),
+        'data-practice-file': props.practice ? 'geometry' : undefined }),
+      h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: fileInputRef, onChange: importInput,
+        'data-practice-file': props.practice ? 'geometry' : undefined })),
       practiceOpen && h(PracticeBoard,{...props,practice:true,onPracticeExit:()=>setPracticeOpen(false),bindAppend:undefined}));
   }
   function PracticeBoard(props) { return Board(props); }

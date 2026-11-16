@@ -790,8 +790,82 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       }
     }
 
+    function practiceFiles() {
+      return Boolean(props.practice && practiceRef.current?.snapshot().current === 'quantity-files');
+    }
+    // Practice files keep their own snapshot. They never call the shared picker: that
+    // picker reuses fileHandleRef and writes the real file IndexedDB.
+    async function savePracticeFile() {
+      setMoreOpen(false);
+      setStatus('');
+      const text = M.serialize(boardRef.current);
+      const savePicker = typeof window !== 'undefined' ? window.showSaveFilePicker : undefined;
+      if (typeof savePicker === 'function') {
+        try {
+          const handle = await savePicker({ suggestedName: t('attachmentName'), types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }] });
+          if (!handle || typeof handle.createWritable !== 'function') throw Object.assign(new Error('refused'), { name: 'NotAllowedError' });
+          const writable = await handle.createWritable();
+          await writable.write(text);
+          await writable.close();
+          setStatus(t('practiceFileSaved'));
+          practiceEvent({ type: 'save', via: 'handle', text });
+          return;
+        } catch (error) {
+          if (error?.name === 'AbortError') return;
+        }
+      }
+      const anchor = picker.downloadAnchorRef.current;
+      if (!anchor || typeof anchor.click !== 'function') return;
+      const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+      anchor.href = url;
+      anchor.download = t('attachmentName');
+      anchor.click();
+      setStatus(t('practiceFileDownloaded'));
+      practiceEvent({ type: 'save', via: 'download', text });
+    }
+    async function loadPracticeFile(file) {
+      if (!file) return;
+      if (file.size > 262144) { setStatus(t('fileTooLarge')); return; }
+      let next;
+      try { next = M.validate(JSON.parse(await file.text())); }
+      catch (error) { setStatus(`${t('failed')}: ${error.message}`); return; }
+      const before = boardRef.current;
+      if (JSON.stringify(before) === JSON.stringify(next)) return;
+      publish(next);
+      setSelection([]);
+      setAppend(false);
+      setStatus(t('practiceFileLoaded'));
+      practiceEvent({ type: 'open', before, after: next });
+    }
+    async function openPracticeFile() {
+      setMoreOpen(false);
+      setStatus('');
+      const openPicker = typeof window !== 'undefined' ? window.showOpenFilePicker : undefined;
+      if (typeof openPicker === 'function') {
+        try {
+          const handles = await openPicker({ multiple: false, types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }] });
+          const handle = handles && handles[0];
+          if (!handle || typeof handle.getFile !== 'function') return;
+          await loadPracticeFile(await handle.getFile());
+          return;
+        } catch (error) {
+          if (error?.name === 'AbortError') return;
+          if (!['NotAllowedError', 'SecurityError', 'NotSupportedError'].includes(error?.name)) {
+            setStatus(`${t('failed')}: ${error.message}`);
+            return;
+          }
+        }
+      }
+      const input = picker.fileInputRef.current;
+      if (!input || typeof input.click !== 'function') return;
+      input.click();
+      setStatus(t('fileOpenFallback'));
+    }
     async function saveFile() {
-      if (props.practice) { setStatus(t('practiceFilesUnavailable')); return; }
+      if (props.practice) {
+        if (!practiceFiles()) { setStatus(t('practiceFilesUnavailable')); return; }
+        return savePracticeFile();
+      }
       flushEditor();
       setStatus((await picker.saveFile()).message || '');
     }
@@ -808,7 +882,10 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       commit(next, { type: 'import' }); selectIds([]); setAppend(false); setStatus(t('imported'));
     }
     async function openFile() {
-      if (props.practice) { setStatus(t('practiceFilesUnavailable')); return; }
+      if (props.practice) {
+        if (!practiceFiles()) { setStatus(t('practiceFilesUnavailable')); return; }
+        return openPracticeFile();
+      }
       flushEditor();
       // Each open owns a revision; an answer that arrives after the student edited the
       // board is dropped instead of replacing the newer draft. The fallback input also
@@ -824,7 +901,14 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     const inputEpoch = React.useRef(null);
     const inputRevision = React.useRef(null);
     async function importInput(event) {
-      if (props.practice) return;
+      if (props.practice) {
+        if (!practiceFiles()) return;
+        const file = event.target.files && event.target.files[0];
+        event.target.value = '';
+        if (!file) return;
+        await loadPracticeFile(file);
+        return;
+      }
       // Only the handoff can show a "choose a plain file" hint; the opened file reports
       // its own success or failure through the tab's import.
       const epoch = inputEpoch.current ?? draftEpoch.current;
@@ -1143,8 +1227,10 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
         !practiceState.completed && h('small', null, t('tutorialProgress', { step: practiceState.index + 1, total: practiceState.total }))),
       button(t('practiceExit'), () => props.onPracticeExit(), { className: 'eb-practice-exit' }));
     const editor = h(React.Fragment, null,
-      h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: picker.fileInputRef, onChange: importInput }),
-      h('a', { hidden: true, ref: picker.downloadAnchorRef, download: t('attachmentName') }));
+      h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: picker.fileInputRef, onChange: importInput,
+        'data-practice-file': props.practice ? 'quantity' : undefined }),
+      h('a', { hidden: true, ref: picker.downloadAnchorRef, download: t('attachmentName'),
+        'data-practice-file': props.practice ? 'quantity' : undefined }));
     // Two tabs share one dialog: the shell owns the launcher, the dialog and the tab
     // bar, so this page contributes its workspace only. A single-tab board keeps the
     // tree it always had, including its own launcher and dialog.
@@ -1156,7 +1242,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
           practiceCoach,
           h('div', { className: 'eb-workspace', ref: workspaceRef },
             palette, stage, dock, moreMenuNode, statusNode, overlayNode),
-          !props.practice && editor),
+          (!props.practice || practiceFiles()) && editor),
         practiceOpen && h(PracticeBoard, {
           ...props, practice: true, bindClose: props.bindClose,
           onPracticeExit: () => setPracticeOpen(false),
