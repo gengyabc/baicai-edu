@@ -47,6 +47,10 @@
    is the whole page, so the empty demo never draws a title or an empty-state sentence. */
 .eb-demo-dock{position:absolute;z-index:6;left:10px;bottom:8px;height:56px;padding:4px 6px;display:flex;align-items:center;gap:1px;border:1px solid #D8E1E4;border-radius:15px;background:#FFFFFF;box-shadow:0 6px 28px #243B5314,0 1px 3px #243B5308}
 .eb-demo-dock .eb-label{font-weight:550}
+/* The tutorial door mirrors that dock at the other end of the bottom edge. */
+.eb-demo-dock.eb-demo-dock-right{left:auto;right:10px}
+.eb-demo-dock .eb-dock-tutorial{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid #D5DFE2;border-radius:9px;background:#FFFFFF;font-size:13px;font-weight:550}
+.eb-demo-dock .eb-dock-tutorial:hover{background:#EAF4DE;border-color:#C8DDB6}
 .eb-dock-return,.eb-demo-dock .eb-dock-return{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid #DCE4DF;background:#F9FCF7;border-radius:9px;font-size:13px}
 @media (max-width:760px){.eb-demo-dock .eb-label{display:none}.eb-demo-dock .eb-dock-return{width:42px;min-width:42px;padding:7px}}
 

@@ -488,3 +488,68 @@ test('delete and escape leave the real geometry draft alone while the guide fram
     assert.equal(h.raw(PRACTICE_KEY), practiceSeed);
   } finally { h.unmount(); }
 });
+
+for (const language of ['zh', 'en']) {
+  test(`the bottom-right tutorial door reopens and replays the guide (${language})`, () => {
+    const figure = segmentFigure();
+    const frozen = JSON.stringify(figure);
+    const storage = new Map();
+    storage.set(SEEN_KEY, '7');
+    storage.set(PRACTICE_KEY, '{"version":2,"current":"geometry-edit","entries":{"geometry-edit":"keep"}}');
+    const practiceSeed = storage.get(PRACTICE_KEY);
+    const h = mount({ language, storage, useProjection: () => ({ revision: 1, figure }) });
+    const tr = (key) => (language === 'en' ? enLocale : locale)[key];
+    const door = () => h.visibleNodes().find((node) => node.props
+      && String(node.props.className || '') === 'eb-demo-dock eb-demo-dock-right');
+    try {
+      h.press(tr('title'), 'mouse');
+      h.tab('demo');
+      assert.equal(step(h), 'demo-read', 'first contact still opens the rail by itself');
+      assert.equal(door(), undefined, 'the door is hidden while the rail is up');
+      h.press(tr('practiceExit'), 'mouse');
+      assert.equal(h.visibleNodes().some((node) => node.props && node.props['data-practice-step'] !== undefined), false);
+      assert.ok(door(), 'the door stays after the rail is dismissed');
+      assert.equal(door().props['aria-label'], tr('teacherDemoTutorialArea'));
+      h.press(tr('teacherDemoTutorial'), 'mouse');
+      assert.equal(step(h), 'demo-read', 'the door resumes where the guide stopped');
+      assert.equal(door(), undefined);
+      h.press(tr('teacherDemoContinue'), 'touch');
+      h.press(tr('zoomIn'), 'mouse');
+      scrollDemo(h, 24, 12);
+      h.press(tr('demoCopy'), 'touch');
+      h.tab('geometry');
+      const geometryDraft = h.raw(GEOMETRY_KEY);
+      h.press(tr('teacherDemoViewCopy'), 'mouse');
+      assert.equal(step(h), 'demo-complete');
+      h.press(tr('practiceExit'), 'touch');
+      assert.equal(JSON.parse(h.raw(DEMO_KEY)).entries['teacher-demo-basics'].states.every((state) => state === 'completed'), true);
+      // A finished guide replays from its first step; the door is not a dead end there.
+      h.tab('demo');
+      h.press(tr('teacherDemoTutorial'), 'mouse');
+      assert.equal(step(h), 'demo-read');
+      assert.equal(paragraph(h), tr('teacherDemoPracticeGoal_demo-read'));
+      assert.equal(h.raw(PRACTICE_KEY), practiceSeed, 'the door never writes the geometry practice key');
+      assert.equal(JSON.stringify(figure), frozen, 'the teacher figure is never edited');
+      assert.equal(h.raw(GEOMETRY_KEY), geometryDraft, 'the door leaves the real geometry draft alone');
+      assert.equal(h.drafts.length, 0);
+      assert.equal(h.texts.length, 0);
+      assert.equal(h.sends, 0);
+      assert.equal(h.fileDialogs, 0);
+    } finally { h.unmount(); }
+  });
+}
+
+test('without a figure the tutorial door says only that there is nothing to practise', () => {
+  const none = mount();
+  try {
+    none.tab('demo');
+    const door = none.find((node) => String(node.props.className || '') === 'eb-demo-dock eb-demo-dock-right');
+    assert.equal(door.props['aria-label'], locale.teacherDemoTutorialArea);
+    none.press(locale.teacherDemoTutorial, 'mouse');
+    const toast = none.visibleNodes().find((node) => node.props && node.props.className === 'eb-status-toast');
+    assert.equal(text(toast), locale.teacherDemoTutorialNoFigure);
+    assert.equal(none.visibleNodes().some((node) => node.props && node.props['data-practice-step'] !== undefined), false);
+    assert.equal(none.storage.has(DEMO_KEY), false, 'no figure starts no guide record');
+    assert.equal(none.sends, 0);
+  } finally { none.unmount(); }
+});

@@ -213,6 +213,20 @@ export function createGeometryDemoPage(React, G, t, shared) {
     const goal = progress?.goal;
     const chapterStatus = progress?.chapters?.[0]?.status;
     const canResume = Boolean(!guideOpen && liveId && (chapterStatus === 'in-progress' || chapterStatus === 'skipped'));
+    // The page keeps a tutorial door of its own, so the guide is reachable after it was
+    // dismissed and without hunting the rail. A finished guide replays from its first
+    // step; a skipped one resumes where it stopped, and the rail still says so. With no
+    // figure there is nothing to practise, so the press only says that much.
+    function openTutorial() {
+      if (!chapter || !progressRef.current || !liveId || !figure?.board) {
+        setStatus(t('teacherDemoTutorialNoFigure'));
+        return;
+      }
+      // Read the record, not the rendered progress: the geometry page can advance the
+      // guide while this page keeps an older snapshot in state.
+      const status = progressRef.current.snapshot().chapters?.[0]?.status;
+      openGuide(status === 'completed');
+    }
     // The guide uses the same step rail as the two student boards.
     const coach = guideOpen && goal && PracticeRail && h(PracticeRail, {
       progress,
@@ -234,11 +248,7 @@ export function createGeometryDemoPage(React, G, t, shared) {
     const main = h('div', { className: 'eb-demo-main' },
       // The guide hides the teacher-message strip, like the two practice boards.
       coach ? null : props.question,
-      canResume && controls.button(t('teacherDemoResume'), () => {
-        setDismissed(false);
-        setGuideOpen(true);
-        setProgress(progressRef.current.snapshot());
-      }, { className: 'eb-primary' }),
+      canResume && controls.button(t('teacherDemoResume'), () => openGuide(false), { className: 'eb-primary' }),
       figure && h('div', { className: 'eb-demo-head' },
         h('h2', null, figure.title || t('tabDemo')),
         figure.description && h('p', null, figure.description),
@@ -249,7 +259,13 @@ export function createGeometryDemoPage(React, G, t, shared) {
           ...controls.zoomPair({ zoom, fit, setFit: changeView }))),
       figure && h('div', { ref: stageRef, className: 'eb-demo-stage' }, canvas),
       h('nav', { className: 'eb-demo-dock', 'aria-label': t('canvasTools') },
-        controls.backButton(props.close, { icon })));
+        controls.backButton(props.close, { icon })),
+      // The tutorial door sits at the other end of the same bottom edge: 返回对话 stays
+      // left, this page's one way to learn it stays right. It is hidden while the rail is
+      // up, because the rail itself already carries the steps and 退出练习.
+      !guideOpen && chapter && h('nav', {
+        className: 'eb-demo-dock eb-demo-dock-right', 'aria-label': t('teacherDemoTutorialArea'),
+      }, controls.button(t('teacherDemoTutorial'), openTutorial, { className: 'eb-dock-tutorial' })));
     return h('div', {
       className: `eb-workspace eb-demo-workspace${coach ? ' eb-has-rail' : ''}`,
       onKeyDown: (event) => event.stopPropagation(),

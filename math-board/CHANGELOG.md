@@ -29,6 +29,11 @@ release, so 0.6.0 is the current state rather than an upgrade path.
   real answer.
 - A practice run or teacher-demo guide hides the teacher-message strip; the strip
   returns unchanged with real work.
+- The teacher demo page carries its own tutorial door at the bottom right: 查看教程
+  sits at the other end of the bottom edge from 返回对话. It reopens the short guide
+  after the rail is dismissed, replays a finished guide from step 1, resumes a skipped
+  one where it stopped, and with no figure only says there is nothing to practise yet
+  (no guide starts, no progress is written). The door hides while the rail is up.
 
 ## [0.6.0]
 

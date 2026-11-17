@@ -39,3 +39,14 @@ Validated on branch `feat/tutorial-11`. Only `teacher-demo-basics` was added. It
 ## Unexecuted / limits
 
 No real browser, real mouse, or touch device. A handler replay is not a browser pass. The known tool-schema failure was not investigated beyond confirming it is the pre-existing fenced-JSON assertion.
+
+## Later addition: the page's own tutorial door
+
+- [geometry-demo-view.js](<../src/teacher-demo/geometry-demo-view.js>) renders a second bottom dock, `eb-demo-dock eb-demo-dock-right`, holding one bordered `eb-dock-tutorial` button labelled `teacherDemoTutorial`. It sits at the other end of the same bottom edge from `backButton`, so 返回对话 stays bottom-left and the guide's door bottom-right. The door is hidden while the rail is up.
+- The press reads the live record (`progressRef.current.snapshot().chapters[0].status`), not the rendered `progress` state, because the geometry page can advance the guide while this page keeps an older snapshot. `completed` replays from step 1 through `enter(id, { retry: true })`; `in-progress` and `skipped` resume the saved step and frame. With no figure no guide starts and the press sets `teacherDemoTutorialNoFigure` in the status toast only — no `practice:v2:teacher-demo` write.
+- The existing 「继续这段引导」 button now calls the same `openGuide(false)` path instead of duplicating it.
+- Copy added to both locale files: `teacherDemoTutorial`, `teacherDemoTutorialArea`, `teacherDemoTutorialNoFigure`. Keys stay in parity (build.mjs rejects a mismatch).
+- CSS: `.eb-demo-dock.eb-demo-dock-right{left:auto;right:10px}` and `.eb-demo-dock .eb-dock-tutorial` on [board.css](<../src/shell/board.css>). Nothing else in the dock, the rail or the two practice-chapter lists changed.
+- Tests added in [geometry-demo-view.test.js](<../src/teacher-demo/geometry-demo-view.test.js>): the door in Chinese and English (hidden while the rail is up, resumes at `demo-read`, runs to `demo-complete`, replays from `demo-read`, leaves the geometry practice key, the teacher figure, the real draft, attachments and sends untouched), and the no-figure press (toast only, no rail, no record).
+- `node build.mjs` rebuilt `client.js`; `node --check client.js` passed. `npm --prefix math-board test`: **528 tests, 528 passed**.
+- Still unexecuted: no real browser, mouse or touch device. The door's screen position at the bottom-right was verified in the rendered tree (`eb-demo-dock-right` node), not in a browser layout, and no narrow-width screenshot was taken.
