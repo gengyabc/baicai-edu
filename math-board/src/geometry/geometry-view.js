@@ -97,7 +97,9 @@ export function createGeometryPage(React, G, ctx, t, shared) {
   // per-tab callbacks below differ.
   const icon = shared.createBoardIcons(React);
   const controls = shared.createBoardControls(React, t);
-  const PracticeNavigation = shared.createPracticeNavigation?.(React, t);
+  const PracticeRail = shared.createPracticeRail?.(React, t);
+  const useTutorial = shared.createTutorialController?.(React, shared);
+  const TutorialOverlay = shared.createTutorialOverlay?.(React);
   const practiceFrames = shared.createGeometryPracticeFrames?.(G);
   const practiceChapters = shared.createGeometryBasicsChapter ? [shared.createGeometryBasicsChapter({
     G, emptyFrame: practiceFrames.empty, createGoal: shared.createGeometryPractice,
@@ -127,6 +129,8 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     const [rename, setRename] = React.useState(null);
     const [writing, setWriting] = React.useState(null);
     const [practiceOpen, setPracticeOpen] = React.useState(false);
+    // One line after the quick tour ends, pointing at the chaptered tutorial.
+    const [tourHint, setTourHint] = React.useState(false);
     const [guideShown, setGuideShown] = React.useState(false);
     const practiceOpenRef = React.useRef(false);
     const guideShownRef = React.useRef(false);
@@ -260,26 +264,32 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       return undefined;
     }, [props.tabActive, practiceOpen]);
     function startGeometryTour() {
+      setTourHint(false);
       if (!practiceChapters.length) return;
+      // The chaptered tutorial supersedes a running quick tour on the real board.
+      if (tour) quickTour.finish?.();
       practiceOpenRef.current = true;
       setMoreOpen(false); setOverlay(null); setRename(null); setWriting(null); setPracticeOpen(true);
     }
-    function practiceRecorded(mode) {
-      try {
-        return globalThis.localStorage?.getItem(`baicai-edu-math-board:practice:v2:${mode}`) != null;
-      } catch { return true; }
-    }
-    React.useEffect(() => {
-      if (guideMode || props.practice || !props.tabActive || practiceOpenRef.current) return undefined;
-      const api = typeof props.guide === 'function' ? props.guide() : null;
-      // Any open teacher guide owns this visit. Starting basics here would stay
-      // open through the return step, because leaving the tab does not close
-      // practice while the guide is open, and the return frame is hidden then.
-      if (api?.open) return undefined;
-      if (!shared.createPracticeProgress || practiceRecorded('geometry')) return undefined;
-      startGeometryTour();
-      return undefined;
-    }, [props.tabActive]);
+    // First contact is the quick tour over the real board; the chaptered tutorial is
+    // opt-in from「更多操作 → 查看教程」and never opens by itself.
+    const openGuideHere = typeof props.guide === 'function' ? props.guide()?.open : false;
+    // An existing practice record means this board has already been introduced.
+    const practiceStarted = (() => {
+      try { return globalThis.localStorage?.getItem('baicai-edu-math-board:practice:v2:geometry') != null; }
+      catch { return true; }
+    })();
+    const quickTour = useTutorial ? useTutorial({
+      mode: 'geometry', steps: shared.geometryTutorialSteps,
+      active: props.tabActive === true && !props.practice && !guideMode && !openGuideHere && !practiceStarted,
+      visible: props.tabActive === true && !props.practice && !guideMode,
+      ready, rootRef: workspaceRef,
+      onStart() { setMoreOpen(false); setOverlay(null); setRename(null); setWriting(null); },
+      onFinish() { setStatus(t('tutorialDone')); setTourHint(true); },
+      layoutDeps: [overlay, board.points.length, board.elements.length, selection.length],
+    }) : { tour: null, hole: null };
+    const tour = quickTour.tour;
+    function signalTour(value) { quickTour.signal?.(value); }
     function practiceFrame() {
       return {board:boardRef.current,history,selection,tool,pending,construction:constructionPoints.current,
         auxiliary,grid,snap,zoom,fit,scroll:{left:canvasRef.current?.scrollLeft || 0,top:canvasRef.current?.scrollTop || 0}};
@@ -528,6 +538,8 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       if (!editable()) return;
       forgetConstruction();
       setTool(name); setPending([]); setSelection([]);
+      if (name === 'point') signalTour('geometry-tool-point');
+      if (name === 'segment') signalTour('geometry-tool-segment');
     }
     function finish(ids) {
       const before = boardRef.current;
@@ -549,13 +561,14 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       if (created && closedShape(created.type)) setSelection(created.points.map((_, index) => edgeKey(created.id, index)));
       else if (created) setSelection([created.id]);
       if (created) practiceEvent({type:'draw',tool:drawing,before,after:next,closed:drawing==='polygon',role});
+      if (drawing === 'segment') signalTour('geometry-add-segment');
     }
     function clickEmpty(p) {
       const before = boardRef.current;
       const next = action({ type: 'addPoint', x: p.x, y: p.y });
       // Only the point tool counts for this goal; other tools also
       // drop free points as construction inputs and must not advance that step.
-      if (next && tool === 'point') practiceEvent({ type: 'draw', tool, before, after: next, grid, snap });
+      if (next && tool === 'point') { practiceEvent({ type: 'draw', tool, before, after: next, grid, snap }); signalTour('geometry-add-point'); }
       const created = next ? next.points.at(-1) : null;
       if (created && tool !== 'point') constructionPoints.current.push(created.id);
       return created;
@@ -903,8 +916,11 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     function requestOverlay(next) {
       if (!editable()) return;
       setOverlay(next);
+      if (next?.kind === 'note') signalTour('geometry-note-open');
     }
     function dismissOverlay() {
+      // The save step spotlights the note card; closing it would strand the tour.
+      if (shared.tourHoldsNotePanel?.(tour)) { setStatus(t('tutorialNoteOpen')); return; }
       const seq = overlay?.selectOnClose;
       if (seq) setSelection([seq]);
       requestOverlay(null);
@@ -990,6 +1006,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       }
       if (overlay?.selectOnClose) setSelection([overlay.selectOnClose]);
       setOverlay(null);
+      signalTour('geometry-note-save');
     }
     function applyRename() {
       if (!editable()) return;
@@ -1028,6 +1045,10 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     // The composer keeps whatever it already held, and a failed insert leaves nothing behind.
     function insertGeometry() {
       if (!ready) return;
+      // During the quick tour this press only practises; earlier steps keep it blocked.
+      const insertMode = shared.tourInsertMode?.(tour);
+      if (insertMode === 'practice') { signalTour('geometry-insert'); setStatus(t('tutorialInsertPractice')); return; }
+      if (insertMode === 'block') { setStatus(t('tutorialInsertLater')); return; }
       if (!editable()) return;
       if (guideMode) { setStatus(t('practiceInsertBlocked')); return; }
       if (props.practice) {
@@ -1465,7 +1486,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       singleText && h('button', { type: 'button', className: 'eb-context-action', onClick: () => openText(singleText.id) }, icon('edit', 16), t('editText')),
       h('button', { type: 'button', className: 'eb-danger', onClick: deleteSelection }, icon('trash', 16), t('trash')));
     const stage = h('section', { className: 'eb-stage-wrap', 'aria-label': t('geometryCanvas') },
-      props.question,
+      props.practice ? null : props.question,
       h('div', { className: 'eb-stage-frame' }, canvas, selectionBar));
     // Same controls and the same dock order as the quantity tab. This tab drops creation
     // colours and the trace checkbox, and keeps grid and snap in that slot.
@@ -1486,9 +1507,11 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       controls.menuItem(icon('open'), t('import'), openFile),
       controls.menuItem(icon('save'), t('export'), saveFile),
       picker.fileNameState && h('p', { className: 'eb-menu-note' }, picker.fileNameState),
-      !props.practice && !guideMode && practiceChapters.length > 0 && h(React.Fragment, null,
+      !props.practice && !guideMode && (practiceChapters.length > 0 || useTutorial) && h(React.Fragment, null,
         h('div', { className: 'eb-menu-line' }),
-        controls.menuItem(null, t('tutorialReplay'), () => startGeometryTour())));
+        // The quick tour can be replayed on its own without touching chapter progress.
+        useTutorial && shared.geometryTutorialSteps && controls.menuItem(null, t('tutorialQuickTour'), () => quickTour.start?.()),
+        practiceChapters.length > 0 && controls.menuItem(null, t('tutorialReplay'), () => startGeometryTour())));
     // The student dock, in the same order as the quantity tab: the one shared 返回对话,
     // the shared undo/redo icons, the tab's own toggles, the shared zoom pair, then the
     // note, clear, more and insert controls this tab owns.
@@ -1586,44 +1609,59 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       if (!(boardRef.current.elements?.length > 0)) return;
       setProgress(practiceRef.current.observe({ type: 'view-copy', figureId: goal.figureId }, practiceFrame()));
     }
-    const practiceCoach = props.practice && h('section', {className:'eb-practice-coach', 'aria-label':t(practiceTitleKey),
-      'data-practice-step':practiceState?.step},
-      h('div',{role:'status','aria-live':'polite'},h('strong',null,t(practiceTitleKey)),
-        h('p',null,t(practiceState?.completed && progress.chapters.find(c=>c.id===progress.current)?.status!=='completed'
-          ? 'practiceSkippedEnd' : `geometryPracticeGoal_${practiceState?.step || 'point'}`)),
-        PracticeNavigation && progress?.goal && h(PracticeNavigation,{progress,chapters:practiceChapters,onNavigate:navigatePractice})),
-      button(t('practiceExit'),()=>props.onPracticeExit(),{className:'eb-practice-exit'}));
-    const guideCoach = guideMode && h('section', {
-      className: 'eb-practice-coach', 'aria-label': t('teacherDemoPractice'), 'data-practice-step': practiceState?.step,
+    // Practice and the teacher-demo guide both hang a step rail beside the canvas.
+    const practiceRail = props.practice && PracticeRail && progress?.goal && h(PracticeRail, {
+      progress, chapters: practiceChapters, onNavigate: navigatePractice,
+      onExit: () => props.onPracticeExit(),
+      goalKey: (step) => `geometryPracticeGoal_${step}`,
+      stepKey: (step) => `practiceStep_${step}`,
+    });
+    const guideRail = guideMode && h('aside', {
+      className: 'eb-practice-rail', 'aria-label': t('teacherDemoPractice'), 'data-practice-step': practiceState?.step,
     },
-    h('div', { role: 'status', 'aria-live': 'polite' },
+    h('header', { className: 'eb-rail-head' },
       h('strong', null, t('teacherDemoPractice')),
+      h('span', { className: 'eb-rail-count' }, `${progress.chapters[0].steps.indexOf(practiceState?.step) + 1}/${progress.chapters[0].steps.length}`)),
+    h('div', { className: 'eb-rail-goal', role: 'status', 'aria-live': 'polite' },
       h('p', null, props.guideLiveId !== practiceState?.figureId
         ? t('teacherDemoFigureUnavailable')
         : t(`teacherDemoPracticeGoal_${practiceState?.step || 'demo-return'}`))),
-    practiceState?.step === 'demo-return' && props.guideLiveId === practiceState?.figureId
-      && button(t('teacherDemoViewCopy'), confirmGuideView, { className: 'eb-primary' }),
-    button(t('practiceExit'), () => props.onGuideExit?.(), { className: 'eb-practice-exit' }));
+    h('div', { className: 'eb-rail-acts' },
+      practiceState?.step === 'demo-return' && props.guideLiveId === practiceState?.figureId
+        && button(t('teacherDemoViewCopy'), confirmGuideView, { className: 'eb-primary' }),
+      button(t('practiceExit'), () => props.onGuideExit?.(), { className: 'eb-rail-exit' })));
+    const tourHintNode = tourHint && !props.practice && !guideMode && h('div', { className: 'eb-tour-hint', role: 'status' },
+      h('span', null, t('tutorialDoneHint')),
+      h('button', { type: 'button', className: 'eb-primary', onClick: () => startGeometryTour() }, t('tutorialReplay')),
+      h('button', { type: 'button', onClick: () => setTourHint(false), 'aria-label': t('close'), title: t('close') }, t('close')));
+    const tourNode = tour && TutorialOverlay && h(TutorialOverlay, {
+      step: tour.steps[tour.index], stepIndex: tour.index, stepCount: tour.steps.length,
+      t, hole: quickTour.hole, onSkip: () => quickTour.finish?.(),
+    });
     if (props.bindClose && !guideMode) props.bindClose(practiceOpen ? () => {setPracticeOpen(false);props.close?.();} : closePage);
     if (props.bindAppend && !props.practice && !guideMode) props.bindAppend(appendFigure);
     const guideApi = !guideMode && typeof props.guide === 'function' ? props.guide() : null;
     return h(React.Fragment, null,
-      h('div',{className:'eb-geometry-owner',hidden:practiceOpen || guideShown}, practiceCoach, guideCoach, h('div', {
-        className: 'eb-workspace eb-geometry-workspace', ref: workspaceRef,
-        onKeyDown: (event) => {
-          // An open overlay owns the keyboard, so the shortcuts below never fire under it.
-          if (overlay || writing) return;
-          // Undo/redo shortcuts work from anywhere inside the geometry tab.
-          if (!(event.metaKey || event.ctrlKey)) return;
-          if (event.key === 'z' || event.key === 'Z') { event.preventDefault(); if (event.shiftKey) redo(); else undo(); }
-          if (event.key === 'y' || event.key === 'Y') { event.preventDefault(); redo(); }
-        },
-      }, tools, stage, dock, moreMenuNode, statusNode, overlayNode, renameNode, writingNode),
+      h('div', { className: `eb-geometry-owner${props.practice || guideMode ? ' eb-has-rail' : ''}`, hidden: practiceOpen || guideShown },
+        h('div', { className: 'eb-practice-main' },
+          h('div', {
+            className: 'eb-workspace eb-geometry-workspace', ref: workspaceRef,
+            onKeyDown: (event) => {
+              // An open overlay owns the keyboard, so the shortcuts below never fire under it.
+              if (overlay || writing) return;
+              // Undo/redo shortcuts work from anywhere inside the geometry tab.
+              if (!(event.metaKey || event.ctrlKey)) return;
+              if (event.key === 'z' || event.key === 'Z') { event.preventDefault(); if (event.shiftKey) redo(); else undo(); }
+              if (event.key === 'y' || event.key === 'Y') { event.preventDefault(); redo(); }
+            },
+          }, tools, stage, dock, moreMenuNode, statusNode, tourHintNode, overlayNode, renameNode, writingNode, tourNode)),
+        practiceRail || guideRail),
       h('a', { hidden: true, ref: picker.downloadAnchorRef, download: t('geometryAttachmentName'),
         'data-practice-file': props.practice ? 'geometry' : undefined }),
       h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: fileInputRef, onChange: importInput,
-        'data-practice-file': props.practice ? 'geometry' : undefined })),
-      practiceOpen && h(PracticeBoard,{...props,practice:true,onPracticeExit:()=>setPracticeOpen(false),bindAppend:undefined,guide:undefined,guideMode:false}),
+        'data-practice-file': props.practice ? 'geometry' : undefined }),
+      practiceOpen && h(PracticeBoard, { ...props, practice: true, onPracticeExit: () => setPracticeOpen(false),
+        bindAppend: undefined, guide: undefined, guideMode: false }),
       guideShown && !practiceOpen && guideApi?.progress && h(GuideBoard, {
         ...props, guide: undefined, guideMode: true, practice: false,
         guideProgress: guideApi.progress, guideLiveId: guideApi.liveId,

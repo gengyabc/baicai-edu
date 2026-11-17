@@ -16,7 +16,7 @@ export function createGeometryDemoPage(React, G, t, shared) {
   const h = React.createElement;
   const controls = shared.createBoardControls(React, t);
   const icon = shared.createBoardIcons(React);
-  const PracticeNavigation = shared.createPracticeNavigation?.(React, t);
+  const PracticeRail = shared.createPracticeRail?.(React, t);
   const practiceFrames = shared.createGeometryPracticeFrames?.(G);
   const chapter = typeof shared.createTeacherDemoChapter === 'function' && practiceFrames
     ? shared.createTeacherDemoChapter({ G, emptyFrame: practiceFrames.empty, placeFigure: shared.placeFigure })
@@ -213,44 +213,49 @@ export function createGeometryDemoPage(React, G, t, shared) {
     const goal = progress?.goal;
     const chapterStatus = progress?.chapters?.[0]?.status;
     const canResume = Boolean(!guideOpen && liveId && (chapterStatus === 'in-progress' || chapterStatus === 'skipped'));
-    const coach = guideOpen && goal && h('section', {
-      className: 'eb-practice-coach', 'aria-label': t('teacherDemoPractice'), 'data-practice-step': goal.step,
-    },
-    h('div', { role: 'status', 'aria-live': 'polite' },
-      h('strong', null, t('teacherDemoPractice')),
-      h('p', null, unavailable ? t('teacherDemoFigureUnavailable') : t(`teacherDemoPracticeGoal_${goal.step}`))),
-    PracticeNavigation && h(PracticeNavigation, { progress, chapters: [chapter], onNavigate: navigate }),
-    goal.step === 'demo-read' && !unavailable && controls.button(t('teacherDemoContinue'), () => {
-      report({ type: 'continue', figureId: liveId });
-    }, { className: 'eb-primary' }),
-    controls.button(t('practiceExit'), closeGuide, { className: 'eb-practice-exit' }));
+    // The guide uses the same step rail as the two student boards.
+    const coach = guideOpen && goal && PracticeRail && h(PracticeRail, {
+      progress,
+      chapters: [chapter],
+      onNavigate: navigate,
+      onExit: closeGuide,
+      goalKey: (step) => `teacherDemoPracticeGoal_${step}`,
+      stepKey: (step) => `practiceStep_${step}`,
+      goalText: unavailable ? t('teacherDemoFigureUnavailable') : null,
+      extra: goal.step === 'demo-read' && !unavailable && controls.button(t('teacherDemoContinue'), () => {
+        report({ type: 'continue', figureId: liveId });
+      }, { className: 'eb-primary' }),
+    });
     if (props.bindGuide && progressRef.current && chapter) {
       props.bindGuide({ open: guideOpen, progress: progressRef.current, chapter, liveId, close: closeGuide });
     }
-    return h('div', {
-      className: 'eb-workspace eb-demo-workspace',
-      onKeyDown: (event) => event.stopPropagation(),
-    },
-    props.question,
-    coach,
-    canResume && controls.button(t('teacherDemoResume'), () => {
-      setDismissed(false);
-      setGuideOpen(true);
-      setProgress(progressRef.current.snapshot());
-    }, { className: 'eb-primary' }),
     // Without a figure this page says nothing on the canvas: no title, no empty-state
     // sentence. Only the dock below, with its way back to the conversation, stays.
-    figure && h('div', { className: 'eb-demo-head' },
-      h('h2', null, figure.title || t('tabDemo')),
-      figure.description && h('p', null, figure.description),
-      h('div', { className: 'eb-demo-actions' },
-        controls.button(t('demoCopy'), copy, { className: 'eb-primary' }),
-        // A read-only page only views the figure, so it keeps the dock's zoom controls but
-        // none of the drawing tools.
-        ...controls.zoomPair({ zoom, fit, setFit: changeView }))),
-    figure && h('div', { ref: stageRef, className: 'eb-demo-stage' }, canvas),
-    h('nav', { className: 'eb-demo-dock', 'aria-label': t('canvasTools') },
-      controls.backButton(props.close, { icon })),
+    const main = h('div', { className: 'eb-demo-main' },
+      // The guide hides the teacher-message strip, like the two practice boards.
+      coach ? null : props.question,
+      canResume && controls.button(t('teacherDemoResume'), () => {
+        setDismissed(false);
+        setGuideOpen(true);
+        setProgress(progressRef.current.snapshot());
+      }, { className: 'eb-primary' }),
+      figure && h('div', { className: 'eb-demo-head' },
+        h('h2', null, figure.title || t('tabDemo')),
+        figure.description && h('p', null, figure.description),
+        h('div', { className: 'eb-demo-actions' },
+          controls.button(t('demoCopy'), copy, { className: 'eb-primary' }),
+          // A read-only page only views the figure, so it keeps the dock's zoom controls but
+          // none of the drawing tools.
+          ...controls.zoomPair({ zoom, fit, setFit: changeView }))),
+      figure && h('div', { ref: stageRef, className: 'eb-demo-stage' }, canvas),
+      h('nav', { className: 'eb-demo-dock', 'aria-label': t('canvasTools') },
+        controls.backButton(props.close, { icon })));
+    return h('div', {
+      className: `eb-workspace eb-demo-workspace${coach ? ' eb-has-rail' : ''}`,
+      onKeyDown: (event) => event.stopPropagation(),
+    },
+    main,
+    coach,
     controls.status(status));
   };
 }

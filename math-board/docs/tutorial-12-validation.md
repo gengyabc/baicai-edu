@@ -55,3 +55,18 @@ Handler replay is not a browser pass. No new server was started, and the existin
 ## Unexecuted / limits
 
 No real browser, real mouse, real touch device, small-screen layout, scroll layout, or window-resize layout. Rows above that say “not executed” or “partly executed” are not a pass for the missing part. The full suite being green does not add those passes.
+
+## 修订后的首开与目录（2026-11-17）
+
+第 1 行（首开分流）与第 13 行（界面）按 [ADR-0005](../../docs/adr/0005-first-run-quick-tour.md) 重跑，替换原先的自动进入章节目径：
+
+| 场景 | 结果 |
+| --- | --- |
+| 首开播放快速导览 | Executed. `first open autoplays the quick tour; the chaptered tutorial stays closed until asked`：打开数量页只出现导览（`tutorialSkip` 可见），不写 `practice:v2:quantity`，不出现 `data-practice-step`，`tutorial:v1:quantity` 被写成 `'1'`；跳过导览后依旧没有练习记录。导览末步与英文文案都含「查看教程／View tutorial」的指引。 |
+| 教程只在显式进入时开始 | Executed（同上）。「更多操作 → 查看教程」后才出现步骤轨并写入 `practice:v2:quantity`；几何侧同理，且不改数量记录。 |
+| 做过教程的画板不再播放导览 | Executed（同上）。退出练习再打开数量页不出现导览；几何页仍有自己的首次导览。 |
+| 续学而非重开 | Executed. `a returning student resumes the chaptered tutorial instead of restarting it`。 |
+| 步骤轨取代提示栏与消息条 | Executed for structure. `the practice rail replaces the answer strip and keeps every control a visible button`：练习里 `eb-practice-rail` 存在、`eb-question` 与整板目标文案都不在，退出后消息条恢复；其他章节的清单文案只在「全部章节…」打开后出现。 |
+| 目录一层的断言 | Executed. `catalogue shows completed, not-started, skipped and optional…` 打开「全部章节…」后读四条状态，关闭后画布上不再出现其他章节状态，步骤轨仍显示「已跳过不算完成」。 |
+
+界面观感仍未做真实浏览器通过：本行只覆盖结构与处理回放，不覆盖小屏、滚动、窗口尺寸变化与真机触屏。上面第 13 行的限制继续有效。

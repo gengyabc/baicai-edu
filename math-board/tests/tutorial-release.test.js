@@ -12,7 +12,7 @@ import { createQuantityFilesChapter } from '../src/quantity/practice-files.js';
 import { createTabbedBoardView } from '../src/shell/board-shell.js';
 import { createBoardFilePicker, createBoardIcons } from '../src/shared/file-picker.js';
 import { createBoardControls } from '../src/shared/board-kit.js';
-import { createPracticeProgress, createPracticeNavigation } from '../src/shell/practice-progress.js';
+import { createPracticeProgress, createPracticeRail } from '../src/shell/practice-progress.js';
 import { applyHostConfig } from '../src/host/config-bridge.js';
 import { createHooks, installBrowser, text, walk } from '../src/testing/test-harness.js';
 import { createGeometryPage } from '../src/geometry/geometry-view.js';
@@ -98,7 +98,7 @@ function mountQuantity(options = {}) {
   };
   const Board = createBoardView(React, M, { locale: { subscribe() {}, getSnapshot() {} }, get: () => conversation },
     t, '', createShapeArt(React), applyHostConfig, T, {
-      createBoardFilePicker, createBoardIcons, createBoardControls, createPracticeProgress, createPracticeNavigation,
+      createBoardFilePicker, createBoardIcons, createBoardControls, createPracticeProgress, createPracticeRail,
       createQuantityPractice, quantityPracticeChapters: options.chapters || quantityChapters,
     });
   const props = {
@@ -183,9 +183,17 @@ function mountQuantity(options = {}) {
     },
     setConfig(next) { config = next; refresh(); },
     setClear(next) { clear = next; refresh(); },
+    // 更多操作 → 查看教程 is the door to the chaptered tutorial; the post-tour line offers
+    // the same words, so this helper presses the menu item itself.
+    start() {
+      this.click(t('moreActions'));
+      const item = this.find((n) => n.props.role === 'menuitem' && text(n) === t('tutorialReplay'));
+      item.props.onClick(); this.refresh();
+    },
     dispose() { hooks.unmount(); browser.restore(); },
   };
   try { refresh(); } catch (error) { app.dispose(); throw error; }
+  if (options.practice !== false) app.start();
   return app;
 }
 
@@ -231,7 +239,7 @@ function mountShell(options = {}) {
     placeFigure, captionPosition, captionBox, visibleCaption,
     createBoardControls, createGeometryPractice, createGeometryBasicsChapter, createGeometryPracticeFrames,
     geometryPracticeChapters: geometryChapters,
-    createPracticeProgress, createPracticeNavigation, createTeacherDemoChapter, createQuantityPractice,
+    createPracticeProgress, createPracticeRail, createTeacherDemoChapter, createQuantityPractice,
     quantityPracticeChapters: quantityChapters,
     geometryHiddenPoints, geometryCaptionLabel, geometryPointLabel, geometryPointDot, geometryShapeNode, geometryStroke,
     geometryViewport, geometryTextOverflow, geometryFrame, geometryFrameInputs,
@@ -295,6 +303,7 @@ function mountShell(options = {}) {
     raw(key) { return storage.get(key); },
     step() { return find((node) => node.props && node.props['data-practice-step'] !== undefined).props['data-practice-step']; },
     tab(name) { find((node) => node.props['data-tab'] === name).props.onClick(); refresh(); },
+    click(label) { button(label).props.onClick(); refresh(); },
     press(label, pointerType = 'mouse') {
       const node = button(label);
       assert.ok(!node.props.disabled, `${label} should be enabled`);
@@ -323,6 +332,11 @@ function mountShell(options = {}) {
       refresh();
     },
     openMore() { button(t('moreActions')).props.onClick(); refresh(); },
+    start() {
+      this.openMore();
+      const item = this.find((node) => node.props.role === 'menuitem' && text(node) === t('tutorialReplay'));
+      item.props.onClick(); refresh();
+    },
     unmount() { unmount(); browser.restore(); },
   };
   try { refresh(); } catch (error) { api.unmount(); throw error; }
@@ -331,6 +345,13 @@ function mountShell(options = {}) {
 
 function chapterButton(app, title) {
   return app.find((node) => node.type === 'button' && text(node).startsWith(`${title} ·`));
+}
+// Every chapter but the current one lives behind 全部章节, so opening it is part of
+// choosing a chapter.
+function enterChapter(app, title) {
+  app.click(app.t('practiceChaptersOpen'));
+  chapterButton(app, title).props.onClick();
+  app.refresh();
 }
 
 function installFileDb(records) {
@@ -432,41 +453,169 @@ test('registered factories carry the shipped step ids for Q01–Q20, G01–G21, 
   assert.equal(fileGoal.snapshot().step, 'files-save', 'a cancelled save is not a save');
 });
 
-test('first open starts that board basics chapter and ignores the legacy seen flag', () => {
+test('first open autoplays the quick tour; the chaptered tutorial stays closed until asked', () => {
   const storage = new Map();
-  storage.set(tutorialStorageKey('quantity'), '1');
-  storage.set(tutorialStorageKey('geometry'), '1');
-  const seenQuantity = storage.get(tutorialStorageKey('quantity'));
-  const seenGeometry = storage.get(tutorialStorageKey('geometry'));
   const shell = mountShell({ storage });
+  const tourVisible = () => shell.visibleNodes().some((node) => text(node) === shell.t('tutorialSkip'));
   try {
     shell.press(shell.t('title'));
+    assert.equal(tourVisible(), true, 'first contact is the quick tour over the real board');
+    assert.equal(shell.storage.has(QUANTITY_PRACTICE), false, 'the quick tour writes no practice record');
+    assert.equal(shell.raw(tutorialStorageKey('quantity')), '1', 'autoplay consumes its own seen flag');
+    assert.equal(shell.visibleNodes().some((node) => node.props && node.props['data-practice-step'] !== undefined), false,
+      'no chapter rail appears on its own');
+    const lastStep = shell.t('tutorialQInsertBody');
+    assert.match(lastStep, /查看教程/, 'the last tour step says where the full tutorial lives');
+    assert.match(enLocale.tutorialQInsertBody, /View tutorial/, 'both languages carry the pointer');
+    shell.press(shell.t('tutorialSkip'));
+    assert.equal(tourVisible(), false, 'skipping ends the tour without opening a chapter');
+    assert.equal(shell.storage.has(QUANTITY_PRACTICE), false);
+
+    // The chaptered tutorial is opt-in, and it is where the practice record starts.
+    shell.start();
     assert.equal(shell.step(), 'add');
+    assert.equal(JSON.parse(shell.raw(QUANTITY_PRACTICE)).current, 'quantity-basics');
     assert.equal(shell.storage.has(GEOMETRY_PRACTICE), false, 'quantity entry does not write geometry practice');
-    assert.equal(shell.storage.has(DEMO_PRACTICE), false);
+    assert.equal(shell.step(), 'add');
     const quantityRecord = shell.raw(QUANTITY_PRACTICE);
-    const quantity = JSON.parse(quantityRecord);
-    assert.equal(quantity.current, 'quantity-basics');
-    assert.equal(quantity.entries['quantity-basics'].states[0], 'in-progress');
-    assert.equal(quantity.entries['quantity-basics'].states.every((state) => state === 'completed'), false);
-    assert.equal(shell.raw(tutorialStorageKey('quantity')), seenQuantity);
-    assert.equal(shell.raw(tutorialStorageKey('geometry')), seenGeometry);
-    shell.tab('geometry');
-    assert.equal(shell.step(), 'point');
-    const geometry = JSON.parse(shell.raw(GEOMETRY_PRACTICE));
-    assert.equal(geometry.current, 'geometry-basics');
-    assert.equal(geometry.entries['geometry-basics'].states[0], 'in-progress');
-    assert.equal(shell.raw(QUANTITY_PRACTICE), quantityRecord, 'geometry entry leaves the quantity record unchanged');
-    assert.equal(shell.raw(tutorialStorageKey('quantity')), '1');
-    assert.equal(shell.raw(tutorialStorageKey('geometry')), '1');
+
+    // A board whose tutorial has been opened does not replay the quick tour.
     shell.press(shell.t('practiceExit'));
     shell.press(shell.t('backToChat'));
     shell.press(shell.t('title'));
+    assert.equal(tourVisible(), false, 'the quick tour does not return after the tutorial was opened');
     shell.tab('geometry');
-    assert.equal(shell.visibleNodes().some((node) => node.props && node.props['data-practice-step'] !== undefined), false);
+    assert.equal(tourVisible(), true, 'geometry has its own first visit');
+    assert.equal(shell.storage.has(GEOMETRY_PRACTICE), false);
+    shell.press(shell.t('tutorialSkip'));
+    shell.start();
+    assert.equal(shell.step(), 'point');
+    assert.equal(JSON.parse(shell.raw(GEOMETRY_PRACTICE)).current, 'geometry-basics');
+    assert.equal(shell.raw(QUANTITY_PRACTICE), quantityRecord, 'geometry entry leaves the quantity record unchanged');
+  } finally { shell.unmount(); }
+});
+
+test('a returning student resumes the chaptered tutorial instead of restarting it', () => {
+  const storage = new Map();
+  const first = mountShell({ storage });
+  try {
+    first.press(first.t('title'));
+    first.start();
+    assert.equal(first.step(), 'add');
+  } finally { first.unmount(); }
+  const again = mountShell({ storage });
+  try {
+    again.press(again.t('title'));
+    again.start();
+    assert.equal(again.step(), 'add', 'the same step comes back rather than a fresh record');
+  } finally { again.unmount(); }
+});
+
+test('the practice rail replaces the answer strip and keeps every control a visible button', () => {
+  const shell = mountShell();
+  const hasClass = (name) => shell.visibleNodes().some((node) => String(node.props && node.props.className || '').includes(name));
+  try {
+    shell.press(shell.t('title'));
+    const strip = () => shell.visibleNodes().some((node) => String(node.props && node.props.className || '').includes('eb-question'));
+    const teacherText = shell.t('questionEmpty');
+    assert.equal(strip(), true, 'the board shows a strip before practice starts');
+    assert.equal(hasClass('eb-question'), true, 'real work keeps the teacher strip');
+    shell.start();
+    assert.equal(hasClass('eb-practice-rail'), true, 'practice shows its step rail');
+    assert.equal(hasClass('eb-question'), false, 'the answer strip is not part of a practice run');
+    assert.equal(shell.visibleNodes().some((node) => text(node) === teacherText), false);
+    assert.equal(hasClass('eb-has-rail'), true, 'the owner lays the canvas and the rail side by side');
+    // The rail states this chapter's steps, and the other chapters are not on the canvas.
+    const rail = shell.find((node) => String(node.props && node.props.className || '') === 'eb-practice-rail');
+    assert.match(text(rail), new RegExp(shell.t('practiceSealed')));
+    assert.equal(shell.visibleNodes().some((node) => text(node) === shell.t('practiceMoreChapters')), false);
+    assert.equal(shell.visibleNodes().some((node) => text(node) === shell.t('practiceChaptersOpen')), true);
+    shell.press(shell.t('practiceExit'));
+    assert.equal(hasClass('eb-question'), true, 'the strip comes back with real work');
+    assert.equal(hasClass('eb-practice-rail'), false);
+  } finally { shell.unmount(); }
+});
+
+test('the quick tour can be replayed from the menu without touching chapter progress', () => {
+  const storage = new Map();
+  const shell = mountShell({ storage });
+  const tourVisible = () => shell.visibleNodes().some((node) => text(node) === shell.t('tutorialSkip'));
+  try {
+    shell.press(shell.t('title'));
+    // Open the chaptered tutorial first, so the board is in the state that suppresses autoplay.
+    shell.start();
+    const skipStep = shell.step();
+    assert.equal(skipStep, 'add');
+    shell.press(shell.t('practiceSkipStep'));
+    const afterSkip = shell.step();
+    const practiceRecord = shell.raw(QUANTITY_PRACTICE);
+    shell.press(shell.t('practiceExit'));
+    shell.press(shell.t('backToChat'));
+    shell.press(shell.t('title'));
+    assert.equal(tourVisible(), false, 'the tutorial has been opened, so the tour does not autoplay');
     shell.openMore();
-    shell.press(shell.t('tutorialReplay'));
-    assert.equal(shell.step(), 'point', 'a later open resumes instead of resetting');
+    shell.press(shell.t('tutorialQuickTour'));
+    assert.equal(tourVisible(), true, 'the menu replays the quick tour on demand');
+    // The harness lays nothing out, so the spotlight box is proved in tutorial.test.js;
+    // here the tour itself is what matters: it starts at its first step again.
+    assert.ok(shell.visibleNodes().some((node) => text(node).includes(shell.t('tutorialQAddTitle'))),
+      'the replay starts at the first tour step');
+    shell.press(shell.t('tutorialSkip'));
+    assert.equal(tourVisible(), false);
+    assert.equal(shell.raw(QUANTITY_PRACTICE), practiceRecord, 'replaying the tour writes no practice progress');
+    shell.start();
+    assert.equal(shell.step(), afterSkip, 'the chaptered tutorial resumes where it stopped');
+  } finally { shell.unmount(); }
+});
+
+test('the quick tour reaches every step, and its end offers the chaptered tutorial', () => {
+  const shell = mountShell();
+  const stepText = () => {
+    const tip = shell.visibleNodes().find((node) => String(node.props && node.props.className || '') === 'eb-tour-tip');
+    return tip ? text(tip) : '';
+  };
+  // Several tiles/buttons share a class; the first one is always a usable target here.
+  const clickClass = (name) => {
+    const node = shell.visibleNodes().find((candidate) => candidate.type === 'button'
+      && String(candidate.props.className || '').includes(name));
+    assert.ok(node, `no button .${name}`);
+    node.props.onClick(); shell.refresh();
+  };
+  try {
+    shell.press(shell.t('title'));
+    assert.match(stepText(), new RegExp(shell.t('tutorialQAddTitle')));
+    clickClass('eb-shape-tool');                                   // 1 -> 2
+    assert.match(stepText(), new RegExp(shell.t('tutorialQColorTitle')));
+    clickClass('eb-color-button');                                 // 2 -> 3
+    assert.match(stepText(), new RegExp(shell.t('tutorialQAddMoreTitle')));
+    clickClass('eb-shape-tool');                                   // 3 -> 4
+    assert.match(stepText(), new RegExp(shell.t('tutorialQNoteTitle')));
+    clickClass('eb-note-button');                                  // 4 -> 5
+    assert.match(stepText(), new RegExp(shell.t('tutorialQNoteSaveTitle')), 'the save step is reached');
+    // Q: 5/6 must have an operation, not only 跳过. Cancelling the card must not strand it.
+    const cancel = shell.find((node) => node.type === 'button' && text(node) === shell.t('cancel'));
+    cancel.props.onClick(); shell.refresh();
+    assert.match(stepText(), new RegExp(shell.t('tutorialQNoteSaveTitle')), 'the card stays while the tour needs it');
+    assert.ok(shell.visibleNodes().some((node) => text(node) === shell.t('tutorialNoteOpen')),
+      'cancelling says why it did not close');
+    shell.find((node) => node.type === 'textarea').props.ref.current.value = '练习说明';
+    const save = shell.find((node) => node.type === 'button' && text(node) === shell.t('save'));
+    save.props.onClick(); shell.refresh();                          // 5 -> 6
+    assert.match(stepText(), new RegExp(shell.t('tutorialQInsertTitle')), 'saving the note advances the tour');
+    assert.match(stepText(), /查看教程/, 'the last step names where the full tutorial is');
+    const insert = shell.find((node) => node.props && node.props['data-tour-id'] === 'quantity-insert');
+    assert.equal(insert.props.disabled, false, 'the insert step is actionable, not skip-only');
+    insert.props.onClick(); shell.refresh();                        // 6 -> finished
+    assert.equal(stepText(), '', 'the tour is over');
+    // After it ends a visible line still says where the chaptered tutorial is.
+    const hint = shell.visibleNodes().find((node) => String(node.props && node.props.className || '') === 'eb-tour-hint');
+    assert.ok(hint, 'the finished tour leaves a way into the chaptered tutorial');
+    assert.match(text(hint), new RegExp(shell.t('tutorialDoneHint')));
+    const open = shell.find((node) => node.type === 'button' && text(node) === shell.t('tutorialReplay'));
+    open.props.onClick(); shell.refresh();
+    assert.equal(shell.step(), 'add', 'the link opens the chaptered tutorial');
+    assert.equal(shell.visibleNodes().some((node) => String(node.props && node.props.className || '') === 'eb-tour-hint'), false,
+      'the line goes away once it has been followed');
   } finally { shell.unmount(); }
 });
 
@@ -499,6 +648,7 @@ for (const pointerType of ['mouse', 'touch']) {
     try {
       shell.press(shell.t('title'), pointerType);
       shell.tab('geometry');
+      shell.start();
       shell.tool('point', pointerType);
       shell.clickAt(120, 140, { pointerType, shiftKey: false });
       shell.release(120, 140);
@@ -537,8 +687,7 @@ test('catalogue shows completed, not-started, skipped and optional, and a later 
     app.refresh();
     assert.equal(app.step(), 'complete');
     const basicsIds = JSON.parse(storage.get(QUANTITY_PRACTICE)).entries['quantity-basics'].frame.board.objects.map((object) => object.id);
-    chapterButton(app, app.t('practiceOrganize')).props.onClick();
-    app.refresh();
+    enterChapter(app, app.t('practiceOrganize'));
     assert.equal(app.step(), 'organize-name');
     const organizeIds = JSON.parse(storage.get(QUANTITY_PRACTICE)).entries['quantity-organize'].frame.board.objects.map((object) => object.id);
     for (const id of basicsIds) assert.ok(organizeIds.includes(id), 'the later chapter starts from the previous practice board');
@@ -546,6 +695,8 @@ test('catalogue shows completed, not-started, skipped and optional, and a later 
     assert.deepEqual(realDraftKeys(storage), realBefore, 'a catalogue entry does not read the real draft');
     for (let step = 0; step < 11; step += 1) app.click(app.t('practiceSkipStep'));
     assert.equal(JSON.parse(storage.get(QUANTITY_PRACTICE)).entries['quantity-organize'].states.every((state) => state === 'skipped'), true);
+    // The catalogue is one level down: the rail shows this chapter, 全部章节 shows the rest.
+    app.click(app.t('practiceChaptersOpen'));
     const labels = app.nodes().filter((node) => node.type === 'button').map((node) => text(node));
     const label = (title) => labels.find((value) => value.startsWith(`${title} ·`));
     assert.match(label(app.t('practiceBasics')), new RegExp(app.t('practiceStatus_completed')));
@@ -556,8 +707,10 @@ test('catalogue shows completed, not-started, skipped and optional, and a later 
     const pageText = app.nodes().map((node) => text(node)).join('\n');
     assert.match(pageText, /不代表整套教程|is not the whole tutorial/);
     assert.equal(/整套教程已全部完成|整套全部完成|whole tutorial is complete|all chapters complete/i.test(pageText), false);
-    assert.match(pageText, new RegExp(app.t('practiceSkippedEnd')));
-    assert.match(label(app.t('practiceBasics')), new RegExp(app.t('practiceStatus_completed')));
+    app.click(app.t('close'));
+    const closedText = app.nodes().map((node) => text(node)).join('\n');
+    assert.match(closedText, new RegExp(app.t('practiceSkippedEnd')), 'the rail keeps saying a skipped chapter is not completed');
+    assert.equal(closedText.includes(app.t('practiceStatus_not-started')), false, 'other chapters are not listed on the canvas');
   } finally { app.dispose(); }
 });
 
@@ -583,10 +736,9 @@ test('a new progress owner resumes the step and frame; skip then supplement retu
     assert.equal(resumed.goal.step, 'move');
     assert.equal(resumed.frame.board.objects[0].id, first);
     app.dispose();
-    app = mountQuantity({ storage, chapters: [createQuantityNotesChapter] });
+    app = mountQuantity({ storage, chapters: [createQuantityNotesChapter], practice: false });
     assert.equal(app.nodes().some((node) => node.props['data-practice-step'] !== undefined), false);
-    app.click(app.t('moreActions'));
-    app.click(app.t('tutorialReplay'));
+    app.start();
     assert.equal(app.step(), 'move');
     assert.equal(app.objects()[0].props['data-object'], first);
     app.click(app.t('practiceSkipStep'));
@@ -598,8 +750,7 @@ test('a new progress owner resumes the step and frame; skip then supplement retu
     app.pointer(first, 160, 90, 'Up');
     assert.equal(app.step(), 'add-second', 'a finished supplement returns to the saved continuation');
     const basicsBefore = JSON.parse(storage.get(QUANTITY_PRACTICE)).entries['quantity-basics'].states[0];
-    chapterButton(app, app.t('practiceNotes')).props.onClick();
-    app.refresh();
+    enterChapter(app, app.t('practiceNotes'));
     app.click(app.t('practiceRetryChapter'));
     assert.equal(app.step(), 'notes-deselect');
     assert.equal(JSON.parse(storage.get(QUANTITY_PRACTICE)).entries['quantity-basics'].states[0], basicsBefore);
@@ -619,8 +770,7 @@ test('quantity board and object notes stay distinct through the notes chapter', 
     app.click(app.t('save'));
   };
   try {
-    chapterButton(app, app.t('practiceNotes')).props.onClick();
-    app.refresh();
+    enterChapter(app, app.t('practiceNotes'));
     assert.equal(app.step(), 'notes-deselect');
     app.pointer(null, 400, 250);
     app.pointer(null, 400, 250, 'Up');
@@ -660,8 +810,8 @@ test('geometry element and board notes stay distinct through the edit chapter', 
   try {
     shell.press(shell.t('title'));
     shell.tab('geometry');
-    chapterButton(shell, shell.t('geometryPracticeEdit')).props.onClick();
-    shell.refresh();
+    shell.start();
+    enterChapter(shell, shell.t('geometryPracticeEdit'));
     for (let step = 0; step < 5; step += 1) shell.press(shell.t('practiceSkipStep'));
     assert.equal(shell.step(), 'edit-element-note');
     shell.press(shell.t('note'));
@@ -696,8 +846,7 @@ test('cancelled quantity and geometry file saves do not advance, and a download 
     app.refresh();
   };
   try {
-    chapterButton(app, app.t('quantityPracticeFiles')).props.onClick();
-    app.refresh();
+    enterChapter(app, app.t('quantityPracticeFiles'));
     assert.equal(app.step(), 'files-save');
     window.showSaveFilePicker = async () => { throw Object.assign(new Error('cancel'), { name: 'AbortError' }); };
     await choose(app.t('export'));
@@ -725,8 +874,8 @@ test('cancelled quantity and geometry file saves do not advance, and a download 
   try {
     shell.press(shell.t('title'));
     shell.tab('geometry');
-    chapterButton(shell, shell.t('geometryPracticeFiles')).props.onClick();
-    shell.refresh();
+    shell.start();
+    enterChapter(shell, shell.t('geometryPracticeFiles'));
     assert.equal(shell.step(), 'files-save');
     const geometryBefore = shell.raw(GEOMETRY_KEY);
     window.showSaveFilePicker = async () => { throw Object.assign(new Error('cancel'), { name: 'AbortError' }); };
@@ -748,6 +897,7 @@ test('an unfinished geometry construction does not advance, and exit stays avail
   try {
     shell.press(shell.t('title'));
     shell.tab('geometry');
+    shell.start();
     assert.equal(shell.step(), 'point');
     shell.tool('segment');
     shell.clickAt(140, 160);
@@ -932,7 +1082,9 @@ test('opening geometry during the teacher guide does not cover the return frame'
     assert.equal(shell.visibleNodes().some((node) => node.props && node.props['data-practice-step'] !== undefined), false, 'the same visit does not open geometry basics the moment the guide closes');
     shell.tab('demo');
     shell.tab('geometry');
-    assert.equal(shell.storage.has(GEOMETRY_PRACTICE), true, 'a later visit opens geometry basics once the guide is closed');
+    assert.equal(shell.storage.has(GEOMETRY_PRACTICE), false, 'a later visit does not open the tutorial by itself either');
+    shell.start();
+    assert.equal(shell.storage.has(GEOMETRY_PRACTICE), true, 'the tutorial opens when the student asks for it');
     assert.deepEqual(Object.keys(JSON.parse(shell.raw(GEOMETRY_PRACTICE)).entries), ['geometry-basics']);
     assert.equal(shell.step(), 'point');
   } finally { shell.unmount(); }
@@ -966,6 +1118,7 @@ test('after practice, quantity insert can attach a trace, geometry insert has no
   try {
     shell.press(shell.t('title'));
     shell.tab('geometry');
+    shell.start();
     shell.press(shell.t('practiceExit'));
     shell.tool('point');
     shell.clickAt(160, 180);
@@ -1027,6 +1180,7 @@ test('non-board notes travel inside the snapshot while only the board note reach
   try {
     shell.press(shell.t('title'));
     shell.tab('geometry');
+    shell.start();
     shell.press(shell.t('practiceExit'));
     shell.press(shell.t('insert'));
     assert.equal(shell.drafts.at(-1).length, 1);
@@ -1057,6 +1211,7 @@ test('exit leaves the pre-seeded quantity draft, its trace, the geometry draft, 
   try {
     shell.press(shell.t('title'));
     shell.tab('geometry');
+    shell.start();
     assert.equal(shell.step(), 'point');
     shell.tool('point');
     shell.clickAt(200, 200);

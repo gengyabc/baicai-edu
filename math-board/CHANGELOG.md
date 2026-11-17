@@ -4,6 +4,32 @@ All notable changes to `baicai-edu-math-board` are recorded here. This package h
 not been published to a registry yet; everything below landed before the first
 release, so 0.6.0 is the current state rather than an upgrade path.
 
+## [Unreleased]
+
+### Tutorial UI
+
+- First contact with a board is the lightweight spotlight tour again: it
+  autoplays once per board, advances only on a real operation, and its last step
+  points at 更多操作 → 查看教程. The chaptered tutorial is opt-in and resumes saved
+  progress; a board that already has a `practice:v2` record no longer autoplays the
+  tour, and opening the chaptered tutorial ends a running tour. 更多操作 now carries
+  two separate doors: 查看操作导览 replays the quick tour (no practice writes, chapter
+  progress untouched) and 查看教程 opens the chaptered practice.
+- Every quick-tour step is reachable: saving the note on the quantity board's 5/6 now
+  advances the tour (the save signal was never wired), and the spotlighted note card
+  cannot be cancelled out from under that step. When the tour ends — finished or
+  skipped — one dismissible line above the dock offers 查看教程.
+- The chaptered tutorial moves from a bar above the canvas to a narrow step rail
+  beside it: chapter title and position, the current chapter's steps, this step's
+  goal, and bordered buttons for reset, skip, skipped-step practice, chapter
+  retry, 全部章节… and exit. The always-visible chapter catalogue is gone from the
+  canvas; every other chapter lives one level down in the 全部章节… dialog.
+- Every tutorial control is a real bordered button at 32px instead of an
+  unbordered 44px text row, and the rail states that practice is separate from the
+  real answer.
+- A practice run or teacher-demo guide hides the teacher-message strip; the strip
+  returns unchanged with real work.
+
 ## [0.6.0]
 
 Initial state of the board as a DSH bundle.

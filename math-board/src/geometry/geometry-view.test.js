@@ -10,7 +10,7 @@ import { createGeometryConstructChapter } from './geometry-construct.js';
 import { createGeometryEditChapter } from './geometry-edit.js';
 import { createGeometryAdjustChapter } from './geometry-adjust.js';
 import { createGeometryFilesChapter } from './geometry-files.js';
-import { createPracticeProgress, createPracticeNavigation } from '../shell/practice-progress.js';
+import { createPracticeProgress, createPracticeRail } from '../shell/practice-progress.js';
 import { createGeometryDemoPage, readDemoView } from '../teacher-demo/geometry-demo-view.js';
 import { placeFigure } from './place-figure.js';
 import { captionBox, captionPosition, visibleCaption } from './caption.js';
@@ -99,7 +99,7 @@ function mount(options = {}) {
     placeFigure, captionPosition, captionBox, visibleCaption,
     createBoardControls, createGeometryPractice, createGeometryBasicsChapter, createGeometryPracticeFrames,
     geometryPracticeChapters: [createGeometryConstructChapter, createGeometryEditChapter, createGeometryAdjustChapter, createGeometryFilesChapter],
-    createPracticeProgress, createPracticeNavigation,
+    createPracticeProgress, createPracticeRail,
     geometryHiddenPoints, geometryCaptionLabel, geometryPointLabel, geometryPointDot, geometryShapeNode, geometryStroke,
     geometryViewport, geometryTextOverflow, geometryFrame, geometryFrameInputs,
   };
@@ -1363,9 +1363,14 @@ test('geometry safe basics closes the polygon and clears a selection with touch 
 function constructState(h) {
   return JSON.parse(h.raw(PRACTICE_KEY)).entries['geometry-construct'];
 }
-function enterConstruct(h, tr) {
-  h.find((node) => node.type === 'button' && text(node).includes(tr('geometryPracticeConstruct'))).props.onClick();
+function enterChapter(h, tr, label) {
+  h.find((node) => node.type === 'button' && text(node) === tr('practiceChaptersOpen')).props.onClick();
   h.render();
+  h.find((node) => node.type === 'button' && text(node).includes(label)).props.onClick();
+  h.render();
+}
+function enterConstruct(h, tr) {
+  enterChapter(h, tr, tr('geometryPracticeConstruct'));
 }
 function practiceParagraph(h) {
   const coach = h.find((node) => node.props && node.props['data-practice-step'] !== undefined);
@@ -1527,8 +1532,7 @@ function editState(h) {
   return JSON.parse(h.raw(PRACTICE_KEY)).entries['geometry-edit'];
 }
 function enterEdit(h, tr) {
-  h.find((node) => node.type === 'button' && text(node).includes(tr('geometryPracticeEdit'))).props.onClick();
-  h.render();
+  enterChapter(h, tr, tr('geometryPracticeEdit'));
 }
 function setControl(h, type, value) {
   const node = h.find((item) => item.type === type && item.props.type !== 'file');
@@ -1777,8 +1781,7 @@ function adjustState(h) {
   return JSON.parse(h.raw(PRACTICE_KEY)).entries['geometry-adjust'];
 }
 function enterAdjust(h, tr) {
-  h.find((node) => node.type === 'button' && text(node).includes(tr('geometryPracticeAdjust'))).props.onClick();
-  h.render();
+  enterChapter(h, tr, tr('geometryPracticeAdjust'));
 }
 function control(h, label) {
   return h.find((node) => node.type === 'button' && node.props['aria-label'] === label);
@@ -2050,12 +2053,11 @@ for (const language of ['zh', 'en']) for (const pointerType of ['mouse', 'touch'
       await choose(tr('export'));
       assert.equal(practiceStep(h), 'point');
       assert.equal(toast(), tr('practiceFilesUnavailable'));
-      h.find((node) => node.type === 'button' && text(node).includes(tr('geometryPracticeAdjust'))).props.onClick();
-      h.render();
+      enterAdjust(h, tr);
       await choose(tr('export'));
       assert.equal(practiceStep(h), 'adjust-grid');
       assert.equal(toast(), tr('practiceFilesUnavailable'));
-      h.find((node) => node.type === 'button' && text(node).includes(tr('geometryPracticeFiles'))).props.onClick();
+      enterChapter(h, tr, tr('geometryPracticeFiles'));
       h.render();
       assert.equal(practiceStep(h), 'files-save');
       const coach = text(h.find((node) => node.props['data-practice-step']));

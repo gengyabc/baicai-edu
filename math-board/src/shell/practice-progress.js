@@ -1,24 +1,69 @@
-// Shared navigation does not own editor state or award operation goals.
-export function createPracticeNavigation(React, t) {
+// Shared step rail: what this chapter still needs, this step's goal, and the controls
+// that move between steps. It owns no editor state and awards no goals. Every other
+// chapter lives one level down behind 全部章节, so the canvas keeps its space.
+export function createPracticeRail(React, t) {
   const h = React.createElement;
-  return function PracticeNavigation({ progress, chapters, onNavigate }) {
-    return h('nav', { className: 'eb-practice-navigation', 'aria-label': t('practiceChapters') },
-      h('details', null,
-        h('summary', null, t('practiceChapters')),
-        progress.chapters.map((chapter) => h('div', { key: chapter.id },
-          h('button', { type: 'button', onClick: () => onNavigate('enter', chapter.id),
-            'aria-current': chapter.id === progress.current ? 'step' : undefined },
-          t(chapters.find((item) => item.id === chapter.id).titleKey), ' · ', t(`practiceStatus_${chapter.status}`),
-          chapter.optional ? ` · ${t('practiceOptional')}` : '',
-          ` · ${Math.min(chapter.index + 1, chapter.steps.length)}/${chapter.steps.length}`),
-          chapter.id === progress.current && chapter.states.map((state, index) => state === 'skipped'
-            && h('button', { key: index, type: 'button', onClick: () => onNavigate('retryStep', index) },
-              t('practiceRetryStep', { step: index + 1 }))))),
-        h('p', null, t('practiceMoreChapters'))),
-      !progress.goal?.completed && h('button', { type: 'button', onClick: () => onNavigate('reset') }, t('practiceReset')),
-      !progress.goal?.completed && h('button', { type: 'button', onClick: () => onNavigate('skip') }, t('practiceSkipStep')),
+  return function PracticeRail({ progress, chapters, onNavigate, onExit, goalKey, stepKey, notice, extra, goalText }) {
+    const [catalog, setCatalog] = React.useState(false);
+    const chapter = progress.chapters.find((item) => item.id === progress.current) || progress.chapters[0];
+    const definition = chapters.find((item) => item.id === chapter?.id);
+    if (!chapter || !definition) return null;
+    const total = chapter.steps.length;
+    const index = Math.min(chapter.index, total);
+    const done = index >= total;
+    const goal = progress.goal;
+    const stepGoal = goalText || (done
+      ? (chapter.status === 'completed' ? t('practiceComplete') : t('practiceSkippedEnd'))
+      : t(goalKey(chapter.steps[index])));
+    return h('aside', {
+      className: 'eb-practice-rail', 'aria-label': t(definition.titleKey),
+      'data-practice-step': goal?.step,
+    },
+    h('header', { className: 'eb-rail-head' },
+      h('strong', null, t(definition.titleKey)),
+      h('span', { className: 'eb-rail-count' }, `${Math.min(index + 1, total)}/${total}`),
+      h('small', { className: 'eb-rail-note' }, t('practiceSealed'))),
+    h('ol', { className: 'eb-rail-steps', 'aria-label': t('practiceSteps') },
+      chapter.steps.map((step, position) => {
+        const state = chapter.states[position];
+        const current = !done && position === index;
+        return h('li', {
+          key: step, className: current ? 'now' : state === 'completed' ? 'done' : state === 'skipped' ? 'skipped' : '',
+          'aria-current': current ? 'step' : undefined,
+        },
+        h('span', { className: 'eb-rail-mark', 'aria-hidden': true },
+          state === 'completed' ? '✓' : state === 'skipped' ? '–' : String(position + 1)),
+        h('span', null, t(stepKey(step))));
+      })),
+    h('div', { className: 'eb-rail-goal', role: 'status', 'aria-live': 'polite' },
+      h('p', null, stepGoal)),
+    notice && h('p', { className: 'eb-rail-alert', role: 'alert' }, notice),
+    progress.persistence !== 'saved' && h('p', { className: 'eb-rail-alert', role: 'alert' }, t('practiceStorageWarning')),
+    h('div', { className: 'eb-rail-acts' },
+      extra,
+      !goal?.completed && h('button', { type: 'button', onClick: () => onNavigate('reset') }, t('practiceReset')),
+      !goal?.completed && h('button', { type: 'button', onClick: () => onNavigate('skip') }, t('practiceSkipStep')),
+      chapter.states.map((state, position) => state === 'skipped'
+        && h('button', { key: position, type: 'button', onClick: () => onNavigate('retryStep', position) },
+          t('practiceRetryStep', { step: position + 1 }))),
       h('button', { type: 'button', onClick: () => onNavigate('retry') }, t('practiceRetryChapter')),
-      progress.persistence !== 'saved' && h('p', { role: 'alert' }, t('practiceStorageWarning')));
+      h('button', { type: 'button', onClick: () => setCatalog(true) }, t('practiceChaptersOpen')),
+      onExit && h('button', { type: 'button', className: 'eb-rail-exit', onClick: onExit }, t('practiceExit'))),
+    catalog && h('div', { className: 'eb-rail-catalog', role: 'dialog', 'aria-modal': 'true', 'aria-label': t('practiceChapters') },
+      h('h2', null, t('practiceChapters')),
+      h('ul', null, progress.chapters.map((item) => {
+        const info = chapters.find((entry) => entry.id === item.id);
+        return h('li', { key: item.id },
+          h('button', {
+            type: 'button', 'aria-current': item.id === chapter.id ? 'step' : undefined,
+            onClick: () => { setCatalog(false); onNavigate('enter', item.id); },
+          },
+          `${t(info.titleKey)} · ${t(`practiceStatus_${item.status}`)}`,
+          item.optional ? ` · ${t('practiceOptional')}` : '',
+          ` · ${Math.min(item.index + 1, item.steps.length)}/${item.steps.length}`));
+      })),
+      h('p', null, t('practiceMoreChapters')),
+      h('button', { type: 'button', className: 'eb-primary', onClick: () => setCatalog(false) }, t('close'))));
   };
 }
 

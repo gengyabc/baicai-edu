@@ -112,7 +112,12 @@ export function geometryTutorialSteps() {
 
 /** Shared per-page tutorial lifecycle; drafts and page-specific resets stay with the page. */
 export function createTutorialController(React, shared) {
-  return function useTutorial({ mode, steps, active, ready, rootRef, onStart, onFinish, layoutDeps = [] }) {
+  /**
+   * `active` decides whether this visit may autoplay the tour; `visible` decides whether the
+   * page can show it at all. They differ when a replay is allowed on a page that must not
+   * autoplay (a board whose chaptered tutorial has already been opened).
+   */
+  return function useTutorial({ mode, steps, active, visible = active, ready, rootRef, onStart, onFinish, layoutDeps = [] }) {
     const [tour, setTour] = React.useState(null);
     const [hole, setHole] = React.useState(null);
     const spotlight = React.useRef(null);
@@ -148,8 +153,10 @@ export function createTutorialController(React, shared) {
       }
     }, [active, ready, mode]);
     const useLayout = React.useLayoutEffect || React.useEffect;
+    // Measured whenever the page can show it, so a replay works on a page that must not
+    // autoplay; `visible` still releases the spotlight when the page is hidden.
     useLayout(() => {
-      if (!active || !tour || !rootRef.current || !shared.measureTourTarget) {
+      if (!visible || !tour || !rootRef.current || !shared.measureTourTarget) {
         setHole(null);
         return undefined;
       }
@@ -168,7 +175,7 @@ export function createTutorialController(React, shared) {
         window.removeEventListener('resize', measure);
         clearSpotlight();
       };
-    }, [active, tour, ...layoutDeps]);
+    }, [visible, tour, ...layoutDeps]);
     return { tour, hole, start, finish, signal };
   };
 }

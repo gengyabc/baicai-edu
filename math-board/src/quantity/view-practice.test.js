@@ -14,7 +14,7 @@ import { createQuantityOrganizeChapter } from './practice-organize.js';
 import { createQuantityNotesChapter } from './practice-notes.js';
 import { createQuantityFilesChapter } from './practice-files.js';
 import { createGeometryModel } from '../geometry/model.js';
-import { createPracticeProgress, createPracticeNavigation } from '../shell/practice-progress.js';
+import { createPracticeProgress, createPracticeRail } from '../shell/practice-progress.js';
 import { createHooks, installBrowser, text } from '../testing/test-harness.js';
 
 const M = createBoardModel(), T = createBoardTrace(M);
@@ -41,7 +41,7 @@ function mount(options = {}) {
   };
   const Board = createBoardView(React, options.model || M, { locale: { subscribe() {}, getSnapshot() {} }, get() { uploads++; throw Error('practice upload'); } },
     t, '', createShapeArt(React), applyHostConfig, T,
-    { createBoardFilePicker, createBoardIcons, createBoardControls, createPracticeProgress, createPracticeNavigation, quantityPracticeChapters: options.chapters || [], ...tutorial, ...practice });
+    { createBoardFilePicker, createBoardIcons, createBoardControls, createPracticeProgress, createPracticeRail, quantityPracticeChapters: options.chapters || [], ...tutorial, ...practice });
   const props = { split: true, sessionId: 'practice-test', tabActive: true,
     close: () => { closed++; active = false; }, bindClose: (fn) => { boundClose = fn; },
     useProjection: (name) => name === 'eduBoardClear' ? clear : config, useInput: () => 'plain',
@@ -87,6 +87,8 @@ function mount(options = {}) {
   refresh();
   return { browser, refresh, nodes, find, click, t, all: () => walkAll(hooks.tree), get uploads() { return uploads; },
     start() { click(t('moreActions')); click(t('tutorialReplay')); },
+    // Every chapter except the current one lives behind 全部章节, one level down.
+    enterChapter(label) { click(t('practiceChaptersOpen')); click(label); },
     add() { find((n) => n.type === 'button' && n.props['aria-label'] === `${t('circle')} · ${t('value')} 1`).props.onClick(); refresh(); },
     step() { return find((n) => n.props['data-practice-step']).props['data-practice-step']; },
     objects() { return nodes().filter((n) => n.props['data-object']); },
@@ -115,7 +117,7 @@ test('independent fixture chapter starts with sufficient practice and retains ot
   let app = mount({ storage, chapters: [chapter] });
   try {
     app.add(); app.start(); app.add();
-    const choose = () => app.click(`${app.t('practiceOptional')} · ${app.t('practiceStatus_not-started')} · ${app.t('practiceOptional')} · 1/1`);
+    const choose = () => app.enterChapter(`${app.t('practiceOptional')} · ${app.t('practiceStatus_not-started')} · ${app.t('practiceOptional')} · 1/1`);
     choose();
     assert.equal(app.step(), 'add', 'preseed is not completion');
     assert.equal(app.objects().length, 1, 'independent chapter provides its prerequisite');
@@ -125,7 +127,7 @@ test('independent fixture chapter starts with sufficient practice and retains ot
     assert.equal(app.step(), 'complete', 'resumes the current chapter, not basics');
     app.click(app.t('practiceRetryChapter'));
     assert.equal(app.step(), 'add');
-    app.click(`${app.t('practiceBasics')} · ${app.t('practiceStatus_in-progress')} · 2/7`);
+    app.enterChapter(`${app.t('practiceBasics')} · ${app.t('practiceStatus_in-progress')} · 2/7`);
     assert.equal(app.step(), 'move');
     assert.equal(app.objects().length, 1, 'retry another chapter did not remove basics frame');
     app.click(app.t('practiceExit'));
@@ -495,7 +497,7 @@ for (const language of ['en', 'zh']) test(`adjust chapter real editor replay, cl
   try {
     app.add(); const real = realStorage(storage);
     app.start();
-    app.click(`${app.t('practiceAdjust')} · ${app.t('practiceStatus_not-started')} · 1/13`);
+    app.enterChapter(`${app.t('practiceAdjust')} · ${app.t('practiceStatus_not-started')} · 1/13`);
     assert.equal(app.step(), 'adjust-color'); assert.equal(shapes().length, 0, 'the chapter starts with its own empty practice');
     // Q14: repeating the current creation colour is not a change; the chosen level colours
     // the new object, while the object placed before the lesson keeps its own value/colour.
@@ -602,7 +604,7 @@ for (const language of ['en', 'zh']) for (const pointerType of ['mouse', 'touch'
       app.add();
       const real = realStorage(storage);
       app.start();
-      app.click(`${app.t('practiceOrganize')} · ${app.t('practiceStatus_not-started')} · 1/11`);
+      app.enterChapter(`${app.t('practiceOrganize')} · ${app.t('practiceStatus_not-started')} · 1/11`);
       assert.equal(app.step(), 'organize-name');
       assert.equal(board().objects.length, 2, 'catalogue entry supplies a pair without a previous frame');
       assert.ok(!coach().includes('practiceGoal_'), 'the goal is translated');
@@ -746,7 +748,7 @@ for (const language of ['en', 'zh']) for (const pointerType of ['mouse', 'touch'
       app.add();
       const real = realStorage(storage);
       app.start();
-      app.click(`${app.t('practiceNotes')} · ${app.t('practiceStatus_not-started')} · 1/9`);
+      app.enterChapter(`${app.t('practiceNotes')} · ${app.t('practiceStatus_not-started')} · 1/9`);
       assert.equal(app.step(), 'notes-deselect');
       assert.equal(board().objects.length, 2, 'catalogue entry supplies two objects and a group');
       assert.equal(board().groups.length, 1);
@@ -978,11 +980,11 @@ for (const language of ['en', 'zh']) for (const pointerType of ['mouse', 'touch'
       assert.equal(saveCalls, 0, 'basics does not reach a file picker');
       assert.equal(toast(), app.t('practiceFilesUnavailable'));
       assert.equal(app.step(), 'add');
-      app.click(`${app.t('practiceNotes')} · ${app.t('practiceStatus_not-started')} · 1/9`);
+      app.enterChapter(`${app.t('practiceNotes')} · ${app.t('practiceStatus_not-started')} · 1/9`);
       await choose(app.t('export'));
       assert.equal(saveCalls, 0, 'notes does not reach a file picker');
       assert.equal(toast(), app.t('practiceFilesUnavailable'));
-      app.click(`${app.t('quantityPracticeFiles')} · ${app.t('practiceStatus_not-started')} · ${app.t('practiceOptional')} · 1/2`);
+      app.enterChapter(`${app.t('quantityPracticeFiles')} · ${app.t('practiceStatus_not-started')} · ${app.t('practiceOptional')} · 1/2`);
       assert.equal(app.step(), 'files-save');
       assert.ok(coach().includes(app.t('practiceGoal_files-save')));
       assert.equal(entry().frame.trace.totalChanges, 0);

@@ -10,7 +10,7 @@ import { createGeometryConstructChapter } from '../geometry/geometry-construct.j
 import { createGeometryEditChapter } from '../geometry/geometry-edit.js';
 import { createGeometryAdjustChapter } from '../geometry/geometry-adjust.js';
 import { createGeometryFilesChapter } from '../geometry/geometry-files.js';
-import { createPracticeProgress, createPracticeNavigation } from '../shell/practice-progress.js';
+import { createPracticeProgress, createPracticeRail } from '../shell/practice-progress.js';
 import { createGeometryDemoPage, readDemoView } from './geometry-demo-view.js';
 import { createTeacherDemoChapter } from './teacher-demo-practice.js';
 import { placeFigure } from '../geometry/place-figure.js';
@@ -103,7 +103,7 @@ function mount(options = {}) {
     placeFigure: options.placeFigure || placeFigure, captionPosition, captionBox, visibleCaption,
     createBoardControls, createGeometryPractice, createGeometryBasicsChapter, createGeometryPracticeFrames,
     geometryPracticeChapters: [createGeometryConstructChapter, createGeometryEditChapter, createGeometryAdjustChapter, createGeometryFilesChapter],
-    createPracticeProgress, createPracticeNavigation, createTeacherDemoChapter,
+    createPracticeProgress, createPracticeRail, createTeacherDemoChapter,
     geometryHiddenPoints, geometryCaptionLabel, geometryPointLabel, geometryPointDot, geometryShapeNode, geometryStroke,
     geometryViewport, geometryTextOverflow, geometryFrame, geometryFrameInputs,
   };

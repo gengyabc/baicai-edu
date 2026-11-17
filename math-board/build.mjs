@@ -1,7 +1,7 @@
 import { writeFile, readFile } from 'node:fs/promises';
 import { createBoardModel } from './src/quantity/model.js';
 import { createBoardTrace } from './src/quantity/trace.js';
-import { createPracticeProgress, createPracticeNavigation } from './src/shell/practice-progress.js';
+import { createPracticeProgress, createPracticeRail } from './src/shell/practice-progress.js';
 import { createQuantityPractice } from './src/quantity/practice.js';
 import { createQuantityAdjustChapter } from './src/quantity/practice-adjust.js';
 import { createQuantityOrganizeChapter } from './src/quantity/practice-organize.js';
@@ -97,7 +97,7 @@ window.__ModuleLoader__.load({
     const createQuantityNotesChapter = ${createQuantityNotesChapter.toString()};
     const createQuantityFilesChapter = ${createQuantityFilesChapter.toString()};
     const createPracticeProgress = ${createPracticeProgress.toString()};
-    const createPracticeNavigation = ${createPracticeNavigation.toString()};
+    const createPracticeRail = ${createPracticeRail.toString()};
     const createFilePicker = ${createBoardFilePicker.toString()};
     const createIcons = ${createBoardIcons.toString()};
     const TUTORIAL_VERSION = ${JSON.stringify(TUTORIAL_VERSION)};
@@ -128,7 +128,7 @@ window.__ModuleLoader__.load({
         // geometry drawing rules or the memory.
         const Browser = {
           createBoardFilePicker: createFilePicker, createBoardIcons: createIcons,
-          createBoardControls, createQuantityPractice, createPracticeProgress, createPracticeNavigation,
+          createBoardControls, createQuantityPractice, createPracticeProgress, createPracticeRail,
           // Append independently inlined chapter factories here.
           quantityPracticeChapters: [createQuantityAdjustChapter, createQuantityOrganizeChapter, createQuantityNotesChapter, createQuantityFilesChapter],
           createGeometryPractice, createGeometryBasicsChapter, createGeometryPracticeFrames,

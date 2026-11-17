@@ -33,3 +33,12 @@
 ## 边界
 
 本票收口入口、版本迁移和整体验收，不重新定义已确认方案，不替各章补齐本应独立交付的核心行为。保持共享数学契约、年级段清空授权及两种快照格式不变；不引入几何判题、跨设备同步或学生能力档案。
+
+## 修订（2026-11-17，ADR-0005）
+
+首次进入与目录形态两项决策被 [ADR-0005](<../../../docs/adr/0005-first-run-quick-tour.md>) 取代，本票的其余验收口径不变：
+
+- 首次进入改为播放一次轻量快速导览，不自动开始章节，也不写 `practice:v2`；分章教程只在「更多操作 → 查看教程」显式进入并续学。存在 `practice:v2` 记录时不再播放导览，打开教程会结束正在播放的导览。
+- 教程界面从画布上方的提示栏改为画布右侧的步骤轨（`createPracticeRail`）；其他章节收进「全部章节…」对话框，「目录常驻」不再要求。练习期间隐藏教师消息条，退出后恢复。
+- 导览末步文案追加「更多操作 → 查看教程」的指引。
+- 对应改动见 [release 回归](<../../../math-board/tests/tutorial-release.test.js>) 中 `first open autoplays the quick tour; the chaptered tutorial stays closed until asked`、`a returning student resumes the chaptered tutorial instead of restarting it`、`the practice rail replaces the answer strip and keeps every control a visible button`，以及 `catalogue shows completed, not-started, skipped and optional…` 里打开对话框后的断言。上述「首次自动入口」一项不再是本票的通过条件。

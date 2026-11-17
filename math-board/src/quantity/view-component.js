@@ -16,7 +16,10 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
   // colours are shared with the geometry and demo pages.
   const controls = shared.createBoardControls(React, t);
   // Stable chapter ids are public extension points; later tickets append definitions.
-  const PracticeNavigation = shared.createPracticeNavigation?.(React, t);
+  const PracticeRail = shared.createPracticeRail?.(React, t);
+  // The quick tour and the rail's first step read their text from the same step tables.
+  const useTutorial = shared.createTutorialController?.(React, shared);
+  const TutorialOverlay = shared.createTutorialOverlay?.(React);
   const practiceSteps = ['add', 'move', 'add-second', 'select-one', 'select-many', 'deselect', 'insert'];
   const emptyPracticeFrame = () => ({ board: M.empty(), trace: T.empty(), history: { past: [], future: [] },
     selection: [], zoom: 1, fit: true, attachTrace: true, toolValue: null, append: false, scroll: { left: 0, top: 0 } });
@@ -79,6 +82,9 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     // A second state owner, never a backup/restore of the live draft. The real
     // page stays mounted to consume legitimate host updates while practice is open.
     const [practiceOpen, setPracticeOpen] = React.useState(false);
+    // The quick tour ends by pointing at the chaptered tutorial; the line stays until the
+    // student follows it or puts it away.
+    const [tourHint, setTourHint] = React.useState(false);
     const practiceOpenRef = React.useRef(false);
     practiceOpenRef.current = practiceOpen;
     const practiceRef = React.useRef(null);
@@ -172,25 +178,36 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
 
     const pageActive = props.split ? props.tabActive === true : opened;
     const tabActive = pageActive && !practiceOpen;
-    // A missing practice:v2 record opens this board's basics chapter. The legacy
-    // v1 seen flag is not completion and is neither copied nor deleted.
+    // First contact is the quick tour over the real board. The chaptered tutorial is
+    // opt-in from「更多操作 → 查看教程」and starts the next time it is opened.
+    // A student who already opened the chaptered tutorial has met this board; the quick
+    // tour is for a genuinely new one, so an existing practice record suppresses it.
+    const practiceStarted = (() => {
+      try { return globalThis.localStorage?.getItem('baicai-edu-math-board:practice:v2:quantity') != null; }
+      catch { return true; }
+    })();
+    const quickTour = useTutorial ? useTutorial({
+      mode: 'quantity', steps: shared.quantityTutorialSteps,
+      active: pageActive && !props.practice && !practiceStarted,
+      visible: pageActive && !props.practice,
+      ready, rootRef: workspaceRef,
+      onStart() { setMoreOpen(false); setOverlay(null); },
+      onFinish() { setStatus(t('tutorialDone')); setTourHint(true); },
+      layoutDeps: [overlay, board.objects.length, selection.length],
+    }) : { tour: null, hole: null };
+    const tour = quickTour.tour;
+    const signalTour = (value) => quickTour.signal?.(value);
     const startQuantityTour = () => {
+      setTourHint(false);
+      // Opening the chaptered tutorial ends a running quick tour: the longer guide cannot
+      // run underneath the practice rail, and it must not block a later real insert.
+      if (tour) quickTour.finish?.();
       practiceOpenRef.current = true;
       gesture.current = null; setPreview(null); setDragShape(null);
       setMoreOpen(false); setOverlay(null); setPracticeOpen(true);
     };
-    function practiceRecorded(mode) {
-      try {
-        return globalThis.localStorage?.getItem(`baicai-edu-math-board:practice:v2:${mode}`) != null;
-      } catch { return true; }
-    }
     React.useEffect(() => {
       if (!pageActive) setPracticeOpen(false);
-    }, [pageActive]);
-    React.useEffect(() => {
-      if (props.practice || !pageActive || practiceOpenRef.current) return;
-      if (!shared.createPracticeProgress || practiceRecorded('quantity')) return;
-      startQuantityTour();
     }, [pageActive]);
 
     React.useEffect(() => {
@@ -404,8 +421,12 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     }, [overlay]);
     function requestOverlay(next) {
       setOverlay(next);
+      if (next?.kind === 'note') signalTour('quantity-note-open');
     }
     function dismissOverlay() {
+      // The save step spotlights this card. Closing it would leave the tour with nothing
+      // to act on, so the card stays until the note is saved.
+      if (shared.tourHoldsNotePanel?.(tour)) { setStatus(t('tutorialNoteOpen')); return; }
       requestOverlay(null);
     }
     React.useEffect(() => {
@@ -576,6 +597,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       const before = boardRef.current;
       createAndReveal({ type: 'add', shape, value: creationLevel(shape).value, ...extra });
       practiceEvent({ type: 'add', before, after: boardRef.current });
+      signalTour('quantity-add');
     }
     function updateSelected(patch) { batch(selected.map((o) => ({ type: 'update', id: o.id, patch }))); }
     // A rejected action leaves the board reference unchanged, so it is not reported.
@@ -762,6 +784,11 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       recoverDraft({ ...M.empty(), settings: boardRef.current.settings }, T.empty(), 'clearDone');
     }
     function insert() {
+      // The quick tour only practices this press; earlier steps keep it blocked so a
+      // masked click can never attach a real file.
+      const insertMode = shared.tourInsertMode?.(tour);
+      if (insertMode === 'practice') { signalTour('quantity-insert'); setStatus(t('tutorialInsertPractice')); return; }
+      if (insertMode === 'block') { setStatus(t('tutorialInsertLater')); return; }
       // This guard precedes every host/composer access, including keyboard calls
       // and direct activation at an earlier goal or after completion.
       if (props.practice) {
@@ -984,6 +1011,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
         practiceEvent({ type: command.type, before, after: boardRef.current, action: command, target: kind, ids });
       }
       setOverlay(null);
+      signalTour('quantity-note-save');
     }
     function togglePattern(shape) {
       const current = boardRef.current.settings, before = boardRef.current;
@@ -1062,7 +1090,9 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
     const noteHasText = Boolean(noteText(noteTarget));
     const brand = brandMark(levels, 18);
     const topbar = h('header', { className: 'eb-topbar' }, brandMark(levels, 27), h('span', null, t('title')));
-    const question = props.question || h('aside', { className: 'eb-question', 'aria-label': t('questionTeacher') },
+    // A practice run hides the teacher-message strip: it is the student's answer surface,
+    // and the rail already carries the only text practice needs.
+    const question = props.practice ? null : props.question || h('aside', { className: 'eb-question', 'aria-label': t('questionTeacher') },
       reference ? h('div', { id: `eb-question-${props.sessionId}`, className: `eb-question-text${questionExpanded ? '' : ' eb-collapsed'}` },
         props.renderFactorySlot?.('conversation.chat.reasoning.content', { text: reference.text, running: false }) ?? reference.text)
         : h('p', { className: 'eb-question-empty' }, t('questionEmpty')),
@@ -1145,6 +1175,7 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
         h('span', { className: 'eb-color-value' }, String(level.value))), () => {
         practiceEvent({ type: 'color', before: toolLevel.value, after: level.value, board: boardRef.current });
         setToolValue(level.value);
+        signalTour('quantity-color');
       }, {
         key: level.value, 'aria-pressed': level.value === toolLevel.value, className: 'eb-color-button',
         title: `${t('creationColor')} · ${level.value}`, 'aria-label': `${t('creationColor')} · ${level.value}`,
@@ -1161,6 +1192,9 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       } }), h('span', null, t('traceAttach'))),
       !props.practice && shared.createQuantityPractice && h(React.Fragment, null,
         h('div', { className: 'eb-menu-line' }),
+        // Two separate doors: the quick tour is a one-off introduction that can be replayed,
+        // the chaptered tutorial is the long practice that resumes where it stopped.
+        useTutorial && shared.quantityTutorialSteps && controls.menuItem(null, t('tutorialQuickTour'), () => quickTour.start?.()),
         controls.menuItem(null, t('tutorialReplay'), () => startQuantityTour())));
     // One dock for both tabs, in this order. This tab keeps creation colours and the
     // trace checkbox; the geometry tab keeps grid and snap in that same slot.
@@ -1185,7 +1219,8 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       controls.moreMenu(moreOpen, () => setMoreOpen(!moreOpen), icon('more', 19)),
       button(h(React.Fragment, null, icon('insert', 17), h('span', null, t('insert'))), insert, {
         className: 'eb-primary', title: t('insert'), 'data-tour-id': 'quantity-insert',
-        disabled: (!board.objects.length && !board.note && !(attachTrace && trace.totalChanges)) || phase !== 'plain' }));
+        disabled: shared.tourInsertMode?.(tour) === 'block'
+          || (!board.objects.length && !board.note && !(attachTrace && trace.totalChanges)) || phase !== 'plain' }));
     const overlayNode = overlay && h('div', { className: 'eb-overlay', onPointerDown: (event) => { if (event.target === event.currentTarget) dismissOverlay(); } },
       h('div', {
         className: `eb-overlay-card eb-overlay-${overlay.kind}`, role: 'dialog', 'aria-modal': 'true',
@@ -1224,18 +1259,26 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
             button(t('cancel'), dismissOverlay),
             button(t('confirmClear'), confirmClearBoard, { className: 'eb-primary eb-danger-solid' })))));
     const statusNode = controls.status(status);
-    const practiceCoach = props.practice && h('section', {
-      className: 'eb-practice-coach', 'aria-label': t('practiceTitle'), 'data-practice-step': practiceState.step,
-    },
-      h('div', { role: 'status', 'aria-live': 'polite' },
-        h('strong', null, t(practiceProgress?.chapters.find((chapter) => chapter.id === practiceProgress.current)?.status === 'completed' ? 'practiceComplete' : 'practiceTitle')),
-        h('p', null, t(practiceState.completed && practiceProgress?.chapters.find((chapter) => chapter.id === practiceProgress.current)?.status !== 'completed'
-          ? 'practiceSkippedEnd' : `practiceGoal_${practiceState.step}`)),
-        PracticeNavigation && practiceProgress?.goal && h(PracticeNavigation, { progress: practiceProgress, chapters: practiceChapters, onNavigate: navigatePractice }),
-        practiceState.targets.some((id) => !board.objects.some((o) => o.id === id))
-          && h('p', { role: 'alert' }, t('practiceTargetMissing')),
-        !practiceState.completed && h('small', null, t('tutorialProgress', { step: practiceState.index + 1, total: practiceState.total }))),
-      button(t('practiceExit'), () => props.onPracticeExit(), { className: 'eb-practice-exit' }));
+    // Practice keeps its own rail beside the canvas instead of a bar above it: what this
+    // chapter still needs, this step's goal, and the controls between steps.
+    const practiceRail = props.practice && PracticeRail && practiceProgress?.goal && h(PracticeRail, {
+      progress: practiceProgress,
+      chapters: practiceChapters,
+      onNavigate: navigatePractice,
+      onExit: () => props.onPracticeExit(),
+      goalKey: (step) => `practiceGoal_${step}`,
+      stepKey: (step) => `practiceStep_${step}`,
+      notice: practiceState.targets.some((id) => !board.objects.some((o) => o.id === id)) ? t('practiceTargetMissing') : null,
+    });
+    // After the tour ends this one line keeps the door to the chaptered tutorial in sight.
+    const tourHintNode = tourHint && !props.practice && h('div', { className: 'eb-tour-hint', role: 'status' },
+      h('span', null, t('tutorialDoneHint')),
+      h('button', { type: 'button', className: 'eb-primary', onClick: () => startQuantityTour() }, t('tutorialReplay')),
+      h('button', { type: 'button', onClick: () => setTourHint(false), 'aria-label': t('close'), title: t('close') }, t('close')));
+    const tourNode = tour && TutorialOverlay && h(TutorialOverlay, {
+      step: tour.steps[tour.index], stepIndex: tour.index, stepCount: tour.steps.length,
+      t, hole: quickTour.hole, onSkip: () => quickTour.finish?.(),
+    });
     const editor = h(React.Fragment, null,
       h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: picker.fileInputRef, onChange: importInput,
         'data-practice-file': props.practice ? 'quantity' : undefined }),
@@ -1248,11 +1291,12 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       // The shell owns the launcher, the dialog and the top bar, including the brand mark,
       // so this page only contributes its workspace.
       return h(React.Fragment, null,
-        h('div', { className: 'eb-quantity-owner', hidden: practiceOpen },
-          practiceCoach,
-          h('div', { className: 'eb-workspace', ref: workspaceRef },
-            palette, stage, dock, moreMenuNode, statusNode, overlayNode),
-          (!props.practice || practiceFiles()) && editor),
+        h('div', { className: `eb-quantity-owner${props.practice ? ' eb-has-rail' : ''}`, hidden: practiceOpen },
+          h('div', { className: 'eb-practice-main' },
+            h('div', { className: 'eb-workspace', ref: workspaceRef },
+              palette, stage, dock, moreMenuNode, statusNode, tourHintNode, overlayNode, tourNode),
+            (!props.practice || practiceFiles()) && editor),
+          practiceRail),
         practiceOpen && h(PracticeBoard, {
           ...props, practice: true, bindClose: props.bindClose,
           onPracticeExit: () => setPracticeOpen(false),
@@ -1281,9 +1325,11 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       },
       h('div', { className: 'eb-workbench' },
         topbar,
-        h('div', { className: 'eb-quantity-owner', hidden: practiceOpen },
-          h('div', { className: 'eb-workspace', ref: workspaceRef },
-            palette, stage, dock, moreMenuNode, statusNode, overlayNode)),
+        h('div', { className: `eb-quantity-owner${props.practice ? ' eb-has-rail' : ''}`, hidden: practiceOpen },
+          h('div', { className: 'eb-practice-main' },
+            h('div', { className: 'eb-workspace', ref: workspaceRef },
+              palette, stage, dock, moreMenuNode, statusNode, tourHintNode, overlayNode, tourNode)),
+          practiceRail),
         practiceOpen && h(PracticeBoard, { ...props, split: true, tabActive: opened,
           practice: true, close: () => setOpened(false), onPracticeExit: () => setPracticeOpen(false) })),
         editor));
