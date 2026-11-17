@@ -87,6 +87,9 @@ export function createTabbedBoardView(React, t, css, pages, readDemo) {
     // Each student page registers the same close 返回对话 uses. A backdrop press calls the
     // visible tab's close, so a note or menu on that tab is put away with the dialog.
     const closers = React.useRef({});
+    const guideApi = React.useRef(null);
+    function bindGuide(api) { guideApi.current = api; }
+    function readGuide() { return guideApi.current; }
     function requestClose() {
       const closePage = closers.current[tab];
       if (closePage) closePage();
@@ -154,10 +157,12 @@ export function createTabbedBoardView(React, t, css, pages, readDemo) {
           ...props, ...stage,
           bindClose: (fn) => { closers.current.geometry = fn; },
           bindAppend: (fn) => { closers.current.geometryAppend = fn; },
+          guide: readGuide,
           tabActive: opened && tab === 'geometry',
         })),
         DemoPage && panel('demo', h(DemoPage, {
           ...stage, sessionId: props.sessionId, question: questionText, figure: demo?.figure ?? null, onCopy: copyToGeometry,
+          bindGuide, tabActive: opened && tab === 'demo',
         })))));
   };
 }

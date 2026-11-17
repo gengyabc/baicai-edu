@@ -418,5 +418,15 @@
   "geometryPracticeFiles": "几何文件练习 — 与真实作答隔离",
   "geometryPracticeGoal_files-save": "打开「更多操作」，保存这份练习几何画板。只有练习文件真正保存，或已经开始下载，这一步才通过。只点「保存 JSON」不够。下载只表示下载已经开始，磁盘写入尚未验证。真实几何作答和它的文件都不变。",
   "geometryPracticeGoal_files-open": "打开一份几何练习文件。练习画板会变成那份文件里的内容。取消、这份画板读不了的文件，或数量文件，都不通过，当前练习保持原样。真实草稿不会被载入。几何不会因此多出修改记录。",
-  "geometryPracticeGoal_files-complete": "几何文件练习已完成。下载只表示下载已经开始，不是已经验证的磁盘保存。没有附文件或发送。退出后继续真实作答。跳过本章不阻塞几何基础章。"
+  "geometryPracticeGoal_files-complete": "几何文件练习已完成。下载只表示下载已经开始，不是已经验证的磁盘保存。没有附文件或发送。退出后继续真实作答。跳过本章不阻塞几何基础章。",
+  "teacherDemoPractice": "教师演示短引导 — 与真实作答隔离",
+  "teacherDemoContinue": "继续",
+  "teacherDemoResume": "继续这段引导",
+  "teacherDemoViewCopy": "查看可编辑副本",
+  "teacherDemoFigureUnavailable": "当前教师演示图不可用。可以退出，或稍后继续。这次不会把复制记成已完成。",
+  "teacherDemoPracticeGoal_demo-read": "这一页只读，不能改教师作品。读完后点「继续」。这只是进入下一步，页面不会判断你是否理解，也不会把图放进几何画板。",
+  "teacherDemoPracticeGoal_demo-view": "点「放大画布」，让缩放数字发生变化，再滚动画布查看其余部分。点当前缩放档位不算。教师作品不会被修改。",
+  "teacherDemoPracticeGoal_demo-copy": "点「放到我的几何画板」。当前这幅图会追加到这段引导自己的练习几何画板。教师原图和真实几何草稿都不变，也不会附上文件。",
+  "teacherDemoPracticeGoal_demo-return": "打开几何页。这一步要看到刚才的练习副本，并且可以编辑它。点「查看可编辑副本」。退出后仍是真实几何作答。这次复制不会上传，也不会记成真实受助使用。",
+  "teacherDemoPracticeGoal_demo-complete": "教师演示短引导已结束。练习副本留在这段引导里，不是真实作答。退出后继续真实几何草稿。"
 }

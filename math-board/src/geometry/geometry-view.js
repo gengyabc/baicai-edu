@@ -127,18 +127,24 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     const [rename, setRename] = React.useState(null);
     const [writing, setWriting] = React.useState(null);
     const [practiceOpen, setPracticeOpen] = React.useState(false);
+    const [guideShown, setGuideShown] = React.useState(false);
     const practiceOpenRef = React.useRef(false);
+    const guideShownRef = React.useRef(false);
     practiceOpenRef.current = practiceOpen;
+    guideShownRef.current = guideShown;
     const alive = React.useRef(true);
     const practiceRef = React.useRef(null);
-    if (props.practice && !practiceRef.current) practiceRef.current = shared.createPracticeProgress({
-      mode:'geometry',chapters:practiceChapters,validateFrame:practiceFrames.validate,
-    });
+    const guideMode = props.guideMode === true;
+    if ((props.practice || guideMode) && !practiceRef.current) practiceRef.current = guideMode
+      ? props.guideProgress
+      : shared.createPracticeProgress({
+        mode:'geometry',chapters:practiceChapters,validateFrame:practiceFrames.validate,
+      });
     const [progress,setProgress] = React.useState(() => practiceRef.current?.snapshot());
     const practiceEvents = React.useRef([]);
     const practiceState = progress?.goal;
-    function editable() { return alive.current && (props.practice || !practiceOpenRef.current); }
-    function practiceEvent(event) { if (props.practice && alive.current) { practiceEvents.current.push(event); setProgress({...practiceRef.current.snapshot()}); } }
+    function editable() { return alive.current && (props.practice || guideMode || (!practiceOpenRef.current && !guideShownRef.current)); }
+    function practiceEvent(event) { if ((props.practice || guideMode) && alive.current) { practiceEvents.current.push(event); setProgress({...practiceRef.current.snapshot()}); } }
     function selectUser(ids) { setSelection(ids); practiceEvent({type:'select',selection:ids,after:boardRef.current}); }
     const workspaceRef = React.useRef(null);
     const gesture = React.useRef(null);
@@ -196,7 +202,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
 
     React.useEffect(() => {
       alive.current = true;
-      if (props.practice) {
+      if (props.practice || guideMode) {
         const next = practiceRef.current.enter(); applyPracticeFrame(next.frame); setProgress(next); setReady(true);
         return () => { alive.current = false; gesture.current = null; };
       }
@@ -208,7 +214,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       return () => { alive.current = false; gesture.current = null; };
     }, [key]);
     React.useEffect(() => {
-      if (!ready || props.practice || !alive.current) return;
+      if (!ready || props.practice || guideMode || !alive.current) return;
       try { localStorage.setItem(key, JSON.stringify(board)); } catch { setStatus(t('storageError')); }
     }, [board, ready, key]);
     React.useEffect(() => {
@@ -238,8 +244,21 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       return () => document.removeEventListener('pointerdown', closeMenus);
     }, [moreOpen]);
 
-    const tabActive = props.tabActive === true && !practiceOpen;
-    React.useEffect(() => { if (!props.tabActive) setPracticeOpen(false); }, [props.tabActive]);
+    const tabActive = props.tabActive === true && !practiceOpen && !guideShown;
+    React.useEffect(() => {
+      if (props.tabActive || guideMode || props.practice) return undefined;
+      const guideOpen = typeof props.guide === 'function' && props.guide()?.open;
+      if (!guideOpen) setPracticeOpen(false);
+      return undefined;
+    }, [props.tabActive]);
+    React.useEffect(() => {
+      if (guideMode || props.practice) return undefined;
+      if (!props.tabActive || practiceOpen) { setGuideShown(false); return undefined; }
+      const api = typeof props.guide === 'function' ? props.guide() : null;
+      const goalStep = api?.open ? api.progress?.snapshot()?.goal?.step : null;
+      setGuideShown(goalStep === 'demo-return' || goalStep === 'demo-complete');
+      return undefined;
+    }, [props.tabActive, practiceOpen]);
     function startGeometryTour() {
       if (!practiceChapters.length) return;
       practiceOpenRef.current = true;
@@ -266,7 +285,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       applyPracticeFrame(next.frame); setProgress(next);
     }
     React.useEffect(() => {
-      if (!props.practice || !ready || !alive.current) return;
+      if (!(props.practice || guideMode) || !ready || !alive.current) return;
       const events=practiceEvents.current.splice(0), wasSupplementing=practiceRef.current.snapshot().supplementing;
       let next;
       if (events.length) for (const event of events) next=practiceRef.current.observe(event,practiceFrame());
@@ -290,7 +309,10 @@ export function createGeometryPage(React, G, ctx, t, shared) {
         || boardRef.current.elements.some((item) => item.id === editMark));
       if (editLive && !(selection.length === 1 && selection[0] === editMark)) setSelection([editMark]);
     },[ready,board,history,selection,tool,pending,auxiliary,grid,snap,zoom,fit,progress]);
-    function closePage() { if (props.practice) props.onPracticeExit(); else setPracticeOpen(false); props.close?.(); }
+    function closePage() {
+      if (guideMode) { props.onGuideExit?.(); return; }
+      if (props.practice) props.onPracticeExit(); else setPracticeOpen(false); props.close?.();
+    }
 
     function publish(next) { revision.current += 1; boardRef.current = next; setBoard(next); }
     function action(a) {
@@ -991,6 +1013,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     function insertGeometry() {
       if (!ready) return;
       if (!editable()) return;
+      if (guideMode) { setStatus(t('practiceInsertBlocked')); return; }
       if (props.practice) {
         practiceEvent({type:'insert',after:boardRef.current});
         setStatus(t('geometryPracticeInsert')); return;
@@ -1030,7 +1053,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       return (async () => {
         // Validation runs before anything is published: a bad file changes nothing.
         const next = G.validate(JSON.parse(await file.text()));
-        if (!editable() || props.practice) return;
+        if (!editable() || props.practice || guideMode) return;
         forgetConstruction();
         publish(next); setHistory({ past: [], future: [] }); setSelection([]); setPending([]);
         revision.current += 1;
@@ -1137,7 +1160,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     const saveFile = () => {
       setMoreOpen(false);
       if (!editable()) return;
-      if (props.practice) {
+      if (props.practice || guideMode) {
         if (!practiceFiles()) { setStatus(t('practiceFilesUnavailable')); return; }
         return savePracticeFile();
       }
@@ -1146,7 +1169,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     const openFile = () => {
       setMoreOpen(false);
       if (!editable()) return;
-      if (props.practice) {
+      if (props.practice || guideMode) {
         if (!practiceFiles()) { setStatus(t('practiceFilesUnavailable')); return; }
         return openPracticeFile();
       }
@@ -1154,7 +1177,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     };
     const importInput = (event) => {
       if (!editable()) return;
-      if (props.practice) {
+      if (props.practice || guideMode) {
         if (!practiceFiles()) return;
         const file = event.target.files && event.target.files[0];
         event.target.value = '';
@@ -1320,7 +1343,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     // inside the frame. `non-scaling-stroke` is deliberately not used: a magnified figure
     // must look magnified, exactly as the quantity board's zoom scales its artwork.
     const canvas = h('div', { ref: canvasRef, className: 'eb-canvas-scroll', 'data-tour-id': 'geometry-canvas',
-      onScroll: props.practice ? () => {
+      onScroll: props.practice || guideMode ? () => {
         const after = { left: canvasRef.current?.scrollLeft || 0, top: canvasRef.current?.scrollTop || 0 };
         const before = scrollRef.current;
         if (before.left !== after.left || before.top !== after.top) {
@@ -1447,7 +1470,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       controls.menuItem(icon('open'), t('import'), openFile),
       controls.menuItem(icon('save'), t('export'), saveFile),
       picker.fileNameState && h('p', { className: 'eb-menu-note' }, picker.fileNameState),
-      !props.practice && practiceChapters.length > 0 && h(React.Fragment, null,
+      !props.practice && !guideMode && practiceChapters.length > 0 && h(React.Fragment, null,
         h('div', { className: 'eb-menu-line' }),
         controls.menuItem(null, t('tutorialReplay'), () => startGeometryTour())));
     // The student dock, in the same order as the quantity tab: the one shared 返回对话,
@@ -1540,6 +1563,13 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     const statusNode = controls.status(status);
     const practiceChapter = practiceChapters.find((item) => item.id === progress?.current);
     const practiceTitleKey = practiceChapter?.titleKey || 'geometryPracticeBasics';
+    function confirmGuideView() {
+      const goal = practiceRef.current?.snapshot().goal;
+      if (!guideMode || goal?.step !== 'demo-return') return;
+      if (props.guideLiveId !== goal.figureId) { setStatus(t('teacherDemoFigureUnavailable')); return; }
+      if (!(boardRef.current.elements?.length > 0)) return;
+      setProgress(practiceRef.current.observe({ type: 'view-copy', figureId: goal.figureId }, practiceFrame()));
+    }
     const practiceCoach = props.practice && h('section', {className:'eb-practice-coach', 'aria-label':t(practiceTitleKey),
       'data-practice-step':practiceState?.step},
       h('div',{role:'status','aria-live':'polite'},h('strong',null,t(practiceTitleKey)),
@@ -1547,10 +1577,22 @@ export function createGeometryPage(React, G, ctx, t, shared) {
           ? 'practiceSkippedEnd' : `geometryPracticeGoal_${practiceState?.step || 'point'}`)),
         PracticeNavigation && progress?.goal && h(PracticeNavigation,{progress,chapters:practiceChapters,onNavigate:navigatePractice})),
       button(t('practiceExit'),()=>props.onPracticeExit(),{className:'eb-practice-exit'}));
-    if (props.bindClose) props.bindClose(practiceOpen ? () => {setPracticeOpen(false);props.close?.();} : closePage);
-    if (props.bindAppend && !props.practice) props.bindAppend(appendFigure);
+    const guideCoach = guideMode && h('section', {
+      className: 'eb-practice-coach', 'aria-label': t('teacherDemoPractice'), 'data-practice-step': practiceState?.step,
+    },
+    h('div', { role: 'status', 'aria-live': 'polite' },
+      h('strong', null, t('teacherDemoPractice')),
+      h('p', null, props.guideLiveId !== practiceState?.figureId
+        ? t('teacherDemoFigureUnavailable')
+        : t(`teacherDemoPracticeGoal_${practiceState?.step || 'demo-return'}`))),
+    practiceState?.step === 'demo-return' && props.guideLiveId === practiceState?.figureId
+      && button(t('teacherDemoViewCopy'), confirmGuideView, { className: 'eb-primary' }),
+    button(t('practiceExit'), () => props.onGuideExit?.(), { className: 'eb-practice-exit' }));
+    if (props.bindClose && !guideMode) props.bindClose(practiceOpen ? () => {setPracticeOpen(false);props.close?.();} : closePage);
+    if (props.bindAppend && !props.practice && !guideMode) props.bindAppend(appendFigure);
+    const guideApi = !guideMode && typeof props.guide === 'function' ? props.guide() : null;
     return h(React.Fragment, null,
-      h('div',{className:'eb-geometry-owner',hidden:practiceOpen}, practiceCoach, h('div', {
+      h('div',{className:'eb-geometry-owner',hidden:practiceOpen || guideShown}, practiceCoach, guideCoach, h('div', {
         className: 'eb-workspace eb-geometry-workspace', ref: workspaceRef,
         onKeyDown: (event) => {
           // An open overlay owns the keyboard, so the shortcuts below never fire under it.
@@ -1565,8 +1607,15 @@ export function createGeometryPage(React, G, ctx, t, shared) {
         'data-practice-file': props.practice ? 'geometry' : undefined }),
       h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: fileInputRef, onChange: importInput,
         'data-practice-file': props.practice ? 'geometry' : undefined })),
-      practiceOpen && h(PracticeBoard,{...props,practice:true,onPracticeExit:()=>setPracticeOpen(false),bindAppend:undefined}));
+      practiceOpen && h(PracticeBoard,{...props,practice:true,onPracticeExit:()=>setPracticeOpen(false),bindAppend:undefined,guide:undefined,guideMode:false}),
+      guideShown && !practiceOpen && guideApi?.progress && h(GuideBoard, {
+        ...props, guide: undefined, guideMode: true, practice: false,
+        guideProgress: guideApi.progress, guideLiveId: guideApi.liveId,
+        onGuideExit: () => { setGuideShown(false); guideApi.close?.(); },
+        bindAppend: undefined, bindClose: undefined, tabActive: true,
+      }));
   }
   function PracticeBoard(props) { return Board(props); }
+  function GuideBoard(props) { return Board(props); }
   return Board;
 }

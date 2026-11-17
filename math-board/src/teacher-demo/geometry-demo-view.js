@@ -16,14 +16,31 @@ export function createGeometryDemoPage(React, G, t, shared) {
   const h = React.createElement;
   const controls = shared.createBoardControls(React, t);
   const icon = shared.createBoardIcons(React);
+  const PracticeNavigation = shared.createPracticeNavigation?.(React, t);
+  const practiceFrames = shared.createGeometryPracticeFrames?.(G);
+  const chapter = typeof shared.createTeacherDemoChapter === 'function' && practiceFrames
+    ? shared.createTeacherDemoChapter({ G, emptyFrame: practiceFrames.empty, placeFigure: shared.placeFigure })
+    : null;
   return function GeometryDemo(props) {
     const [fit, setFit] = React.useState(true);
     const [zoom, setZoom] = React.useState(1);
     const [status, setStatus] = React.useState('');
     const [viewport, setViewport] = React.useState({ width: 1280, height: 640 });
     const stageRef = React.useRef(null);
+    const scrollRef = React.useRef(null);
+    const scrollPos = React.useRef({ left: 0, top: 0 });
+    const progressRef = React.useRef(null);
+    if (chapter && !progressRef.current) {
+      progressRef.current = shared.createPracticeProgress({
+        mode: 'teacher-demo', chapters: [chapter], validateFrame: practiceFrames.validate,
+      });
+    }
+    const [guideOpen, setGuideOpen] = React.useState(false);
+    const [dismissed, setDismissed] = React.useState(false);
+    const [progress, setProgress] = React.useState(() => progressRef.current?.snapshot() ?? null);
     const figure = props.figure;
     const board = figure?.board;
+    const liveId = chapter?.identity(figure) ?? null;
     const width = G.bounds.width;
     const height = G.bounds.height;
     // The teacher's writing is the student's writing, size included: a copied figure must
@@ -41,20 +58,114 @@ export function createGeometryDemoPage(React, G, t, shared) {
       observer.observe(node);
       return () => observer.disconnect();
     }, [figure]);
+    function guideFrame() {
+      const saved = progressRef.current?.snapshot().frame;
+      const base = saved || chapter.start(null);
+      return {
+        ...base,
+        zoom, fit,
+        scroll: { left: scrollRef.current?.scrollLeft || 0, top: scrollRef.current?.scrollTop || 0 },
+      };
+    }
+    function report(event) {
+      if (!guideOpen || !progressRef.current) return;
+      setProgress(progressRef.current.observe(event, guideFrame()));
+    }
+    function openGuide(retry) {
+      if (!chapter || !progressRef.current || !liveId || !figure?.board) return;
+      if (retry || progressRef.current.snapshot().chapters[0]?.status === 'not-started') {
+        chapter.arm({ id: liveId, board: figure.board });
+      }
+      const next = retry
+        ? progressRef.current.enter('teacher-demo-basics', { retry: true })
+        : progressRef.current.enter('teacher-demo-basics');
+      setProgress(next);
+      setDismissed(false);
+      setGuideOpen(true);
+    }
+    function closeGuide() {
+      setGuideOpen(false);
+      setDismissed(true);
+    }
+    function navigate(command, value) {
+      const owner = progressRef.current;
+      if (!owner) return;
+      if (command === 'retry') {
+        if (!liveId || !figure?.board) return;
+        chapter.arm({ id: liveId, board: figure.board });
+        setProgress(owner.enter('teacher-demo-basics', { retry: true }));
+        setGuideOpen(true);
+        return;
+      }
+      if (command === 'skip') {
+        const frame = guideFrame();
+        if (liveId !== owner.snapshot().goal?.figureId) frame.figureBoard = null;
+        owner.saveFrame(frame);
+      }
+      const next = command === 'enter' ? owner.enter(value)
+        : command === 'retryStep' ? owner.retryStep(value)
+          : owner[command]();
+      setProgress(next);
+    }
+    React.useEffect(() => {
+      if (!chapter || !progressRef.current || dismissed || guideOpen || !liveId || !figure?.board) return undefined;
+      if (progressRef.current.snapshot().chapters[0]?.status !== 'not-started') return undefined;
+      chapter.arm({ id: liveId, board: figure.board });
+      setProgress(progressRef.current.enter('teacher-demo-basics'));
+      setGuideOpen(true);
+      return undefined;
+    }, [liveId, dismissed, guideOpen]);
     const at = (id) => {
       const point = board?.points.find((item) => item.id === id);
       return point ? { x: point.x, y: point.y } : null;
     };
+    const unavailable = Boolean(guideOpen && progress?.goal && liveId !== progress.goal.figureId);
     function copy() {
+      if (guideOpen) {
+        const snap = progressRef.current?.snapshot();
+        if (!snap?.goal || liveId !== snap.goal.figureId) {
+          setStatus(t('teacherDemoFigureUnavailable'));
+          return;
+        }
+        if (snap.goal.step !== 'demo-copy' || !figure?.board) return;
+        const before = snap.frame.board;
+        const placed = shared.placeFigure?.(G, before, figure.board);
+        if (!placed?.ok) {
+          setStatus(placed?.reason === 'full' ? t('demoCopyFull') : t('failed'));
+          return;
+        }
+        const frame = { ...guideFrame(), board: placed.board };
+        setProgress(progressRef.current.observe({
+          type: 'copy', figureId: liveId, before, after: placed.board,
+        }, frame));
+        return;
+      }
       if (!board) return;
       const result = props.onCopy?.(board);
       if (result?.ok) return;
       // An internal failure must not read as an empty canvas being "too full".
       setStatus(result?.reason === 'full' ? t('demoCopyFull') : t('failed'));
     }
+    function changeView(nextFit, nextZoom) {
+      if (guideOpen && !unavailable) {
+        if (nextZoom !== undefined && nextZoom !== zoom) report({ type: 'zoom', before: zoom, after: nextZoom, figureId: liveId });
+        if (nextFit !== fit) report({ type: 'fit', before: fit, after: nextFit, figureId: liveId });
+      }
+      setFit(nextFit);
+      if (nextZoom !== undefined) setZoom(nextZoom);
+    }
     const hidden = board ? shared.geometryHiddenPoints(board) : new Set();
     const captionOf = (element) => shared.captionPosition?.(element, at, { width, height }) || null;
-    const textBoxOf = (element) => shared.geometryTextBox(element.text.split('\n'), textMetrics);
+    // The same hit box the geometry page measures. The frame wants that box relative to
+    // the anchor, so the anchor is removed here. There is no shared.geometryTextBox.
+    function textBoxOf(element) {
+      const box = G.textBox(element.text.split('\n'));
+      return { x0: element.x - 6, y0: element.y - textMetrics.size - 4, x1: element.x + box.width + 2, y1: element.y + box.height - textMetrics.size };
+    }
+    function frameTextBox(element) {
+      const hit = textBoxOf(element);
+      return { x: hit.x0 - element.x, y: hit.y0 - element.y, width: hit.x1 - hit.x0, height: hit.y1 - hit.y0 };
+    }
     function drawElement(element) {
       // The student's writing is copied with the figure and drawn at the same size there.
       if (element.type === 'text') {
@@ -72,12 +183,21 @@ export function createGeometryDemoPage(React, G, t, shared) {
     // captions included, and a zoom grows the canvas so the frame scrolls to the rest
     // instead of cropping it.
     const frame = board ? shared.geometryFrame(
-      shared.geometryFrameInputs({ width, height, board, captionOf, textBox: textBoxOf }),
+      shared.geometryFrameInputs({ width, height, board, captionOf, textBox: frameTextBox }),
       viewport, { value: zoom, fit },
     ) : null;
     // The page itself scrolls: a long title or description can push the figure below the
     // fold, and the frame keeps its own scrollbars for a zoomed figure.
-    const canvas = board && h('div', { className: 'eb-demo-canvas-scroll' }, h('svg', {
+    const canvas = board && h('div', {
+      ref: scrollRef, className: 'eb-demo-canvas-scroll',
+      onScroll: guideOpen ? () => {
+        const after = { left: scrollRef.current?.scrollLeft || 0, top: scrollRef.current?.scrollTop || 0 };
+        const before = scrollPos.current;
+        if (before.left === after.left && before.top === after.top) return;
+        scrollPos.current = after;
+        if (!unavailable) report({ type: 'scroll', before, after, figureId: liveId });
+      } : undefined,
+    }, h('svg', {
       className: 'eb-artboard eb-geometry',
       style: { width: frame.box.width, height: frame.box.height },
       viewBox: `${frame.origin.x} ${frame.origin.y} ${frame.span.width} ${frame.span.height}`,
@@ -90,11 +210,34 @@ export function createGeometryDemoPage(React, G, t, shared) {
     board.points.filter((point) => !hidden.has(point.id)).map((point) => h('g', { key: point.id },
       h('circle', { cx: point.x, cy: point.y, ...shared.geometryPointDot(point, controls) }),
       h('text', shared.geometryPointLabel(point, controls), point.label)))));
+    const goal = progress?.goal;
+    const chapterStatus = progress?.chapters?.[0]?.status;
+    const canResume = Boolean(!guideOpen && liveId && (chapterStatus === 'in-progress' || chapterStatus === 'skipped'));
+    const coach = guideOpen && goal && h('section', {
+      className: 'eb-practice-coach', 'aria-label': t('teacherDemoPractice'), 'data-practice-step': goal.step,
+    },
+    h('div', { role: 'status', 'aria-live': 'polite' },
+      h('strong', null, t('teacherDemoPractice')),
+      h('p', null, unavailable ? t('teacherDemoFigureUnavailable') : t(`teacherDemoPracticeGoal_${goal.step}`))),
+    PracticeNavigation && h(PracticeNavigation, { progress, chapters: [chapter], onNavigate: navigate }),
+    goal.step === 'demo-read' && !unavailable && controls.button(t('teacherDemoContinue'), () => {
+      report({ type: 'continue', figureId: liveId });
+    }, { className: 'eb-primary' }),
+    controls.button(t('practiceExit'), closeGuide, { className: 'eb-practice-exit' }));
+    if (props.bindGuide && progressRef.current && chapter) {
+      props.bindGuide({ open: guideOpen, progress: progressRef.current, chapter, liveId, close: closeGuide });
+    }
     return h('div', {
       className: 'eb-workspace eb-demo-workspace',
       onKeyDown: (event) => event.stopPropagation(),
     },
     props.question,
+    coach,
+    canResume && controls.button(t('teacherDemoResume'), () => {
+      setDismissed(false);
+      setGuideOpen(true);
+      setProgress(progressRef.current.snapshot());
+    }, { className: 'eb-primary' }),
     // Without a figure this page says nothing on the canvas: no title, no empty-state
     // sentence. Only the dock below, with its way back to the conversation, stays.
     figure && h('div', { className: 'eb-demo-head' },
@@ -104,7 +247,7 @@ export function createGeometryDemoPage(React, G, t, shared) {
         controls.button(t('demoCopy'), copy, { className: 'eb-primary' }),
         // A read-only page only views the figure, so it keeps the dock's zoom controls but
         // none of the drawing tools.
-        ...controls.zoomPair({ zoom, fit, setFit: (nextFit, nextZoom) => { setFit(nextFit); if (nextZoom !== undefined) setZoom(nextZoom); } }))),
+        ...controls.zoomPair({ zoom, fit, setFit: changeView }))),
     figure && h('div', { ref: stageRef, className: 'eb-demo-stage' }, canvas),
     h('nav', { className: 'eb-demo-dock', 'aria-label': t('canvasTools') },
       controls.backButton(props.close, { icon })),
