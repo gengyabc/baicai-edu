@@ -336,17 +336,32 @@ test('goal and failure copy exist in both languages and describe an unchecked no
   for (const language of ['en', 'zh']) locales[language] = JSON.parse(await readFile(new URL(`../../locale/${language}.json`, import.meta.url), 'utf8'));
   assert.deepEqual(Object.keys(locales.en).sort(), Object.keys(locales.zh).sort());
   const goals = chapter().steps.map((step) => `practiceGoal_${step}`);
-  for (const key of ['practiceNotes', ...goals, ...whyKeys]) {
+  // The reminder about whose words a note is, and that the selection picks its target,
+  // stands once per chapter in the rail head; each step goal only adds its own target.
+  const { noteKey } = chapter();
+  assert.equal(noteKey, 'practiceNotesHint');
+  for (const key of ['practiceNotes', noteKey, ...goals, ...whyKeys]) {
     assert.equal(typeof locales.en[key], 'string', key);
     assert.equal(typeof locales.zh[key], 'string', key);
   }
+  assert.match(locales.en[noteKey], /your own words/i);
+  assert.match(locales.en[noteKey], /not a checked math conclusion/i);
+  assert.match(locales.en[noteKey], /current selection/i);
+  assert.match(locales.zh[noteKey], /自己的话/);
+  assert.match(locales.zh[noteKey], /不是已核对的数学结论/);
+  assert.match(locales.zh[noteKey], /当前选择/);
+  // Every step still says, in two lines, what to do and where its note must land.
   for (const key of goals) {
-    assert.match(locales.en[key], /your own words/i);
-    assert.match(locales.en[key], /not a checked math conclusion/i);
-    assert.match(locales.en[key], /current selection/i);
-    assert.match(locales.zh[key], /自己的话/);
-    assert.match(locales.zh[key], /不是已核对的数学结论/);
-    assert.match(locales.zh[key], /当前选择/);
+    const [action, check, ...rest] = locales.en[key].split('\n');
+    assert.equal(rest.length, 0, `${key}: two lines only`);
+    assert.match(action, /^Do: /, key);
+    assert.match(check, /^Check: /, key);
+    assert.match(locales.en[key], /note/i, key);
+    const [zhAction, zhCheck, ...zhRest] = locales.zh[key].split('\n');
+    assert.equal(zhRest.length, 0, `${key}: 两行`);
+    assert.match(zhAction, /^操作：/, key);
+    assert.match(zhCheck, /^验收：/, key);
+    assert.match(locales.zh[key], /说明/, key);
   }
 });
 

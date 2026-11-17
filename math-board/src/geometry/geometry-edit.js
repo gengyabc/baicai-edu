@@ -266,5 +266,5 @@ export function createGeometryEditChapter({ G, emptyFrame }) {
     const next = ready(frame, saved.index + 1, saved);
     return { goal: next, frame };
   }
-  return { id: 'geometry-edit', titleKey: 'geometryPracticeEdit', steps, start, fresh, createGoal, skip };
+  return { id: 'geometry-edit', titleKey: 'geometryPracticeEdit', noteKey: 'geometryPracticeEditHint', steps, start, fresh, createGoal, skip };
 }

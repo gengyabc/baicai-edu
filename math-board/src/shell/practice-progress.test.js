@@ -137,3 +137,52 @@ test('chapters resume exact practice and reset to step start without awarding re
   assert.deepEqual(progress.reset().frame, { objects: ['a'], note: 'first', history: [1] });
   assert.equal(progress.snapshot().goal.step, 'two');
 });
+
+test('every step goal reads as one action line and one check line, or one closing line', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const goalPrefixes = ['practiceGoal_', 'geometryPracticeGoal_', 'teacherDemoPracticeGoal_'];
+  const isGoal = (key) => goalPrefixes.some((prefix) => key.startsWith(prefix));
+  const limit = { zh: 90, en: 300 };
+  for (const language of ['en', 'zh']) {
+    const dictionary = JSON.parse(await readFile(new URL(`../../locale/${language}.json`, import.meta.url), 'utf8'));
+    const [action, check] = language === 'zh' ? ['操作：', '验收：'] : ['Do: ', 'Check: '];
+    let twoLine = 0;
+    for (const [key, value] of Object.entries(dictionary)) {
+      if (!isGoal(key)) continue;
+      const lines = value.split('\n');
+      assert.ok(lines.length <= 2, `${language}/${key}: at most the action line and the check line`);
+      for (const line of lines) assert.ok(line.trim() !== '', `${language}/${key}: no empty line`);
+      for (const line of lines) assert.ok(line.length <= limit[language], `${language}/${key}: keep a step goal to its point`);
+      if (lines.length === 2) {
+        twoLine++;
+        assert.ok(lines[0].startsWith(action), `${language}/${key}: the first line is the action`);
+        assert.ok(lines[1].startsWith(check), `${language}/${key}: the second line is the check`);
+      } else {
+        // A finished chapter says how it ended; it is not another instruction.
+        assert.ok(/[_-]complete$/.test(key), `${language}/${key}: only a closing line may skip the two lines`);
+        assert.ok(!value.startsWith(action) && !value.startsWith(check), `${language}/${key}: a closing line carries no label`);
+      }
+    }
+    assert.ok(twoLine > 70, `${language}: most steps are taught as action plus check`);
+  }
+});
+
+test('a goal that acts on a selection says to select it first, and clicks are clicks', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const zh = JSON.parse(await readFile(new URL('../../locale/zh.json', import.meta.url), 'utf8'));
+  const selectionLabels = ['名字', '圈为一组', '解散组', '合并', '拆开', '复制', '划去', '删除所选', '重命名的点', '修改文字'];
+  const nothingSelected = ['什么都不选', '不选中任何对象', '没有任何对象'];
+  for (const [key, value] of Object.entries(zh)) {
+    if (!/^(practiceGoal_|geometryPracticeGoal_|teacherDemoPracticeGoal_)/.test(key) || /[_-]complete$/.test(key)) continue;
+    const [action] = value.split('\n');
+    if (selectionLabels.some((label) => action.includes(label))
+      && !action.includes('先选中') && !action.includes('只选中')
+      && !nothingSelected.some((phrase) => action.includes(phrase))) {
+      assert.fail(`${key}: an action on a selection must say to select it first — ${action}`);
+    }
+    // A mouse action is 点击; a bare 点 survives only inside a button label or as a noun.
+    const leftover = action.replace(/「[^」]*」/g, '')
+      .replace(/点击|中点|顶点|起点|端点|落点|自由点|派生点|新点|一点|一个点|两个点|三个点|这个点|那个点|的点|点 A|点停/g, '');
+    assert.ok(!leftover.includes('点'), `${key}: write 点击, not 点 — ${action}`);
+  }
+});

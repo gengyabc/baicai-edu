@@ -8,6 +8,33 @@ release, so 0.6.0 is the current state rather than an upgrade path.
 
 ### Tutorial UI
 
+- Every one of the 88 practice-step goals now reads as two short lines instead of one
+  long paragraph: 操作 says what to do now, 验收 says what makes the step pass, with one
+  most-likely misreading named. English carries the same shape as Do / Check. The
+  repeated boilerplate — that practice is separate from the real answer, that you can
+  exit, that storage may not persist — is gone from the goals because the rail already
+  states it once above them. Closing lines for a finished chapter stay one unlabeled
+  line. The rail keeps one translated string per step and preserves its line break
+  (`white-space: pre-line`); a contract test in `src/shell/practice-progress.test.js`
+  holds every goal to at most two lines, the label on each, and a length ceiling.
+- Every goal and quick-tour line that names a control now says where that control is,
+  in the same words the page uses: the pattern rail and tool rail on the left, the
+  creation colours and grid/snap on the left of the bottom bar, the zoom pair in the
+  middle, 我想说/清空/更多操作 on its right, 放入回答 at the far right, undo/redo at its
+  left end, the selection actions (名字、圈为一组、合并、复制、划去、追加选择、删除所选)
+  on the action bar at the bottom of the canvas, card actions at the bottom of the
+  window, and the practice controls in the step rail on the right.
+- The copy follows spoken Chinese instead of translated English: a mouse action is
+  点击, never a bare 点 (点 survives only as the 点 tool's own label or as a noun such as
+  中点/自由点), and every step that acts on a selection opens with 先选中<what>, then the
+  button. 图案轨 became 图案栏, 选「点」 became 点击左侧工具栏的「点」工具, and buttons in
+  the left rail are named as 工具 or 开关. Two contract checks in
+  `src/shell/practice-progress.test.js` hold this: a selection-dependent goal must say
+  先选中 first, and no goal may write 点 where it means 点击.
+- The note chapters (quantity 写下说明, geometry 编辑与说明) carry one standing reminder
+  in the rail head — a note is your own words, not a checked conclusion, and where it
+  lands follows the current selection — so the nine steps below it no longer repeat
+  that sentence. A chapter now declares it with an optional `noteKey`.
 - First contact with a board is the lightweight spotlight tour again: it
   autoplays once per board, advances only on a real operation, and its last step
   points at 更多操作 → 查看教程. The chaptered tutorial is opt-in and resumes saved

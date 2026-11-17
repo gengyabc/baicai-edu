@@ -275,5 +275,5 @@ export function createQuantityNotesChapter({ M, T, emptyFrame }) {
     const next = ready(frame, index, { ...saved, index });
     return { goal: next, frame };
   }
-  return { id: 'quantity-notes', titleKey: 'practiceNotes', steps, start, fresh, createGoal, skip };
+  return { id: 'quantity-notes', titleKey: 'practiceNotes', noteKey: 'practiceNotesHint', steps, start, fresh, createGoal, skip };
 }
