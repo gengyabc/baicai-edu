@@ -4,7 +4,7 @@
 
 **Blocked by:** 02 — 章节导航、续学与补练。
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 ## 验收条件
 
@@ -17,6 +17,10 @@
 - [x] 实际切换练习中的附带修改记录选项，说明快照与记录是独立附件，关闭记录也可模拟放入；不改真实提交偏好，不产生真实附件。
 - [x] 图案清单、创建颜色、视口、偏好及记录均不写回真实状态；退出/刷新和迟到保存保持隔离。
 - [x] 中英文、鼠标/触屏可完成；自动回归覆盖颜色作用域、图案收起、恢复、清空与选项隔离，记录章节回放并执行相关检查。
+
+## Answer
+
+数量调整章已在本分支，行为未改。章节是 [practice-adjust.js](<../../../math-board/src/quantity/practice-adjust.js>)，集成合并 `7216a69`（`merge: integrate ticket06 quantity adjust and recover practice`）。本票只把状态改为 resolved，不改已有勾选。
 
 ## 边界
 

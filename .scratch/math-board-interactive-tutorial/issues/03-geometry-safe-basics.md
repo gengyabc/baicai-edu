@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 — 数量基础教程与安全练习闭环；02 — 章节导航、续学与补练。
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 ## 验收条件
 
@@ -16,6 +16,10 @@
 - [ ] 宿主合法变更与迟到保存不能被旧恢复备份覆盖或错误写到真实状态；不影响数量草稿或既有附件。
 - [ ] 鼠标/触屏均能完成全部绘制及闭合，多选/取消不依赖快捷键或悬停；中英提示与失败反馈齐全，高亮不遮挡所需画布。
 - [ ] 提供成功/失败推进、跨模式隔离、刷新恢复与防真实上传的自动回归，并记录两种输入的交互回放；重建受影响产物并运行相关检查。
+
+## Answer
+
+几何基础章已在本分支，行为未改。步骤在 [geometry-basics.js](<../../../math-board/src/geometry/geometry-basics.js>)，页面接入在 [geometry-view.js](<../../../math-board/src/geometry/geometry-view.js>)。验收记录是 [tutorial-03-validation.md](<../../../math-board/docs/tutorial-03-validation.md>)。本票只把状态改为 resolved，不勾选原有条目。
 
 ## 边界
 

@@ -211,14 +211,29 @@ test('registered reference execute and projection replay roundtrip without stude
   assert.deepEqual(await tool.execute({ action: 'get' }, exec), { ...recorded, status: 'current' });
 });
 
-test('shared skill JSON recipe executes through the registered geometry tool and projection', async () => {
-  const { readFileSync } = await import('node:fs');
-  const source = readFileSync(new URL('../../../math-common/skills/math-common/references/board-contract.md', import.meta.url), 'utf8');
-  const examples = [...source.matchAll(/```json\n([\s\S]*?)\n```/g)].map(match => JSON.parse(match[1]));
-  const get = examples.find(args => args.action === 'get');
-  const show = structuredClone(examples.find(args => args.action === 'show' && args.figure));
-  assert.ok(get);
-  assert.ok(show);
+test('geometry get and show arguments execute through the registered tool and projection', async () => {
+  // The teaching contract is prose and has no fenced JSON recipes. Build the
+  // arguments here and still run them through the registered tool.
+  const get = { action: 'get' };
+  const show = {
+    action: 'show',
+    expectedRevision: 0,
+    figure: {
+      title: '周长相同，面积会怎样？',
+      description: '周长24厘米，长和宽都是整厘米数。仅示意已知条件。',
+      board: {
+        schemaVersion: 1,
+        points: [
+          { id: 'a', label: 'A', kind: 'free', x: 180, y: 180 },
+          { id: 'b', label: 'B', kind: 'free', x: 600, y: 180 },
+          { id: 'c', label: 'C', kind: 'free', x: 600, y: 420 },
+          { id: 'd', label: 'D', kind: 'derived', x: 180, y: 420, construction: { op: 'rectangle', inputs: ['a', 'b', 'c'] } },
+        ],
+        elements: [{ id: 'rect', type: 'rectangle', role: 'main', note: '周长24厘米', points: ['a', 'b', 'c', 'd'] }],
+        note: '',
+      },
+    },
+  };
   const { tools, projections } = await registeredTool();
   const tool = tools.find(entry => entry.name === 'geometry_board_draw');
   const projection = projections.find(entry => entry.definition.key === 'eduBoardGeometryDemo');

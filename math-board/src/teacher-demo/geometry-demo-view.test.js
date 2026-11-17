@@ -88,6 +88,14 @@ function mount(options = {}) {
   }) };
   storage.set(tutorialStorageKey('quantity'), '1');
   storage.set(tutorialStorageKey('geometry'), '1');
+  // The v1 seen flag no longer blocks first-run. Keep the real boards available
+  // unless the test already stored a practice record.
+  if (!storage.has('baicai-edu-math-board:practice:v2:quantity')) {
+    storage.set('baicai-edu-math-board:practice:v2:quantity', JSON.stringify({ version: 2, current: 'quantity-basics', entries: {} }));
+  }
+  if (!storage.has('baicai-edu-math-board:practice:v2:geometry')) {
+    storage.set('baicai-edu-math-board:practice:v2:geometry', JSON.stringify({ version: 2, current: 'geometry-basics', entries: {} }));
+  }
   const shared = {
     createBoardFilePicker, createBoardIcons, createTutorialController, createTutorialOverlay,
     isTutorialSeen, markTutorialSeen, advanceTutorial, measureTourTarget,

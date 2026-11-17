@@ -1217,15 +1217,25 @@ window.__ModuleLoader__.load({
 
     const pageActive = props.split ? props.tabActive === true : opened;
     const tabActive = pageActive && !practiceOpen;
-    // Quantity safe basics is explicitly entered; first-run routing belongs to
-    // the later release ticket, not the legacy v1 'seen' flag.
+    // A missing practice:v2 record opens this board's basics chapter. The legacy
+    // v1 seen flag is not completion and is neither copied nor deleted.
     const startQuantityTour = () => {
       practiceOpenRef.current = true;
       gesture.current = null; setPreview(null); setDragShape(null);
       setMoreOpen(false); setOverlay(null); setPracticeOpen(true);
     };
+    function practiceRecorded(mode) {
+      try {
+        return globalThis.localStorage?.getItem(`baicai-edu-math-board:practice:v2:${mode}`) != null;
+      } catch { return true; }
+    }
     React.useEffect(() => {
       if (!pageActive) setPracticeOpen(false);
+    }, [pageActive]);
+    React.useEffect(() => {
+      if (props.practice || !pageActive || practiceOpenRef.current) return;
+      if (!shared.createPracticeProgress || practiceRecorded('quantity')) return;
+      startQuantityTour();
     }, [pageActive]);
 
     React.useEffect(() => {
@@ -2780,6 +2790,21 @@ window.__ModuleLoader__.load({
       practiceOpenRef.current = true;
       setMoreOpen(false); setOverlay(null); setRename(null); setWriting(null); setPracticeOpen(true);
     }
+    function practiceRecorded(mode) {
+      try {
+        return globalThis.localStorage?.getItem(`baicai-edu-math-board:practice:v2:${mode}`) != null;
+      } catch { return true; }
+    }
+    React.useEffect(() => {
+      if (guideMode || props.practice || !props.tabActive || practiceOpenRef.current) return undefined;
+      const api = typeof props.guide === 'function' ? props.guide() : null;
+      const goalStep = api?.open ? api.progress?.snapshot()?.goal?.step : null;
+      // The teacher-guide return frame is that guide's copy, not a new geometry chapter.
+      if (goalStep === 'demo-return' || goalStep === 'demo-complete') return undefined;
+      if (!shared.createPracticeProgress || practiceRecorded('geometry')) return undefined;
+      startGeometryTour();
+      return undefined;
+    }, [props.tabActive]);
     function practiceFrame() {
       return {board:boardRef.current,history,selection,tool,pending,construction:constructionPoints.current,
         auxiliary,grid,snap,zoom,fit,scroll:{left:canvasRef.current?.scrollLeft || 0,top:canvasRef.current?.scrollTop || 0}};

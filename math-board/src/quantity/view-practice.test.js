@@ -23,7 +23,14 @@ for (const language of ['en', 'zh']) locales[language] = JSON.parse(await readFi
 const key = 'baicai-edu-math-board:v4:practice-test';
 const realStorage = (storage) => new Map([...storage].filter(([name]) => !name.startsWith('baicai-edu-math-board:practice:')));
 function mount(options = {}) {
-  const browser = installBrowser(options);
+  const storage = options.storage || new Map();
+  // These tests enter practice from the replay menu. A present practice record
+  // keeps the release first-run route from opening basics on mount.
+  const practiceKey = 'baicai-edu-math-board:practice:v2:quantity';
+  if (!storage.has(practiceKey)) {
+    storage.set(practiceKey, JSON.stringify({ version: 2, current: 'quantity-basics', entries: {} }));
+  }
+  const browser = installBrowser({ ...options, storage });
   const hooks = createHooks();
   const { React } = hooks;
   let config = null, clear = null, active = true, uploads = 0, closed = 0, boundClose;
