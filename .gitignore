@@ -36,6 +36,7 @@ data/
 
 # Local agent planning/spec scratch (superpowers)
 docs/superpowers/
+.superpowers/
 
 # Local research references (paper PDFs, book excerpts, source list): large and
 # copyright-sensitive; nothing in the packages links here, so keep it local.
@@ -47,6 +48,8 @@ docs/refs/
 .scratch/*-profile/
 .scratch/packtest/
 .scratch/dsh-skill-provider/node_modules
+# Per-ticket linked worktrees; git worktree remove reclaims them.
+.scratch/worktrees/
 
 # Ad-hoc probes, test logs and browser repro harnesses used while debugging.
 # specs, issue files and decision records under .scratch/ stay tracked.
