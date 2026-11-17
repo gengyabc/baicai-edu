@@ -156,6 +156,11 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       ? board.groups.find((g) => g.id === touchedGroups[0]) : null;
     const dense = board.objects.length > 60;
     const radius = dense ? 13 : 19;
+    // The paper starts above y=0 so the first row keeps a label gutter. A shape is
+    // placed at y=30 and its labels are drawn above it — the tutorial's step number
+    // and the shape's own note tag — so without this band the top edge cut them in
+    // half. Coordinates do not move: only the viewBox origin does.
+    const canvasTop = 24;
     // Rows keep growing downwards: the board is as tall as its lowest shape plus
     // room for the value badge and name, and the canvas scrolls when it passes the
     // visible area. Dragging stays inside the committed board, not this preview.
@@ -304,23 +309,29 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       if (events.length || next.persistence !== practiceProgress?.persistence) setPracticeProgress(next);
     }, [ready, board, trace, history, selection, zoom, fit, attachTrace, toolValue, append, practiceProgress]);
 
-    // New shapes that land below the visible part of a tall board scroll it down so
-    // the student sees the row they just started.
+    // A new shape is brought into view with the labels drawn above and below it, so a
+    // shape added on a scrolled board never sits half off-screen. The paper's own top
+    // edge is the viewBox origin, not 0, so the offset has to come off the same box.
     React.useEffect(() => {
       const added = revealRef.current;
       if (!added.length) return;
       revealRef.current = [];
       const container = canvasRef.current, svg = svgRef.current;
       if (!container || !svg) return;
-      const viewHeight = svg.viewBox?.baseVal?.height
-        ?? Number.parseFloat((svg.getAttribute?.('viewBox') || '').split(/\s+/)[3] || '0');
+      // The viewBox is `minX minY width height`: the paper's top edge and its height.
+      const box = (svg.getAttribute?.('viewBox') || '').split(/\s+/).map((value) => Number.parseFloat(value));
+      const [originY, , viewHeight] = box.slice(1);
       const rect = svg.getBoundingClientRect?.();
       const scale = rect?.height && viewHeight ? rect.height / viewHeight : 0;
-      if (!scale) return;
+      if (!Number.isFinite(scale) || !scale) return;
       const objects = board.objects.filter((o) => added.includes(o.id));
       if (!objects.length) return;
-      const bottom = Math.max(...objects.map((o) => o.y)) * scale;
-      if (bottom > container.scrollTop + container.clientHeight - 40) {
+      // Room for the step number above and the name below, in screen pixels.
+      const labelRoom = 44 * scale;
+      const top = (Math.min(...objects.map((o) => o.y)) - originY) * scale - labelRoom;
+      const bottom = (Math.max(...objects.map((o) => o.y)) - originY) * scale + labelRoom;
+      if (top < container.scrollTop) container.scrollTop = Math.max(0, top);
+      else if (bottom > container.scrollTop + container.clientHeight) {
         container.scrollTop = Math.max(0, bottom - container.clientHeight + 70);
       }
     }, [board]);
@@ -1124,12 +1135,12 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       h('svg', {
         ref: svgRef, className: 'eb-artboard',
         // Quantity paper already fits the width; keep its growing height scrollable.
-        style: fit ? { width: '100%', height: 'auto' } : { width: 800 * zoom, height: boardHeight * zoom },
-        viewBox: `0 0 800 ${boardHeight}`, preserveAspectRatio: 'xMidYMid meet', role: 'group', 'aria-label': t('canvas'),
+        style: fit ? { width: '100%', height: 'auto' } : { width: 800 * zoom, height: (boardHeight + canvasTop) * zoom },
+        viewBox: `0 ${-canvasTop} 800 ${boardHeight + canvasTop}`, preserveAspectRatio: 'xMidYMid meet', role: 'group', 'aria-label': t('canvas'),
         onPointerDown: pointerDown, onPointerMove: pointerMove, onPointerUp: (event) => pointerEnd(event),
         onPointerCancel: (event) => pointerEnd(event, true), onLostPointerCapture: (event) => pointerEnd(event, true),
       },
-      h('rect', { width: 800, height: boardHeight, fill: '#FFFFFF' }),
+      h('rect', { x: 0, y: -canvasTop, width: 800, height: boardHeight + canvasTop, fill: '#FFFFFF' }),
       board.groups.map(groupBoundary),
       board.objects.map(renderObject),
       !board.objects.length && h('g', { pointerEvents: 'none' },

@@ -874,7 +874,7 @@ test('denied file picker permission falls back to ordinary input while cancellat
 test('tapping fills ten shapes per row and a taller board grows for scrolling', () => {
   withMount({}, (h) => {
     const artboard = () => h.find((node) => node.props.className === 'eb-artboard');
-    assert.equal(artboard().props.viewBox, '0 0 800 400');
+    assert.equal(artboard().props.viewBox, '0 -24 800 424');
     for (let i = 0; i < 10; i++) h.add('circle');
     assert.deepEqual(h.board().objects.map(({ x, y }) => [x, y]), Array.from({ length: 10 }, (_, i) => [30 + i * 52, 30]));
     h.add('circle');
@@ -882,10 +882,31 @@ test('tapping fills ten shapes per row and a taller board grows for scrolling', 
     for (let i = 0; i < 69; i++) h.add('circle');
     assert.equal(h.board().objects.length, 80);
     assert.deepEqual([h.board().objects.at(-1).x, h.board().objects.at(-1).y], [30 + 9 * 52, 30 + 7 * 48]);
-    assert.equal(artboard().props.viewBox, '0 0 800 426');
+    assert.equal(artboard().props.viewBox, '0 -24 800 450');
     // Quantity paper fills the width without squeezing a tall board into the frame.
     assert.deepEqual(artboard().props.style, { width: '100%', height: 'auto' });
     assert.equal(artboard().props.preserveAspectRatio, 'xMidYMid meet');
+  });
+});
+
+test('a new shape is revealed together with the labels above and below it', () => {
+  withMount({}, (h) => {
+    for (let i = 0; i < 10; i++) h.add('circle');
+    const artboard = () => h.find((node) => node.props.className === 'eb-artboard');
+    const svg = artboard().props.ref.current;
+    const canvas = h.find((node) => node.props.className === 'eb-canvas-scroll').props.ref.current;
+    // One pixel per board unit: viewBox height 424 at a 424px-tall picture.
+    svg.getAttribute = (name) => (name === 'viewBox' ? artboard().props.viewBox : null);
+    svg.getBoundingClientRect = () => ({ width: 800, height: 424 });
+    canvas.clientHeight = 400;
+    canvas.scrollTop = 300;
+    h.add('circle');
+    // Row 2 (y=78) with 44 units of label room, measured from the paper's top (-24).
+    assert.equal(canvas.scrollTop, 58, 'a shape added above the scroll position is scrolled back into view');
+    canvas.scrollTop = 0;
+    canvas.clientHeight = 100;
+    h.add('circle');
+    assert.equal(canvas.scrollTop, 116, 'a shape added below the visible part scrolls down, leaving label room');
   });
 });
 

@@ -62,6 +62,19 @@ release, so 0.6.0 is the current state rather than an upgrade path.
   one where it stopped, and with no figure only says there is nothing to practise yet
   (no guide starts, no progress is written). The door hides while the rail is up.
 
+### Quantity canvas
+
+- The paper keeps a 24-unit label gutter above the first row, so the labels drawn above
+  a shape are no longer cut by the canvas top edge: the tutorial's step number over
+  shape 1 (and 2) used to lose its top half against `viewBox 0 0 800 …`. Only the viewBox
+  origin moves — every figure keeps its own coordinates, saved boards included, and
+  tapping and dragging still resolve through the same screen transform.
+- A new shape is brought into view with the labels above and below it, in both
+  directions: the canvas used to scroll down for a row that started below the visible
+  part, but a shape that landed above the current scroll stayed off-screen. The old
+  effect also scaled `y` from the viewBox's top edge, which the gutter origin would have
+  put 24 units out.
+
 ## [0.6.0]
 
 Initial state of the board as a DSH bundle.

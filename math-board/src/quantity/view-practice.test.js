@@ -15,7 +15,7 @@ import { createQuantityNotesChapter } from './practice-notes.js';
 import { createQuantityFilesChapter } from './practice-files.js';
 import { createGeometryModel } from '../geometry/model.js';
 import { createPracticeProgress, createPracticeRail } from '../shell/practice-progress.js';
-import { createHooks, installBrowser, text } from '../testing/test-harness.js';
+import { createHooks, installBrowser, text, walk } from '../testing/test-harness.js';
 
 const M = createBoardModel(), T = createBoardTrace(M);
 const locales = {};
@@ -103,6 +103,26 @@ function mount(options = {}) {
     dispose() { hooks.unmount(); browser.restore(); },
   };
 }
+
+test('the paper keeps a label gutter above the first row so a practice number is not cut', () => {
+  const app = mount();
+  try {
+    app.start(); app.add();
+    const artboard = app.find((node) => node.props.className === 'eb-artboard');
+    const [originX, originY, width, height] = artboard.props.viewBox.split(' ').map(Number);
+    assert.equal(originX, 0);
+    assert.equal(originY, -24, 'the first row sits below the paper top, not on it');
+    const paper = app.nodes().find((node) => node.type === 'rect' && node.props.width === width);
+    assert.deepEqual([paper.props.y, paper.props.height], [originY, height], 'the paper covers the whole viewBox');
+    const object = app.objects()[0];
+    const [, , centerY] = /^translate\(([-\d.]+) ([-\d.]+)\)$/.exec(object.props.transform).map(Number);
+    const number = walk(object).find((node) => node.type === 'text' && node.props.fill === '#2563EB');
+    assert.ok(number, 'the tutorial marks its target with a number above the shape');
+    const numberTop = centerY + number.props.y - number.props.fontSize;
+    assert.ok(numberTop >= originY, `the step number at ${numberTop} stays on the paper`);
+    assert.ok(centerY - 19 >= originY, 'the whole shape stays on the paper');
+  } finally { app.dispose(); }
+});
 
 test('independent fixture chapter starts with sufficient practice and retains other chapter progress on retry', () => {
   const chapter = ({ M, emptyFrame }) => ({ id: 'fixture-independent', titleKey: 'practiceOptional', optional: true, steps: ['add'],
