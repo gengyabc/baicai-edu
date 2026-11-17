@@ -923,6 +923,18 @@ test('opening geometry during the teacher guide does not cover the return frame'
     const guide = JSON.parse(shell.raw(DEMO_PRACTICE)).entries['teacher-demo-basics'];
     assert.equal(guide.goal.copied, true);
     assert.ok(guide.frame.board.elements.length >= 1, 'the teacher-demo record still holds the copy');
+    shell.press(shell.t('teacherDemoViewCopy'));
+    assert.equal(shell.step(), 'demo-complete', 'confirming the copy keeps the guide open on its last step');
+    shell.tab('demo');
+    shell.tab('geometry');
+    assert.equal(shell.storage.has(GEOMETRY_PRACTICE), false, 'an open guide on its last step still holds the visit, so no basics yet');
+    shell.press(shell.t('practiceExit'));
+    assert.equal(shell.visibleNodes().some((node) => node.props && node.props['data-practice-step'] !== undefined), false, 'the same visit does not open geometry basics the moment the guide closes');
+    shell.tab('demo');
+    shell.tab('geometry');
+    assert.equal(shell.storage.has(GEOMETRY_PRACTICE), true, 'a later visit opens geometry basics once the guide is closed');
+    assert.deepEqual(Object.keys(JSON.parse(shell.raw(GEOMETRY_PRACTICE)).entries), ['geometry-basics']);
+    assert.equal(shell.step(), 'point');
   } finally { shell.unmount(); }
 });
 
@@ -968,6 +980,65 @@ test('after practice, quantity insert can attach a trace, geometry insert has no
     assert.ok(shell.texts.some((value) => value.includes('几何说明')));
     assert.equal(shell.sends, 0);
     assert.equal(shell.raw(GEOMETRY_KEY), before);
+  } finally { shell.unmount(); globalThis.File = previousFile; }
+});
+
+test('non-board notes travel inside the snapshot while only the board note reaches the composer', () => {
+  const previousFile = globalThis.File;
+  globalThis.File = class { constructor(parts, name, options) { this.parts = parts; this.name = name; this.type = options?.type; } };
+  const quantityStorage = new Map();
+  let quantityBoard = M.empty();
+  quantityBoard = M.reduce(quantityBoard, { type: 'add', shape: 'circle', x: 300, y: 200 });
+  quantityBoard = M.reduce(quantityBoard, { type: 'add', shape: 'square', x: 420, y: 200 });
+  const [first, second] = quantityBoard.objects;
+  quantityBoard = M.reduce(quantityBoard, { type: 'annotate', target: 'object', id: first.id, value: '这个圆是我的对象说明' });
+  quantityBoard = M.reduce(quantityBoard, { type: 'annotate', target: 'selection', ids: [first.id, second.id], value: '这两个是一组选择说明' });
+  quantityBoard = M.reduce(quantityBoard, { type: 'note', value: '整板说明' });
+  quantityStorage.set('baicai-edu-math-board:v4:quantity-release', M.serialize(quantityBoard));
+  const quantity = mountQuantity({ storage: quantityStorage });
+  try {
+    quantity.click(quantity.t('practiceExit'));
+    quantity.click(quantity.t('insert'));
+    assert.equal(quantity.drafts.length, 1);
+    const boardFile = quantity.drafts[0].find((file) => file.name === quantity.t('attachmentName'));
+    const body = String(boardFile.parts.join(''));
+    const snapshot = JSON.parse(body);
+    assert.ok(snapshot.objects.some((object) => object.note === '这个圆是我的对象说明'), 'the object note is inside the board snapshot');
+    assert.ok(snapshot.notes.some((note) => note.text === '这两个是一组选择说明'), 'the selection note is inside the board snapshot');
+    assert.equal(snapshot.note, '整板说明');
+    assert.equal(quantity.texts.length, 1, 'only the board note reaches the composer');
+    assert.ok(quantity.texts[0].includes('整板说明'));
+    assert.equal(quantity.texts[0].includes('这个圆是我的对象说明'), false);
+    assert.equal(quantity.texts[0].includes('这两个是一组选择说明'), false);
+    assert.equal(quantity.sends, 0);
+  } finally { quantity.dispose(); }
+
+  const geometryStorage = new Map();
+  let geometryBoard = G.reduce(G.empty(), { type: 'addPoint', x: 180, y: 160 });
+  geometryBoard = G.reduce(geometryBoard, { type: 'addPoint', x: 320, y: 160 });
+  geometryBoard = G.reduce(geometryBoard, { type: 'addElement', elementType: 'segment', points: geometryBoard.points.map((point) => point.id), role: 'main' });
+  const [pointA] = geometryBoard.points;
+  const [segment] = geometryBoard.elements;
+  geometryBoard = G.reduce(geometryBoard, { type: 'annotate', target: 'point', id: pointA.id, value: '这个点是点说明' });
+  geometryBoard = G.reduce(geometryBoard, { type: 'annotate', target: 'element', id: segment.id, value: '这条边是图形说明' });
+  geometryBoard = G.reduce(geometryBoard, { type: 'note', value: '几何整板说明' });
+  geometryStorage.set(GEOMETRY_KEY, JSON.stringify(geometryBoard));
+  const shell = mountShell({ storage: geometryStorage });
+  try {
+    shell.press(shell.t('title'));
+    shell.tab('geometry');
+    shell.press(shell.t('practiceExit'));
+    shell.press(shell.t('insert'));
+    assert.equal(shell.drafts.at(-1).length, 1);
+    const snapshot = JSON.parse(String(shell.drafts.at(-1)[0].parts.join('')));
+    assert.ok(snapshot.points.some((point) => point.note === '这个点是点说明'), 'the point note is inside the geometry snapshot');
+    assert.ok(snapshot.elements.some((element) => element.note === '这条边是图形说明'), 'the element note is inside the geometry snapshot');
+    assert.equal(snapshot.note, '几何整板说明');
+    assert.equal(shell.texts.length, 1, 'only the board note reaches the composer');
+    assert.ok(shell.texts[0].includes('几何整板说明'));
+    assert.equal(shell.texts[0].includes('这个点是点说明'), false);
+    assert.equal(shell.texts[0].includes('这条边是图形说明'), false);
+    assert.equal(shell.sends, 0);
   } finally { shell.unmount(); globalThis.File = previousFile; }
 });
 

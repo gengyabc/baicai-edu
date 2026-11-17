@@ -13,7 +13,7 @@ Handler replay is not a browser pass. No new server was started, and the existin
 
 ## Page differences
 
-- While the teacher-guide step is `demo-return` or `demo-complete`, the geometry page is showing that guide’s copy. First-run does not cover it. The effect watches tab activation only, so the same visit does not auto-open geometry basics after that frame ends. Leaving the tab and coming back still opens `geometry-basics` when no geometry practice record exists.
+- While the teacher-guide step is `demo-return` or `demo-complete`, the geometry page is showing that guide’s copy. First-run does not cover it, and a guide that is open on any step — including its last one — owns the visit: leaving the geometry tab and coming back still does not start geometry basics. The route is tab-activation only, so closing the guide does not open basics in that same visit either. Once the guide is closed and no geometry practice record exists, a later visit to the geometry tab opens `geometry-basics`. All three states are executed in `opening geometry during the teacher guide does not cover the return frame`.
 - A `localStorage.getItem` throw is treated as “a record exists”, so a read failure does not invent a first run. The storage scenario below fails `setItem`, not `getItem`.
 - File chapters ship `files-save` and `files-open`. F03 is the cancel and download honesty on those steps. There is no third step id.
 - `practiceComplete` remains the chapter sentence “基础操作练习已完成”. The catalogue claim asserts the page does not say the whole tutorial is complete. Locale files were not changed.
@@ -24,13 +24,13 @@ Handler replay is not a browser pass. No new server was started, and the existin
 - `node math-board/build.mjs`: client rebuilt. `client.js` was not hand-edited.
 - `node --check math-board/client.js`: passed.
 - `git diff --check`: passed.
-- Focused command, **24/24 passed** for the release file and the tool-schema test. `opening geometry during the teacher guide does not cover the return frame` opens Geometry during `demo-read`, finishes the guide through copy and return, and comes back: the return frame is showing, and that visit does not write `practice:v2:geometry`. The focused run of this fix, including the geometry and teacher-demo page tests, is **100/100 passed**:
+- Focused command, **25/25 passed** for the release file and the tool-schema test. `opening geometry during the teacher guide does not cover the return frame` opens Geometry during `demo-read`, finishes the guide through copy and return, comes back with the guide still on `demo-return`, confirms the copy into `demo-complete`, and re-enters Geometry once more: the guide holds the visit every time and none of those visits writes `practice:v2:geometry`. It then exits the guide, checks the same visit does not open basics, and re-enters Geometry: `geometry-basics` opens and that key is written. The focused run of this fix, including the geometry and teacher-demo page tests, is **101/101 passed**:
 
   ```sh
   node --test math-board/tests/tutorial-release.test.js math-board/src/host/tool-schema.test.js math-board/src/geometry/geometry-view.test.js math-board/src/teacher-demo/geometry-demo-view.test.js
   ```
 
-- `npm --prefix math-board test`: **519 tests, 519 passed, 0 failed**.
+- `npm --prefix math-board test`: **521 tests, 521 passed, 0 failed**.
 
 ## Scenarios
 
@@ -50,7 +50,7 @@ Handler replay is not a browser pass. No new server was started, and the existin
 | 12 | 输入回放 | Partly executed. Quantity’s first add and geometry’s first point accept `mouse` and `touch` with `shiftKey: false`. No Shift, hover, or keyboard shortcut is required for those controls. Not executed here: multi-select, polygon close, and label edit as their own pointer-type passes. |
 | 13 | 界面回归 | Not executed for layout. The unfinished-construction test records that a real small-screen, scroll, and window-resize pass was not run. The same test does show the exit control present and not disabled while a note overlay is open and while a segment is unfinished. English was not replayed in this file. This is a handler replay, not a browser pass. |
 | 14 | 存储异常 | Executed for write failure. `setItem` throws on practice keys; the page shows `practiceStorageWarning`; file-saved, inserted, and downloaded success strings are absent; exit works; the real draft stays; sends stay 0. A `getItem` throw does not auto-open and was not given its own test. |
-| 15 | 协议回归 | Executed. After exit, quantity insert can attach `我的修改记录.json` and puts the board note in the composer. Geometry insert attaches only `我的几何画板.json` and the board note, with no trace. Neither insert sends or deletes the draft. |
+| 15 | 协议回归 | Executed. After exit, quantity insert attaches `我的画板.json` plus `我的修改记录.json` and puts the board note in the composer. Geometry insert attaches only `我的几何画板.json` and the board note, with no trace. Neither insert sends or deletes the draft. `non-board notes travel inside the snapshot while only the board note reaches the composer` writes an object note, a selection note, a point note and an element note, then reads the attached files: those four travel inside `我的画板.json` and `我的几何画板.json`, and the composer body holds only the board note. |
 
 ## Unexecuted / limits
 
