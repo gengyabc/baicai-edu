@@ -172,15 +172,25 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
 
     const pageActive = props.split ? props.tabActive === true : opened;
     const tabActive = pageActive && !practiceOpen;
-    // Quantity safe basics is explicitly entered; first-run routing belongs to
-    // the later release ticket, not the legacy v1 'seen' flag.
+    // A missing practice:v2 record opens this board's basics chapter. The legacy
+    // v1 seen flag is not completion and is neither copied nor deleted.
     const startQuantityTour = () => {
       practiceOpenRef.current = true;
       gesture.current = null; setPreview(null); setDragShape(null);
       setMoreOpen(false); setOverlay(null); setPracticeOpen(true);
     };
+    function practiceRecorded(mode) {
+      try {
+        return globalThis.localStorage?.getItem(`baicai-edu-math-board:practice:v2:${mode}`) != null;
+      } catch { return true; }
+    }
     React.useEffect(() => {
       if (!pageActive) setPracticeOpen(false);
+    }, [pageActive]);
+    React.useEffect(() => {
+      if (props.practice || !pageActive || practiceOpenRef.current) return;
+      if (!shared.createPracticeProgress || practiceRecorded('quantity')) return;
+      startQuantityTour();
     }, [pageActive]);
 
     React.useEffect(() => {

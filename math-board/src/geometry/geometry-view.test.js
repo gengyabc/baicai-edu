@@ -82,9 +82,16 @@ function mount(options = {}) {
   const ctx = { locale: { subscribe: () => () => {}, getSnapshot: () => 'zh' },
     get: (name) => (options.conversation ? options.conversation(name) : localConversation) };
   const inputActions = options.inputActions || localInputActions;
-  // Mark both tutorials seen so first-open autoplay does not alter existing UI assertions.
+  // The v1 seen flag no longer blocks first-run. These tests enter practice explicitly,
+  // so a practice record is present unless the test already stored one.
   storage.set(tutorialStorageKey('quantity'), '1');
   storage.set(tutorialStorageKey('geometry'), '1');
+  if (!storage.has('baicai-edu-math-board:practice:v2:quantity')) {
+    storage.set('baicai-edu-math-board:practice:v2:quantity', JSON.stringify({ version: 2, current: 'quantity-basics', entries: {} }));
+  }
+  if (!storage.has('baicai-edu-math-board:practice:v2:geometry')) {
+    storage.set('baicai-edu-math-board:practice:v2:geometry', JSON.stringify({ version: 2, current: 'geometry-basics', entries: {} }));
+  }
   const shared = {
     createBoardFilePicker, createBoardIcons, createTutorialController, createTutorialOverlay,
     isTutorialSeen, markTutorialSeen, advanceTutorial, measureTourTarget,

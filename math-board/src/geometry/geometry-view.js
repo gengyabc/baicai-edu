@@ -264,6 +264,22 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       practiceOpenRef.current = true;
       setMoreOpen(false); setOverlay(null); setRename(null); setWriting(null); setPracticeOpen(true);
     }
+    function practiceRecorded(mode) {
+      try {
+        return globalThis.localStorage?.getItem(`baicai-edu-math-board:practice:v2:${mode}`) != null;
+      } catch { return true; }
+    }
+    React.useEffect(() => {
+      if (guideMode || props.practice || !props.tabActive || practiceOpenRef.current) return undefined;
+      const api = typeof props.guide === 'function' ? props.guide() : null;
+      // Any open teacher guide owns this visit. Starting basics here would stay
+      // open through the return step, because leaving the tab does not close
+      // practice while the guide is open, and the return frame is hidden then.
+      if (api?.open) return undefined;
+      if (!shared.createPracticeProgress || practiceRecorded('geometry')) return undefined;
+      startGeometryTour();
+      return undefined;
+    }, [props.tabActive]);
     function practiceFrame() {
       return {board:boardRef.current,history,selection,tool,pending,construction:constructionPoints.current,
         auxiliary,grid,snap,zoom,fit,scroll:{left:canvasRef.current?.scrollLeft || 0,top:canvasRef.current?.scrollTop || 0}};
