@@ -204,6 +204,10 @@ function mount(options = {}) {
       find((node) => node.type === 'button' && text(node) === translate('tutorialReplay')).props.onClick();
       refresh();
     },
+    key(name) {
+      browser.key(name);
+      refresh();
+    },
     unmount() { unmountPages(); browser.restore(); },
   };
   try { refresh(); } catch (error) { api.unmount(); throw error; }
@@ -413,5 +417,66 @@ test('an open geometry practice record stays put and blocks return until that pa
     h.press(locale.teacherDemoViewCopy, 'mouse');
     assert.equal(step(h), 'demo-complete');
     assert.equal(JSON.parse(h.raw(PRACTICE_KEY)).current, JSON.parse(openRecord).current);
+  } finally { h.unmount(); }
+});
+
+test('delete and escape leave the real geometry draft alone while the guide frame is showing', () => {
+  const figure = segmentFigure();
+  const storage = new Map();
+  storage.set(SEEN_KEY, '7');
+  storage.set(PRACTICE_KEY, '{"version":2,"current":"geometry-edit","entries":{"geometry-edit":"keep"}}');
+  const practiceSeed = storage.get(PRACTICE_KEY);
+  const h = mount({
+    storage,
+    useProjection: () => ({ revision: 1, figure }),
+  });
+  try {
+    h.press(locale.title, 'mouse');
+    h.tab('geometry');
+    h.tool('point');
+    h.clickAt(140, 160);
+    const committedId = JSON.parse(h.raw(GEOMETRY_KEY)).points[0].id;
+    h.tool('segment');
+    h.clickAt(400, 280);
+    const drafted = h.raw(GEOMETRY_KEY);
+    assert.equal(JSON.parse(drafted).points.length, 2, 'the unfinished segment has a construction point');
+    // Select the committed point without leaving the segment tool, so Delete and Escape
+    // would each change this draft if the hidden board stayed keyboard-live.
+    h.find((node) => node.props && node.props['data-point'] === committedId).props.onKeyDown({
+      key: 'Enter', preventDefault() {},
+    });
+    h.render();
+    h.tab('demo');
+    h.press(locale.teacherDemoContinue, 'mouse');
+    h.press(locale.zoomIn, 'mouse');
+    scrollDemo(h, 28, 16);
+    h.press(locale.demoCopy, 'mouse');
+    h.tab('geometry');
+    assert.equal(step(h), 'demo-return');
+    const frozen = h.raw(GEOMETRY_KEY);
+    assert.equal(frozen, drafted);
+    assert.equal(h.raw(PRACTICE_KEY), practiceSeed);
+    h.key('Delete');
+    assert.equal(h.raw(GEOMETRY_KEY), frozen, 'Delete does not change the real geometry draft');
+    h.key('Escape');
+    assert.equal(h.raw(GEOMETRY_KEY), frozen, 'Escape does not publish the real geometry draft');
+    assert.equal(h.raw(PRACTICE_KEY), practiceSeed);
+    const guideBoard = () => JSON.parse(h.raw(DEMO_KEY)).entries['teacher-demo-basics'].frame.board;
+    const victim = guideBoard().points[0].id;
+    h.find((node) => node.props && node.props['data-point'] === victim).props.onKeyDown({
+      key: 'Enter', preventDefault() {},
+    });
+    h.render();
+    h.key('Delete');
+    assert.equal(guideBoard().points.some((point) => point.id === victim), false, 'the guide copy still accepts Delete');
+    assert.equal(h.raw(GEOMETRY_KEY), frozen);
+    const beforeEscape = guideBoard().points.length;
+    h.tool('segment');
+    h.clickAt(480, 360);
+    assert.ok(guideBoard().points.length > beforeEscape, 'the guide copy can start a shape');
+    h.key('Escape');
+    assert.equal(guideBoard().points.length, beforeEscape, 'the guide copy still accepts Escape');
+    assert.equal(h.raw(GEOMETRY_KEY), frozen);
+    assert.equal(h.raw(PRACTICE_KEY), practiceSeed);
   } finally { h.unmount(); }
 });

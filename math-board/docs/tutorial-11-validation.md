@@ -22,19 +22,19 @@ Validated on branch `feat/tutorial-11`. Only `teacher-demo-basics` was added. It
 ## Executed
 
 - `node math-board/build.mjs`: client rebuilt. `node --check math-board/client.js`: passed. `git diff --check`: passed.
-- Focused command, **85/85 passed**:
+- Focused command, **86/86 passed**:
 
   ```sh
   node --test math-board/src/teacher-demo/teacher-demo-practice.test.js math-board/src/teacher-demo/geometry-demo-view.test.js math-board/src/geometry/geometry-view.test.js math-board/tests/practice-teacher-demo-bundle.test.js
   ```
 
-- `npm --prefix math-board test`: **501 tests, 500 passed, 1 failed**. The only failure is the pre-existing [tool-schema.test.js](<../src/host/tool-schema.test.js>) assertion at line 220 (`assert.ok(get)` on the shared-skill fenced JSON recipe). Teaching contracts were not changed. This work adds 19 tests: 6 chapter tests, 9 mounted handler replays, and 4 bundle tests. Both locale files have the same 427 UI keys. This task adds the 10 `teacherDemo*` keys.
+- `npm --prefix math-board test`: **501 tests, 500 passed, 1 failed**. The only failure is the pre-existing [tool-schema.test.js](<../src/host/tool-schema.test.js>) assertion at line 220 (`assert.ok(get)` on the shared-skill fenced JSON recipe). Teaching contracts were not changed. This work adds 20 tests: 6 chapter tests, 10 mounted handler replays, and 4 bundle tests. The full suite was not re-run after the keyboard fix; the 501/500/1 result above is from before that replay. Both locale files have the same 427 UI keys. This task adds the 10 `teacherDemo*` keys.
 
 ## Operation-goal replay (not a browser pass)
 
 [teacher-demo-practice.test.js](<../src/teacher-demo/teacher-demo-practice.test.js>) drives the goals directly. Rendering and a `recorded` tool result do not pass continue. An unchanged zoom, a scroll that does not move, and a scroll while zoom is 1 and fit is true do not pass the view step. A copy event without a successful append, a `full` or `empty` result, and a replaced figure do not record the copy. `view-copy` is the only return pass. `start()` returns the empty frame. `fresh()` opens the catalogue entry. `createGoal` throws `Invalid demo goal` and does not repair the saved object. `skip` does not call `observe`. Skipping into return may place the current figure and does not set `copied`. The seen flag is not a completed goal, and entering this chapter does not write the geometry or quantity practice keys.
 
-[geometry-demo-view.test.js](<../src/teacher-demo/geometry-demo-view.test.js>) is a new file. It replays the mounted demo page and then the geometry page in Chinese and English. The stand-in pointer is `mouse` and `touch`. Both reach continue, zoom, copy, and return by `onClick({ pointerType })`. No figure and an empty board do not start the guide. A text figure frames without `shared.geometryTextBox`. Copy leaves a pre-seeded real geometry draft, the real quantity draft, attachments, and sends unchanged, and does not call `onCopy`. The system file dialog is wrapped and stays at zero calls. Hiding or replacing the figure blocks the copy; retry starts against the current figure. An open geometry practice record stays unchanged until the student exits it, and only then can the return control pass.
+[geometry-demo-view.test.js](<../src/teacher-demo/geometry-demo-view.test.js>) is a new file. It replays the mounted demo page and then the geometry page in Chinese and English. The stand-in pointer is `mouse` and `touch`. Both reach continue, zoom, copy, and return by `onClick({ pointerType })`. No figure and an empty board do not start the guide. A text figure frames without `shared.geometryTextBox`. Copy leaves a pre-seeded real geometry draft, the real quantity draft, attachments, and sends unchanged, and does not call `onCopy`. The system file dialog is wrapped and stays at zero calls. Hiding or replacing the figure blocks the copy; retry starts against the current figure. An open geometry practice record stays unchanged until the student exits it, and only then can the return control pass. While the guide frame is showing, Delete and Escape on the hidden real board do not change `baicai-edu-math-board:geometry:v1:…` and do not write `practice:v2:geometry`. The guide copy still accepts both keys.
 
 ## Unexecuted / limits
 

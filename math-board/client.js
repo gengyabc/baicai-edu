@@ -2645,7 +2645,9 @@ window.__ModuleLoader__.load({
     const [practiceOpen, setPracticeOpen] = React.useState(false);
     const [guideShown, setGuideShown] = React.useState(false);
     const practiceOpenRef = React.useRef(false);
+    const guideShownRef = React.useRef(false);
     practiceOpenRef.current = practiceOpen;
+    guideShownRef.current = guideShown;
     const alive = React.useRef(true);
     const practiceRef = React.useRef(null);
     const guideMode = props.guideMode === true;
@@ -2657,7 +2659,7 @@ window.__ModuleLoader__.load({
     const [progress,setProgress] = React.useState(() => practiceRef.current?.snapshot());
     const practiceEvents = React.useRef([]);
     const practiceState = progress?.goal;
-    function editable() { return alive.current && (props.practice || guideMode || !practiceOpenRef.current); }
+    function editable() { return alive.current && (props.practice || guideMode || (!practiceOpenRef.current && !guideShownRef.current)); }
     function practiceEvent(event) { if ((props.practice || guideMode) && alive.current) { practiceEvents.current.push(event); setProgress({...practiceRef.current.snapshot()}); } }
     function selectUser(ids) { setSelection(ids); practiceEvent({type:'select',selection:ids,after:boardRef.current}); }
     const workspaceRef = React.useRef(null);
@@ -2758,7 +2760,7 @@ window.__ModuleLoader__.load({
       return () => document.removeEventListener('pointerdown', closeMenus);
     }, [moreOpen]);
 
-    const tabActive = props.tabActive === true && !practiceOpen;
+    const tabActive = props.tabActive === true && !practiceOpen && !guideShown;
     React.useEffect(() => {
       if (props.tabActive || guideMode || props.practice) return undefined;
       const guideOpen = typeof props.guide === 'function' && props.guide()?.open;
