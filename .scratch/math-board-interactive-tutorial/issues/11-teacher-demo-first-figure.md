@@ -28,7 +28,7 @@
 - 引导帧盖住几何页时，真实几何画板不再接收文档上的 Delete 和 Escape，`editable()` 对该实例为假，所以不会改真实草稿，也不会写 `practice:v2:geometry`。已经打开的几何练习章不会因此被关掉。引导副本自己的 Delete 和 Escape 仍然改副本。
 - 已勾选的项由章节测试和中英、`mouse`／`touch` 处理器回放覆盖。回放在新文件 [geometry-demo-view.test.js](<../../../math-board/src/teacher-demo/geometry-demo-view.test.js>)，调用的是按钮的 `onClick({ pointerType })`。这不是真实浏览器，也不是真实鼠标或触屏。
 - 最后一项未勾。自动回归、构建、`node --check` 和 `git diff --check` 已执行，未测能力写在验证记录里。该项同时要求真实鼠标和触屏设备上的完整路径，这一部分没有做，所以整项不勾。
-- 实现提交 `684aae3e5d040e12b32db9d9ceb72f7b2c187d6d`。未合并，未推送。
+- 实现提交 `684aae3e5d040e12b32db9d9ceb72f7b2c187d6d`，键盘隔离修复 `606566cd2074ac3bfdf51186be4c321f31723575`，集成合并 `24d7333`。未推送。
 - 聚焦命令为 **86/86 通过**。全量 `npm --prefix math-board test` 为 **501 项、500 通过、1 失败**，那是键盘修复之前的结果，这次没有重跑。唯一失败是既有 [tool-schema.test.js:214–220](<../../../math-board/src/host/tool-schema.test.js#L214-L220>) 的 fenced JSON recipe，`assert.ok(get)`。未改教学契约。本章新增 20 个测试：6 个章节测试、10 个处理器回放、4 个打包测试。中英词典 UI 键数相同（427）。
 - 详细命令、计数和未执行边界见 [验证记录](<../../../math-board/docs/tutorial-11-validation.md>)。接入说明见 [安全教程扩展接口](<../../../math-board/README.md#安全教程扩展接口>)。
 
