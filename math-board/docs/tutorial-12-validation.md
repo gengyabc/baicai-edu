@@ -24,10 +24,10 @@ Handler replay is not a browser pass. No new server was started, and the existin
 - `node math-board/build.mjs`: client rebuilt. `client.js` was not hand-edited.
 - `node --check math-board/client.js`: passed.
 - `git diff --check`: passed.
-- Focused command, **23/23 passed**:
+- Focused command, **24/24 passed** for the release file and the tool-schema test. `opening geometry during the teacher guide does not cover the return frame` opens Geometry during `demo-read`, finishes the guide through copy and return, and comes back: the return frame is showing, and that visit does not write `practice:v2:geometry`. The focused run of this fix, including the geometry and teacher-demo page tests, is **100/100 passed**:
 
   ```sh
-  node --test math-board/tests/tutorial-release.test.js math-board/src/host/tool-schema.test.js
+  node --test math-board/tests/tutorial-release.test.js math-board/src/host/tool-schema.test.js math-board/src/geometry/geometry-view.test.js math-board/src/teacher-demo/geometry-demo-view.test.js
   ```
 
 - `npm --prefix math-board test`: **519 tests, 519 passed, 0 failed**.

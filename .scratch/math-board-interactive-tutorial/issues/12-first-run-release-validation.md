@@ -24,10 +24,10 @@
 - 数量页在标签激活且没有 `practice:v2:quantity` 时打开 `quantity-basics`，几何页同样打开 `geometry-basics`。打开不算完成，也不写另一侧的练习键。v1 已看过标记保持 `'1'`，不迁入、不删除。已有练习记录后再打开不自动开始，「查看教程」续学保存的步骤。无图和空画板都不写 `practice:v2:teacher-demo`。
 - 目录在基础章完成后显示已完成、整理章已跳过、调整章未开始、文件章未开始且可选。页面不出现整套教程已全部完成。文件章不改基础章状态。
 - 退出后的放入：数量可附带修改记录，几何只有一份快照；整板说明进入正文；两者都不发送，也不删除草稿。
-- 几何页在教师引导处于 `demo-return` 或 `demo-complete` 时不盖住那一帧。同一次停留里引导结束后不会立刻自动打开几何基础章；离开该标签再回来，且仍无几何练习记录时才会打开。
+- 几何页在教师引导还开着时不自动开始几何基础章，包括 `demo-read`、`demo-view` 和 `demo-copy`。引导中途打开几何，完成复制后再回到几何页，返回帧直接可见，不必先退出练习，也不写 `practice:v2:geometry`。引导关闭后再进入，且仍无几何练习记录时，可以打开基础章。同一次停留里引导结束后不会立刻自动打开。
 - 已勾选的项由 [tutorial-release.test.js](<../../../math-board/tests/tutorial-release.test.js>) 用现有页面替身执行。这是处理器回放，不是浏览器通过。真实鼠标、真实触屏、小屏、滚动和窗口尺寸变化没有做，所以要求这些的那一项不勾。逐条成功/失败回放、规格里更宽的说明目标和迟到销毁回调也没有在本文件重做，对应项不勾。
 - 工具参数测试在 [tool-schema.test.js](<../../../math-board/src/host/tool-schema.test.js>) 里自己构造 `get` 和 `show`，仍走已注册的 `geometry_board_draw` 和 `eduBoardGeometryDemo`，矩形断言保留。未给教学契约加围栏 JSON。
-- 聚焦命令 **23/23 通过**。全量 `npm --prefix math-board test` 为 **519 项、519 通过、0 失败**。`node math-board/build.mjs`、`node --check math-board/client.js`、`git diff --check` 已通过。未手改 `client.js`。未合并，未推送。
+- 聚焦命令 **100/100 通过**（`tutorial-release.test.js`、`tool-schema.test.js`、`geometry-view.test.js`、`geometry-demo-view.test.js`）。全量 `npm --prefix math-board test` 为 **520 项、520 通过、0 失败**。`node math-board/build.mjs`、`node --check math-board/client.js`、`git diff --check` 已通过。未手改 `client.js`。未合并，未推送。
 - 逐条场景、未执行原因和页面差异见 [验证记录](<../../../math-board/docs/tutorial-12-validation.md>)。
 
 ## 边界

@@ -272,9 +272,10 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     React.useEffect(() => {
       if (guideMode || props.practice || !props.tabActive || practiceOpenRef.current) return undefined;
       const api = typeof props.guide === 'function' ? props.guide() : null;
-      const goalStep = api?.open ? api.progress?.snapshot()?.goal?.step : null;
-      // The teacher-guide return frame is that guide's copy, not a new geometry chapter.
-      if (goalStep === 'demo-return' || goalStep === 'demo-complete') return undefined;
+      // Any open teacher guide owns this visit. Starting basics here would stay
+      // open through the return step, because leaving the tab does not close
+      // practice while the guide is open, and the return frame is hidden then.
+      if (api?.open) return undefined;
       if (!shared.createPracticeProgress || practiceRecorded('geometry')) return undefined;
       startGeometryTour();
       return undefined;

@@ -893,6 +893,39 @@ test('the teacher guide does not call onCopy, and hiding the figure does not com
   } finally { hidden.unmount(); }
 });
 
+test('opening geometry during the teacher guide does not cover the return frame', () => {
+  const figure = segmentFigure();
+  const shell = mountShell({ useProjection: () => ({ revision: 1, figure }) });
+  const scroll = (left, top) => {
+    const scroller = shell.find((node) => node.props.className === 'eb-demo-canvas-scroll');
+    scroller.props.ref.current.scrollLeft = left;
+    scroller.props.ref.current.scrollTop = top;
+    scroller.props.onScroll();
+    shell.refresh();
+  };
+  try {
+    shell.press(shell.t('title'));
+    shell.tab('demo');
+    assert.equal(shell.step(), 'demo-read');
+    shell.tab('geometry');
+    assert.equal(shell.storage.has(GEOMETRY_PRACTICE), false, 'an early guide step does not start geometry basics');
+    assert.equal(shell.visibleNodes().some((node) => node.props && node.props['data-practice-step'] !== undefined), false);
+    shell.tab('demo');
+    shell.press(shell.t('teacherDemoContinue'), 'touch');
+    shell.press(shell.t('zoomIn'), 'mouse');
+    scroll(24, 12);
+    shell.press(shell.t('demoCopy'), 'touch');
+    assert.equal(shell.step(), 'demo-return');
+    shell.tab('geometry');
+    assert.equal(shell.step(), 'demo-return');
+    assert.equal(shell.visibleNodes().some((node) => node.type === 'button' && text(node) === shell.t('teacherDemoViewCopy')), true);
+    assert.equal(shell.storage.has(GEOMETRY_PRACTICE), false, 'coming back still has not written geometry practice');
+    const guide = JSON.parse(shell.raw(DEMO_PRACTICE)).entries['teacher-demo-basics'];
+    assert.equal(guide.goal.copied, true);
+    assert.ok(guide.frame.board.elements.length >= 1, 'the teacher-demo record still holds the copy');
+  } finally { shell.unmount(); }
+});
+
 test('after practice, quantity insert can attach a trace, geometry insert has none, and neither sends or deletes the draft', () => {
   const previousFile = globalThis.File;
   globalThis.File = class { constructor(parts, name, options) { this.parts = parts; this.name = name; this.type = options?.type; } };
