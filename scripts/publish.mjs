@@ -61,7 +61,7 @@ export function resourceDrift() {
       const name = manifest(directory).name;
       const { files } = buildResources(name, { root, write: false });
       const committed = readdirSync(join(root, directory, 'resources'), { recursive: true })
-        .map(String).filter((path) => path.endsWith('.md'));
+        .map(String).filter((path) => path.endsWith('.md') || path.endsWith('.json'));
       if (committed.length !== files.size) return true;
       return [...files].some(([path, text]) => {
         try {

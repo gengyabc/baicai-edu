@@ -42,6 +42,7 @@ provider 由 `learn` 携带（`learn/skill-provider.mjs` + `learn/lib/skill-reso
 - **只有一份 provider 代码**：任何学科包都依赖 `baicai-edu-learn`，所以任何安装都能解析到同一个模块；不再有各包内的副本，也没有 `sync` 与副本比对。设计理由见 [ADR-0004](adr/0004-single-skill-provider.md)。
 - **闭包整份列出**：`name` 是包内路径（各次激活完全相同），`config.packages` 列出闭包中的七个包。DSH 把同 id 的插入行组合成一个条目，而各 bundle 层**后写入者生效**；因此每一行都列出完整闭包，无论最终留下的是哪一行的最后一层，provider 都拿得到全部根路径。装不上或未安装的包保留为未解析路径，provider 跳过它（本地半装不会凭空注册不存在的包）。
 - **代码与文档分离**：技能正文渲染进各包的 `resources/`（每个技能一个文件，附它引用的资源文件），所以只有代码、没有 `skills/` 的安装同样能注册完整技能。`skills/` 仍随包发布，供阅读与维护。
+- **目录数据不内联**：`references/locales/*.json` 是查表数据而非散文，正文里内联会按每个键占上下文，还得让模型去解析一份文档。因此 catalog 按散文引用的相对路径原样落进 `resources/references/locales/`，由 provider 把 `resources/` 发布为技能的 base directory，模型据此用 read 工具读取。两个技能同名 catalog 会让路径二义，构建直接报错。
 - **自包含**：`baicai-edu-learn` 单独安装时，`learn-general-*` 的引用都在 `learn/resources/` 里，不依赖其他学科包。
 
 ## 每次发版的清单

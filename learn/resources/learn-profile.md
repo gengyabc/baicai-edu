@@ -1,6 +1,6 @@
 ---
 name: learn-profile
-description: View learning progress, saved plans, or edit the profile. Use when the student asks about current focus, recent progress, or milestones, or wants to change display name, education stage, interests, long-term goals, or learning preferences.
+description: View learning progress, saved plans, or edit the profile. Use when the student asks about current focus, recent progress, or milestones, or wants to change display name, learning language, education stage, interests, long-term goals, or learning preferences.
 ---
 
 # Student Profile
@@ -25,7 +25,7 @@ Show only the current subject; ask about scope before viewing another subject, a
 1. Confirm the field to change and its scope, especially the form of address, grade/stage, and whether a goal/preference applies to the current subject or is explicitly reused across subjects. Use `ask_user_question` for process choices; deleting an interest or an old experience needs one confirmation, and bulk or complete deletion goes through the existing safe-cleanup flow.
 2. Check the current subject log; if it has a `finalize_plan`, first recover the save per the finalize protocol in `learn-data` and edit only after it succeeds. If recovery fails, do not bypass the pending plan to write the profile.
 3. Write per the Write Protocol in `learn-data`:
-   - Form of address, optional `grade` / `education_stage` / `learning_context`, and `personal.interests` → shared `profile.json`.
+   - Form of address, optional `grade` / `education_stage` / `learning_context`, `personal.interests`, and `language` → shared `profile.json`. A `language` change is written only when the student asks for it as a lasting preference, and it switches the UI locale and the next teaching turn; a one-turn request to use the other language stays task-local and is not written.
    - Cross-subject long-term goals the student explicitly sets → shared `learning_preferences.goals`; explicitly set cross-subject support preferences → shared `learning_preferences.support_preferences`. Merge and keep items not asked to change; after a correction or withdrawal, use the updated fact next time. System inferences, learning difficulties, and sensitive details are not shared.
    - Subject learning preferences, current levels, easy/hard topics, and priority goals → the subject `profile.json`. Support methods themselves are not written directly to the shared profile.
    - When changing grade/stage, sync the known primary `grade_band` per `references/grade-band-defaults.md`, and do not force-fill it for non-primary or unknown. Read `references/teaching-resolver.md` to determine the fitting contract, then take the `active_domain` and `current_levels` defaults (`references/subject-contract.md`); if it is unclear whether to reset levels, ask first, and by default keep existing evidence. An unfinished task does not hot-swap its implementation because the stage was changed.

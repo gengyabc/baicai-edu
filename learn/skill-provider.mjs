@@ -17,6 +17,8 @@
 // The provider reads each named package's `resources/` directory and registers
 // one skill per rendered file, so its citations of shared files (learn-data,
 // math-common) are inlined instead of left for the model to resolve by path.
+// What is NOT inlined — the locale catalogs — ships as files in the same
+// `resources/` tree, which is registered as the skill's base directory.
 // A package the activation cannot resolve keeps its unresolved path and is
 // skipped: a partial local `link:` install registers nothing rather than
 // guessing what is installed.
@@ -47,14 +49,19 @@ export function apply(ctx, config = {}) {
     .map((path) => join(path, '..'))
     .filter((root) => existsSync(root));
   const truncated = [];
-  const skills = roots.flatMap((root) => readPackage(root)).map((skill) => {
-    if (Buffer.byteLength(skill.content, 'utf8') <= MAX_CONTENT_BYTES) return skill;
+  const skills = roots.flatMap((root) => readPackage(root).map((skill) => {
+    // The rendered skill names its own catalog as `references/locales/<locale>.json`.
+    // Publishing `resources/` as the base directory is what lets the model read that
+    // file after install, and what keeps a truncated skill's dropped tail reachable.
+    const resourceBase = { kind: 'directory', path: join(root, 'resources') };
+    if (Buffer.byteLength(skill.content, 'utf8') <= MAX_CONTENT_BYTES) return { ...skill, resourceBase };
     truncated.push(skill.name);
     return {
       ...skill,
+      resourceBase,
       content: `${skill.content.slice(0, MAX_CONTENT_BYTES)}\n\nIts remaining resources are installed beside this skill; load the specific resource the body names when needed.\n`,
     };
-  });
+  }));
   ctx.logger.info(`edu-skills: ${skills.length} skills from ${roots.length} package roots`);
   for (const skill of truncated) ctx.logger.warn(`edu-skills: ${skill} exceeds the content cap and was truncated`);
   ctx.effect(function* () {

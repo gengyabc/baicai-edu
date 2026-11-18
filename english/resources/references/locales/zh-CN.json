@@ -1,0 +1,14 @@
+{
+  "ui.stage.reading_material": "读一个故事",
+  "ui.stage.reading_material.description": "用一段短故事再理解一次",
+  "ui.stage.speaking_practice": "说一说",
+  "ui.stage.speaking_practice.description": "用刚学的表达回答一个真问题",
+  "ui.stage.task_activity": "玩一个任务",
+  "ui.stage.task_activity.description": "为一个具体结果使用英语",
+  "ui.stage.review": "复习旧表达",
+  "ui.stage.review.description": "在新的小情境里回想旧词或旧句型",
+  "ui.start.english.pref.likes_stories": "听故事",
+  "ui.start.english.pref.likes_games": "玩英语游戏",
+  "ui.start.english.pref.likes_speaking": "说一说",
+  "ui.start.english.pref.likes_reading": "读一读"
+}

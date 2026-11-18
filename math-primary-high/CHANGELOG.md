@@ -4,6 +4,14 @@ All notable changes to `baicai-edu-math-primary-high` are recorded here. This
 package has not been published before 0.1.0, so that release is the current
 state rather than an upgrade path.
 
+## [Unreleased]
+
+### Packaging
+
+- Locale catalogs now ship as `resources/references/locales/<locale>.json` at the
+  path the skill prose cites, so an installed skill can read them instead of
+  falling back to plain text for every process label.
+
 ## [0.1.0] - 2026-11-18
 
 First release on npm. Installing this package by name brings

@@ -1,0 +1,14 @@
+{
+  "ui.stage.transfer": "迁移",
+  "ui.stage.practice": "练一练",
+  "ui.stage.modeling": "用一用",
+  "ui.student_problem.continue": "继续出题",
+  "ui.student_problem.return_learning": "回到刚才的学习",
+  "ui.board.clear": "清空",
+  "ui.board.clear_requested": "已发出清空请求",
+  "ui.board.clear_failed_hint": "自动清空未完成，如需空白画板，请先手动清空。",
+  "ui.board.put_into_answer": "放入回答",
+  "ui.start.math_pref.step_by_step": "分步讲",
+  "ui.start.math_pref.worked_example": "先看例子",
+  "ui.start.math_pref.real_world": "用真实情境"
+}

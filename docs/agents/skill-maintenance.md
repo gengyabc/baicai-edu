@@ -32,7 +32,7 @@ For package dependencies, skill calls, and scenario sequences, consult the [skil
 ## Finish a skill change
 
 1. Update the owning source and affected regression tests; keep shared contracts authoritative rather than duplicating them across subjects or bands.
-2. Run `node scripts/build-resources.mjs` and include regenerated resources with the source change.
+2. Run `node scripts/build-resources.mjs` and include regenerated resources with the source change. A locale catalog under a skill's `references/locales/` is copied to `resources/references/locales/` rather than inlined, so add a catalog only where one skill of the package owns it.
 3. Run `node scripts/check-skills.mjs`, `node --test scripts/skill-contracts.test.mjs`, and the tests covering the changed behavior. Report failures rather than treating a successful build as protocol verification.
 
 Installation checks stay in the [installation guide](<../installation.md>); publishing, `resources/` rendering and post-publish verification in the [publishing guide](<../publishing.md>).

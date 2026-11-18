@@ -4,6 +4,15 @@ All notable changes to `baicai-edu-math` are recorded here. This package has not
 been published before 0.1.0, so that release is the current state rather than an
 upgrade path.
 
+## [Unreleased]
+
+### Skills
+
+- The language contract now says where the shared-profile `language` comes
+  from: the explicit choice `/learn-start` asks for, never an inference from a
+  message, a subject, or a filename. Delivery, task-local switches, and the
+  `zh-CN` fallback are unchanged.
+
 ## [0.1.0] - 2026-11-18
 
 First release on npm. Both primary math bands depend on it, so it is installed

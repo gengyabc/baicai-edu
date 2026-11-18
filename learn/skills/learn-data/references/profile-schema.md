@@ -25,7 +25,7 @@ Path layout and raw/backup permissions follow `learn-data`'s Data Root. This fil
 }
 ```
 
-`name` and `interests` are student data values; they stay in whatever language the student provided. `language` selects the UI locale per `references/ui-locale.md`.
+`name` and `interests` are student data values; they stay in whatever language the student provided. `language` records the explicit choice `/learn-start` asked for (`zh-CN` or `en`) and selects the UI locale per `references/ui-locale.md`; it is never inferred from a message, a subject, or a filename.
 
 Education stage and learning configuration are optional compatibility extensions: `education_stage` takes lower_primary / upper_primary / junior_secondary / senior_secondary / higher_education / adult, and when missing is derived per `references/grade-band-defaults.md` or treated as unknown. `grade` / `grade_band` may be omitted, and are not forced for non-primary learners; existing values are kept, a stage conflict is handled as a student correction, and ability is not guessed. The optional `learning_context` is reused as a short neutral learning situation the student explicitly provided, such as career start, advancement, transition, senior development, retirement, or learning for interest, and may be described in combination; it is separate from education_stage, is not inferred from age, stage, or occupation, adds no occupation enum field, and contains no employer identity, family conflict, or other private hardship. It can be skipped, and is set or corrected only by profile creation/start/profile; temporary limits such as time and resources in the current turn are used only for current support and are not automatically written into this field.
 

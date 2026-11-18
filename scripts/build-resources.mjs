@@ -62,6 +62,27 @@ const header = (fields) => ['---', ...Object.entries(fields).flatMap(([key, valu
 )), '---', ''].join('\n')
 
 /**
+ * Locale catalogs a skill ships, as `references/locales/<locale>.json`.
+ *
+ * Prose inlines fine, but a catalog is JSON data a skill must *look up*, not
+ * read as instructions: inlining it would spend context on every key and still
+ * leave the model parsing a document. It therefore ships as a file beside the
+ * rendered skill, at the same relative path the prose cites, and the provider
+ * publishes `resources/` as the skill's base directory.
+ * @param skillDirectory - the skill's directory under a skill package's `skills/`.
+ * @returns `[path under resources/, text]` pairs, sorted by file name.
+ */
+export function localeCatalogs(skillDirectory) {
+  const directory = join(skillDirectory, 'references', 'locales')
+  if (!existsSync(directory)) return []
+  return readdirSync(directory, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+    .map((entry) => entry.name)
+    .sort()
+    .map((name) => [`references/locales/${name}`, readFileSync(join(directory, name), 'utf8')])
+}
+
+/**
  * Flatten one skill directory into its two resource files.
  * @param skillDirectory - the skill's directory under a skill package's `skills/`.
  * @param referenceDirectories - directories searched, in order, for cited files the skill does not own.
@@ -125,6 +146,15 @@ export function buildResources(packageName, { root = ROOT, write = true } = {}) 
     const flattened = flattenSkill(join(source, entry.name), shared)
     files.set(`resources/${entry.name}.md`, flattened.body)
     for (const [name, text] of flattened.shared) files.set(`resources/${name}`, text)
+    // Catalogs keep the path their prose cites, so one base directory resolves
+    // them. Two skills of one package owning the same catalog file would make
+    // that path ambiguous: fail loudly instead of shipping one of them.
+    for (const [name, text] of localeCatalogs(join(source, entry.name))) {
+      const path = `resources/${name}`
+      const existing = files.get(path)
+      if (existing !== undefined && existing !== text) throw new Error(`${path}: shipped by more than one skill of ${packageName}`)
+      files.set(path, text)
+    }
   }
   if (write) {
     const target = join(root, directory, 'resources')

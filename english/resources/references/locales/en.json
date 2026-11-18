@@ -1,0 +1,14 @@
+{
+  "ui.stage.reading_material": "Read a story",
+  "ui.stage.reading_material.description": "Understand again through a short story",
+  "ui.stage.speaking_practice": "Speak",
+  "ui.stage.speaking_practice.description": "Answer a real question with just-learned language",
+  "ui.stage.task_activity": "Do a task",
+  "ui.stage.task_activity.description": "Use English for a concrete outcome",
+  "ui.stage.review": "Review old language",
+  "ui.stage.review.description": "Recall old words or patterns in a new mini-situation",
+  "ui.start.english.pref.likes_stories": "Listen to stories",
+  "ui.start.english.pref.likes_games": "Play English games",
+  "ui.start.english.pref.likes_speaking": "Speak",
+  "ui.start.english.pref.likes_reading": "Read"
+}

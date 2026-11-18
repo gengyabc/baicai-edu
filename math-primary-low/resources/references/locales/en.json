@@ -1,0 +1,16 @@
+{
+  "ui.stage.transfer": "Transfer",
+  "ui.stage.practice": "Practice",
+  "ui.student_problem.continue": "Make another problem",
+  "ui.student_problem.return_learning": "Back to previous learning",
+  "ui.board.clear": "Clear",
+  "ui.board.keep": "Don't clear",
+  "ui.board.keep_these_items": "Don't clear these items",
+  "ui.board.cleared": "Already cleared",
+  "ui.board.clear_requested": "Clear request sent",
+  "ui.board.clear_failed_hint": "The board could not clear automatically. Tap Clear on the board, then try the new problem.",
+  "ui.board.put_into_answer": "Add to answer",
+  "ui.start.math_pref.likes_visual": "Draw it",
+  "ui.start.math_pref.likes_story_context": "Tell a story",
+  "ui.start.math_pref.likes_direct_calculation": "Calculate directly"
+}

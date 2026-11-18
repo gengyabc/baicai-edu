@@ -210,6 +210,22 @@ test('entries locate subjects through the contract; only /learn-start lists them
   }
 })
 
+test('start offers only subjects whose implementation is registered, and never by naming core skills', () => {
+  const start = text(skillPath('learn', 'learn-start'))
+  // The card is model-built, so the install check must be an instruction: the session's
+  // registered skills are the only truthful signal that a package can be loaded.
+  hasAll(start, ['Offer only the rows this installation can actually teach',
+    "the session's available skill list is the install check",
+    'leave its row out of the card', 'either band'])
+  // Discovery gaps are not absence: an incomplete list must not hide a subject.
+  assert.match(start, /Keep every row when the list is missing, empty, or reported incomplete/)
+  // Omitting a row hides the shortcut only; naming the subject still reaches the fallback.
+  assert.match(start, /removes only the shortcut[\s\S]*resolver's fallback/)
+  assert.match(start, /ui\.start\.other_goal/)
+  // The mapping stays in the subject contract rather than being copied into the entry.
+  assert.match(start, /naming per `references\/subject-contract\.md`/)
+})
+
 test('chinese sub-skills inherit the gate and shared reads from chinese-core', () => {
   const core = text(skillPath('chinese-reading', 'chinese-core'))
   assert.match(core, /## 开始门槛与输入/)
@@ -316,6 +332,36 @@ test('UI locale catalogs exist with matching zh-CN and en keys', () => {
     'ui.start.chat_first', 'ui.clean.nothing_to_clean', 'confirm.phrase.delete_student']) {
     assert.ok(learnZh[key], key)
   }
+})
+
+test('the learning language is asked once and never guessed from the conversation', () => {
+  const zh = JSON.parse(text('learn/skills/learn-data/references/locales/zh-CN.json'))
+  const en = JSON.parse(text('learn/skills/learn-data/references/locales/en.json'))
+  for (const key of ['ui.start.language_prompt', 'ui.start.language_zh', 'ui.start.language_en']) {
+    assert.ok(zh[key], key)
+    assert.equal(en[key], zh[key], `${key} stays locale-invariant`)
+  }
+  assert.match(dataRef('ui-locale'), /Locale-invariant keys/)
+  assert.match(dataRef('ui-locale'), /Nothing in the DSH environment reports the active UI locale to a skill/)
+  assert.match(dataRef('ui-locale'), /Do not guess the language from the student's first message/)
+  // The handling rules live in the owning protocol; the entry only points at them.
+  hasAll(dataRef('ui-locale'), ["use that student's stored `language`", '`zh` normalizes to `zh-CN`',
+    'a second ask would overwrite the answer the student already gave',
+    'When no catalog is readable, ask exactly `\u7528\u4e2d\u6587\u8fd8\u662f English \u5b66\u4e60\uff1f/ Learn in Chinese or English?`'])
+  const start = text(skillPath('learn', 'learn-start'))
+  assert.match(start, /## 1\. Ask the Language First/)
+  assert.match(start, /This question opens every `\/learn-start`, before the subject card/)
+  assert.match(start, /This flow has no default student — `\/learn` resumes the session's student, `\/learn-start` never does/)
+  assert.match(start, /Ask `ui\.start\.language_prompt` with `ask_user_question`, offering exactly `ui\.start\.language_zh` and `ui\.start\.language_en`/)
+  assert.match(start, /take every handling rule from the "First contact with an unknown locale" section of `references\/ui-locale\.md`/)
+  // A second copy of the rules is what the entry must not carry.
+  assert.doesNotMatch(start, /\u7528\u4e2d\u6587\u8fd8\u662f English|`zh` → `zh-CN`/)
+  assert.match(start, /Only after step 1 has an answer/)
+  assert.match(start, /reuse the step 1 answer; do not ask a second time/)
+  assert.match(start, /Never ask again in this flow/)
+  assert.match(start, /`\/learn-start` never inherits the student the previous session left behind/)
+  assert.match(dataRef('create-student'), /never fill it from the language the student happened to type in/)
+  assert.match(dataRef('profile-schema'), /never inferred from a message, a subject, or a filename/)
 })
 
 test('stable public and subject interfaces remain installed without a bridge skill shell', () => {
@@ -1751,6 +1797,35 @@ test('one provider serves every skill package, and each activation names its clo
   }
 })
 
+test('locale catalogs ship beside the rendered skill and resolve against its base directory', async () => {
+  // A catalog is looked-up data, not prose: it is not inlined, so the only way a
+  // skill reads it after install is the provider's base directory plus the path
+  // the prose cites.
+  const catalogs = {
+    learn: ['learn-data'],
+    english: ['english-core'],
+    'math-primary-low': ['math-low-core'],
+    'math-primary-high': ['math-high-core'],
+  }
+  for (const [bundle, owners] of Object.entries(catalogs)) {
+    const source = `${bundle}/skills/${owners[0]}/references/locales`
+    for (const locale of ['zh-CN', 'en']) {
+      assert.equal(text(`${bundle}/resources/references/locales/${locale}.json`), text(`${source}/${locale}.json`),
+        `${bundle}: ${locale} catalog is not shipped verbatim`)
+    }
+    assert.ok(!text(`${bundle}/resources/${owners[0]}.md`).includes('"ui.stage.continue"'),
+      `${bundle}: catalogs must not be inlined into the skill body`)
+  }
+  const provider = text('learn/skill-provider.mjs')
+  assert.match(provider, /const resourceBase = \{ kind: 'directory', path: join\(root, 'resources'\) \}/)
+  assert.match(provider, /\.\.\.skill, resourceBase/)
+  assert.match(dataRef('ui-locale'), /`resources\/`|base directory/)
+  const { localeCatalogs } = await import('../scripts/build-resources.mjs')
+  assert.deepEqual(localeCatalogs(join(root, 'learn/skills/learn-data')).map(([path]) => path),
+    ['references/locales/en.json', 'references/locales/zh-CN.json'])
+  assert.deepEqual(localeCatalogs(join(root, 'math-common/skills/math-common')), [])
+})
+
 test('committed resources match a fresh build, and every shipped file resolves', async () => {
   // A registry install has code only: each skill arrives as one rendered file
   // plus the resource files it names. `resources/` is generated from skills/,
@@ -1762,7 +1837,7 @@ test('committed resources match a fresh build, and every shipped file resolves',
     const name = JSON.parse(text(`${bundle}/package.json`)).name
     const { files } = buildResources(name, { root, write: false })
     const committed = readdirSync(join(root, bundle, 'resources'), { recursive: true })
-      .map(String).filter((path) => path.endsWith('.md')).sort()
+      .map(String).filter((path) => path.endsWith('.md') || path.endsWith('.json')).sort()
     assert.deepEqual(committed, [...files.keys()].map((path) => path.replace(/^resources\//, '')).sort(),
       `${bundle}/resources does not match scripts/build-resources.mjs (run it and commit the result)`)
     for (const [path, body] of files) {
