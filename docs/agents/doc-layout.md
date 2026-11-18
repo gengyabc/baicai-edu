@@ -1,5 +1,7 @@
 # Documentation layout: a first-visit README, detail in docs
 
+> Scope in this repository: the bilingual-doc rule below (section 4) applies to **package** docs (`<package>/docs/`, e.g. `learn/docs/`). The root `docs/` keeps one language per page — see the language rule in the [documentation index](../README.md#语言约定).
+
 Applies to any repository whose README is its front page. Nothing below depends on this repository's paths; copy it as-is. It was extracted from one real change: a package README that was a 107-line rule book became a 49-line index, the detail moved into six English/Chinese doc pairs, and one contract test needed an exemption.
 
 ## 1. The README admission test

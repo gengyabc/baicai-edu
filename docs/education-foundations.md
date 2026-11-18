@@ -27,7 +27,7 @@
 
 ## 证据材料
 
-- [本地文献副本](refs/)：公开全文 PDF 与来源清单 `SOURCES.txt`；R 编号与[审核矩阵](research/math-skill-audit-matrix.md)对应。该目录被 `.gitignore` 忽略，仅在本机保留。
+- `docs/refs/`：公开全文 PDF 与来源清单 `SOURCES.txt`；R 编号与[审核矩阵](research/math-skill-audit-matrix.md)对应。该目录被 `.gitignore` 忽略，仅在本机保留，因此这里只写路径不写链接；哪些目录不提交见[文档索引](README.md)。
 - 商业教材（Carpenter 等）与付费墙论文没有副本；核验记录以书目与公开摘要为限，并注明“未取得正文”。
 - 搜索摘要、教学博客与二手转述不作为证据来源。
 

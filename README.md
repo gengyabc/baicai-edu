@@ -24,6 +24,19 @@ Math is split into two bands: lower primary mainly grades 1–3, upper primary m
 
 ### Install
 
+As a DSH plugin, one subject per command. Its dependencies are installed and enabled by the same call:
+
+```bash
+dsh plugin --profile web add baicai-edu-math-primary-low    # low-band math; brings learn, math-common and math-board
+dsh plugin --profile web add baicai-edu-math-primary-high   # upper-band math; the board is optional, add it separately
+dsh plugin --profile web add baicai-edu-chinese-reading     # Chinese
+dsh plugin --profile web add baicai-edu-english             # English
+```
+
+`dsh plugin` forwards its arguments to pnpm inside the profile; DSH then adds the bundles installed by this call that declare `dsh.bundle` to that profile's selection, so the dependency closure switches on by itself and dependencies are never listed by hand. The bundles stay visible in DSH's plugin management, where you can disable or re-enable them. No `baicai-edu-*` package is on npm yet: `add baicai-edu-…` returns 404 until the first publish, so use the checkout route below until then.
+
+From this checkout, the unified entry packs the dependency closure into tarballs and installs it in the same one-pass shape:
+
 ```bash
 # run in the repository; dependencies are filled in and installed
 node scripts/install.mjs math-primary-low --profile web   # learn + math-common + math-board + math-primary-low
@@ -38,7 +51,7 @@ node scripts/install.mjs all --profile web
 node scripts/install.mjs all --dry-run
 ```
 
-This needs Node.js plus a working DSH/pnpm. The unified entry installs the dependency closure as top-level profile bundles in one pass, so a package is never downloaded but left disabled; do not hand-link a single subject package instead. Re-installing keeps bundles you disabled by hand. After installing, restart if DSH says so and refresh the Web session, then type `/learn-start`. Dependencies, migration and failure handling in full: [installation guide](<docs/installation.md>).
+Either route needs Node.js 22 or newer plus a working DSH/pnpm. Both install the whole closure as top-level profile bundles in one pass, so a package is never downloaded but left disabled; do not hand-link a single subject package instead, because `link:` does not bring its dependencies. Re-installing keeps bundles you disabled by hand. After installing, restart if DSH says so and refresh the Web session, then type `/learn-start`. Dependencies, migration and failure handling in full: [installation guide](<docs/installation.md>).
 
 ### Using it
 
@@ -78,13 +91,15 @@ outputs/students/
 
 ### Design documents
 
+- [Documentation index](<docs/README.md>): every maintainer page, grouped by task, with the language rule for this directory
+- [Installation](<docs/installation.md>) and [publishing](<docs/publishing.md>) (receiver install, local checkout, dependency closure; publish flow, `resources/` rendering, post-publish verification)
 - [Skill call relations and use cases](<docs/skill-map/call-graph.md>) (package dependencies, call surface, Mermaid call graph and scenario sequences)
-- [ADR-0001: shared math contracts and independent band implementations](<docs/adr/0001-math-shared-contracts.md>) (single source for the shared contract, load path, retained differences)
+- [ADR-0001: shared math contracts and independent band implementations](<docs/adr/0001-math-shared-contracts.md>) (single source for the shared contract, load path, retained differences); ADR-0002 to 0005 sit beside it
 - [Education-foundations index](<docs/education-foundations.md>) (the three levels distinguished, document map and shared evidence boundary)
 - [Support-method source verification](<docs/learn-support-evidence.md>) (maintainer archive, not loaded at runtime), [synthetic acceptance scenarios](<learn/tests/learning-support-scenarios.md>) and [supportive-conversation replay](<learn/tests/supportive-conversation-scenarios.md>): all ages, general-task teaching, the five support kinds, refusal/exit and evidence isolation.
 - [Children's math education skill-system audit matrix](<docs/research/math-skill-audit-matrix.md>): reviews the teaching rules against the R1–R14 literature, separating pedagogical plausibility, teaching effectiveness and agent execution reliability.
 - [Maintainer research notes](<docs/research/>): math representation scaffolding (`math-representation-scaffolding-research.md`), CGI early-algebra sources and the band split (`cgi-early-algebra.md`), autonomy support for the passively arrived learner and the child-AI boundary (`learning-support-autonomy-and-rapport.md`). Not loaded at runtime; research citation stays separate from installed rules.
-- [Local literature copies](<docs/refs/>): public full-text PDFs and the `SOURCES.txt` source list, numbered against the audit matrix R1–R14; `.gitignore` excludes this directory, so it is kept on this machine only.
+- Local literature copies live in `docs/refs/`: public full-text PDFs and the `SOURCES.txt` source list, numbered against the audit matrix R1–R14. `.gitignore` excludes that directory, so it is kept on this machine only and is never linked.
 
 ### Validation
 
@@ -136,6 +151,19 @@ Node.js 22 or newer is required (see [.nvmrc](./.nvmrc)), and there are no third
 
 ### 安装
 
+作为 DSH 插件安装，一个学科一条命令，依赖随同一次装上并启用：
+
+```bash
+dsh plugin --profile web add baicai-edu-math-primary-low    # 低年级数学，带入 learn、math-common 与 math-board
+dsh plugin --profile web add baicai-edu-math-primary-high   # 高年级数学，画板可选，需另行安装
+dsh plugin --profile web add baicai-edu-chinese-reading     # 语文
+dsh plugin --profile web add baicai-edu-english             # 英语
+```
+
+`dsh plugin` 把参数透传给 profile 内的 pnpm；随后 DSH 会把本次装上新声明 `dsh.bundle` 的依赖加入该 profile 的选择，依赖闭包因此自动启用，不需要手写依赖名。这些 bundle 会出现在 DSH 的插件管理里，可在此禁用或重新启用。`baicai-edu-*` 目前尚未发布到 npm，首次发布前 `add baicai-edu-…` 会返回 404，此时用下面的本地 checkout 入口。
+
+本仓库本地 checkout 用统一入口（它把依赖闭包 pack 成 tarball，按同样的一次性方式安装）：
+
 ```bash
 # 在仓库中运行；自动补齐并安装依赖
 node scripts/install.mjs math-primary-low --profile web   # learn + math-common + math-board + math-primary-low
@@ -150,7 +178,7 @@ node scripts/install.mjs all --profile web
 node scripts/install.mjs all --dry-run
 ```
 
-需要 Node.js 与可用的 DSH/pnpm。统一入口将依赖闭包作为 profile 顶层 bundle 一次安装，避免“包已下载但未启用”；不要只手工 link 一个学科包。重复安装保留此前手动禁用的 bundle。安装后按 DSH 输出决定是否重启并刷新 Web 会话，输入 `/learn-start` 开始。完整依赖、迁移与失败处理见[安装说明](<docs/installation.md>)。
+两种方式都需要 Node.js 22 或更高版本与可用的 DSH/pnpm。两种方式都把整个依赖闭包作为 profile 顶层 bundle 一次安装，避免“包已下载但未启用”；不要只手工 link 一个学科包，`link:` 不会带上它的依赖。重复安装保留此前手动禁用的 bundle。安装后按 DSH 输出决定是否重启并刷新 Web 会话，输入 `/learn-start` 开始。完整依赖、迁移与失败处理见[安装说明](<docs/installation.md>)。
 
 ### 使用
 
@@ -190,13 +218,15 @@ outputs/students/
 
 ### 设计文档
 
+- [文档索引](<docs/README.md>)：按任务分组的全部维护者文档，以及本目录的语言约定
+- [安装说明](<docs/installation.md>)与[发布与技能渲染](<docs/publishing.md>)（接收方安装、本地 checkout、依赖闭包；发布流程、`resources/` 渲染、发布后验收）
 - [技能调用关系与使用场景](<docs/skill-map/call-graph.md>)（包依赖、调用面、Mermaid 调用图与场景时序）
-- [ADR-0001：共享数学契约与独立 band 实现](<docs/adr/0001-math-shared-contracts.md>)（共同契约唯一来源、载入链路与保留差异）
+- [ADR-0001：共享数学契约与独立 band 实现](<docs/adr/0001-math-shared-contracts.md>)（共同契约唯一来源、载入链路与保留差异）；ADR-0002 至 0005 同在 `docs/adr/`
 - [教育依据总索引](<docs/education-foundations.md>)（三个层次的区分、文档地图与共同证据边界）
 - [支持方法来源核验](<docs/learn-support-evidence.md>)（维护者存档，运行时不加载）、[合成场景验收](<learn/tests/learning-support-scenarios.md>)与[支持性交流回放](<learn/tests/supportive-conversation-scenarios.md>)：全年龄、通用任务教学、五类支持、拒绝/退出与证据隔离。
 - [儿童数学教育 Skill 体系审核矩阵](<docs/research/math-skill-audit-matrix.md>)：对照 R1–R14 文献审视教学规则的教育学与认知科学依据，区分理论合理性、教学有效性与智能体执行可靠性。
 - [维护者研究笔记](<docs/research/>)：数学表征支架（`math-representation-scaffolding-research.md`）、CGI 早期代数来源与学段分工（`cgi-early-algebra.md`）、被动来学者的自主支持与儿童 AI 边界（`learning-support-autonomy-and-rapport.md`）。运行时不加载，研究引用与已安装规则分离。
-- [本地文献副本](<docs/refs/>)：公开全文 PDF 与来源清单 `SOURCES.txt`，编号对应审核矩阵 R1–R14；`.gitignore` 忽略了此目录，仅在本机保留。
+- 本地文献副本在 `docs/refs/`：公开全文 PDF 与来源清单 `SOURCES.txt`，编号对应审核矩阵 R1–R14。`.gitignore` 忽略了该目录，仅在本机保留，因此不提供链接。
 
 ### 验证
 

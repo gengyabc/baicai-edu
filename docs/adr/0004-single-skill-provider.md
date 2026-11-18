@@ -2,7 +2,7 @@
 
 - 状态：已接受
 - 日期：2026-11-15
-- 相关：[安装说明](../installation.md)、[技能 provider](../../learn/skill-provider.mjs)、[渲染脚本](../../scripts/build-resources.mjs)
+- 相关：[安装说明](../installation.md)、[发布与技能渲染](../publishing.md)、[技能 provider](../../learn/skill-provider.mjs)、[渲染脚本](../../scripts/build-resources.mjs)
 
 ## 背景
 

@@ -13,7 +13,8 @@ Read the linked material before working on the matching area; unrelated tasks do
 | Task | Read first |
 | --- | --- |
 | Edit skills, invocation policy, teaching routing, or data protocols | [Skill maintenance](<docs/agents/skill-maintenance.md>); follow its topic-specific pointers |
-| Install, publish, change package dependencies, or recover disabled bundles | [Installation](<docs/installation.md>) |
+| Install, publish, change package dependencies, or recover disabled bundles | [Installation](<docs/installation.md>) and [publishing](<docs/publishing.md>) |
+| Add or restructure documentation | [Documentation index](<docs/README.md>), then [doc layout](<docs/agents/doc-layout.md>) |
 | Change skill registration or resource rendering | [Single-provider decision](<docs/adr/0004-single-skill-provider.md>) |
 | Explore domain concepts or change architecture | [Domain documentation conventions](<docs/agents/domain.md>), then relevant ADRs |
 | Create or update local specs and issues | [Issue tracker](<docs/agents/issue-tracker.md>) |
