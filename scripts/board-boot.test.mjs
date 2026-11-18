@@ -14,19 +14,60 @@
 // It uses the same Cordis instance dsh itself runs (the package is a peer of
 // @deepseek-ai/cordis, so require() from this checkout fails). Run it with:
 //
-//   node --test scripts/board-boot.test.mjs
+//   DSH_ROOT=/path/to/node_modules/@deepseek-ai/dsh \
+//     node --test scripts/board-boot.test.mjs
+//
+// The DSH install is located in this order: $DSH_ROOT; a copy installed next to
+// this checkout; then the global install (`npm i -g`), which is how most people
+// have it. When none exists the tests SKIP with an explanation instead of
+// failing on a machine-specific path.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { join } from 'node:path';
+import { existsSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
-const DSH_ROOT = process.env.DSH_ROOT ?? '/Users/yugeng/.nvm/versions/node/v24.15.0/lib/node_modules/@deepseek-ai/dsh';
-const require = createRequire(join(DSH_ROOT, 'lib/bin.js'));
-const load = (specifier) => import(pathToFileURL(require.resolve(specifier)).href);
+/** Resolve the DSH install directory, or undefined when it cannot be located. */
+function resolveDshRoot() {
+  const candidates = [];
+  if (process.env.DSH_ROOT) candidates.push(process.env.DSH_ROOT);
+
+  // A local or linked install resolves from this file directly.
+  const local = createRequire(import.meta.url);
+  try {
+    candidates.push(dirname(local.resolve('@deepseek-ai/dsh/package.json')));
+  } catch { /* not installed alongside this checkout */ }
+
+  // A global install is outside this checkout's module graph, so ask npm for
+  // its prefix. Resolving from inside that prefix finds any node layout
+  // (nvm, homebrew, nvm-windows) without hardcoding one.
+  try {
+    const globalRoot = execFileSync('npm', ['root', '-g'], { encoding: 'utf8', timeout: 10_000 }).trim();
+    if (globalRoot) {
+      candidates.push(dirname(createRequire(join(globalRoot, 'noop.js')).resolve('@deepseek-ai/dsh/package.json')));
+    }
+  } catch { /* no npm on PATH, or no global install */ }
+
+  return candidates.find((root) => root && existsSync(join(root, 'lib/bin.js')));
+}
+
+const DSH_ROOT = resolveDshRoot();
+const SKIP = DSH_ROOT
+  ? false
+  : 'cannot find the @deepseek-ai/dsh install; set DSH_ROOT to .../node_modules/@deepseek-ai/dsh';
+
+// Only build the require hook when the install exists.
+const require = SKIP ? undefined : createRequire(join(DSH_ROOT, 'lib/bin.js'));
+const load = SKIP
+  ? () => { throw new Error(SKIP); }
+  : (specifier) => import(pathToFileURL(require.resolve(specifier)).href);
 // The loader resolves a bare package name against its parent's baseUrl, which
 // for this checkout has no node_modules of its own; boot the package by URL.
 const PACKAGE_URL = new URL('../math-board/index.js', import.meta.url).href;
+// Every case needs the DSH install; skip them together when it is absent.
+const TEST_OPTS = SKIP ? { skip: SKIP } : {};
 
 const STATE = ['pending', 'loading', 'active', 'failed', 'disposed', 'unloading'];
 
@@ -97,7 +138,7 @@ async function bootBoard(host = 'projections') {
   return { ctx, fiber, state };
 }
 
-test('the board activates without any host services, then registers when they arrive', async () => {
+test('the board activates without any host services, then registers when they arrive', TEST_OPTS, async () => {
   const { ctx, fiber, state } = await bootBoard('none');
   try {
     assert.equal(STATE[fiber.state], 'active');
@@ -113,7 +154,7 @@ test('the board activates without any host services, then registers when they ar
 });
 
 for (const missing of ['tools', 'commands', 'systemPrompt']) {
-  test(`missing ${missing} does not block projections; late service recovers decorations`, async () => {
+  test(`missing ${missing} does not block projections; late service recovers decorations`, TEST_OPTS, async () => {
     const provided = ['sessionProjections', 'tools', 'commands', 'systemPrompt'].filter(name => name !== missing);
     const { ctx, fiber, state } = await bootBoard(provided);
     try {
@@ -132,7 +173,7 @@ for (const missing of ['tools', 'commands', 'systemPrompt']) {
   });
 }
 
-test('the board plugin settles ACTIVE under the real cordis loader', async () => {
+test('the board plugin settles ACTIVE under the real cordis loader', TEST_OPTS, async () => {
   const { ctx, fiber, state } = await bootBoard('projections');
   try {
     assert.ok(fiber !== undefined, 'the entry has no fiber: its module failed to import');
@@ -153,7 +194,7 @@ test('the board plugin settles ACTIVE under the real cordis loader', async () =>
   }
 });
 
-test('tool registry replacement re-registers once without restarting projections', async () => {
+test('tool registry replacement re-registers once without restarting projections', TEST_OPTS, async () => {
   const { ctx, fiber, state } = await bootBoard('full');
   try {
     assert.equal(state.tools.size, 4);
@@ -177,7 +218,7 @@ test('tool registry replacement re-registers once without restarting projections
   } finally { await ctx.fiber.dispose(); }
 });
 
-test('the board registers its tools and prompt sections when the host has them', async () => {
+test('the board registers its tools and prompt sections when the host has them', TEST_OPTS, async () => {
   const { ctx, fiber, state } = await bootBoard('full');
   try {
     assert.equal(STATE[fiber.state], 'active');
