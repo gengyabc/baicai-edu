@@ -45,7 +45,8 @@
     "resources",
     "skills",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",

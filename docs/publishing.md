@@ -48,7 +48,7 @@ provider 由 `learn` 携带（`learn/skill-provider.mjs` + `learn/lib/skill-reso
 
 1. **版本**：改过哪个包就升哪个包的 `version`；`0.x` 阶段 `^0.1.0` 只接受 `0.1.x`，所以 `learn` 或 `math-common` 一旦跳 `0.2.0`，六个包里的依赖范围要同时改，否则接收方装不上。`math-board` 现在领跑到 `0.6.0`，`math-primary-low` 的 `^0.6.0` 跟着它走。
 2. **文档**：README 里新增的普通过程说明放进 `<包>/docs/`（双语成对），并确认 `docs` 在该包 `files` 里——`check` 会因为链接目标没打进 tarball 直接报错。跨包与仓库根文档只能写绝对 URL（`https://github.com/gengyabc/baicai-edu/blob/main/…`），`../` 在 npm 页面上没有任何父目录。
-3. **变更记录**：`math-board` 维护 `CHANGELOG.md`；其余包首次发布前没有历史，从第一次升级起同样需要记录。
+3. **变更记录**：七个包都维护 `CHANGELOG.md`，并在各自 `files` 里列出，随 tarball 一起发布；首次发布（0.1.0 / `math-board` 0.6.0）已记录，之后每次升级都要追加一节。未发布的工作写在 `Unreleased` 下，发版时再落到版本号标题。
 4. **DSH 兼容范围**：七个包都声明 `engines.dsh: ">=0.2.2-rc.1 <0.3.0"`，未满足时 DSH 会拒绝安装与激活（机制见 `dsh-app-boot` 的 `evaluatePluginCompatibility`，比较用 `semver.satisfies(..., { includePrerelease: true })`，所以 rc 版本正常参与区间判断）。下限是**本仓库集成测试实际启动过的版本**，不是推测版本；上调或放宽前必须在那个 DSH 版本上真装一次。0.3.0 被挡在外面是故意的：它一旦破坏 API，未验证的安装会在运行时坏掉，而静默坏掉比装不上更难排查。
 5. **checks**：`node scripts/publish.mjs check` 必须为绿，`node --test scripts/*.test.mjs` 全过；CI 与本地是同一条命令。
 6. **发布**：`node scripts/publish.mjs publish`（首次发布前先 `publish` 带 `--dry-run` 看一遍清单）；它把 7 个 tarball 逐个上暂存区并打印 stage id，此时**还没有任何版本上线**。

@@ -1,8 +1,8 @@
 # Changelog
 
-All notable changes to `baicai-edu-math-board` are recorded here. This package has
-not been published to a registry yet; everything below landed before the first
-release, so 0.6.0 is the current state rather than an upgrade path.
+All notable changes to `baicai-edu-math-board` are recorded here. 0.6.0 is the
+first published version, so everything under it is the current state rather than
+an upgrade path; entries above it ship in the next release.
 
 ## [Unreleased]
 
