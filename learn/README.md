@@ -36,6 +36,15 @@ Preview and confirm the scope first, then separately type the confirmation phras
 
 ### Install
 
+From the registry, install a subject package by name — this shared package comes in as a dependency. Installing it alone gives general-task teaching and the five support areas:
+
+```bash
+dsh plugin --profile web add baicai-edu-math-primary-low    # low-band math; the board comes with it
+dsh plugin --profile web add baicai-edu-learn               # shared capability only
+```
+
+From this checkout, use the unified entry (it packs the dependency closure into tarballs, matching the registry layout):
+
 ```bash
 # Shared capability only (run from the repository root)
 node scripts/install.mjs learn --profile web
@@ -44,7 +53,7 @@ node scripts/install.mjs math-primary-low --profile web
 node scripts/install.mjs math-primary-high --profile web
 ```
 
-Restart if DSH says so, then refresh the Web session: the `/` menu shows the 6 entries, the model catalog lists `learn-feynman`, `learn-profile` and `learn-save`, and installed subject packages add their own internal skills. The shared package never installs every subject in reverse. Unified entry, re-install and manual-disable behavior: [installation guide](<../docs/installation.md>).
+Restart if DSH says so, then refresh the Web session: the `/` menu shows the 6 entries, the model catalog lists `learn-feynman`, `learn-profile` and `learn-save`, and installed subject packages add their own internal skills. The shared package never installs every subject in reverse. Do not install this checkout with `link:`: pnpm does not bring its dependencies, and a single-provider setup then cannot find them. Unified entry, re-install and manual-disable behavior: [installation guide](<../docs/installation.md>).
 
 ### Where the data lives
 
@@ -95,6 +104,15 @@ System state lives in `outputs/students/`; user-dropped originals live in `data/
 
 ### 安装
 
+从 registry 装时只写学科包名即可，本共享包作为依赖一并带入；只装它时提供通用任务教学与五类支持：
+
+```bash
+dsh plugin --profile web add baicai-edu-math-primary-low    # 低年级数学，画板随之带入
+dsh plugin --profile web add baicai-edu-learn               # 只装共享能力
+```
+
+本仓库本地 checkout 用统一入口（它把依赖闭包 pack 成 tarball 安装，与 registry 布局一致）：
+
 ```bash
 # 只装共享能力（在仓库根目录运行）
 node scripts/install.mjs learn --profile web
@@ -103,7 +121,7 @@ node scripts/install.mjs math-primary-low --profile web
 node scripts/install.mjs math-primary-high --profile web
 ```
 
-按 DSH 输出决定是否重启，再刷新 Web 会话：`/` 菜单出现 6 个入口命令，模型目录出现 `learn-feynman`、`learn-profile`、`learn-save`，已装学科包还会提供各自的内部 skill。共享包不反向安装所有学科。统一入口、重复安装与手动禁用见[安装说明](<../docs/installation.md>)。
+按 DSH 输出决定是否重启，再刷新 Web 会话：`/` 菜单出现 6 个入口命令，模型目录出现 `learn-feynman`、`learn-profile`、`learn-save`，已装学科包还会提供各自的内部 skill。共享包不反向安装所有学科。不要用 `link:` 装本仓库的 checkout：pnpm 不会带上它的依赖，单份 provider 也就找不到它们。统一入口、重复安装与手动禁用见[安装说明](<../docs/installation.md>)。
 
 ### 数据放在哪
 
