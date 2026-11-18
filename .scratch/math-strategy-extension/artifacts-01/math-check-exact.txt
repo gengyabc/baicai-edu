@@ -1,6 +1,0 @@
-PASS L-region complement/horizontal/vertical: 42, 42, 42 square cm
-PASS near transfer: 58 square cm
-PASS external foot and same base/heights 4,5: 12,12 and 15 square cm
-PASS equal-area noncongruence: squared sides [16,36,52] vs [25,25,36]
-PASS unequal perimeter: sqrt52 > 6 implies 10+sqrt52 > 16
-LIMIT: mathematical checks only, no teaching/model/student behavior executed.

@@ -1,2 +1,0 @@
-PASS: 36/24 divisors; exhaustive smaller-factor cube exclusion; square factor 1; prime boundaries 1/2.
-LIMIT: finite arithmetic checks only; general pairing, correspondence and prime-factor necessity require the recorded argument review, not sampling.

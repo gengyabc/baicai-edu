@@ -42,25 +42,17 @@ docs/superpowers/
 # copyright-sensitive; nothing in the packages links here, so keep it local.
 docs/refs/
 
-# Local debug output under .scratch/. Issue and spec docs there stay tracked;
-# only browser profiles, npm installs, packed tarballs and ad-hoc probes are
-# local.
-.scratch/*-profile/
-.scratch/packtest/
-.scratch/dsh-skill-provider/node_modules
-# Per-ticket linked worktrees; git worktree remove reclaims them.
-.scratch/worktrees/
+# Local debug output under .scratch/. Only the issue tracker's durable documents
+# stay tracked — see docs/agents/issue-tracker.md: each effort keeps its spec.md,
+# map.md and issues/NN-*.md. Everything else there (run logs, fixtures, captured
+# artifacts, agent brief/report/review transcripts, browser profiles, npm
+# installs, packed tarballs, worktrees) is per-run debris and stays local.
+.scratch/*
+!.scratch/*/
+.scratch/*/*
+!.scratch/*/spec.md
+!.scratch/*/map.md
+!.scratch/*/issues/
+.scratch/*/issues/*
+!.scratch/*/issues/*.md
 
-# Ad-hoc probes, test logs and browser repro harnesses used while debugging.
-# specs, issue files and decision records under .scratch/ stay tracked.
-.scratch/*.log
-.scratch/*.html
-.scratch/repro-*.mjs
-.scratch/check-board-jitter.mjs
-.scratch/repro-*.log
-.scratch/**/*.pre-acceptance.bak
-.scratch/debug-geometry-draw/
-.scratch/dsh-skill-provider/backup/
-.scratch/dsh-skill-provider/patched/
-.scratch/dsh-skill-provider/test-results*.txt
-.scratch/dsh-skill-provider/verify-provider-load.mjs

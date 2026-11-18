@@ -1,8 +1,0 @@
-$ node --test scripts/*.test.mjs
-ℹ tests 162
-ℹ pass 161
-ℹ fail 0
-ℹ cancelled 0
-ℹ skipped 1
-ℹ todo 0
-[exit: 0]

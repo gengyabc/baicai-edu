@@ -1,6 +1,0 @@
-[
-  "write profile OK",
-  "write memory OK",
-  "write milestones OK",
-  "INJECTED SYNTHETIC SIGNAL: 本次current_state写入失败 (write intentionally not attempted; not tool exception)"
-]

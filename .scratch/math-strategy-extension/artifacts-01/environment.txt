@@ -1,8 +1,0 @@
-2026-11-12T10:01:21Z
-v24.15.0
-implement/math-geometry
-55fe65ab1017f803b2de0948d527c71e41f615f0
- math-primary-high/skills/math-high-core/SKILL.md   |  1 +
- .../references/mathematical-strategies.md          |  8 +++--
- scripts/skill-contracts.test.mjs                   | 35 ++++++++++++++++++++++
- 3 files changed, 42 insertions(+), 2 deletions(-)
