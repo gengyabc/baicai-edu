@@ -170,6 +170,9 @@ test('shared learn files leave subject teaching rules to subject packages', () =
     // with each cited resource inlined; checking it again only reports the same
     // subject names from those copied bodies.
     if (path.startsWith('learn/resources/')) continue
+    // Maintainer docs under `learn/docs/` describe the packages and are not installed
+    // runtime rules, so naming concrete subjects there is not subject pedagogy.
+    if (path.startsWith('learn/docs/')) continue
     // Acceptance fixtures may name subjects; other shared runtime rules may not.
     if (entries.has(path) || path.startsWith('learn/tests/')) continue
     assert.doesNotMatch(text(path), subjectSpecific, path)
