@@ -1,245 +1,89 @@
-# 数学画板
+# baicai-edu-math-board 白菜数学画板
 
-DSH Web 输入框工具栏（模型选择按钮旁）的数学画板按钮；点击后打开宽屏工作台。它只承载学生的思路，不做运算、不自动解题、不用图片识别，也不替学生提交答案。
+[English](#english) | [中文](#中文)
 
-## 定位
+## English
 
-画板表达「有什么图案、每个代表多少、怎么摆放和分组」；加减乘除由学生自己在说明里讲，画板不提供运算模式，也不做对错判断。界面以画布为先：顶部显示画板标志与标题，左侧一列窄图案轨，中间白色大画布上方提供可展开的题目参考，底部固定工具；选中后的命名、分组、合并等操作出现在画布下沿的独立浮动栏，不再占用右侧栏。老师交流仍走 DSH 对话。
+An expression workspace for math, not a calculator. The plugin adds a button to the DSH Web input toolbar beside the model selector; it opens a wide workbench with three tabs — a quantity board (shapes, each with a value and a colour, groupable and mergeable), a geometry board (points, segments, polygons, circles, parallelograms, rectangles) and a teacher demo page. What the board expresses is which shapes there are, what each one stands for, and how they are placed and grouped; adding, subtracting, multiplying and dividing stay in the student's own note. It carries the student's own thinking only: no operation mode, no auto-solving, no image recognition, and it never submits an answer for the student. The math packages require it; it does not depend on any teaching skill.
 
-练习期间三块页面都不显示教师消息条（`.eb-question`）：它是真实作答的上下文，教程用自己的步骤轨说明当前要做什么；退出练习后原样恢复。练习界面里的每个控件都是带边框的按钮，不再使用无边框的文字式按钮。
+### Where to start
 
-## 教师示意与学生作图
+Open a DSH Web session and click the board button beside the model selector. For a lesson, run `/learn <topic>` first and open the board from the same toolbar. The student places shapes or points, writes a note, then uses "Put into answer" and sends the message themselves.
 
-几何已知条件画在「教师演示」页。算数页和几何页都不显示独立的「老师示意图」。学生点「放到我的几何画板」后，当前这幅图才复制进自己的几何草稿。教师通过 `geometry_board_draw` 管理几何演示：先 `get`，再以 `expectedRevision` 调用 `show` 或 `hide`。返回 `recorded` 表示请求已记录，不是目视执行回执，也不表示学生已经复制。
-
-- **按目标选择**：理解已给条件而画图操作会分散注意时，可提供简洁标注图；选择表征、构造、整理数量本身是学习目标时，留给学生画或描述。部分起点与逐步撤去支持按实际表现调整，不固定采用“老师先画”或“学生先画”。图示也有读图/操作负担，不保证降低认知负荷。
-- **不替学生推理**：例如长9宽1与长6宽4的比较，可只给轮廓、名称和已知边长；面积、比较结论及关键辅助线仍留给学生。学生也可直接用算式、口述或纸笔，不必复制教师图。
-- **完全隔离**：教师参考不读、不改任一学生草稿，不进撤销/重做、修改记录、导出文件、输入框或作答附件，不自动打开画板；教师展示不算学生表现。两个现有快照格式和几何只读判断边界不变。
-- **最小图元**：`reference` 包含 `title`、`description`、`width`、`height`、`shapes`；只接受矩形、线段、圆和纯文本标注，不接收任意 SVG、HTML、图片或外部链接图元。描述用于无障碍文本替代；以标注/题目条件为准，不从图形比例自动测量。
-- **独立生命周期**：每个DSH会话只保留最新教师参考，切换题目文本下拉框不会切换示意图；标题应明确对应任务。换题、结束或旧图会泄露独立检查的方法时，由教学方隐藏/替换，不清学生画布。工具不可用时继续用文字或可选纸笔。
-
-教学依据、适用范围与产品推论见[研究笔记](<../docs/research/math-representation-scaffolding-research.md>)；共享决策规则见[表征契约](<../math-common/skills/math-common/references/representation-contract.md>)。只读参考隔离是证据与隐私边界设计，尚未通过学生实验验证其学习效果。
-
-## 首次教程
-
-数量页通过「更多操作 → 查看教程」显式进入独立的安全练习：连续添加、拖动并松手、再次添加、单选／多选／取消选择，最后模拟「放入回答」。只有本步实际操作成功且目标状态满足才推进，拖动预览、失败添加和错误选择不通过。中英文均提示触屏「追加选择」路径；练习图形标记 1、2。练习中所有放入入口都不访问输入框或上传附件，可随时「退出练习」，完成后也须退出才能继续真实作答。基础练习完成只表示完成操作，不代表数学掌握或其他章节完成。
-
-数量真实页面保持挂载，练习使用另一个状态所有者：对象、说明、修改记录、撤销历史、选择、视口、设置与选项不回写；宿主设置／清空仍作用于真实页面，退出不会恢复旧备份覆盖这些更新。练习界面是画布右侧的窄步骤轨：本章标题与位置、本章步骤清单、本步目标、存储提示，以及重置本步、跳过本步、补练已跳过的步骤、重练本章、全部章节…、退出练习。其他章节收在「全部章节…」目录里，目录区分未开始、进行中、已完成与已跳过，不再常驻占用画布上方空间。退出、切页或刷新后默认仍是真实草稿；再次显式进入教程才恢复当前章节、步骤及对应练习画面（含说明、撤销／重做、修改记录、创建颜色、图案轨、选择、缩放／滚动和附带记录选项）。重置恢复本步起点，跳过依赖操作时仅为后续步骤提供练习起点，不算亲手完成。单章重练不清其他章。浏览器存储拒绝、损坏或版本不兼容时续学轨里显示存储提示，可继续／退出或重练本章；不假称保存成功。首次打开数量页不再自动进入本章：先播放一次轻量操作导览（与旧版一致的聚光提示，逐项操作才算过，可「跳过教程」），导览最后一步说明「更多操作 → 查看教程」里有完整教程；导览结束（走完或跳过）后，画布左下会留一行「想学更多操作？」加「查看教程」按钮，跟随或关闭后消失。教程的第 5 步要保存说明：那张说明卡在这步不能被取消掉，否则会提示先保存，以免导览停在无处可点的位置。完整教程只在学生显式进入时开始，并续学保存的章节与画面；已经有练习记录的画板不再自动播放这次导览。想再看一次时，「更多操作 → 查看操作导览」随时重播，它只重放聚光提示，不写练习进度，也不影响分章续学。
-
-几何页通过「更多操作 → 查看教程」进入同样隔离的安全练习，基础章依次练习点工具与落点、线段、三角形、多边形闭合、圆、选中指定点、取消选择，最后模拟「放入回答」。每一步只认已提交的成功操作：只选工具不算落点，线段第一次点击不算完成，未闭合的多边形轮廓与只有圆心的圆都不通过；后一步沿用前一步的点和图形，不重新建画面。几何练习只使用一份只读几何快照与学生整板说明，没有几何修改记录；本步及其他所有步骤都不上传、不附文件、不改输入框、不发送。练习使用独立状态所有者与 `practice:v2:geometry` 记录，几何真实草稿、撤销历史、选择、视口、网格／吸附与文件记忆都不回写；宿主合法变更不被旧备份覆盖，练习中途关闭画板只销毁练习。步骤轨、章节目录、重置本步、跳过、补练、续学和单章重练与数量页一致，中英文都可完成，多边形闭合与取消选择只用触屏也可完成。几何页首次打开同样先播放一次轻量操作导览，完整教程从「查看教程」显式进入，已有练习记录后不再播放导览。教师演示仍只在已有图形时引导，无图不开始 `teacher-demo-basics`；这段短引导也用同一块步骤轨，并在引导期间隐藏教师消息条，退出后恢复。演示页自己保留常驻的教程入口：底部右侧一枚「查看教程」，与左下「返回对话」同一条底边两端；步骤轨收起后从这里可再次打开，已完成的短引导从第一步重放，已跳过的那次按原记录续在结束位置（轨上仍标明跳过，可重练本章）。无图时不开始引导，只提示还没有可以练习的图；引导打开期间这枚入口隐藏，因为步骤轨本身已有步骤和「退出练习」。
-
-### 安全教程扩展接口
-
-首次打开某一画板只播放一次轻量导览，不写 `practice:v2`、不写另一侧的键，也不自动开始任何章节；完整教程从「查看教程」进入，并续学保存的章节和画面。v1 已看过标记不是完成，不迁入练习进度，也不删除；已有 `practice:v2` 记录时视为这块画板已经介绍过，不再播放导览。
-
-- [practice.js](<src/quantity/practice.js>) 的 `createQuantityPractice(saved?)` 保留 `snapshot()`／`observe(event)` 目标接口；保存值含 `index` 与 `targets`，恢复本身不检测目标。只输入已提交的用户操作前后状态（`add`、带 `submitted` 的 `move`）、明确用户选择（`select`）或模拟 `insert`；失败操作不通过。恢复、预置、宿主更新、程序自动选择和拖动预览不得喂给目标判定，不判断数学答案。
-- [practice-progress.js](<src/shell/practice-progress.js>) 是几何、教师演示与后续数量章共用的生命周期模块：`createPracticeProgress({mode, chapters, storage?, validateFrame?})`，返回 `snapshot / enter / observe / saveFrame / reset / skip / retryStep`。`enter()` 恢复保存的当前章；`enter(id)` 进入指定章；`enter(id, {retry:true})` 仅重练该章。`observe(event, frame)` 必须传入已提交操作后的完整画面；`saveFrame(frame)` 只保存画面，绝不通过目标。`reset()` 同时恢复本步起点画面与目标状态；`retryStep(index)` 仅对已跳过步骤使用其独立起点补练；补练前原来的目标／画面作为一对保存，补练成功或再次跳过后返回原来待练步骤或结束位置，不重置后面的已完成／已跳过状态及步骤起点。该返回位置也随刷新保留，只有显式整章重练才重置整章。返回值含 `current / goal / frame / chapters / persistence / supplementing`，调用方应用返回画面但不得再把应用动作送进 `observe`；`observe` 使 `supplementing` 从 true 变 false 时，必须应用返回的继续练习画面，不能只换提示而留下临时补练对象。
-- 章节定义为 `{id, titleKey, steps:[稳定步骤ID], optional?, start(previousFrame), createGoal(saved?), skip(savedGoal, frame)?}`。目标返回 `snapshot()`／`observe(event)`；快照必须含递增 `index` 与 `completed`，一次事件最多前进一步。数量页另需 `step / total / targets` 供提示与编号。`start(null)` 必须提供独立且足够的练习起点；连续进入未开始章时会收到前章画面，可保留成果。`skip` 返回 `{goal, frame}`，其中目标已移到下一步，画面具备下一步依赖；没有依赖的章节可省略。不能让程序提供的起点自动完成操作。
-- 稳定数量基础章 ID 为 `quantity-basics`，步骤为 `add / move / add-second / select-one / select-many / deselect / insert`。后续票应各自新增独立模块，建议数量章 ID 使用 `quantity-organize / quantity-notes / quantity-adjust / quantity-insert / quantity-files`（`quantity-adjust` 已交付，见下），几何使用 `geometry-*`，演示使用 `teacher-demo-basics`；不要改基础章步骤序列或复用旧 v1 教程。数量扩展工厂接收 `{M,T,emptyFrame}`，返回上述章节定义。接入仅需在 [build.mjs](<build.mjs>) 导入并内联该工厂、追加到 `Browser.quantityPracticeChapters: [factory, …]`（默认空），以及添加双语目标文案；不要改共享生命周期或真实草稿所有者。数量调整与恢复章 `quantity-adjust`（[src/quantity/practice-adjust.js](<src/quantity/practice-adjust.js>)）覆盖 Q14–Q19：步骤为 `adjust-color / adjust-color-add / adjust-pattern-add / adjust-pattern-use / adjust-pattern-hide / adjust-change / adjust-undo / adjust-redo / adjust-zoom / adjust-fit / adjust-clear / adjust-fresh / adjust-trace-option`。每一步只接受学生本人提交的真实变化：重复点击当前创建颜色、只打开图案库、点击已适应的视图或不可用的撤销/重做都不推进；撤销/重做要与那次明确变化前后的画板一致；确认清空要求练习内已有内容，并把图形、全部说明、修改记录和撤销历史一并清空，之后 `adjust-fresh` 要求在新阶段再新增对象才算完成放入前的非空快照。页面只新增这些提交事件（颜色档位、图案轨增减、撤销/重做、真实缩放/适应、确认清空、附带记录选项），不改共享生命周期、真实草稿写入或宿主清空工具；退出/刷新后续学恢复同一步与配对的前后画板。生成客户端内联该工厂并由 [tests/practice-adjust-bundle.test.js](<tests/practice-adjust-bundle.test.js>) 校验。几何／演示页通过 `shared.createPracticeProgress`、`shared.createPracticeRail(React,t)` 直接复用，使用独立 `mode` 和对应画面校验器；不冒充彼此的完成记录。
-- 数量整理章 `quantity-organize`（[src/quantity/practice-organize.js](<src/quantity/practice-organize.js>)）覆盖 Q04–Q09。步骤为 `organize-name / organize-reselect / organize-peer / organize-group / organize-group-name / organize-ungroup / organize-merge / organize-split / organize-copy / organize-crossout / organize-delete`。判定只认学生已经提交的操作和提交前后的画板：有效新名称、重新选中并读到该名称、第二个对象改为同一名称、新建包含两个标记成员的组、改掉组的现名、解散该组、按现有规则合并、按来源拆开、复制且原对象仍在、划去后对象仍在、删除该对象且其余对象仍在。空名称、给别的对象起名、多添加对象、单人组、失败或禁用的合并、拆开别的对象、复制别的对象、把划去当成删除、删除别的对象或清空整板，都不推进。分组不是合并，灰色合并结果不是错误，拆开与来源有关，本章不判断运算或数学答案。`skip` 准备的名称、组和合并对象不会送进 `observe`。页面只在练习中报告这些已成功提交的操作。工厂接在 `createQuantityAdjustChapter` 之后，由 [tests/practice-organize-bundle.test.js](<tests/practice-organize-bundle.test.js>) 校验。
-- 数量说明章 `quantity-notes`（[src/quantity/practice-notes.js](<src/quantity/practice-notes.js>)）覆盖 Q10–Q13。步骤为 `notes-deselect / notes-board / notes-board-read / notes-object / notes-object-check / notes-group / notes-group-read / notes-selection / notes-selection-check`。只有已经提交、并且写在当前选择所对应目标上的非空说明才通过：先取消选择再保存整板说明，重新打开能读到；指定图形、目标组和指定的多选集合各自保存后，换一个目标核对文字没有串写。空文字、取消、未改变画板的保存，以及写到别的图形、成员、另一组对象或整板上，都不推进。新添加的图形会被自动选中；整板说明这一步若目标是图形、组或多选，则不写入，这一步也不通过。说明是学生自己的话，不是已核对的数学结论。`skip` 只准备下一步需要的选择、组或已写好的上文，不把本步要学生写的说明送进 `observe`。页面只在练习里报告已提交的说明和打开说明卡。工厂接在 `createQuantityOrganizeChapter` 之后，由 [tests/practice-notes-bundle.test.js](<tests/practice-notes-bundle.test.js>) 校验。
-- [view-component.js](<src/quantity/view-component.js>) 的独立 `PracticeBoard` 复用数量编辑器，但 `practice` 在组件整个生命期固定；真实 `Board` 不卸载、不换存储键、不做备份恢复。数量练习完整 frame 为 `{board,trace,history:{past,future},selection,zoom,fit,attachTrace,toolValue,append,scroll:{left,top}}`，均经领域校验后恢复。练习禁止正常草稿持久化／投影同步／文件记忆与输入框访问；只有 `quantity-files` 这一章可以保存和打开练习文件，仍不记忆真实文件句柄。关闭只销毁练习所有者。浏览器独立键为 `baicai-edu-math-board:practice:v2:<mode>`，与会话草稿、旧 v1 seen 标志分离；当前章、目标、步骤状态、完整 frame 及各步起点目标／frame 原子保存。损坏数据不自动覆盖，显式重练才重新保存；拒绝写入仍可在内存练习。不可把文件句柄、宿主投影、真实草稿或学生档案放进 frame。
-- `createPracticeRail(React,t)` 渲染画布右侧的通用步骤轨：本章标题与 `N/M`、本章步骤清单（已完成／已跳过／当前）、本步目标、存储提示，以及重置本步／跳过本步／补练已跳过步骤／重练本章／全部章节…／退出练习。接收 `{progress,chapters,onNavigate(command,value),onExit,goalKey,stepKey,notice?,extra?,goalText?}`；`goalKey`／`stepKey` 由调用方给出自己的文案前缀，`goalText` 由教师演示页用来替换不可用提示。其他章节只在「全部章节…」对话框里列出，optional 标志独立显示，不阻塞基础章，基础章完成不冒称整套完成。调用方保留始终可用的退出入口，并将返回 frame 应用于独立练习所有者。
-- [geometry-basics.js](<src/geometry/geometry-basics.js>) 是几何基础章的独立模块，不改共享生命周期。`createGeometryPractice(saved?)` 保留 `snapshot()`／`observe(event)`，快照含 `index / step / total / targets / completed`；只输入页面已提交的绘制增量（`draw` 带 `before`、`after`，多边形闭合另带 `closed:true`）、明确用户选择（`select`）或模拟 `insert`。工具选择、落点中途、失败绘制、恢复或程序预置都不通过；本项目不量长度角度，不判断平行、垂直、相等、共线或数值结论。`createGeometryPracticeFrames(G)` 提供几何练习 frame 的 `empty()` 与整体校验（board、撤销历史、选择、工具、待闭合点、构造输入、辅助线／网格／吸附、缩放、滚动），任一损坏即拒绝整帧。`createGeometryBasicsChapter({G,emptyFrame,createGoal})` 的 `skip` 只为下一步补足依赖（放点、线段端点或闭合图形），补足对象不算亲手完成。几何扩展工厂接收 `{G,emptyFrame}`，在 [build.mjs](<build.mjs>) 内联并追加到 `Browser.geometryPracticeChapters: [factory, …]`，章节 ID 用 `geometry-*`；不要改基础章步骤序列。
-- 几何构造章 `geometry-construct`（[src/geometry/geometry-construct.js](<src/geometry/geometry-construct.js>)）覆盖 G06–G09。步骤为 `construct-parallelogram / construct-rectangle / construct-select-side / construct-midpoint / construct-drag / construct-auxiliary / construct-auxiliary-off`。平行四边形和矩形只认对应工具已经提交的新图形，普通多边形或未结束的预览不能代替；取中点只认选中那条边两端生成的派生中点；拖动只认标出的自由点在松手后位置变了，派生点不能直接拖动，也不是这一步的目标；辅助线要先打开并提交一个 `role` 为 `auxiliary` 的新图形，再关闭，只拨开关不算画完。成功不看图形落在画布的哪里，也不测量长度、角度，不判断平行、垂直、相等或共线。工厂由 [tests/practice-construct-bundle.test.js](<tests/practice-construct-bundle.test.js>) 校验。
-- 几何编辑与说明章 `geometry-edit`（[src/geometry/geometry-edit.js](<src/geometry/geometry-edit.js>)）覆盖 G11–G16。步骤为 `edit-rename / edit-text-add / edit-text-change / edit-delete / edit-point-note / edit-element-note / edit-caption / edit-deselect / edit-board-note`。改名只认指定点的新名称，原图形仍引用同一个点；文字先新增，再改同一条，另起一条不算。删除只认指定对象，开始时就在的另一个对象还要留下，不能清空整板代替。点说明、图形说明和整板说明各写各的，文字元素不能代替图形说明；图形说明要在 20 字以内，短标签才会出现，再直接点开那个标签改原说明，只打开卡片不算。整板说明这一步如果目标是点或图形，页面不写入，新出现并被选中的对象也不能把说明截走。说明和文字都是学生自己的话，不据此判断几何结论或作答对错。工厂接在 `createGeometryConstructChapter` 之后，由 [tests/practice-edit-bundle.test.js](<tests/practice-edit-bundle.test.js>) 校验。
-- 数量文件章 `quantity-files`（[src/quantity/practice-files.js](<src/quantity/practice-files.js>)）和几何文件章 `geometry-files`（[src/geometry/geometry-files.js](<src/geometry/geometry-files.js>)）都是可选进阶章，步骤都是 `files-save` 然后 `files-open`。保存只在练习文件经文件句柄写完，或下载已经开始之后通过；只点菜单不算。句柄成功使用 `practiceFileSaved`。下载使用 `practiceFileDownloaded`，只说明下载已开始、磁盘写入尚未验证，不使用 `fileSaved` 或 `fileDownloaded`。打开只接受本模式 `validate` 通过、并且和当前练习画板不同的文件，成功提示是 `practiceFileLoaded`。取消、权限拒绝、损坏、超过 262144 字节和跨模式文件都不推进，也不把下载事后说成已验证的磁盘保存。两章都不调用真实 `saveFile`／`openFile`，不写入 `fileHandleRef`，也不写真实文件 IndexedDB。数量打开不恢复修改记录，几何不新增修改记录。工厂分别接在 `createQuantityNotesChapter` 与 `createGeometryAdjustChapter` 之后，由 [tests/practice-quantity-files-bundle.test.js](<tests/practice-quantity-files-bundle.test.js>) 和 [tests/practice-geometry-files-bundle.test.js](<tests/practice-geometry-files-bundle.test.js>) 校验。
-- 几何调整与恢复章 `geometry-adjust`（[src/geometry/geometry-adjust.js](<src/geometry/geometry-adjust.js>)）覆盖 G17–G20。步骤为 `adjust-grid / adjust-snap / adjust-undo / adjust-redo / adjust-zoom / adjust-scroll / adjust-fit / adjust-clear`。网格和吸附都要先真正切换，再在对应状态下提交一个新点；只拨开关不算，也不从落点位置判断几何关系。撤销和重做对准那一个新点，不可用的按钮不算。缩放数字要变，再在非 1 倍或未适应时滚动，然后回到适应画面；当前档位或位置没变都不算。确认清空只清空练习几何画板及其撤销历史，之后不能撤回去，也不调用宿主数量清空，不新增几何修改记录。工厂接在 `createGeometryEditChapter` 之后，由 [tests/practice-geometry-adjust-bundle.test.js](<tests/practice-geometry-adjust-bundle.test.js>) 校验。
-- 教师演示短引导 `teacher-demo-basics`（[src/teacher-demo/teacher-demo-practice.js](<src/teacher-demo/teacher-demo-practice.js>)）覆盖 D01–D04。步骤为 `demo-read / demo-view / demo-copy / demo-return`。只在教师页已有至少一幅图形时启动；继续、改变缩放数字后再滚动、按下「放到我的几何画板」、再到几何页查看可编辑副本，才依次通过。复制用 `placeFigure` 追加到引导自己的练习帧，不调用 `onCopy`、`copyToGeometry` 或 `appendFigure`。进度只写 `baicai-edu-math-board:practice:v2:teacher-demo`，不写数量或几何练习键，也不把 `geometry-demo-seen` 当成完成、跳过或进行中。演示页底部右侧的「查看教程」是这段短引导的常驻入口（`teacherDemoTutorial`），打开期间隐藏；无图只提示 `teacherDemoTutorialNoFigure`，不开始引导、不写进度。工厂由 [build.mjs](<build.mjs>) 内联，但不进入 `quantityPracticeChapters` 或 `geometryPracticeChapters`。由 [tests/practice-teacher-demo-bundle.test.js](<tests/practice-teacher-demo-bundle.test.js>) 校验。
-- [geometry-view.js](<src/geometry/geometry-view.js>) 的 `PracticeBoard` 复用几何编辑器，`practice` 生命期固定；真实页面保持挂载并继续响应宿主合法变更。几何练习 frame 为 `{board,history:{past,future},selection,tool,pending,construction,auxiliary,grid,snap,zoom,fit,scroll:{left,top}}`。练习禁用真实草稿持久化、文件记忆与输入框访问；只有 `geometry-files` 这一章可以保存和打开练习文件，仍不记忆真实文件句柄。宿主清空／设置只作用于真实页面。退出、完成、切页、关闭与刷新后默认仍是真实草稿，再次显式进入才恢复。
-- 工厂通过 [build.mjs](<build.mjs>) 的 `Browser` 注入，新增工厂必须同步 toString 内联，不能依赖模块闭包。回归位于 [practice-progress.test.js](<src/shell/practice-progress.test.js>)、[practice.test.js](<src/quantity/practice.test.js>)、[view-practice.test.js](<src/quantity/view-practice.test.js>)、[geometry-basics.test.js](<src/geometry/geometry-basics.test.js>) 与 [geometry-view.test.js](<src/geometry/geometry-view.test.js>)；独立章节使用测试 fixture，不提前实现后续操作章。视图测试是浏览器替身下的指针处理器回放，不代表真实浏览器鼠标／触屏验收。实际命令、回放结果与未执行边界见 [ticket02 验证记录](<docs/tutorial-02-validation.md>) 与 [ticket03 验证记录](<docs/tutorial-03-validation.md>)。
-
-## 界面与交互
-
-- 左侧图案轨默认只放矩形、三角形、圆形、小猫、小狗。点图案直接添加：同一图案在一行里从左往右排，满 10 个换下一行；点不同图案就另起一行。图形保持原有大小、间距紧凑，只占画布左侧，右侧留白；画布向下延伸，新图形落在可视区域之外时，画布会自动滚动到能看见它、以及画在它上方的编号和下方的名字。纸面上沿留出一条与左边距相当的空带，第一行图形上方画的编号、便签不会被画布上边缘裁掉。也可以把图案拖到画布上的指定位置，拖入的位置不受这个默认摆放约束。末尾「＋」打开图案库；图案库仍含全部 20 个图案，点一下加入图案轨，再点一下收起。
-- 画布顶部直接显示当前已加载对话中最近一条已完成的老师消息，不显示「题目参考」标题，不纳入学生消息；不是自动识别或改写题目。消息选择框和展开／收起放在文字右侧，不单占标题行；可固定更早的教师消息，默认最多显示 3 行，展开后最多显示 5 行，更多内容在正文区域内滚动查看；展示时只删除空白行，保留非空行之间的换行和 Markdown 结构，不改动原消息，公式沿用宿主的 Markdown 渲染。只读可见、已完成的教师正文，不读思考过程、工具参数、附件内容或输入草稿；没有教师消息时显示空态。参考文字和所选消息不进入画板 JSON、修改记录或作答附件，也不触发清空。
-- 底部平铺「创建颜色」按钮，窄屏颜色独立为一行，档位较多时可横向滚动：颜色与数值共用现有 1、10、100、1000、10000 阶梯。选择某一级后，新添加的图案就代表该数值并使用该级颜色；切换颜色不会改动已有图形。
-- 单击选择；点一组里的图形会选中整组。Shift 点击加减单个图形；触屏选中后可点「追加选择」，逐个点按加减，再点「完成选择」。拖框只选框到的图形；拖动已选图形可一起移动。拖动过程只显示预览，松手后一次性记入历史，单击不产生撤销记录。
-- 选中图形后，画布下沿的独立浮动栏提供命名、圈组/解散组、合并、拆开、复制、划去、追加选择和删除。命名与划去只在浮动栏里，不常驻侧栏；划去只做划去，误操作可用全局撤销。清空画布在底部工具栏，删除所选在浮动栏，两者图标与范围不同。
-- 撤销/重做、缩放与「适应宽度」在底部工具栏右侧；画布内容变高后可上下滚动；底部还提供「我想说」、更多操作和「放入回答」。没有常驻「多选」或「只看画布」按钮。
-
-## 分组规则
-
-分组是平铺的「小兵编队」，没有子组：
-
-- 选中任意图形点「圈为一组」：如果其中有图形原本属于别的组，那些旧组整体解散，未被选中的旧成员回到未分组，再组成一个新组。
-- 组内点任意一个图形会选中整组；Shift 点击可把别的图形加进选择，或从整组里去掉一个，再点「圈为一组」就并成新组。没被选中的旧成员回到未分组。
-- 「解散组」把成员全部变回独立图形；组名可改；解散后成员恢复各自的别名。删掉一组的最后一个图形时，这组一并消失，不再占用 12 组的上限。
-- 整个动作都是一步撤销。
-
-## 合并规则
-
-合并**只改数值和颜色，不换图形**：3 个「代表 2」的绿圆合并成 1 个蓝色圆、数值 6，名字不变，并记录合并来源，可「拆开」还原。
-
-- 只有同一形状、同一数值、同属一组（或都未分组）、同一别名才能合并。总量正好是某一级时，用那一级的颜色；否则仍合并成原来的图案，数值是精确总和，颜色用单独的灰色。
-- 不需要先为总和新增一级。灰色表示这个数不在量级阶梯上。
-- 合并结果带角标显示由几个图形合并而来；拆开时恢复直接合并来源的图形、数值、颜色、名字与说明，嵌套合并逐层还原，不按当前阶梯重算。没有合并来源的原生图形仍可按较低档位拆分。
-- 拆开会移除指向原合并对象的多选说明，其他对象的多选说明保留；来源对象原有的说明恢复。
-
-## 预设数值、颜色与图案库
-
-界面不再提供数值、颜色或「每个图案默认代表多少」的编辑入口；学生只从固定的 1、10、100、1000、10000 阶梯中选择创建颜色。数值始终标在图形右下角的白色小角标里，不盖住图案本身；不只靠颜色识别，同一数值使用同一颜色。
-
-- 默认阶梯是 1、10、100、1000、10000，对应固定调色板（绿、蓝、紫、青、橙）。画板界面不能增删或改写这些档位。
-- 图案库仍可从左侧「＋」打开，添加或收起图案；收起的图案保留自己的默认名字，已有的画布图形不会消失。
-- 已合并图形保留合并时的数值与颜色；未合并图形如果数值仍在一级上，继续使用该级颜色。
-- 默认图案轨是矩形、三角形、圆形、小猫、小狗；其余图案通过图案库加入。
-- 宿主仍可通过 `math_board_settings` 同步会话级量级/默认值/图案清单（例如根据学生已明确说出的含义）；客户端按投影历史回放并保留每条的 `future`/`existing` 作用范围。该入口不再对应画板内的设置面板。宿主同步后，新建图形先使用各图案默认值，图案轨预览及提示同步显示；学生之后主动选择创建颜色时，以该选择为准，直到下次宿主同步。
-
-## 学生怎样用
-
-1. `/learn 加减法`（其他主题也可以），点输入框工具栏里、模型选择旁边的「数学画板」。
-2. 从左侧图案轨挑图案点选或拖入；需要更多图案点「＋」进入图案库；拖动、框选、Shift 加选整理成想说的样子。触屏可先选中再点「追加选择」。
-3. 选中后圈组、起名字、划去，或把同形同值的图形合并成更大量级。命名和划去都在浮动栏，不常驻侧栏。
-4. 点底部的气泡「我想说」：有选中对象时，说明会关联到该图形、整组或这次多选；没有选中时写的是整张画板的普通说明。切换选择不会覆盖之前写的内容。
-5. 点「放入回答」回到对话：画板数据放在「我的画板.json」附件里，输入框不加入图形清单；整张画板的普通说明会原样放进去，图形/组/多选说明随画板 JSON 一起提交。默认勾选附带独立记录附件，可在「更多操作」里取消；不勾选仍可正常提交快照。画布和修改记录都留着，学生可以继续改错再放入。检查正文和附件后**自己**发送，插入不等于发送。手动重做时点「清空画布」，图形、全部说明和修改记录一起清掉。低年级数学教学实际进入不沿用旧画板的新任务前，也会记录自动清空请求；不必逐次点击确认。
-
-键盘：Tab 聚焦图形，Enter/空格选择，Shift+Enter 加减单个图形（追加选择模式下同样生效），方向键移动，Delete 删除，Esc 退出追加选择。
-
-## 数据
-
-`kind: "math-board", schemaVersion: 4`：
-
-```
-settings: { levels: [{value, color}], defaults: [{shape, value, alias}], shapes: [shape] }
-objects:  [{ id, shape, value, color, alias, note, x, y, groupId, removed, sources }]
-groups:   [{ id, alias, note }]
-notes:    [{ id, text, objectIds }]    // 针对一次多选集合的说明
-note:     整张画板的普通说明
-summary:  确定性数量汇总（不是对错结论）
-```
-
-`settings.defaults` 覆盖全部 20 个图案，默认值不会因图案收起而丢失；`settings.shapes` 是图案轨当前显示的图案顺序（至少一个）。图形和组各可带一条 `note`；`notes` 只保存两个及以上具体对象的集合说明，任一目标对象被删除或合并时，该集合说明失效或转移到合并结果。撤销与重做也覆盖这些说明。[model.js](<src/quantity/model.js>) 是数量画板状态的领域实现，[geometry/model.js](<src/geometry/model.js>) 是几何画板状态的领域实现，[trace.js](<src/quantity/trace.js>) 独立处理修改事实及有界保留，[config-bridge.js](<src/host/config-bridge.js>) 是宿主设置同步桥（工具、命令、会话投影共用同一操作）；[view-component.js](<src/quantity/view-component.js>) 是数量页，[geometry-view.js](<src/geometry/geometry-view.js>) 是几何页，[geometry-demo-view.js](<src/teacher-demo/geometry-demo-view.js>) 是教师演示页，[board-shell.js](<src/shell/board-shell.js>) 组合三个 tab 与共享对话框，[tool-projection.js](<src/host/tool-projection.js>) 是几何演示与老师参考图共用的工具投影协议。三个页面共用同一套控件：[board-kit.js](<src/shared/board-kit.js>) 提供底部「返回对话」、图标按钮、缩放按钮对、更多菜单行、状态提示和调色常量，[geometry/caption.js](<src/geometry/caption.js>) 决定短标签画在哪、写多大、点哪儿算点中它，[geometry/draw.js](<src/geometry/draw.js>) 提供圆的隐藏半径点、按同一标签框画出图形与短标签、点标签、点与线面的着色规则，[geometry/frame.js](<src/geometry/frame.js>) 决定画布怎样装进可见区域（适应缩放、留白与可滚动范围）。图形的边只由 [geometry/model.js](<src/geometry/model.js>) 命名和解析；任一控件只在这里定义一次，页面不再各画一份。画板草稿与修改记录只存在浏览器本地并按 DSH 会话隔离，刷新页面、关闭工作台或关闭浏览器再打开仍保留；直到点「放入回答」，才把只读快照及学生勾选的修改记录作为附件上传到本机 Host。坐标不隐含算式。
-
-「放入回答」把完整 JSON 作为 `我的画板.json` 文件附件放进草稿，不把图形、分组或划去清单写进输入框。学生在「我想说」里写过的话会原样放进去。画布和修改记录都保留，学生可以在同一块画板上改错并再次放入。附件是只读的精确快照，模型读取它再回应，不把清单复述给学生，也不把更早消息里的修改记录串成总过程。附件在点击「放入回答」时上传到本机 Host，但直到学生自己发送才进入会话；学生可以像普通附件一样撤销它。点「清空」才同时清掉画布和本地修改记录，已经放入或发送的附件不删除，清空后不能撤销。
-
-旧版 `schemaVersion: 1`、`2` 和 `3` 的 JSON 会自动迁移到 v4：v1 保留圆形、方块、三角形，v2 保留原来的十个图案并为新图案补默认值，v3 图形和组补空说明、多选说明为空；浏览器草稿会从 v3/v2 存储键读入后写回新的 v4 存储键。详见 [教学协议](<../math-primary-low/skills/math-low-core/references/structured-drawing.md>)。
-
-保存与打开 JSON 时，支持文件系统访问 API 的浏览器会记住上次使用的文件；再次保存优先写回同一文件，打开也优先从该位置开始。浏览器拒绝或环境不支持时，退回普通下载与文件选择，并在界面说明。
-
-### 独立修改记录
-
-`kind: "math-board-trace", schemaVersion: 1` 是可选的修改记录附件，不是快照的新版本。快照保存/打开仍只往返 v4 数据，既不导出记录，也不从导入文件恢复记录；导入会令此前过程标为未知，画板因此实际改变时才留下一条导入变化。两者分离的原因见 [ADR-0001](<../docs/adr/0001-math-shared-contracts.md>)。
-
-- **尝试边界**：记录从上次「清空画布」之后积累，放入回答不中断记录，学生可以继续改错。旧草稿没有历史时标 `priorUnknown`，不能把缺失说成“学生没有修改”。点「清空画布」同时清掉画布和本地修改记录，撤销也不能回到清空前；已经放入或发送的附件不删除，新过程从空画板开始。界面不再单独提供「清除记录」或「开始新尝试」入口；记录的边界就是清空画布。
-- **记录内容**：按发生顺序记录用户可见的语义变化，包括添加、删除、改名、分组、合并/拆开、划去、学生说明（整板、图形、组或多选）、撤销/重做、清空、画板因此改变的导入及宿主设置变化；区分学生与系统来源，系统同步设置不能算学生操作。选择、悬停等界面动作不是语义事实；不记录坐标或时间戳，也不据此推测停顿时间、意图或熟练度。
-- **有界保留**：只折叠连续完全相同的事实，不把不同变化或隔开的重复合成一条。上限为 60 条；超出后保留最早 20 条和最近 30 条，明确标出省略的动作数，而不是暗示完整历史。独立附件上限为 64 KB，与快照大小限制分开；不可用时不妨碍仅提交快照。某次记录写入失败时保留已有事实，并把此后过程标为未知，画板本身照常保存。
-- **可见提交**：界面默认勾选但可取消附带记录；勾选在「更多操作」里。记录只有随学生自己发送的消息才进入会话，学生也可在附件栏单独删去；已发送附件随会话保留，不是临时阅后即失。没有另建永久行为档案，也不向学生档案写入修改次数。
-- **按需阅读**：AI 通常只读快照；学生卡住、主动请求回看或材料不一致时才读记录。只使用当前消息附带的这一次记录，不把更早消息里的记录连起来。新的学习会话不使用上一场已发送的画板或其中的数量差异；本场没有已发送快照时，不据此谈画板。记录只提供可观察事实，最多据此问一个澄清问题，不自动诊断或判定掌握；历史状态不同于最终状态通常只是修改。省略或未知的历史保持未知；记录缺失或不可用时回到快照，真正缺少数量含义或关系时问学生，不补造解释。
-
-## 几何模式
-
-画板顶部有三个 tab：算数、几何、教师演示。算数和几何各自的画布、工具栏、草稿存储键、撤销历史、选择与视口互相独立；切换 tab 不转换、不传递数据，两个草稿都保留。教师演示页只显示老师用几何图元放下的已知条件，学生不能在这一页上改图；这一页整体可纵向滚动，图的画框在缩放后也能横向、纵向滚动，长标题或说明不会把图挤没。点「放到我的几何画板」才把当前这幅图追加到几何草稿，并记成几何页上的一步撤销。教师图里的文字元素会原样复制成学生草稿里的文字元素；图形旁短标签（图形 `note`）随图形一起复制，复制后同样能点开修改；两者复制后都是学生自己的文字，可以选中、拖动、改写或删除；同一幅图可以连续放多次，后放的那份会换一组新 id，不会覆盖或改坏先放的那份。它们共用题目参考。算数和几何还共用「我想说」和「放入回答」；教师演示页没有这两项。三个页面底部都有「返回对话」；演示页在底部右侧另有一枚常驻的「查看教程」入口。老师还没放图时演示页只显示题目参考和「返回对话」，不显示标题或「老师还没有在这里放图」的占位说明。它和两个学生页一样由外层统一接收关闭回调，所以任何 tab 上点它都会关掉画板。
-
-- **工具**：选择、点、线段、三角形、多边形、圆、平行四边形、矩形、文字、取中点、辅助线。先放点再连线；线/面工具在空白处点击会自动落点。三角形点三个点即闭合，存成三顶点多边形。取中点不是画图工具：选中一条两端都是自由点、且还没有中点的线段后，按钮才可点，点一下在该线段上标出中点。辅助线是开关，打开后新画的图形用虚线。点显示 A/B/C 标签且可改名，改名不破坏引用。派生点可见、可选中、可写说明，但不能当作拖动把手或新图形的端点。
-- **文字**：文字工具点画布空白处，弹出写字卡，写下内容点「保存」（Esc 或「取消」放弃，空内容不写入）。写好的文字是画板上的一个元素：选择工具可选中、拖动（贴住画板边缘停下）、Delete 或「删除所选」删掉，也可以框选（框住或碰到文字就算选中）；选中后浮动栏的「修改文字」在原地改写，不新增第二个文字。文字保留学生自己的换行，最多 200 字，存成 `type: "text"`，带自己的锚点 `x`/`y`（左侧基线），不引用任何点，也不参与端点吸附、取中点和图形选择。它是学生的书写内容，不是那种「图形旁短说明」的 `note`。
-- **图形旁短标签也是可改的字**：图形 `note` 不超过 20 字时会画在图形旁边。现在这行字本身就能点：选中工具下点它，直接打开写这条说明的卡片，改完保存，画布上的字立刻跟着变；鼠标移上去会变蓝。选中带短标签的图形时，「我想说」也指向这条标签，避免看着画布上的字却改到整板说明。
-- **拖动**：自由点直接拖动；松手才记一步撤销，拖动中只显示预览。派生点由构造算出，不可拖动。圆拖圆心时整个圆一起平移、半径不变；拖圆上点改半径，半径不小于阈值。矩形的第三个点只决定「哪一侧、多高」：点落在垂直于 `P1P2` 的那一点上，不在直角位置的点击点不会留在画板上成为一个多余的角。平行四边形与矩形都按三点构造（`P4 = P1 + P3 − P2`），两个对角对是 `P1P3` 和 `P2P4`：拖动任一自由角，该角跟随指针，它的对角保持不动，另外两角绕这条对角的中点重算。矩形按对角等长且垂直重算，因此怎么拖都还是四个直角。拖动跟随指针，非法位置被吸收在退化阈值处（在允许的方向上滑到最后一个合法位置）：多边形和四边形不与自己交叉，拖动落点不允许原本分离的图形新产生重叠，只共用一个顶点或圆的外切接触不算重叠。圆的检查包含内部区域与包含关系，并在圆心携带半径点后检查最终形状；已有圆重叠的组合图仍可编辑，一旦分开便不能再拖成重叠。创建和导入规则不变，拖动检查候选落点，不做连续路径碰撞检测。
-- **视图**：网格与吸附是本地 UI 状态，不进快照。「适应宽度」按当前可见区域同时考虑宽和高，把整张画板连同点标签、图形旁短说明和学生文字一起放进画框，不会因为窗口较矮就裁掉画板下半部分。缩放会真正放大图形（线宽、标签与点一起变大）：画布随缩放变大，画框出现滚动条可以看到全部内容，不再把视图裁成中间一块；点「＋」「−」即离开适应视图，点「适应宽度」回到全图。
-- **说明**：整板一份说明；每个点、每个图形各一条说明。选中对象后点「我想说」写的就是该对象的说明；选中同一图形的一条或多条边时写它所属图形的说明。未选中或混合选中多个对象时写整板说明。算数和几何各有自己的一份整板说明，互不覆盖。教师演示图上的短说明画在图形旁边。
-- **说明与短标签**：整板说明和点上说明可以写长；图形旁画出来的短标签最多 20 字，更长的图形说明只留在说明卡里，画布上不再标注「有说明」，也不会出现看不着的字。点这行短标签就直接改写这条说明，可点的范围正好是画出来的那行字。
-- **清空本模式**：确认后清空几何画布与该模式撤销历史，不删除已放入或已发送的附件，也不影响数量画板。
-- **放入回答**：只附带 `我的几何画板.json` 和整板说明；没有几何修改记录附件。附件是只读快照，学生检查后自己发送。
-- **清空工具**：`math_board_clear` 只作用于数量模式；几何 tab 不显示它的任何入口或提示。
-
-`kind: "geometry-board", schemaVersion: 1`：
-
-```
-points:   [{ id, label, kind: "free"|"derived", x, y, construction?, note }]
-elements: [{ id, type: "segment"|"polygon"|"circle"|"parallelogram"|"rectangle", points|centerPointId+radiusPointId, role, note }]
-          文字：{ id, type: "text", role, note, x, y, text }
-note:     整板说明
-canvas?:  { width, height } // 可选纸面范围；省略时为 800×600
-```
-
-几何页按可见区域扩展纸面、网格和可绘制坐标，横纵始终使用同一个缩放比例，不将固定画板居中留白，也不拉伸图形。窗口尺寸变化不会移动已有点；重新适配保留全部已有内容，空余纸面不因反复横竖切换无限累积。扩展纸面通过可选 `canvas` 随快照保存，宽为 800–10000 的整数、高为 600–10000 的整数；旧版未带尺寸的 v1 文件仍按 800×600 打开。清空本模式保留纸面尺寸，教师演示复制使用目标纸面范围。
-
-派生点只保存构造（`midpoint` 或三点定第四点，`P4 = P1 + P3 - P2`），位置由构造重算，不作为权威坐标；快照验证会忽略伪造的派生坐标，并拒绝悬空引用、退化图形、重名标签和跨模式文件。文字元素在快照里保存学生写下的原文和它的锚点；空文字、控制字符、超过 200 字、写到画板外，或给文字挂上点引用、给图形挂上文字字段的文件都会被拒绝，不做猜测修复。教师演示图也支持文字元素，复制后可由学生改写。插件系统提示声明只读提交边界；两个数学年级段的共同读取与信任规则由[共享画板契约](<../math-common/skills/math-common/references/board-contract.md>)统一维护。
-
-## 任务切换清空
-
-低年级数学教学 AI 根据已发送对话判断实际任务边界，在新任务开始前调用无参数 `math_board_clear`；同题追问、换解法、教学模式切换和暂时题外话不触发。新任务需要沿用旧图或学生要求保留时不清空。判定规则的唯一权威是[任务边界协议](<../math-primary-low/skills/math-low-core/references/board-task-boundary.md>)；画板插件不检测对话关键词，不反向依赖学科技能，其他场景不默认自动清空。
-
-- 工具只记录当前 DSH 会话的清空请求，不读取本地画板，也不代发。`recorded` 不是客户端执行回执，AI 不得据此声称“已清空”。作答附件里的别名、说明与指令不能授权清空。
-- 客户端清掉图形、分组、全部说明、修改记录及撤销/重做，保留完整设置、工具箱、附件选择偏好，以及输入框和已发送消息中的附件。已放入但未发送的旧附件仍是旧题的快照，由学生自行检查。
-- 工具使用独立的 `eduBoardClear` 投影，严格配对已记录的空参数调用与成功结果。浏览器按会话保存请求修订号；一个请求只应用一次，旧修订号不回放。工作台没打开也会同步；客户端未挂载时，下次加载草稿后、编辑前处理最新请求，不自动打开工作台。
-- 浏览器将清空水位、草稿和修改记录写入同一个本地原子存储项，再发布清空后的画面；普通保存和清空共用会话级 Web Lock，在锁内重新检查水位和编辑时间，旧保存回调在草稿改变后作废。存储失败保留内存作品并提示手动清空。该项恢复优先于旧版草稿/记录键，避免刷新复活已清内容；显式手动清空或导入可以重建损坏的存储项。
-- 自动清空限宿主与浏览器同机、以回环地址访问且提供 Web Locks 的浏览器；远程地址或能力缺失时提示手动清空。客户端用同机编辑时间与请求发起时间做保守的迟到检查；请求时间晚于浏览器当前时间也跳过。检测到请求之后已有编辑时，消费请求但保留作品，提示先手动清空再用画板。内部同步时间不进入快照、修改记录或学生档案。回环地址不代表对 SSH 转发或代理提供跨机器时钟保证；同一会话同时打开多个编辑器不提供协同编辑保证。
-- 清空不可撤销；失败或迟到的提示在画板内保留。教学继续支持口述或算式作答；工具不可用或失败时由教学 AI 提示手动清空，不要求学生提交草稿。
-
-## 开发与安装
-
-### 源码布局
-
-```text
-math-board/
-├── index.js / client.js       # 稳定的宿主入口 / 生成的浏览器入口
-├── build.mjs / preview.mjs    # 构建与图案预览
-├── locale/                   # 界面字典
-├── src/
-│   ├── quantity/             # 数量模型、修改记录、数量页面
-│   ├── geometry/             # 几何模型、绘制、标签、视口与几何页面
-│   ├── teacher-demo/         # 教师演示模型与页面
-│   ├── reference/            # 独立老师参考图模型与视图
-│   ├── host/                 # 宿主同步桥、工具 schema 与投影协议
-│   ├── shared/               # 共享控件、文件选择与题目参考
-│   ├── shell/                # tab 外壳、教程与样式
-│   └── testing/              # React / 浏览器测试替身，不发布
-└── tests/                    # 生成客户端与发布包回归
-```
-
-源码按职责归属组织，单模块测试与实现相邻；跨模块的客户端与发布检查放在 `tests/`。公开入口与导出路径不随内部目录变化。发布清单按源码扩展名收录，排除测试与测试替身；新增运行时 JS 或 CSS 无需逐项追加。直接修改 `src/` 或字典后运行构建，不手改生成的 [client.js](<client.js>)。构建仍使用自包含工厂的 `toString()` 内联，移动文件不改变其依赖传入规则。
+### Install, and what success looks like
 
 ```bash
-node math-board/build.mjs
-node --check math-board/client.js
-npm --prefix math-board test
-# 视图测试共用 math-board/src/testing/test-harness.js 里的 React/浏览器替身
-node scripts/check-skills.mjs
-node math-board/preview.mjs /tmp/math-board-shapes.html   # 可选：在无头 Chrome 或浏览器里目视检查图案
-# 安装数学会自动配齐画板和共享学习包：
-node scripts/install.mjs math-primary-low --profile web
-# 画板也可独立安装：
-node scripts/install.mjs math-board --profile web
+node scripts/install.mjs math-primary-low --profile web   # installing math pulls the board in
+node scripts/install.mjs math-board --profile web         # or install the board alone
+dsh plugin --profile web add baicai-edu-math-board        # no teaching package, no model routing
 ```
 
-数学包将本包列为必需依赖，但画板不反向依赖教学技能。
+Restart if DSH says so, then refresh the Web session. When it worked, the toolbar shows a coloured board mark to the left of the model selector at 28 px (narrow windows show the mark only, and hover or a screen reader still reports the board name), and clicking it opens the workbench with the 算数 / 几何 / 教师演示 tabs. The board never calls a model itself, so no provider configuration is needed; a model is used only when the conversation needs a reply about what was submitted.
 
-**单独安装**（没有教学包、也没有配置模型路由）：`dsh plugin --profile web add baicai-edu-math-board`。插件入口不声明必需服务（`export const inject = []`）。Cordis 的扁平数组条目和对象键**都是必需服务**，没有 `{ required, optional }` 或数组式可选声明。可选能力由子 `ctx.inject(...)` 生命周期实现：投影注册表到达后挂载画板宿主；工具、命令和系统提示分别等待各自注册表，缺失时不阻塞投影，服务迟到或替换后自动注册／重新注册。没有投影注册表时入口仍激活，但不注册宿主能力；客户端本地画布不因此被清空。`scripts/board-boot.test.mjs` 用真实 Cordis loader 与 DSH ToolsService 验证完整、缺失、迟到和替换服务，避免直接调用 `apply` 的 mock 测试掩盖注入错误。注册表存在并不证明配置了模型路由；插件仅按宿主能力接线，不自行判断模型配置。回归命令：`node --test scripts/board-boot.test.mjs`。画板从不自己调用大模型，也不注册或改写任何模型 provider；只有对话里的教师演示、对话改设置、以及把画板放进回答后需要 AI 回应时才用当前会话已选的模型，不需要另外配置。完整安装与启用机制见[统一安装说明](<../docs/installation.md>)。纯 JavaScript 包，无第三方依赖、无安装脚本。提交生成的 `client.js`；修改模型、视图、样式或字典后运行 build。`preview.mjs` 用最小 React→SVG 适配器渲染全部图案，便于对比猫、狗等小尺寸辨识度；它不进入运行时包。首次安装支持 live activation，替换已安装模块是否需要重启以安装结果为准。
+### Where the data goes
 
-图案是本项目用 SVG 基本图元绘制的原创图形；`build.mjs` 将视图与图案工厂一起内联进 `client.js`，运行时不需要外部图片。
+The canvas, the notes and the edit trace live in browser-local storage, isolated per DSH session, and survive a refresh, a closed workbench or a browser restart. Nothing here ships in the package: this repository holds source, `docs/` and generated `client.js` only. "Put into answer" uploads a read-only snapshot to the local host and attaches `我的画板.json` (plus the optional trace) to the draft; it enters the conversation only when the student sends it.
 
-## 手工验收
+### What is irreversible
 
-- 进入真实会话打开工作台；检查触摸拖动、框选、键盘操作、明暗主题与窄窗口。
-- 在算数、几何、教师演示三个 tab 上分别点「返回对话」，画板都关闭；Escape 不关闭画板。
-- 几何页把窗口调矮（约 700 px），「适应宽度」仍能看到整块画板，包括贴着边缘的点和它们的标签；点两次「＋」后画框出现滚动条，能滚动看到画板每个角落，右侧和底部都没有被裁掉。
-- 工具栏按钮位于模型选择左侧，高 28 px，与相邻控件基线对齐；窄窗口只显示彩色画板标志，悬停或读屏仍报出「数学画板」。
-- 顶部为画板标志与标题，画布上方为题目参考条，可选择对话中的题目并展开／收起；左侧图案轨默认显示矩形、三角形、圆形、猫、狗；猫有尖耳朵和胡须，狗有下垂耳朵、口鼻和舌头，缩到 28 px 仍能区分。
-- 打开「＋」图案库，添加小鱼/火箭等图案后图案轨出现，收起后消失；已摆在画布上的对应图形仍在。至少保留一个图案。
-- 连续点同一个图案：同一行依次出现 10 个，第 11 个到下一行；换一个图案则另起一行。图形大小不变，只占画布左侧、右侧留白；一行一行向下排，超出可视区域时画布自动向下滚动，仍可继续添加且不压住已有图形。
-- 画布变高后可用滚轮/触控板或滚动条上下查看；底部「适应宽度」按画布宽度缩放，不改变图形实际大小。
-- 底部颜色／数值按钮全部平铺，并突出当前选择；选 10 后新添加的图案为蓝色并标 10，已有图形不变。
-- 底部工具顺序不变（返回、撤销/重做、创建颜色、缩放、我想说、清空、更多、放入回答），窄窗口颜色独立为一行；检查桌面、窄窗口和短窗口下不裁切；选中工具是画布下沿的独立浮动栏，不是第二行常驻工具。
-- 拖动图形能摆放，多选后一起移动，松手只产生一条撤销记录；取消「多选」后，鼠标框选/Shift 点击仍可加选，触屏用浮动栏「追加选择」。
-- 分组：选中含旧组员后重新圈组，旧组解散且未选中成员回退为未分组；解散后成员别名恢复。
-- 合并：设为「圆代表 2」后合并 3 个圆，得到一个蓝色圆、数值 6，图形不变；拆开后恢复 3 个绿圆。
-- 说明：选中一个图形时点「我想说」，输入框标题显示该图形；换选另一图形写说明，两者互不覆盖；不选任何图形时写的是整张画板说明。撤销能退回说明修改。
-- 原输入框有文字时「放入回答」不丢失原稿；导出再导入数据一致（包含图形/组/多选说明及 v4 版本）；无效 JSON 显示失败且不更改现有画板。
-- 「放入回答」后附件栏出现「我的画板.json」，输入框不出现「我在数学画板上摆好了」这类清单；整张画板说明会进入正文，图形/组/多选说明随附件提交。画布和修改记录仍在，可以改完再放入。正文里没有 JSON；发送后气泡上方显示文件卡片。模型能按提示读取该文件，且不把图形清单贴回对话。
-- 修改记录默认附带，可在「更多操作」取消；不勾选只带快照，两种情况都需手动发送。刷新页面、关闭后重开保留本地草稿及记录；旧草稿缺记录显示此前未知。
-- 确认清空后图形、全部说明和修改记录都没有了，不能撤销；取消清空则全部保留。已放入或发送的附件不被删除。撤销/重做、导入及学生/系统设置变化来源正确；快照导出不含记录，导入不带回旧记录。
-- 支持 File System Access API 的浏览器：首次保存选择位置；再次保存写回同一文件，打开从该位置开始。拒绝权限或 Firefox/Safari 环境退回下载与普通文件选择。
-- 用超过 60 条的合成变更检查最早 20 条、最近 30 条和省略动作数；仅连续相同事实折叠。检查独立附件的 64 KB 上限与失败时仅发送快照的路径，记录中没有坐标、时间戳。
+- Clearing the canvas wipes shapes, every note, the edit trace and the undo history at once, and cannot be undone. Attachments already put into the answer or already sent are not deleted.
+- The grade 1–3 teaching rule may record an automatic clear before a genuinely new task; the tool records the request and is not proof that the client applied it.
+- Sent attachments persist with the session; the trace is not a temporary read-once file.
 
-### 手动离线对照：相同终态，不同修改过程
+### Further reading
 
-以下是**待人工执行的合成场景**，不是已经完成的 LLM 评测。固定题目为“用图表示 3 组、每组 2 个苹果”，终态快照和学生说明均保持相同：3 组，每组 2 个代表 1 的苹果。为每个场景分别准备“仅快照”和“同一快照 + 可选记录”，离线人工对照教学回应；不连接真实学生资料或建立行为档案。
+| To learn about | Go to |
+|---|---|
+| Quantity board: pattern rail, topic reference, selection, grouping, merging, colour levels, student path | [Interface and interaction](docs/interface.md) |
+| Geometry tab, teacher demo page, and the isolated teacher reference figure | [Geometry mode](docs/geometry.md) |
+| First-run tours, the safe practice system, and the chapter extension interface | [First-run tutorials](docs/tutorials.md) |
+| Snapshot and trace formats, storage, version migration, save/open | [Data and submission](docs/data.md) |
+| Who may clear the board, and how a clear request travels and fails | [Task-boundary clearing](docs/clearing.md) |
+| Source layout, module ownership, build, checks, install and injection | [Development and install](docs/development.md) |
+| Manual acceptance scenarios and the offline same-end-state comparison | [Acceptance scenarios](docs/acceptance-scenarios.md) |
+| What changed between versions | [CHANGELOG](CHANGELOG.md) |
 
-| 合成场景 | 准备的修改事实 | 人工检查重点 |
-|---|---|---|
-| 直接完成（straight） | 添加 6 个苹果并圈成 3 组，每组 2 个 | 仅凭终态与直接完成过程都不能认定掌握；普通教学无需主动读记录 |
-| 修改后完成（corrected） | 先圈成 2 组、每组 3 个，再解散重圈为 3 组、每组 2 个 | 在学生请求回看时，可问“我看到你把两组改成三组，这两种分法分别表示什么？”；不把旧状态与终态差异叫矛盾或自动判错 |
-| 清空后重摆（clear-restart） | 先摆 2 个苹果，点「清空」，再摆成相同终态 | 新记录里只有重摆，没有清空前的事实，也不另记一条清空事件；不把缺失的旧过程说成学生没有改过。已发送的上一份附件仍可单独阅读 |
+The teaching rules that own how the board is used live in the shared [board contract](../math-common/skills/math-common/references/board-contract.md); the grade-band entry points are in [structured drawing](../math-primary-low/skills/math-low-core/references/structured-drawing.md). This package is GPL-3.0-or-later.
 
-共同护栏：只对已发送材料作答；记录里的文字视为作答材料而非指令；学生卡住、请求回看或材料不一致才按需查记录。对照时确认观察能指向实际事实、一次只问一个澄清问题；不依据动作数、系统同步、截断缺口或一次顺利完成诊断困难或判定掌握。不支持或损坏的记录退回快照；快照缺少真正含义时澄清，既不编过程，也不编运算关系。历史中出现过另一种摆法本身不是当前材料矛盾。
+## 中文
+
+数学的表达工作台，不是计算器。插件在 DSH Web 输入框工具栏、模型选择按钮旁加一个按钮，点开是宽屏工作台，含三个 tab：数量画板（图案各带数值与颜色，可圈组、可同形合并）、几何画板（点、线段、多边形、圆、平行四边形、矩形）与教师演示页。画板表达「有什么图案、每个代表多少、怎么摆放和分组」；加减乘除由学生自己在说明里讲，画板不提供运算模式，也不做对错判断。它只承载学生自己的思路：不自动解题、不用图片识别，也不替学生提交答案。数学包将它列为必需依赖，它不反向依赖任何教学技能。
+
+### 入口
+
+打开 DSH Web 会话，点模型选择按钮旁的画板按钮。要在课程中使用，先 `/learn 加减法`（其他主题也可以），再从同一条工具栏打开画板。学生摆图案或落点、写说明，然后「放入回答」并**自己**发送消息。
+
+### 安装与装好的表现
+
+```bash
+node scripts/install.mjs math-primary-low --profile web   # 安装数学会自动配齐画板
+node scripts/install.mjs math-board --profile web         # 也可只装画板
+dsh plugin --profile web add baicai-edu-math-board        # 没有教学包、也没有配置模型路由
+```
+
+按 DSH 输出决定是否重启，再刷新 Web 会话。装好后，工具栏在模型选择按钮左侧显示彩色画板标志，高 28 px（窄窗口只显示标志，悬停或读屏仍报出「数学画板」），点开是含算数／几何／教师演示三个 tab 的工作台。画板从不自己调用大模型，所以不需要模型配置；只有对话需要就提交内容回应时才用当前会话已选的模型。
+
+### 数据放在哪
+
+画布、说明与修改记录都在浏览器本地、按 DSH 会话隔离存储，刷新页面、关闭工作台或关闭浏览器再打开仍保留。本仓库只放源码、`docs/` 和生成的 `client.js`，这些状态不随包发布。「放入回答」把只读快照上传到本机 Host，把「我的画板.json」（以及可选的修改记录）作为附件放进草稿；学生自己发送后才进入会话。
+
+### 不可逆的部分
+
+- 清空画布会同时清掉图形、全部说明、修改记录与撤销历史，且不可撤销。已经放入回答或已经发送的附件不会被删除。
+- 低年级教学规则在真正的新任务开始前可能记录一次自动清空；工具只记录请求，不代表客户端已经执行。
+- 已发送附件随会话保留；修改记录不是阅后即失的临时文件。
+
+### 深入阅读
+
+| 想了解 | 位置 |
+|---|---|
+| 数量画板：图案轨、题目参考、选择、分组、合并、颜色阶梯、学生操作路径 | [界面与交互](docs/interface.zh.md) |
+| 几何 tab、教师演示页与完全隔离的老师参考图 | [几何模式](docs/geometry.zh.md) |
+| 首次导览、安全练习系统与章节扩展接口 | [首次教程与安全练习](docs/tutorials.zh.md) |
+| 快照与修改记录格式、存储、版本迁移、保存与打开 | [数据与提交](docs/data.zh.md) |
+| 谁能清空画板，清空请求怎样传递、怎样失败 | [任务切换清空](docs/clearing.zh.md) |
+| 源码布局、模块职责、构建、检查、安装与注入 | [开发与安装](docs/development.zh.md) |
+| 手工验收场景与相同终态的离线对照 | [手工验收场景](docs/acceptance-scenarios.zh.md) |
+| 各版本改了什么 | [更新记录](CHANGELOG.md) |
+
+画板该怎么用由共享契约拥有：[画板契约](../math-common/skills/math-common/references/board-contract.md)；年级段入口见[结构化数学画板](../math-primary-low/skills/math-low-core/references/structured-drawing.md)。本包许可为 GPL-3.0-or-later。

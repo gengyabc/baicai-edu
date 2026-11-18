@@ -93,7 +93,7 @@ The known failure `math-board/src/host/tool-schema.test.js` around the missing f
 ## Docs
 
 - One short paragraph in `math-board/README.md` under 安全教程扩展接口: both chapter ids, the two step ids, and that a download is not a verified disk save and neither chapter writes the real file handle.
-- `math-board/docs/tutorial-10-validation.md`: commands, counts, and what was not executed. A stubbed `showSaveFilePicker` is not a browser file-dialog pass. Handler replay is not a browser pass.
+- `.scratch/math-board-interactive-tutorial/validation/tutorial-10-validation.md`: commands, counts, and what was not executed. A stubbed `showSaveFilePicker` is not a browser file-dialog pass. Handler replay is not a browser pass.
 - `.scratch/math-board-interactive-tutorial/issues/10-optional-file-roundtrip.md`: `Status: resolved`, an `## Answer`, and checked boxes only for behavior the tests exercise. Leave the real-device box unchecked. Do not check a box that claims the system file UI or a real disk write was verified.
 
 ## Commit and report

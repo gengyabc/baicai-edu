@@ -61,7 +61,7 @@ Add `math-board/tests/tutorial-release.test.js`. It must execute each claim belo
 14. When storage throws, the current practice can still be exited, the status says resume is not guaranteed, the real draft is unchanged, and the page does not show a successful save.
 15. After exiting practice, the normal quantity insert can still attach the optional trace, the geometry insert has no trace, the board note can enter the composer, and neither insert sends the message or deletes the draft.
 
-`math-board/docs/tutorial-12-validation.md` has one row per scenario: the command that executed it, or “not executed” and why. Handler replay is not a browser pass. Do not claim a new server or the existing GUI was updated.
+`.scratch/math-board-interactive-tutorial/validation/tutorial-12-validation.md` has one row per scenario: the command that executed it, or “not executed” and why. Handler replay is not a browser pass. Do not claim a new server or the existing GUI was updated.
 
 ## Tool schema
 
@@ -69,7 +69,7 @@ Add `math-board/tests/tutorial-release.test.js`. It must execute each claim belo
 
 ## Docs already on the branch
 
-`issues/03-geometry-safe-basics.md` and `issues/06-quantity-adjust-recover.md` still say `ready-for-agent`. Set both to `resolved` and add an `## Answer` that points at the code and validation already on this branch. Geometry basics: `math-board/docs/tutorial-03-validation.md`. Quantity adjust: the existing adjust chapter and merge `7216a69`. Do not change their behavior. Leave any real-device box as it is.
+`issues/03-geometry-safe-basics.md` and `issues/06-quantity-adjust-recover.md` still say `ready-for-agent`. Set both to `resolved` and add an `## Answer` that points at the code and validation already on this branch. Geometry basics: `.scratch/math-board-interactive-tutorial/validation/tutorial-03-validation.md`. Quantity adjust: the existing adjust chapter and merge `7216a69`. Do not change their behavior. Leave any real-device box as it is.
 
 ## Docs for this ticket
 

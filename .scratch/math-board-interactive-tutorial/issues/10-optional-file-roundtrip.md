@@ -32,4 +32,4 @@
 - 最后一项未勾。自动回归、构建、`node --check` 和 `git diff --check` 已执行，未测能力写在验证记录里。该项同时要求实际验证文件 API 与下载回退环境，这一部分没有做，所以整项不勾。
 - 实现提交 `583c341cf6e69635a966f2fa262f96e598433efc`，集成合并 `32ff419`。未推送。
 - 聚焦命令为 **123/123 通过**。全量 `npm --prefix math-board test` 为 **482 项、481 通过、1 失败**。唯一失败是既有 [tool-schema.test.js:214–220](<../../../math-board/src/host/tool-schema.test.js#L214-L220>) 的 fenced JSON recipe，`assert.ok(get)`。未改教学契约。本章新增 30 个测试：14 个章节测试、8 个处理器回放、8 个打包测试。中英词典 UI 键数相同（416）。
-- 详细命令、计数和未执行边界见 [验证记录](<../../../math-board/docs/tutorial-10-validation.md>)。接入说明见 [安全教程扩展接口](<../../../math-board/README.md#安全教程扩展接口>)。
+- 详细命令、计数和未执行边界见 [验证记录](<../validation/tutorial-10-validation.md>)。接入说明见 [安全教程扩展接口](<../../../math-board/docs/tutorials.zh.md#安全教程扩展接口>)。

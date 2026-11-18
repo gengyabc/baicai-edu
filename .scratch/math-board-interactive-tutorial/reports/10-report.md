@@ -77,4 +77,4 @@ A stubbed `showSaveFilePicker` is not a browser file-dialog pass. A handler repl
 - The full suite still has the pre-existing tool-schema failure above. It was not fixed.
 - Practice download and open are page-local copies of the picker's handle, abort, fallback, and 262144-byte rules. They do not call the shared picker, so a later change to `file-picker.js` will not automatically apply to these two chapters.
 
-Validation write-up: `math-board/docs/tutorial-10-validation.md`. Acceptance issue: `.scratch/math-board-interactive-tutorial/issues/10-optional-file-roundtrip.md`.
+Validation write-up: `.scratch/math-board-interactive-tutorial/validation/tutorial-10-validation.md`. Acceptance issue: `.scratch/math-board-interactive-tutorial/issues/10-optional-file-roundtrip.md`.

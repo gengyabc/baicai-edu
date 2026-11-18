@@ -30,4 +30,4 @@
 - 最后一项未勾：中英和 `mouse`／`touch` 指针类型都有处理器回放，聚焦检查与全量测试已执行，但没有真实浏览器、真实鼠标、触屏设备或布局验收。处理器回放不是浏览器通过。
 - 实现提交 `1f4006808815f52f84d2962f7ca2751de7ebc329`，整板说明拦截 `34e61a5c60762265600c664b7695ade8e25e301c`，集成合并 `452b61f`。未推送。
 - 整板说明拦截再次通过同一条聚焦命令（47/47），并重新生成了 `client.js`。此前的构建与检查：`node math-board/build.mjs`、`node --check math-board/client.js`、`git diff --check` 通过。聚焦命令 **47/47 通过**：`node --test math-board/src/quantity/practice-notes.test.js math-board/src/quantity/view-practice.test.js math-board/tests/practice-notes-bundle.test.js`。全量 `npm --prefix math-board test` 在拦截之前为 **395 项、394 通过、1 失败**，拦截之后没有重跑全量。唯一失败是既有 [tool-schema.test.js:214–220](<../../../math-board/src/host/tool-schema.test.js#L214-L220>) 的 fenced JSON recipe，`assert.ok(get)`。未改教学契约。生成客户端仍注册调整章和整理章，并把 `createQuantityNotesChapter` 接在其后。中英词典键数相同（376）。
-- 详细命令、计数和未执行边界见 [验证记录](<../../../math-board/docs/tutorial-05-validation.md>)。接入说明见 [安全教程扩展接口](<../../../math-board/README.md#安全教程扩展接口>)。
+- 详细命令、计数和未执行边界见 [验证记录](<../validation/tutorial-05-validation.md>)。接入说明见 [安全教程扩展接口](<../../../math-board/docs/tutorials.zh.md#安全教程扩展接口>)。

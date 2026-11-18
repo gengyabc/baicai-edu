@@ -68,7 +68,7 @@ A handler replay is not a browser pass.
 - The guide frame remains visible on `demo-complete` so exit is still reachable. That is wider than the brief’s “only for `demo-return`”.
 - The copy control disappears when the figure is hidden, because the existing demo page only renders it for a figure. Unavailable status, exit, and resume remain.
 
-Validation write-up: `math-board/docs/tutorial-11-validation.md`. Acceptance issue: `.scratch/math-board-interactive-tutorial/issues/11-teacher-demo-first-figure.md`.
+Validation write-up: `.scratch/math-board-interactive-tutorial/validation/tutorial-11-validation.md`. Acceptance issue: `.scratch/math-board-interactive-tutorial/issues/11-teacher-demo-first-figure.md`.
 
 ## Follow-up
 

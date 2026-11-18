@@ -31,4 +31,4 @@
 - 最后一项未勾：中英和 `mouse`／`touch` 指针类型都有处理器回放，短标签走的是命中目标而不是悬停，聚焦检查与全量测试已执行，但没有真实浏览器、真实鼠标、触屏设备或布局验收。处理器回放不是浏览器通过。
 - 实现提交 `8c40233144d2b1b14b90dd5aa9a252620ae63497`，长标签修复 `35e17c5b19636f3ce5dfbe2711bc75a267c2aa22`，集成合并 `34d2dae`。未推送。
 - 聚焦命令在长标签修复后为 **72/72 通过**：`node --test math-board/src/geometry/geometry-edit.test.js math-board/src/geometry/geometry-view.test.js math-board/tests/practice-edit-bundle.test.js`。全量 `npm --prefix math-board test` 在该修复之前为 **433 项、432 通过、1 失败**，修复之后没有重跑全量。唯一失败是既有 [tool-schema.test.js:214–220](<../../../math-board/src/host/tool-schema.test.js#L214-L220>) 的 fenced JSON recipe，`assert.ok(get)`。未改教学契约。生成客户端仍保留基础章和构造章，并把 `createGeometryEditChapter` 放在 `createGeometryConstructChapter` 之后。中英词典 UI 键数相同（396）。超过 20 字的短标签保存不会写入画板，也不会让已存目标无法加载。学生页用已有的文字命中框排版，因为 `shared.geometryTextBox` 并未提供；教师演示页仍调用它，含文字的演示画板仍无法排版，留给教师演示章。
-- 详细命令、计数和未执行边界见 [验证记录](<../../../math-board/docs/tutorial-08-validation.md>)。接入说明见 [安全教程扩展接口](<../../../math-board/README.md#安全教程扩展接口>)。
+- 详细命令、计数和未执行边界见 [验证记录](<../validation/tutorial-08-validation.md>)。接入说明见 [安全教程扩展接口](<../../../math-board/docs/tutorials.zh.md#安全教程扩展接口>)。

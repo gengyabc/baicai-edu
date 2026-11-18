@@ -77,7 +77,7 @@ Do not hand-edit `math-board/client.js`.
 ## Docs
 
 - One short paragraph in `math-board/README.md` under 安全教程扩展接口: chapter id, step ids, and that success is the named tool’s committed element, not a measured relation.
-- `math-board/docs/tutorial-07-validation.md`: commands, counts, and what was not executed. Handler replay is not a browser pass.
+- `.scratch/math-board-interactive-tutorial/validation/tutorial-07-validation.md`: commands, counts, and what was not executed. Handler replay is not a browser pass.
 - `.scratch/math-board-interactive-tutorial/issues/07-geometry-construct.md`: `Status: resolved`, an `## Answer`, and checked boxes only for behavior the tests exercise. Leave the real-device box unchecked.
 
 ## Commit and report

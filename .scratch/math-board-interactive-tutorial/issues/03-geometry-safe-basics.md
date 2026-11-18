@@ -19,7 +19,7 @@
 
 ## Answer
 
-几何基础章已在本分支，行为未改。步骤在 [geometry-basics.js](<../../../math-board/src/geometry/geometry-basics.js>)，页面接入在 [geometry-view.js](<../../../math-board/src/geometry/geometry-view.js>)。验收记录是 [tutorial-03-validation.md](<../../../math-board/docs/tutorial-03-validation.md>)。本票只把状态改为 resolved，不勾选原有条目。
+几何基础章已在本分支，行为未改。步骤在 [geometry-basics.js](<../../../math-board/src/geometry/geometry-basics.js>)，页面接入在 [geometry-view.js](<../../../math-board/src/geometry/geometry-view.js>)。验收记录是 [tutorial-03-validation.md](<../validation/tutorial-03-validation.md>)。本票只把状态改为 resolved，不勾选原有条目。
 
 ## 边界
 

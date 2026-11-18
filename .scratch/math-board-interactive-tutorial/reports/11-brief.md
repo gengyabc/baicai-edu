@@ -87,7 +87,7 @@ If the mounted replay lives in an existing test file instead of a new `geometry-
 ## Docs
 
 - One short paragraph in `math-board/README.md` under 安全教程扩展接口: chapter id, step ids, the separate storage key, and that the seen flag is not this chapter’s progress.
-- `math-board/docs/tutorial-11-validation.md`: commands, counts, and what was not executed. Handler replay is not a browser pass.
+- `.scratch/math-board-interactive-tutorial/validation/tutorial-11-validation.md`: commands, counts, and what was not executed. Handler replay is not a browser pass.
 - `.scratch/math-board-interactive-tutorial/issues/11-teacher-demo-first-figure.md`: `Status: resolved`, an `## Answer`, and checked boxes only for behavior the tests exercise. Leave the real-device box unchecked.
 
 ## Commit and report

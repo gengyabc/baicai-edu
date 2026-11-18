@@ -24,7 +24,7 @@ None.
 #### Minor (Nice to Have)
 - The chapter unit driver repeats the hold (`step === 'notes-board' && action.type === 'annotate'`) and returns before `observe`. Group and selection non-commits are asserted there. The editor replay covers the auto-selected object, then relies on the same `target` condition for a group or a selection.
 - Successful advance stores the live frame and does not call `ready()`. `ready()` is what restores a missing group and clears append mode. A student who dissolves the group before the group step, or who leaves append on after the single-object step, keeps that frame on entry and on reset. Append mode selects one member, so the group-step line “tap one member and the group selects together” does not match the board until append is turned off. Skip does run `ready()`.
-- `math-board/docs/tutorial-05-validation.md` lists the 394/395 full suite in Executed beside the guard. The report is the place that says that suite ran before the guard.
+- `.scratch/math-board-interactive-tutorial/validation/tutorial-05-validation.md` lists the 394/395 full suite in Executed beside the guard. The report is the place that says that suite ran before the guard.
 - Skip placeholders (`Board`, `Object`, `Group`, `Selection`) are English in both languages. Goals and failure strings are translated.
 
 ### Assessment

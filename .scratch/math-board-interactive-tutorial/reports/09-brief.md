@@ -79,7 +79,7 @@ The known failure `math-board/src/host/tool-schema.test.js` around the missing f
 ## Docs
 
 - One short paragraph in `math-board/README.md` under 安全教程扩展接口: chapter id, step ids, and that grid and snap are not a geometry verdict.
-- `math-board/docs/tutorial-09-validation.md`: commands, counts, and what was not executed. Handler replay is not a browser pass.
+- `.scratch/math-board-interactive-tutorial/validation/tutorial-09-validation.md`: commands, counts, and what was not executed. Handler replay is not a browser pass.
 - `.scratch/math-board-interactive-tutorial/issues/09-geometry-adjust-recover.md`: `Status: resolved`, an `## Answer`, and checked boxes only for behavior the tests exercise. Leave the real-device box unchecked.
 
 ## Commit and report

@@ -9,7 +9,7 @@ Handler replay is not a browser pass. No new server was started, and the existin
 - Quantity page (`src/quantity/view-component.js`): when the board tab is active and `baicai-edu-math-board:practice:v2:quantity` is absent, open `quantity-basics`. Opening does not complete the chapter. A later open with that key present does not auto-open and does not reset it. The v1 seen flag is neither copied nor deleted.
 - Geometry page (`src/geometry/geometry-view.js`): the same route for `geometry-basics` and `practice:v2:geometry`. One board’s entry does not write the other board’s practice key.
 - `src/host/tool-schema.test.js` builds `get` and `show` itself and runs them through registered `geometry_board_draw` and `eduBoardGeometryDemo`. The rectangle assertion stays.
-- [tutorial-release.test.js](<../tests/tutorial-release.test.js>) drives the claims below with the existing page harness (`createHooks`, `installBrowser`, `text`, `walk`) or the real progress owner.
+- [tutorial-release.test.js](<../../../math-board/tests/tutorial-release.test.js>) drives the claims below with the existing page harness (`createHooks`, `installBrowser`, `text`, `walk`) or the real progress owner.
 
 ## Page differences
 
@@ -58,7 +58,7 @@ No real browser, real mouse, real touch device, small-screen layout, scroll layo
 
 ## 修订后的首开与目录（2026-11-17）
 
-第 1 行（首开分流）与第 13 行（界面）按 [ADR-0005](../../docs/adr/0005-first-run-quick-tour.md) 重跑，替换原先的自动进入章节目径：
+第 1 行（首开分流）与第 13 行（界面）按 [ADR-0005](../../../docs/adr/0005-first-run-quick-tour.md) 重跑，替换原先的自动进入章节目径：
 
 | 场景 | 结果 |
 | --- | --- |

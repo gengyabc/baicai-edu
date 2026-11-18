@@ -29,4 +29,4 @@
 - 最后一项未勾：中英和 `mouse`／`touch` 指针类型都有处理器回放，聚焦检查与全量测试已执行，但没有真实浏览器、真实鼠标、触屏设备或布局验收。处理器回放不是浏览器通过。
 - 实现提交 `5789ac06092ece055755439bbebbf4825c56b4a8`，分支 `feat/tutorial-07`。未合并，未推送。
 - 聚焦命令在拖动重置修复后为 **62/62 通过**：`node --test math-board/src/geometry/geometry-construct.test.js math-board/src/geometry/geometry-view.test.js math-board/tests/practice-construct-bundle.test.js`。实现提交 `5789ac0`，拖动标记修复 `8b59e43`，集成合并 `d82943b`。全量 `npm --prefix math-board test` 在该修复之前为 **412 项、411 通过、1 失败**，修复之后没有重跑全量。唯一失败是既有 [tool-schema.test.js:214–220](<../../../math-board/src/host/tool-schema.test.js#L214-L220>) 的 fenced JSON recipe，`assert.ok(get)`。未改教学契约。生成客户端仍保留基础章，并把 `createGeometryConstructChapter` 放进 `geometryPracticeChapters`。中英词典 UI 键数相同（384）。重置拖动步骤后，视图会重新选中那个自由点。
-- 详细命令、计数和未执行边界见 [验证记录](<../../../math-board/docs/tutorial-07-validation.md>)。接入说明见 [安全教程扩展接口](<../../../math-board/README.md#安全教程扩展接口>)。
+- 详细命令、计数和未执行边界见 [验证记录](<../validation/tutorial-07-validation.md>)。接入说明见 [安全教程扩展接口](<../../../math-board/docs/tutorials.zh.md#安全教程扩展接口>)。

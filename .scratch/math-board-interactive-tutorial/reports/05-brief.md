@@ -85,7 +85,7 @@ Do not hand-edit `math-board/client.js`. Rebuild it.
 ## Docs in this branch
 
 - One short paragraph in `math-board/README.md` under 安全教程扩展接口: chapter id, step ids, and that only a committed note on the current target passes.
-- `math-board/docs/tutorial-05-validation.md`: commands, counts, and what was not executed (real browser, real mouse, touch device, layout). Handler replay is not a browser pass.
+- `.scratch/math-board-interactive-tutorial/validation/tutorial-05-validation.md`: commands, counts, and what was not executed (real browser, real mouse, touch device, layout). Handler replay is not a browser pass.
 - `.scratch/math-board-interactive-tutorial/issues/05-quantity-notes.md`: `Status: resolved`, an `## Answer`, and checked boxes only for behavior the tests actually exercise. Leave the real-device box unchecked.
 
 ## Commit

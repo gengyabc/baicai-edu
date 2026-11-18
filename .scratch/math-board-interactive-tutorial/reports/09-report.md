@@ -71,7 +71,7 @@ The mounted replay runs in Chinese and English, with the stand-in pointer report
 - The full suite still has the pre-existing tool-schema failure above. It was not fixed.
 - Skip into scroll changes zoom and fit so the canvas can move. That setup is not observed and does not complete the zoom step.
 
-Validation write-up: `math-board/docs/tutorial-09-validation.md`. Acceptance issue: `.scratch/math-board-interactive-tutorial/issues/09-geometry-adjust-recover.md`.
+Validation write-up: `.scratch/math-board-interactive-tutorial/validation/tutorial-09-validation.md`. Acceptance issue: `.scratch/math-board-interactive-tutorial/issues/09-geometry-adjust-recover.md`.
 
 ## Follow-up
 

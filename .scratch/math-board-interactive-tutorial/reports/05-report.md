@@ -43,7 +43,7 @@ The handler replay finishes the chapter in Chinese and English with the stand-in
 ## Docs
 
 - `math-board/README.md`: one paragraph under 安全教程扩展接口.
-- `math-board/docs/tutorial-05-validation.md`: commands, counts, the model difference, and what was not executed.
+- `.scratch/math-board-interactive-tutorial/validation/tutorial-05-validation.md`: commands, counts, the model difference, and what was not executed.
 - Worktree issue `05-quantity-notes.md`: `Status: resolved`, `## Answer`, and checked boxes only where the tests exercise the behavior. The real-device box is unchecked. Checkbox 2 is unchecked because add-then-save still stores an object note.
 
 ## Not done

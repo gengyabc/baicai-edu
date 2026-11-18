@@ -6,6 +6,22 @@ release, so 0.6.0 is the current state rather than an upgrade path.
 
 ## [Unreleased]
 
+### Documentation
+
+- `README.md` is now a bilingual index instead of a 245-line Chinese rule book: what
+  the board is, where to start, how to install it and what success looks like, where
+  data goes, what is irreversible, and a table of where to read further. The detail
+  moved into seven English/Chinese doc pairs under `docs/` — interface, geometry,
+  tutorials, data, clearing, development, acceptance-scenarios — each opening with a
+  language switch line, with one authoritative copy per rule and cross-links instead
+  of repetition. `docs/` is listed in the publish manifest so install-page links work.
+- The per-ticket build evidence that used to sit in `docs/` (`tutorial-NN-validation.md`,
+  ten files) moved to `.scratch/math-board-interactive-tutorial/validation/`, beside the
+  tracking tickets that cite it. It is maintainer evidence — scenario tables saying which
+  acceptance claims ran and which did not — not package documentation, so it no longer
+  ships; its links were re-based and the records are reachable from the tutorial
+  extension section.
+
 ### Tutorial UI
 
 - Every one of the 88 practice-step goals now reads as two short lines instead of one

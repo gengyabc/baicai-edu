@@ -122,7 +122,7 @@ The known failure `math-board/src/host/tool-schema.test.js` around the missing f
 ## Docs in this branch
 
 - Short note in `math-board/README.md` under the existing 安全教程扩展接口 section: chapter id, step ids, and that judgments use committed operations only.
-- `math-board/docs/tutorial-04-validation.md`: what was executed, commands, counts, and what was **not** executed (real browser, real mouse/touch devices, layout). Do not call handler replay a browser pass.
+- `.scratch/math-board-interactive-tutorial/validation/tutorial-04-validation.md`: what was executed, commands, counts, and what was **not** executed (real browser, real mouse/touch devices, layout). Do not call handler replay a browser pass.
 - Issue file `.scratch/math-board-interactive-tutorial/issues/04-quantity-organize.md`: set `Status: resolved`, check a box only for behavior this branch's tests actually exercise, and add an `## Answer` with commit ids, test commands, and the unexecuted limits. Leave boxes unchecked when the only evidence would be a real device.
 
 ## Commit

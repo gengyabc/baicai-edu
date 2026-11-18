@@ -4,8 +4,8 @@ Validated 2026-11-16 on branch `feat/tutorial-03`, based on integration `f0c504d
 
 ## Delivered
 
-- [geometry-basics.js](<../src/geometry/geometry-basics.js>): `createGeometryPractice` (goals for G01–G05, G10, G21 plus selection clearing), `createGeometryPracticeFrames(G)` (frame factory and all-or-nothing validator) and `createGeometryBasicsChapter` (basics chapter with dependency-only `skip`). Independent module; the shared lifecycle is unchanged.
-- [geometry-view.js](<../src/geometry/geometry-view.js>): the geometry page keeps its real draft mounted and renders a separate `PracticeBoard` owner with the shared coach, catalogue, reset, skip, supplementary retry and chapter retry. All editing entry points are gated while practice is open, and the practice session has no file, host-projection or composer access.
+- [geometry-basics.js](<../../../math-board/src/geometry/geometry-basics.js>): `createGeometryPractice` (goals for G01–G05, G10, G21 plus selection clearing), `createGeometryPracticeFrames(G)` (frame factory and all-or-nothing validator) and `createGeometryBasicsChapter` (basics chapter with dependency-only `skip`). Independent module; the shared lifecycle is unchanged.
+- [geometry-view.js](<../../../math-board/src/geometry/geometry-view.js>): the geometry page keeps its real draft mounted and renders a separate `PracticeBoard` owner with the shared coach, catalogue, reset, skip, supplementary retry and chapter retry. All editing entry points are gated while practice is open, and the practice session has no file, host-projection or composer access.
 - Bilingual goal copy, README tutorial section and extension contract, and the `.eb-geometry-owner` coach layout.
 
 ## Executed
@@ -18,11 +18,11 @@ Validated 2026-11-16 on branch `feat/tutorial-03`, based on integration `f0c504d
   node --test math-board/src/geometry/geometry-basics.test.js math-board/src/geometry/geometry-view.test.js
   ```
 
-- `npm --prefix math-board test`: **343 tests, 342 passed, 1 pre-existing failure**. The sole failure is [tool-schema.test.js:214](<../src/host/tool-schema.test.js#L214-L220>), stale shared-skill fenced-JSON recipe extraction (`assert.ok(get)`). Left unchanged for ticket12, as agreed. The package extraction/build/reproducibility test passes after the rebuild.
+- `npm --prefix math-board test`: **343 tests, 342 passed, 1 pre-existing failure**. The sole failure is [tool-schema.test.js:214](<../../../math-board/src/host/tool-schema.test.js#L214-L220>), stale shared-skill fenced-JSON recipe extraction (`assert.ok(get)`). Left unchanged for ticket12, as agreed. The package extraction/build/reproducibility test passes after the rebuild.
 
 ## Operation-goal replay (not browser E2E)
 
-[geometry-basics.test.js](<../src/geometry/geometry-basics.test.js>) drives the goal model with realistic committed deltas:
+[geometry-basics.test.js](<../../../math-board/src/geometry/geometry-basics.test.js>) drives the goal model with realistic committed deltas:
 
 - G01: every tool selection, whatever its name, is not a placed point; a later step's operation does not advance the current one.
 - G02: a first endpoint alone neither advances nor rewrites the referenced target; a line that does not reach the student's own first point is refused.
@@ -31,7 +31,7 @@ Validated 2026-11-16 on branch `feat/tutorial-03`, based on integration `f0c504d
 - Earlier targets stay named through the run; deleting one blocks the next step instead of silently repairing the run.
 - A skip-all run supplies one dependency per step, never duplicates a target, and the saved goal reloads through the same validator the resume path uses.
 
-[geometry-view.test.js](<../src/geometry/geometry-view.test.js>) exercises the mounted editor and the independent practice owner:
+[geometry-view.test.js](<../../../math-board/src/geometry/geometry-view.test.js>) exercises the mounted editor and the independent practice owner:
 
 - No premature pass: choosing a tool, the first segment click, an unclosed polygon preview and a single circle centre all leave the step unchanged.
 - Continuous reuse: the segment, triangle and polygon steps reuse the earlier points; the run keeps its own undo history.
@@ -48,4 +48,4 @@ No real browser tools were exposed. No authenticated GUI replay, DOM/layout/focu
 
 ## Extension note
 
-G06–G21, the optional file chapter and the teacher-demo chapter follow the same seam: a factory `({G, emptyFrame}) => chapter` in an independent module, inlined by [build.mjs](<../build.mjs>) and appended to `Browser.geometryPracticeChapters` (default empty), with `geometry-*` ids and bilingual goal keys. Do not change the basics step sequence, the shared lifecycle or the real-draft owner. A new chapter must supply sufficient independent practice starts and must route any destructive or file operation through the practice owner so it can never reach the real draft, the composer or a real file handle.
+G06–G21, the optional file chapter and the teacher-demo chapter follow the same seam: a factory `({G, emptyFrame}) => chapter` in an independent module, inlined by [build.mjs](<../../../math-board/build.mjs>) and appended to `Browser.geometryPracticeChapters` (default empty), with `geometry-*` ids and bilingual goal keys. Do not change the basics step sequence, the shared lifecycle or the real-draft owner. A new chapter must supply sufficient independent practice starts and must route any destructive or file operation through the practice owner so it can never reach the real draft, the composer or a real file handle.

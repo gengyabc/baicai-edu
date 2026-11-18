@@ -22,7 +22,7 @@ None.
 None.
 
 #### Minor (Nice to Have)
-The validation note and the issue answer still record the pre-fix run: 70/70, 20 added tests, and commit `8c40233` (`math-board/docs/tutorial-08-validation.md:20` and `:26`). The fix adds the caption-length chapter test and the mounted replay. The pass rules in the tree already include that bound.
+The validation note and the issue answer still record the pre-fix run: 70/70, 20 added tests, and commit `8c40233` (`.scratch/math-board-interactive-tutorial/validation/tutorial-08-validation.md:20` and `:26`). The fix adds the caption-length chapter test and the mounted replay. The pass rules in the tree already include that bound.
 
 ### Assessment
 **Task quality:** Approved

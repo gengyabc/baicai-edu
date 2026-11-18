@@ -58,7 +58,7 @@ The handler replay finishes the chapter in Chinese and English with the stand-in
 ## Docs
 
 - `math-board/README.md`: one paragraph under 安全教程扩展接口.
-- `math-board/docs/tutorial-08-validation.md`: commands, counts, and what was not executed.
+- `.scratch/math-board-interactive-tutorial/validation/tutorial-08-validation.md`: commands, counts, and what was not executed.
 - Worktree issue `08-geometry-edit-notes.md`: `Status: resolved`, `## Answer`, and checked boxes only where the tests exercise the behavior. The last box is unchecked.
 
 Both locale files have the same 396 UI keys.

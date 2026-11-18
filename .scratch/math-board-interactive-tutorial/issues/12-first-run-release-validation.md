@@ -28,7 +28,7 @@
 - 已勾选的项由 [tutorial-release.test.js](<../../../math-board/tests/tutorial-release.test.js>) 用现有页面替身执行。这是处理器回放，不是浏览器通过。真实鼠标、真实触屏、小屏、滚动和窗口尺寸变化没有做，所以要求这些的那一项不勾。逐条成功/失败回放、规格里更宽的说明目标和迟到销毁回调也没有在本文件重做，对应项不勾。
 - 工具参数测试在 [tool-schema.test.js](<../../../math-board/src/host/tool-schema.test.js>) 里自己构造 `get` 和 `show`，仍走已注册的 `geometry_board_draw` 和 `eduBoardGeometryDemo`，矩形断言保留。未给教学契约加围栏 JSON。
 - 聚焦命令 **101/101 通过**（`tutorial-release.test.js`、`tool-schema.test.js`、`geometry-view.test.js`、`geometry-demo-view.test.js`）。全量 `npm --prefix math-board test` 为 **521 项、521 通过、0 失败**。`node math-board/build.mjs`、`node --check math-board/client.js`、`git diff --check` 已通过。未手改 `client.js`。已合入集成分支，未推送。
-- 逐条场景、未执行原因和页面差异见 [验证记录](<../../../math-board/docs/tutorial-12-validation.md>)。
+- 逐条场景、未执行原因和页面差异见 [验证记录](<../validation/tutorial-12-validation.md>)。
 
 ## 边界
 
