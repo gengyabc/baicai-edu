@@ -32,7 +32,7 @@ From this checkout, use the unified entry (it packs the closure into a tarball, 
 node scripts/install.mjs chinese-reading --profile web
 ```
 
-Restart if DSH says so, then refresh the Web session. When it worked, `/learn-start` offers Chinese on its subject card and the model catalog lists `chinese-session`, `chinese-core`, `chinese-reading-session`, `chinese-writing-session`, `chinese-read-write-transfer` and `chinese-generate-tasks`. Do not install this checkout with `link:`: pnpm does not bring its dependencies, and a single-provider setup then cannot find the shared package. Unified entry, re-install and manual-disable behavior: [installation guide](<../docs/installation.md>).
+Restart if DSH says so, then refresh the Web session. When it worked, `/learn-start` offers Chinese on its subject card and the model catalog lists `chinese-session`, `chinese-core`, `chinese-reading-session`, `chinese-writing-session`, `chinese-read-write-transfer` and `chinese-generate-tasks`. Do not install this checkout with `link:`: pnpm does not bring its dependencies, and a single-provider setup then cannot find the shared package. Unified entry, re-install and manual-disable behavior: [installation guide](<https://github.com/gengyabc/baicai-edu/blob/main/docs/installation.md>).
 
 ### What is irreversible
 
@@ -84,7 +84,7 @@ dsh plugin --profile web add baicai-edu-chinese-reading
 node scripts/install.mjs chinese-reading --profile web
 ```
 
-按 DSH 输出决定是否重启，再刷新 Web 会话。装好后 `/learn-start` 的科目卡片里有语文，模型目录里能看到 `chinese-session`、`chinese-core`、`chinese-reading-session`、`chinese-writing-session`、`chinese-read-write-transfer` 与 `chinese-generate-tasks`。不要用 `link:` 装本仓库的 checkout：pnpm 不会带上它的依赖，单份 provider 也就找不到共享包。统一入口、重复安装与手动禁用见[统一安装说明](<../docs/installation.md>)。
+按 DSH 输出决定是否重启，再刷新 Web 会话。装好后 `/learn-start` 的科目卡片里有语文，模型目录里能看到 `chinese-session`、`chinese-core`、`chinese-reading-session`、`chinese-writing-session`、`chinese-read-write-transfer` 与 `chinese-generate-tasks`。不要用 `link:` 装本仓库的 checkout：pnpm 不会带上它的依赖，单份 provider 也就找不到共享包。统一入口、重复安装与手动禁用见[统一安装说明](<https://github.com/gengyabc/baicai-edu/blob/main/docs/installation.md>)。
 
 ### 不可逆的部分
 

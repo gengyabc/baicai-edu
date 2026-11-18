@@ -2,7 +2,7 @@
 
 ## 两种安装来源
 
-- **registry 发布**：每个包声明发布版本范围（如 `"baicai-edu-learn": "^0.1.0"`），不声明 `"private": true`。接收方只需装 **DSH**，用自己的 dsh 命令按包名安装；不需要你的 checkout、profile 或任何本机路径。**当前状态**：`baicai-edu-*` 尚未发布到 npm，首次 `npm publish` 之前按包名 `add` 会返回 404，此时只能用下面的本地 checkout 方式；发布与发布后验收见[发布与技能渲染](publishing.md)。
+- **registry 发布**：每个包声明发布版本范围（如 `"baicai-edu-learn": "^0.1.0"`），不声明 `"private": true`，并声明 `engines.dsh: ">=0.2.2-rc.1 <0.3.0"`——DSH 不满足这个范围时会直接拒绝安装与激活，不会装上一个跑不起来的插件。接收方只需装 **DSH**，用自己的 dsh 命令按包名安装；不需要你的 checkout、profile 或任何本机路径。**当前状态**：七个 `baicai-edu-*` 包已发布到 npm（`0.1.0`，`math-board` 为 `0.6.0`），按包名 `add` 即装齐依赖闭包；发布与发布后验收见[发布与技能渲染](publishing.md)。
 - **本地 checkout**：`scripts/install.mjs` 按 `package.json` 的必需依赖遍历同仓库 bundle，把依赖闭包**逐个 `npm pack` 成 tarball**，再把这批 tarball 一次交给 `dsh` 安装。本地与 registry 因而得到同一种 `node_modules` 布局：闭包里每个包都是 profile 的直接依赖，也正是单份技能 provider 能解析全部包的前提。**不要再用 `link:` 装本地 checkout**：pnpm 不会安装被链接包的依赖，profile 只会得到闭包的一部分。技能仍从安装处读取，本地改动重装一次即生效；宿主代码修改按 DSH 重载或重启诊断生效。
 
 ## 接收方怎么装（DSH 已装好）
@@ -65,7 +65,7 @@ node scripts/install.mjs math-primary-low --profile web --dry-run
 
 默认 profile 是 `web`。脚本根据自身位置解析仓库，不依赖固定 checkout 路径；从其他工作目录调用时传入脚本的实际路径。安装完成后按 DSH 输出决定是否重启，再刷新原有 Web 页面；脚本不会启动替代服务器。
 
-**本地安装为什么先 pack**：`pnpm add link:<目录>` 只链接该目录本身、不装它的 `dependencies`，profile 里只有部分包，单份 provider 就找不到其余包。安装器因此走「pack 闭包 → 一次 `dsh plugin add <tarballs>`」，并在 profile 的 `pnpm-workspace.yaml` 写 `overrides`（DSH 没有对应命令，由安装器写入；重装时整块替换），让某个 tarball 声明的兄弟依赖也解析到本地 tarball，而不是 npm registry（`baicai-edu-*` 目前尚未发布）。每次重装都重新 pack 闭包，并把之前装过的其它学科包按仍留在 profile 里的 tarball 路径一并重新 add，因此逐个安装学科不会互相清掉。pack 产物放在系统临时目录，重装会生成新的目录并替换 profile 里的引用。
+**本地安装为什么先 pack**：`pnpm add link:<目录>` 只链接该目录本身、不装它的 `dependencies`，profile 里只有部分包，单份 provider 就找不到其余包。安装器因此走「pack 闭包 → 一次 `dsh plugin add <tarballs>`」，并在 profile 的 `pnpm-workspace.yaml` 写 `overrides`（DSH 没有对应命令，由安装器写入；重装时整块替换），让某个 tarball 声明的兄弟依赖也解析到本地 tarball，而不是 registry 上同名已发布版本（`baicai-edu-*` 已发布，本地调试仍需这层 overrides 才吃得到未发布的改动）。每次重装都重新 pack 闭包，并把之前装过的其它学科包按仍留在 profile 里的 tarball 路径一并重新 add，因此逐个安装学科不会互相清掉。pack 产物放在系统临时目录，重装会生成新的目录并替换 profile 里的引用。
 
 ## 依赖关系与唯一来源
 

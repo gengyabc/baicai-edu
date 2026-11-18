@@ -1837,7 +1837,9 @@ test('one subject package name installs its whole bundle closure', () => {
 
 test('high-grade methodology is kept as material and never registered as skills', () => {
   const manifest = JSON.parse(text('math-primary-high/package.json'))
-  assert.deepEqual(manifest.files, ['cordis.patch.yml', 'build.json', 'resources', 'skills', 'README.md', 'LICENSE'])
+  // `docs` ships because the README links into it; the methodology notes under
+  // `sources` stay teaching material and never become a shipped directory.
+  assert.deepEqual(manifest.files, ['cordis.patch.yml', 'build.json', 'docs', 'resources', 'skills', 'README.md', 'LICENSE'])
   assert.ok(!manifest.files.includes('sources'))
   assert.deepEqual(manifest.dependencies, {
     'baicai-edu-learn': '^0.1.0',

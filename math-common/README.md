@@ -18,7 +18,7 @@ None of its own. The bands load these files by name from the branch that needs t
 node scripts/install.mjs math-common --profile web
 ```
 
-When it worked, the model catalog lists the `math-common` skill and `/` shows no new command. Unified entry, re-install and manual-disable behavior: [installation guide](<../docs/installation.md>).
+When it worked, the model catalog lists the `math-common` skill and `/` shows no new command. Unified entry, re-install and manual-disable behavior: [installation guide](<https://github.com/gengyabc/baicai-edu/blob/main/docs/installation.md>).
 
 ### What is irreversible
 
@@ -51,7 +51,7 @@ This package holds no state. Student data, records and finalize belong to `baica
 node scripts/install.mjs math-common --profile web
 ```
 
-装好后模型目录里能看到 `math-common` 技能，`/` 菜单不新增命令。统一入口、重复安装与手动禁用见[统一安装说明](<../docs/installation.md>)。
+装好后模型目录里能看到 `math-common` 技能，`/` 菜单不新增命令。统一入口、重复安装与手动禁用见[统一安装说明](<https://github.com/gengyabc/baicai-edu/blob/main/docs/installation.md>)。
 
 ### 不可逆的部分
 

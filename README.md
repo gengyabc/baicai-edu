@@ -33,7 +33,7 @@ dsh plugin --profile web add baicai-edu-chinese-reading     # Chinese
 dsh plugin --profile web add baicai-edu-english             # English
 ```
 
-`dsh plugin` forwards its arguments to pnpm inside the profile; DSH then adds the bundles installed by this call that declare `dsh.bundle` to that profile's selection, so the dependency closure switches on by itself and dependencies are never listed by hand. The bundles stay visible in DSH's plugin management, where you can disable or re-enable them. No `baicai-edu-*` package is on npm yet: `add baicai-edu-…` returns 404 until the first publish, so use the checkout route below until then.
+`dsh plugin` forwards its arguments to pnpm inside the profile; DSH then adds the bundles installed by this call that declare `dsh.bundle` to that profile's selection, so the dependency closure switches on by itself and dependencies are never listed by hand. The bundles stay visible in DSH's plugin management, where you can disable or re-enable them. All seven `baicai-edu-*` packages are published on npm (`0.1.0`, with `math-board` at `0.6.0`), so `add baicai-edu-…` installs the dependency closure from the registry. The checkout route below is for local development, not a fallback.
 
 From this checkout, the unified entry packs the dependency closure into tarballs and installs it in the same one-pass shape:
 
@@ -160,7 +160,7 @@ dsh plugin --profile web add baicai-edu-chinese-reading     # 语文
 dsh plugin --profile web add baicai-edu-english             # 英语
 ```
 
-`dsh plugin` 把参数透传给 profile 内的 pnpm；随后 DSH 会把本次装上新声明 `dsh.bundle` 的依赖加入该 profile 的选择，依赖闭包因此自动启用，不需要手写依赖名。这些 bundle 会出现在 DSH 的插件管理里，可在此禁用或重新启用。`baicai-edu-*` 目前尚未发布到 npm，首次发布前 `add baicai-edu-…` 会返回 404，此时用下面的本地 checkout 入口。
+`dsh plugin` 把参数透传给 profile 内的 pnpm；随后 DSH 会把本次装上新声明 `dsh.bundle` 的依赖加入该 profile 的选择，依赖闭包因此自动启用，不需要手写依赖名。这些 bundle 会出现在 DSH 的插件管理里，可在此禁用或重新启用。七个 `baicai-edu-*` 包均已发布到 npm（`0.1.0`，`math-board` 为 `0.6.0`），按包名 `add` 即从 registry 装齐依赖闭包；下面的本地 checkout 入口只用于本仓库开发调试。
 
 本仓库本地 checkout 用统一入口（它把依赖闭包 pack 成 tarball，按同样的一次性方式安装）：
 

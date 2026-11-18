@@ -53,7 +53,7 @@ node scripts/install.mjs math-primary-low --profile web
 node scripts/install.mjs math-primary-high --profile web
 ```
 
-Restart if DSH says so, then refresh the Web session: the `/` menu shows the 6 entries, the model catalog lists `learn-feynman`, `learn-profile` and `learn-save`, and installed subject packages add their own internal skills. The shared package never installs every subject in reverse. Do not install this checkout with `link:`: pnpm does not bring its dependencies, and a single-provider setup then cannot find them. Unified entry, re-install and manual-disable behavior: [installation guide](<../docs/installation.md>).
+Restart if DSH says so, then refresh the Web session: the `/` menu shows the 6 entries, the model catalog lists `learn-feynman`, `learn-profile` and `learn-save`, and installed subject packages add their own internal skills. The shared package never installs every subject in reverse. Do not install this checkout with `link:`: pnpm does not bring its dependencies, and a single-provider setup then cannot find them. Unified entry, re-install and manual-disable behavior: [installation guide](<https://github.com/gengyabc/baicai-edu/blob/main/docs/installation.md>).
 
 ### Where the data lives
 
@@ -121,7 +121,7 @@ node scripts/install.mjs math-primary-low --profile web
 node scripts/install.mjs math-primary-high --profile web
 ```
 
-按 DSH 输出决定是否重启，再刷新 Web 会话：`/` 菜单出现 6 个入口命令，模型目录出现 `learn-feynman`、`learn-profile`、`learn-save`，已装学科包还会提供各自的内部 skill。共享包不反向安装所有学科。不要用 `link:` 装本仓库的 checkout：pnpm 不会带上它的依赖，单份 provider 也就找不到它们。统一入口、重复安装与手动禁用见[安装说明](<../docs/installation.md>)。
+按 DSH 输出决定是否重启，再刷新 Web 会话：`/` 菜单出现 6 个入口命令，模型目录出现 `learn-feynman`、`learn-profile`、`learn-save`，已装学科包还会提供各自的内部 skill。共享包不反向安装所有学科。不要用 `link:` 装本仓库的 checkout：pnpm 不会带上它的依赖，单份 provider 也就找不到它们。统一入口、重复安装与手动禁用见[安装说明](<https://github.com/gengyabc/baicai-edu/blob/main/docs/installation.md>)。
 
 ### 数据放在哪
 

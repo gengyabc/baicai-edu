@@ -6,6 +6,18 @@
     "./package.json": "./package.json"
   },
   "description": "English teaching skills for baicai-edu: story input, dialogic interaction, output, scaffolding, tasks, usage-based patterns, spaced retrieval, and child-friendly news reading.",
+  "author": {
+    "name": "gengyabc",
+    "url": "https://github.com/gengyabc"
+  },
+  "keywords": [
+    "education",
+    "english",
+    "language-learning",
+    "k12",
+    "dsh",
+    "dsh-plugin"
+  ],
   "license": "GPL-3.0-or-later",
   "repository": {
     "type": "git",
@@ -17,7 +29,8 @@
     "url": "https://github.com/gengyabc/baicai-edu/issues"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22",
+    "dsh": ">=0.2.2-rc.1 <0.3.0"
   },
   "dependencies": {
     "baicai-edu-learn": "^0.1.0"
@@ -25,11 +38,16 @@
   "files": [
     "cordis.patch.yml",
     "build.json",
+    "docs",
     "resources",
     "skills",
     "README.md",
     "LICENSE"
   ],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
   "dsh": {
     "manifestVersion": 1,
     "bundle": {

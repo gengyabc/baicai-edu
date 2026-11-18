@@ -7,6 +7,20 @@
     "./skill-provider.mjs": "./skill-provider.mjs"
   },
   "description": "Shared learning entry skills, pedagogy rules, student-data protocol, and error handling for baicai-edu.",
+  "author": {
+    "name": "gengyabc",
+    "url": "https://github.com/gengyabc"
+  },
+  "keywords": [
+    "education",
+    "teaching",
+    "learning",
+    "tutor",
+    "k12",
+    "skills",
+    "dsh",
+    "dsh-plugin"
+  ],
   "license": "GPL-3.0-or-later",
   "repository": {
     "type": "git",
@@ -18,18 +32,24 @@
     "url": "https://github.com/gengyabc/baicai-edu/issues"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22",
+    "dsh": ">=0.2.2-rc.1 <0.3.0"
   },
   "files": [
     "cordis.patch.yml",
     "skill-provider.mjs",
     "lib",
     "build.json",
+    "docs",
     "resources",
     "skills",
     "README.md",
     "LICENSE"
   ],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
   "dsh": {
     "manifestVersion": 1,
     "bundle": {

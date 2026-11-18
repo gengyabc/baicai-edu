@@ -4,7 +4,7 @@
 
 ## English
 
-Task-driven upper-primary math for grades 4–6. The student's own thinking is the starting point and the method follows the task — CPA, explicit instruction, Pólya, variation, inquiry and proof, or real-world modeling — rather than one pedagogy owning every turn. Grade tunes language, notation, item types and pace only, never what a student may explore. It depends on `baicai-edu-learn` and the shared contract package `baicai-edu-math`; the math board is optional and a full lesson works without it. The grades 1–3 package is [`math-primary-low/`](../math-primary-low/README.md), and both share the `math` subject id.
+Task-driven upper-primary math for grades 4–6. The student's own thinking is the starting point and the method follows the task — CPA, explicit instruction, Pólya, variation, inquiry and proof, or real-world modeling — rather than one pedagogy owning every turn. Grade tunes language, notation, item types and pace only, never what a student may explore. It depends on `baicai-edu-learn` and the shared contract package `baicai-edu-math`; the math board is optional and a full lesson works without it. The grades 1–3 package is [`math-primary-low/`](https://github.com/gengyabc/baicai-edu/blob/main/math-primary-low/README.md), and both share the `math` subject id.
 
 ### Entries
 
@@ -27,7 +27,7 @@ node scripts/install.mjs math-primary-high --profile web
 node scripts/install.mjs math-primary-high math-board --profile web
 ```
 
-Restart if DSH says so, then refresh the Web session. When it worked, the model catalog lists the `math-high-*` skills, `/` shows no math command of its own, and choosing math in `/learn` enters the high band. Shared dependencies: `learn-core` owns teaching, roles and confirmation; `learn-data` owns snapshots, records and finalize; `learn-errors` owns dropped files. The installer fills dependencies in but does not re-enable a bundle you disabled by hand; do not replace a full install with a lone `link:` of a math package. Unified entry, re-install and manual-disable behavior: [installation guide](<../docs/installation.md>).
+Restart if DSH says so, then refresh the Web session. When it worked, the model catalog lists the `math-high-*` skills, `/` shows no math command of its own, and choosing math in `/learn` enters the high band. Shared dependencies: `learn-core` owns teaching, roles and confirmation; `learn-data` owns snapshots, records and finalize; `learn-errors` owns dropped files. The installer fills dependencies in but does not re-enable a bundle you disabled by hand; do not replace a full install with a lone `link:` of a math package. Unified entry, re-install and manual-disable behavior: [installation guide](<https://github.com/gengyabc/baicai-edu/blob/main/docs/installation.md>).
 
 ### What is irreversible
 
@@ -52,7 +52,7 @@ System state is in `outputs/students/`, user originals in `data/students/<studen
 
 ## 中文
 
-以小学高年级（4–6 年级）为主的多方法数学教学包。学生的思路是起点，方法跟着任务走——CPA、显式教学、Pólya、变式、探究与证明、真实情境建模——而不是让某一种教学法统领每一轮。年级只调整语言、记号、题型和节奏，从不限制学生探究什么。它只依赖 `baicai-edu-learn` 和共享契约包 `baicai-edu-math`；画板是可选项，没有画板也能完整教学。1–3 年级对应包为 [`math-primary-low/`](../math-primary-low/README.md)，两者科目 id 同为 `math`。
+以小学高年级（4–6 年级）为主的多方法数学教学包。学生的思路是起点，方法跟着任务走——CPA、显式教学、Pólya、变式、探究与证明、真实情境建模——而不是让某一种教学法统领每一轮。年级只调整语言、记号、题型和节奏，从不限制学生探究什么。它只依赖 `baicai-edu-learn` 和共享契约包 `baicai-edu-math`；画板是可选项，没有画板也能完整教学。1–3 年级对应包为 [`math-primary-low/`](https://github.com/gengyabc/baicai-edu/blob/main/math-primary-low/README.md)，两者科目 id 同为 `math`。
 
 ### 入口
 
@@ -75,7 +75,7 @@ node scripts/install.mjs math-primary-high --profile web
 node scripts/install.mjs math-primary-high math-board --profile web
 ```
 
-按 DSH 输出决定是否重启，再刷新 Web 会话。装好后模型目录里有 `math-high-*` 技能，`/` 不新增数学命令，在 `/learn` 里选数学进入高年级带。共享依赖：`learn-core` 管教学、角色与确认；`learn-data` 管快照、记录与收尾保存；`learn-errors` 管投放文件。安装器补齐依赖，但不会重新启用此前手动禁用的技能包；不要用 `link:` 单独装数学包来替代完整安装。统一入口、重复安装与手动禁用见[统一安装说明](<../docs/installation.md>)。
+按 DSH 输出决定是否重启，再刷新 Web 会话。装好后模型目录里有 `math-high-*` 技能，`/` 不新增数学命令，在 `/learn` 里选数学进入高年级带。共享依赖：`learn-core` 管教学、角色与确认；`learn-data` 管快照、记录与收尾保存；`learn-errors` 管投放文件。安装器补齐依赖，但不会重新启用此前手动禁用的技能包；不要用 `link:` 单独装数学包来替代完整安装。统一入口、重复安装与手动禁用见[统一安装说明](<https://github.com/gengyabc/baicai-edu/blob/main/docs/installation.md>)。
 
 ### 不可逆的部分
 

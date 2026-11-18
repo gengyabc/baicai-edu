@@ -3,6 +3,19 @@
   "version": "0.6.0",
   "type": "module",
   "description": "表达型数学工作台：数量画板（预设颜色创建图案、可命名分组与同形合并）与几何画板（点、线段、多边形、圆、平行四边形、矩形）并列两个 tab；以只读快照和学生自述提交。",
+  "author": {
+    "name": "gengyabc",
+    "url": "https://github.com/gengyabc"
+  },
+  "keywords": [
+    "education",
+    "math",
+    "geometry",
+    "visual-manipulation",
+    "canvas",
+    "dsh",
+    "dsh-plugin"
+  ],
   "license": "GPL-3.0-or-later",
   "repository": {
     "type": "git",
@@ -14,7 +27,8 @@
     "url": "https://github.com/gengyabc/baicai-edu/issues"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22",
+    "dsh": ">=0.2.2-rc.1 <0.3.0"
   },
   "exports": {
     "./package.json": "./package.json",
@@ -45,7 +59,12 @@
     "test": "node --test src/*/*.test.js tests/*.test.js",
     "preview": "node preview.mjs"
   },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
   "dsh": {
+    "manifestVersion": 1,
     "bundle": {
       "patch": "./cordis.patch.yml"
     },

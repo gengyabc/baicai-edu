@@ -43,7 +43,7 @@ The canvas, the notes and the edit trace live in browser-local storage, isolated
 | Manual acceptance scenarios and the offline same-end-state comparison | [Acceptance scenarios](docs/acceptance-scenarios.md) |
 | What changed between versions | [CHANGELOG](CHANGELOG.md) |
 
-The teaching rules that own how the board is used live in the shared [board contract](../math-common/skills/math-common/references/board-contract.md); the grade-band entry points are in [structured drawing](../math-primary-low/skills/math-low-core/references/structured-drawing.md). This package is GPL-3.0-or-later.
+The teaching rules that own how the board is used live in the shared [board contract](https://github.com/gengyabc/baicai-edu/blob/main/math-common/skills/math-common/references/board-contract.md); the grade-band entry points are in [structured drawing](https://github.com/gengyabc/baicai-edu/blob/main/math-primary-low/skills/math-low-core/references/structured-drawing.md). This package is GPL-3.0-or-later.
 
 ## 中文
 
@@ -86,4 +86,4 @@ dsh plugin --profile web add baicai-edu-math-board        # 没有教学包、�
 | 手工验收场景与相同终态的离线对照 | [手工验收场景](docs/acceptance-scenarios.zh.md) |
 | 各版本改了什么 | [更新记录](CHANGELOG.md) |
 
-画板该怎么用由共享契约拥有：[画板契约](../math-common/skills/math-common/references/board-contract.md)；年级段入口见[结构化数学画板](../math-primary-low/skills/math-low-core/references/structured-drawing.md)。本包许可为 GPL-3.0-or-later。
+画板该怎么用由共享契约拥有：[画板契约](https://github.com/gengyabc/baicai-edu/blob/main/math-common/skills/math-common/references/board-contract.md)；年级段入口见[结构化数学画板](https://github.com/gengyabc/baicai-edu/blob/main/math-primary-low/skills/math-low-core/references/structured-drawing.md)。本包许可为 GPL-3.0-or-later。
