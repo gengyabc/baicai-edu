@@ -23,7 +23,7 @@
 | CGI 早期代数 | [CGI 早期代数](research/cgi-early-algebra.md) | 五方向的教学归纳、高低学段分工；设计记录在仅本机保留的 `docs/superpowers/specs/2026-11-10-cgi-early-algebra-design.md` |
 | 学习支持方法（动机、关系、自我调节等） | [支持方法来源核验](learn-support-evidence.md) | 10 个理论的“研究对象/机制/限制/核验边界”，明确标注哪些原文未读到 |
 | 被动来学者的自主支持与关系边界 | [自主支持研究](research/learning-support-autonomy-and-rapport.md) | 措辞与“先交朋友”设计的证据判断 |
-| 高年级方法名 → 已安装位置 | [方法落点](math-primary-high-methods.md) | 旧方法名到已安装技能/参考的映射；运行时以已安装文件为准 |
+| 高年级方法名 → 已安装位置 | [方法落点](<../math-primary-high/docs/methods.md>) | 旧方法名到已安装技能/参考的映射；运行时以已安装文件为准 |
 
 ## 证据材料
 

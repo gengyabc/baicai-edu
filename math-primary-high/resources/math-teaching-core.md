@@ -12,7 +12,7 @@ Apply **Guide before revealing**, including its agreed new-learning separate-exa
 
 ## Method Selection and Teaching Moves
 
-Use one primary method and at most one supporting method for a task step. These installed rules are sufficient at runtime; repository method provenance in `docs/math-primary-high-methods.md` is maintainer background, not an installed dependency.
+Use one primary method and at most one supporting method for a task step. These installed rules are sufficient at runtime; repository method provenance in `math-primary-high/docs/methods.md` is maintainer background, not an installed dependency.
 
 | Task or evidence | Primary method | Teaching moves across turns |
 |---|---|---|

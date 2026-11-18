@@ -1,6 +1,8 @@
-# Grade 4–6 method provenance (`math-primary-high`)
+# Grades 4–6 methods, derivation and proof
 
-Maintainer background only — **teaching material, not installed skills**. Runtime method choice and steps live in the installed package: [`math-teaching-core.md`](../math-primary-high/skills/math-high-core/references/math-teaching-core.md), plus leaf skills and the other `math-high-core` references listed below. `math-primary-high/package.json` → `files` ships only `cordis.patch.yml`, `skills`, and `README.md`.
+[English](methods.md) | [中文](methods.zh.md)
+
+Maintainer background only — **teaching material, not installed skills**. Runtime method choice and steps live in the installed package: [`math-teaching-core.md`](../skills/math-high-core/references/math-teaching-core.md), plus leaf skills and the other `math-high-core` references listed below. `math-primary-high/package.json` → `files` ships `cordis.patch.yml`, `build.json`, `resources`, `skills`, `README.md` and `LICENSE`; this `docs/` directory is repo-only.
 
 Former module-style method skills were retired from the package tree so a single skill does not carry two conflicting control-flow rules for the same act. This page keeps the mapping from those method names to their installed homes.
 
@@ -12,7 +14,7 @@ Former module-style method skills were retired from the package tree so a single
 | `polya-problem-solving` | `math-teaching-core.md` (Pólya) | Understand, plan, carry out, look back for multi-step and unfamiliar problems |
 | `variation-theory-math` | `math-teaching-core.md` (variation); practice rules | Contrast examples that differ in one critical feature and expose invariants |
 | `inquiry-and-proof` | `math-teaching-core.md` (inquiry) | Constrained pattern → conjecture → test and counterexample → reason |
-| `cgi-algebraic-thinking` (proposed, not created as a skill) | `math-teaching-core.md` (relational thinking and generalization); `references/early-algebra.md` | Equality, relational strategies, generalized arithmetic, variables, functional thinking; sources in [`cgi-early-algebra.md`](research/cgi-early-algebra.md) |
+| `cgi-algebraic-thinking` (proposed, not created as a skill) | `math-teaching-core.md` (relational thinking and generalization); `references/early-algebra.md` | Equality, relational strategies, generalized arithmetic, variables, functional thinking; sources in [`cgi-early-algebra.md`](../../docs/research/cgi-early-algebra.md) |
 | `explicit-instruction-math` | `math-teaching-core.md` (explicit); `scaffold-calibration.md` | Worked example → faded step → independent check when the current task's tools are available; a confirmed missing tool first enters a recorded prerequisite child |
 | `formative-metacognition-math` | `math-teaching-core.md` (formative); scaffold notes | Elicit thinking → one actionable feedback point → child self-assessment |
 | `mathematical-modeling` | leaf `math-high-application-modeling` | Situation → assumptions → representation → solve → interpret and validate |
@@ -24,17 +26,27 @@ Former module-style method skills were retired from the package tree so a single
 
 `references/learn-act-allocation.md` chooses the activity owner; `math-teaching-core.md` chooses the teaching method independently. This package registers unique `math-high-*` skill names; the lower-primary package uses `math-low-*`. The shared teaching resolver selects actual core/session names for a new task and preserves the resolved band for an unfinished task.
 
+## Derivation and proof modules
+
+[Teaching core](../skills/math-high-core/references/math-teaching-core.md) and [scaffold calibration](../skills/math-high-core/references/scaffold-calibration.md) are shared by all of these; each module is read by task:
+
+- [Derivation teaching](../skills/math-high-core/references/derivation-teaching.md): observation and conjecture, finding a relation, deriving a formula; keeps the goal gate before a formula is revealed and the seven-step bridging cycle.
+- [Relational derivation in complex word problems](../skills/math-high-core/references/word-problem-derivation.md): reuses the seven-step cycle for intermediate quantities, time origins, piecewise relations and checking against original conditions in travel, work and similar problems; keeps a valid arithmetic, algebraic or diagram route the student chose. An ordinary textbook problem does not become modeling because it has a situation or many steps, and it is not forced into formal proof or formula discovery.
+- [Proof teaching](../skills/math-high-core/references/proof-teaching.md): proposition and quantifier analysis, strategy choice, logical validity, the student's own organization and checking. It separates building a proof independently, understanding a given one, repairing an argument and tidying expression; a valid student alternative route outranks the planned one.
+
+Proof is a method inside the current act: it adds no skill, dispatch branch, long-term field or ability stage. In-conversation obstacles and support stay in the existing temporary state, and a learning record describes conjecture, supported work and independent proof separately. A finite list of examples cannot prove a general proposition; a valid witness can prove existence. Teaching entry follows the shared core's gate and informed full-solution choice: [teaching boundaries](teaching-boundaries.md).
+
 ## Strategy pilot and recursive prerequisites
 
-Source rules now live in the [three-method index](<../math-primary-high/skills/math-high-core/references/mathematical-strategies.md>) and [recursive prerequisite teaching](<../math-primary-high/skills/math-high-core/references/prerequisite-learning.md>); the [shared plan protocol](<../learn/skills/learn-data/references/learning-plan.md>) owns task snapshots and persistence. This changes confirmed missing-tool handling from an inline example to a recorded child task; normal instruction remains available inside the child. See the [design specification](<../.scratch/math-strategy-recursion/spec.md>), [decision and trade-offs](<adr/0003-prerequisite-learning-plans.md>) and [separate acceptance results](<../.scratch/math-strategy-recursion/acceptance.md>). Source changes do not mean a running profile has been upgraded; installation and real-student effectiveness are separate from static or synthetic checks.
+Source rules now live in the [three-method index](../skills/math-high-core/references/mathematical-strategies.md) and [recursive prerequisite teaching](../skills/math-high-core/references/prerequisite-learning.md); the [shared plan protocol](../../learn/skills/learn-data/references/learning-plan.md) owns task snapshots and persistence. This changes confirmed missing-tool handling from an inline example to a recorded child task; normal instruction remains available inside the child. See the [design specification](../../.scratch/math-strategy-recursion/spec.md), [decision and trade-offs](../../docs/adr/0003-prerequisite-learning-plans.md) and [separate acceptance results](../../.scratch/math-strategy-recursion/acceptance.md). Source changes do not mean a running profile has been upgraded; installation and real-student effectiveness are separate from static or synthetic checks.
 
 ## Strategy extension methods (wired conditionally)
 
-Geometry, structural recurrence, number theory, logical constraints, pigeonhole existence, extremal optimization, invariants/coloring, elementary games, path/network counting, boundary variation, counterexamples and student-authored problems are now wired in the package source as task-selected references behind the existing core condition table and method index. They reuse the current prerequisite-plan, proof, segment-evidence and informed-full-solution contracts. Source wiring, mathematics checks and static/contract regressions are not a running-profile upgrade or a model-behavior result; see the [integration acceptance record](<../.scratch/math-strategy-extension/integration-acceptance.md>), where real model replays, installation and real-student effects stay separate and largely untested.
+Geometry, structural recurrence, number theory, logical constraints, pigeonhole existence, extremal optimization, invariants/coloring, elementary games, path/network counting, boundary variation, counterexamples and student-authored problems are now wired in the package source as task-selected references behind the existing core condition table and method index. They reuse the current prerequisite-plan, proof, segment-evidence and informed-full-solution contracts. Source wiring, mathematics checks and static/contract regressions are not a running-profile upgrade or a model-behavior result; see the [integration acceptance record](../../.scratch/math-strategy-extension/integration-acceptance.md), where real model replays, installation and real-student effects stay separate and largely untested.
 
 ## Adaptive design constraints
 
-Packaging-era notes (old name `upper-primary-math-coach` → today's `math-high-session` and `math-high-core`). Implementation follows [`adaptive-thresholds.md`](../math-primary-high/skills/math-high-core/references/adaptive-thresholds.md) and [`learn-act-allocation.md`](../math-primary-high/skills/math-high-core/references/learn-act-allocation.md). Thresholds are configurable defaults, not claims of empirical calibration.
+Packaging-era notes (old name `upper-primary-math-coach` → today's `math-high-session` and `math-high-core`). Implementation follows [`adaptive-thresholds.md`](../skills/math-high-core/references/adaptive-thresholds.md) and [`learn-act-allocation.md`](../skills/math-high-core/references/learn-act-allocation.md). Thresholds are configurable defaults, not claims of empirical calibration.
 
 | Mechanism | Rule |
 |---|---|
@@ -65,7 +77,7 @@ flowchart TD
 
 ## Task bundle illustration
 
-Operational multi-part and verification rules are in [`problem-design.md`](../math-primary-high/skills/math-high-core/references/problem-design.md). Example shape for maintainers:
+Operational multi-part and verification rules are in [`problem-design.md`](../skills/math-high-core/references/problem-design.md). Example shape for maintainers:
 
 ```yaml
 task_bundle:

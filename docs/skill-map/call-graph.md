@@ -60,7 +60,7 @@ flowchart TB
 | `learn` | `/learn-start` `/learn` `/learn-feynman` `/learn-profile` `/learn-save` `/learn-clean` | `learn-core` `learn-data` `learn-errors` `learn-read-image` `learn-recommend` |
 | `math-common` | 无入口；只被两个数学 band 按条件加载 | `math-common`（共享数学契约：学生编题、练习证据、画板协议、手写读取；不是教学实现，不参与选型） |
 | `math-primary-low` | 无用户 `/` 入口；生命周期统一进入 `math-low-session` | `math-low-session` 集中调度三个 leaf + `math-low-core` |
-| `math-primary-high` | 无用户 `/` 入口；生命周期统一进入 `math-high-session` | `math-high-session` 集中调度四个 leaf + `math-high-core`；方法选择与步骤在已安装的 [教学核心](<../../math-primary-high/skills/math-high-core/references/math-teaching-core.md>)；仓库 [methods](<../math-primary-high-methods.md>) 仅为背景材料，不随包安装 |
+| `math-primary-high` | 无用户 `/` 入口；生命周期统一进入 `math-high-session` | `math-high-session` 集中调度四个 leaf + `math-high-core`；方法选择与步骤在已安装的 [教学核心](<../../math-primary-high/skills/math-high-core/references/math-teaching-core.md>)；仓库 [methods](<../../math-primary-high/docs/methods.md>) 仅为背景材料，不随包安装 |
 | `chinese-reading` | 无用户 `/` 入口；由生命周期路由进入 | `chinese-session` 及子 skill + `chinese-core` |
 | `english` | 无用户 `/` 入口；由生命周期路由进入 | `english-session` 及方法 skill + `english-core` |
 

@@ -1,69 +1,99 @@
-# baicai-edu-math-primary-high
+# baicai-edu-math-primary-high 白菜小学数学（高年级）
 
-以小学高年级（4–6 年级）为主的多方法数学教学包，以学生思路为起点，按任务、先修知识与实际表现选择方法。年级只调整语言、记号、题型和节奏，不限制学生探究更高内容；仅依赖 `baicai-edu-learn` 与共享数学契约包 `baicai-edu-math`，无需画板也能完整教学。低年级（1–3 年级）对应包为 [`math-primary-low/`](../math-primary-low/README.md)。
+[English](#english) | [中文](#中文)
 
-## 与低年级包的关系
+## English
 
-- 两个包使用唯一技能名：本包为 `math-high-*`，低年级包为 `math-low-*`。选型由 `learn-data` 的 `references/teaching-resolver.md` 统一负责：已知 1–3 年级优先 low、4–6 年级优先 high，缺年级默认 low。优先级不是内容门槛，low 也支持高阶内容。同一场进行中的任务不会因为另一个包安装而热替换；`supported_stages` 只声明本包适配的默认表达与流程。
-- 本包的 `math-high-core`、`math-high-diagnose`、`math-high-practice` 等写法以高年级的认知与表达为默认，不等于低年级包的复制；两者的差异只在各自 `references/` 中维护。
-- 学生编题、练习证据策略、画板协议与手写读取的共同规则由 [`math-common`](../math-common/README.md) 维护唯一一份，本包在对应分支出现时按名加载。手写读取契约由本包 `math-high-core` 条件行直接加载（年级无关、无本地增补），先读契约再加载 `learn-read-image`。本包保留并在本地 reference 中显式维护高年级差异：任务选方法、直接计算与显式教学开场、批次与局部归因、不自动清板、建模 leaf。共享包不参与教学选型，也不替代本包的 `math-high-core` / `math-high-session`。
-- 高年级使用画板、需要图示或补基础，都不意味着应切换低年级包。学科判断先修缺口、支架及适配理由；learn 统一承接流程选择、确认、保存与新任务解析。低年级包按已确认的学生阶段适配，不按一次答错或工具需求推荐。
-- CGI 保留关注学生真实策略的作用，不再统领所有教学。概念用 CPA，程序可直接用显式教学，陌生题用 Pólya，辨析迁移用变式，规律用探究论证，真实决策用建模；形成性评价贯穿过程。选择与步骤见[教学核心](skills/math-high-core/references/math-teaching-core.md)。
+Task-driven upper-primary math for grades 4–6. The student's own thinking is the starting point and the method follows the task — CPA, explicit instruction, Pólya, variation, inquiry and proof, or real-world modeling — rather than one pedagogy owning every turn. Grade tunes language, notation, item types and pace only, never what a student may explore. It depends on `baicai-edu-learn` and the shared contract package `baicai-edu-math`; the math board is optional and a full lesson works without it. The grades 1–3 package is [`math-primary-low/`](../math-primary-low/README.md), and both share the `math` subject id.
 
-## 技能
+### Entries
 
-| 技能 | 职责 |
+The package adds no command; math is reached through the shared entries, and the lesson runs in `math-high-session`.
+
+| Command | Purpose |
 |---|---|
-| `math-high-session` | 高年级教学主线、恢复焦点、四个 act 的唯一调度者、唯一 segment 合并者 |
-| `math-high-core` | 共享规则（教学、诊断、支架、学分活动分配、画板、学科契约），references 按条件读取 |
-| `math-high-diagnose` | 策略诊断、知识点的先修检查、错题分流、有证据的阶段估计 |
-| `math-high-practice` | 诊断、对比、变式、连接及非 Tier 巩固/再访；按子题逐个推进，后续检查走既有下一步交接、不承诺定时 |
-| `math-high-student-problem` | 学生编题、AI 真诚核验正确作答、学生批改；找错活动另行明确标注，规则委托共享契约 |
-| `math-high-application-modeling` | 真实情境建模：情境、方案、表示、数量与单位、验证、结论六部分 |
+| `/learn-start` | Pick math in the subject table, identify or create the student |
+| `/learn` | Math teaching mainline: choose the act, choose one method, advance one action, record one segment |
+| `/learn-feynman` | The student explains or proves it; the AI listens as a classmate |
 
-六个均为 `user-invocable: false`，不进 `/` 菜单。`/learn`、`/learn-feynman` 经 lifecycle 统一进入 `math-high-session`；仅 session 调度四个 leaf，leaf 只回传证据与下一动作信号，不互调。等待学生时保留原步骤；证据足够且无待答问题时，同轮最多两次 leaf 调度。
+The resolver picks the band from a known grade (1–3 → low, 4–6 → high, no grade → low), so the same `math` subject can carry both packages at once. That priority is not a content gate, and a running task keeps the band it was started with.
 
-高年级方法（CPA、Pólya、变式、探究证明、显式教学、形成性反思、数学建模、知识图谱、任务生成、进展追踪、手写数学阅读、coach 规则）的运行步骤在已安装技能中；方法名与落点的维护者映射见 [`docs/math-primary-high-methods.md`](../docs/math-primary-high-methods.md)，不是独立可安装技能。
-
-## 推导与证明
-
-共用[教学核心](<skills/math-high-core/references/math-teaching-core.md>)和[支架校准](<skills/math-high-core/references/scaffold-calibration.md>)，按任务读取专门模块：
-
-- [推导教学](<skills/math-high-core/references/derivation-teaching.md>)：观察与猜想、关系发现、公式推导；保留公式揭示前的目标门与七步搭桥循环。
-- [复杂应用题的关系推导](<skills/math-high-core/references/word-problem-derivation.md>)：复用七步搭桥循环，覆盖行程、工程等题中的中间量选择、时间起点、分段关系和原条件检验；保留学生有效的算术、方程或图表路线。普通教材题不因情境或步骤多而转建模，也不强制进入形式证明或公式发现流程。
-- [证明教学](<skills/math-high-core/references/proof-teaching.md>)：命题及量词分析、策略选择、逻辑有效性、学生自主组织与检验。区分独立构建、理解给定证明、修复论证和整理表达；有效的学生替代路线优先于预设路线。
-
-证明是当前 act 内的方法，不新增技能、调度分支、长期字段或能力阶段。对话内障碍和支持只放在现有临时状态；学习记录分开描述猜想、支持下完成及独立证明。有限举例不能证明一般命题，有效见证可以证明存在性。教学入口委托共享教学核心：区分原题引导、约定新授的另题示范和完整解答；新授示范不强制先失败，自主发现、独立测查和学生原题边界仍保留。明确索要完整证明、解法或目标公式时，按共享 **Informed full-solution choice** 告知失去自主发现机会、看懂不等于独立掌握，以可点击选择推荐引导；知情后仍选完整解答则给已核验全解，无须先证明做不出，也不重复拒绝或强加测试。普通“如何证明／解释一下”和范围确认仍走引导；讲授不生成掌握记录，也不阻止暂停或结束。
-
-## 安装
+### Install
 
 ```bash
-# 在仓库根目录运行，安装 learn、math-common、math-primary-high
+# from the repository root: installs learn, math-common and this band
 node scripts/install.mjs math-primary-high --profile web
-# 如需可选画板，显式加装
+# add the optional board explicitly
 node scripts/install.mjs math-primary-high math-board --profile web
 ```
 
-按 DSH 输出决定是否重启，再刷新 Web 会话，在 `/learn` 或 `/learn-feynman` 选择数学。共享依赖：`learn-core` 管教学、角色与确认；`learn-data` 管快照、记录和 finalize；`learn-errors` 管投放文件。安装器补齐依赖，但不会重新启用此前手动禁用的 bundle；不要以单独 link 数学包替代完整安装。详见[统一安装说明](<../docs/installation.md>)。
+Restart if DSH says so, then refresh the Web session. When it worked, the model catalog lists the `math-high-*` skills, `/` shows no math command of its own, and choosing math in `/learn` enters the high band. Shared dependencies: `learn-core` owns teaching, roles and confirmation; `learn-data` owns snapshots, records and finalize; `learn-errors` owns dropped files. The installer fills dependencies in but does not re-enable a bundle you disabled by hand; do not replace a full install with a lone `link:` of a math package. Unified entry, re-install and manual-disable behavior: [installation guide](<../docs/installation.md>).
 
-## 数学画板
+### What is irreversible
 
-独立画板插件在输入框工具栏、模型选择按钮旁提供「数学画板」。学生摆图、圈组、合并/拆开、划去或写说明，自定图案数值与颜色；「放入回答」附上 JSON，不插入图形清单，学生自己写的话会放进输入框，仍需手动发送；画板和修改记录都留着，方便改错。点「清空」会同时清掉画布和这次的修改记录。画板不运算、不自动提交。
+- `data/.../raw/` originals are read-only; rename only after backing up.
+- Deleting student data belongs to `learn-clean`, not this package, and its high-risk forms are permanent.
+- This band never clears the board on its own. A clear happens only on an explicit student request in the message body, and the tool recording the request is not the client having applied it.
 
-模型读取已发送附件教学，不读未提交画布；学生明确设置意图时可用 `math_board_settings` 同步会话设置，不代交答案。画板协议的字段、附件读取顺序、修改记录解读、信任边界与设置读写以共享的 [`board-contract`](../math-common/skills/math-common/references/board-contract.md) 为准；本包的入口与本地差异见[结构化数学画板](skills/math-high-core/references/structured-drawing.md)。
+### Where the data lives
 
-本包不因新题、新活动、新主题或下一子题自动清空画板。仅学生在消息正文中明确要求清空时，按[画板边界规则](skills/math-high-core/references/board-task-boundary.md)调用工具；请求记录成功不代表客户端已执行。[批量题规则](skills/math-high-core/references/batch-board-boundary.md)只处理子题证据归属与保留，不授权清空。画板未安装或不可用时，使用文字、算式、表格或纸笔图片继续教学。
+System state is in `outputs/students/`, user originals in `data/students/<student_id>/math/raw/`. Both sit in the current workspace and never ship. Field paths and per-turn records: [student data directories](docs/data-directory.md).
 
-## 数据与维护
+### Further reading
 
-系统状态在 `outputs/students/`，用户原件在 `data/students/<student_id>/math/raw/`；均不随包发布。原件只读，改名先备份至 `outputs/students/<student_id>/math/backups/raw/`，处理交共享技能。
+| To learn about | Go to |
+|---|---|
+| Which skill owns which rule, the four acts, band selection, shared contracts | [Skills and rule ownership](docs/skills.md) |
+| Method names, their installed homes, and the derivation/proof modules | [Methods, derivation and proof](docs/methods.md) |
+| Using the optional board and who may clear it | [The math board](docs/board.md) |
+| Guided work, informed full proof, and what counts as independent | [Teaching boundaries](docs/teaching-boundaries.md) |
+| Student data layout, math fields, per-turn records | [Student data directories](docs/data-directory.md) |
+| Building `resources/`, checks, teaching scenarios | [Development and validation](docs/development.md) |
 
-学生编题、练习证据与画板协议只维护在 `baicai-edu-math`，本包 reference 只保留高年级增补；共享契约变更时两个 band 的共同场景与差异场景都要回放。数学技能复用有效快照，并读取共享 `personal.interests` 与科目偏好。题型按教学目的选择，故事、计算、图表、等式和论证各有用途；同一关系换场景可检验情境迁移，兴趣只在学生做不出当前题时搭桥。用法见 `skills/math-high-core/references/math-personalization.md`。每轮唯一 segment 由调用方追加到 `session_log.json`；档案与 finalize 由共享协议执行，完整结构见 `learn-data`。
+## 中文
+
+以小学高年级（4–6 年级）为主的多方法数学教学包。学生的思路是起点，方法跟着任务走——CPA、显式教学、Pólya、变式、探究与证明、真实情境建模——而不是让某一种教学法统领每一轮。年级只调整语言、记号、题型和节奏，从不限制学生探究什么。它只依赖 `baicai-edu-learn` 和共享契约包 `baicai-edu-math`；画板是可选项，没有画板也能完整教学。1–3 年级对应包为 [`math-primary-low/`](../math-primary-low/README.md)，两者科目 id 同为 `math`。
+
+### 入口
+
+本包不新增命令，数学通过共享入口进入，课程在 `math-high-session` 里跑。
+
+| 命令 | 作用 |
+|---|---|
+| `/learn-start` | 在科目表里选数学，识别或创建学生 |
+| `/learn` | 数学教学主线：选教学环节、选一个方法、推进一个动作、记录唯一回合段 |
+| `/learn-feynman` | 学生讲或证，AI 当同龄同学听 |
+
+选型按已知年级决定带（1–3 年级 → 低年级包，4–6 年级 → 高年级包，无年级 → 低年级包），所以同一个 `math` 科目下两个包可以同时安装。这个优先级不是内容门槛；进行中的任务保留开始时的带。
+
+### 安装
 
 ```bash
-node scripts/check-skills.mjs
-node --test scripts/skill-contracts.test.mjs
-git diff --check
+# 在仓库根目录运行：安装 learn、math-common 与本年级段包
+node scripts/install.mjs math-primary-high --profile web
+# 需要可选画板时显式加装
+node scripts/install.mjs math-primary-high math-board --profile web
 ```
 
-[教学行为对照场景](tests/teaching-scenarios.md)用于人工审阅/模型回放；静态检查不等于行为实测。
+按 DSH 输出决定是否重启，再刷新 Web 会话。装好后模型目录里有 `math-high-*` 技能，`/` 不新增数学命令，在 `/learn` 里选数学进入高年级带。共享依赖：`learn-core` 管教学、角色与确认；`learn-data` 管快照、记录与收尾保存；`learn-errors` 管投放文件。安装器补齐依赖，但不会重新启用此前手动禁用的技能包；不要用 `link:` 单独装数学包来替代完整安装。统一入口、重复安装与手动禁用见[统一安装说明](<../docs/installation.md>)。
+
+### 不可逆的部分
+
+- `data/.../raw/` 原件只读，改名须先备份。
+- 删除学生数据归 `learn-clean`，不属于本包，其中高风险形式永久不可恢复。
+- 本带不会自行清空画板。只有学生在消息正文中明确要求时才清空，且工具记录请求不等于客户端已经执行。
+
+### 数据放在哪
+
+系统状态在 `outputs/students/`，用户原件在 `data/students/<student_id>/math/raw/`。两处都在当前工作区，不随包发布。字段路径与逐轮记录见[学生数据目录](docs/data-directory.zh.md)。
+
+### 深入阅读
+
+| 想了解 | 位置 |
+|---|---|
+| 哪条规则归谁、四个教学环节、带的选择、共享契约 | [技能与规则所有权](docs/skills.zh.md) |
+| 方法名与已安装落点、推导与证明模块 | [方法、推导与证明](docs/methods.zh.md) |
+| 可选画板的用法与谁能清空 | [数学画板](docs/board.zh.md) |
+| 引导、知情后的完整证明、什么算独立完成 | [教学边界](docs/teaching-boundaries.zh.md) |
+| 学生数据布局、数学字段、逐轮记录 | [学生数据目录](docs/data-directory.zh.md) |
+| 构建 `resources/`、检查、教学场景 | [开发与验证](docs/development.zh.md) |

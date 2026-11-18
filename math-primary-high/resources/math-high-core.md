@@ -82,7 +82,7 @@ Band selection belongs to `learn-data`'s `references/teaching-resolver.md`. The 
 
 ## Grade 4–6 Methods
 
-`references/math-teaching-core.md` chooses the teaching method and its steps; `references/learn-act-allocation.md` chooses the activity owner independently. The mapping from former method-module names to these installed homes is maintainer background in the repository doc `docs/math-primary-high-methods.md` — teaching material, not installed skills or required runtime reads.
+`references/math-teaching-core.md` chooses the teaching method and its steps; `references/learn-act-allocation.md` chooses the activity owner independently. The mapping from former method-module names to these installed homes is maintainer background in the repository doc `math-primary-high/docs/methods.md` — teaching material, not installed skills or required runtime reads.
 
 ## Turn Delivery Rules
 

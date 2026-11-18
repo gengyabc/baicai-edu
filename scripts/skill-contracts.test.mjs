@@ -1079,8 +1079,8 @@ test('structured drawing guidance is conditionally discoverable in band cores on
     assert.match(drawingRow, /the teacher will supply a board reference/)
     assert.doesNotMatch(drawingRow, /need(?:s)? to guide (?:the )?board|需引导画板/)
   }
-  assert.match(text('math-primary-low/README.md'), /skills\/math-low-core\/references\/structured-drawing\.md/)
-  assert.match(text('math-primary-high/README.md'), /skills\/math-high-core\/references\/structured-drawing\.md/)
+  assert.match(text('math-primary-low/docs/board.md'), /skills\/math-low-core\/references\/structured-drawing\.md/)
+  assert.match(text('math-primary-high/docs/board.md'), /skills\/math-high-core\/references\/structured-drawing\.md/)
 })
 
 test('math task-boundary clearing has one authority reached before entry and leaf tasks', () => {
@@ -1098,7 +1098,7 @@ test('math task-boundary clearing has one authority reached before entry and lea
   hasAll(session, ['(the only boundary rule)', 'next problems inside a leaf', 'finalizes the old topic first',
     'before starting the new topic'])
   assert.ok(drawing.includes(reference))
-  assert.match(text('math-primary-low/README.md'), /skills\/math-low-core\/references\/board-task-boundary\.md/)
+  assert.match(text('math-primary-low/docs/board.md'), /skills\/math-low-core\/references\/board-task-boundary\.md/)
   hasAll(boundary, ['applies only to `math-primary-low`', 'sent conversation', 'handle the same boundary only once',
     'The new task explicitly continues with the old drawing', '`ui.board.keep`',
     'Same-problem hint, changing solution method, diagnosis, practice, or Feynman switch',
@@ -1847,7 +1847,7 @@ test('high-grade methodology is kept as material and never registered as skills'
   assert.deepEqual(installed, ['math-high-application-modeling', 'math-high-core', 'math-high-diagnose',
     'math-high-practice', 'math-high-session', 'math-high-student-problem'])
   assert.ok(!existsSync(join(root, 'math-primary-high', 'sources')))
-  const methodsDoc = text('docs/math-primary-high-methods.md')
+  const methodsDoc = text('math-primary-high/docs/methods.md')
   assert.match(methodsDoc, /teaching material, not installed skills/)
   assert.match(methodsDoc, /Method → installed home/)
   assert.match(methodsDoc, /concrete-pictorial-abstract/)

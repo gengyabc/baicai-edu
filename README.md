@@ -9,7 +9,7 @@
 | [`learn/`](./learn/README.md) | `baicai-edu-learn` | 共享入口（`/learn-start` `/learn` `/learn-feynman` `/learn-profile` `/learn-save` `/learn-clean`）、教学底座、学生数据协议、错题处理、图片/手写读取 |
 | [`math-common/`](./math-common/README.md) | `baicai-edu-math` | 两个数学 band 共享的数学契约（学生编题、练习证据、画板协议、手写读取）；只给规则，不参与教学选型 |
 | [`math-primary-low/`](./math-primary-low/README.md) | `baicai-edu-math-primary-low` | 小学低年级为主的 CGI 数学（1–3 年级为主，不限制探究高年级内容）：一回合教学、策略诊断、分层练习、学生出题考 AI |
-| [`math-primary-high/`](./math-primary-high/README.md) | `baicai-edu-math-primary-high` | 小学高年级多方法数学（4–6 年级为主）：一回合教学、策略诊断、分层练习、学生出题考 AI、真实情境建模；方法步骤随技能安装，背景材料见 [methods](<docs/math-primary-high-methods.md>) |
+| [`math-primary-high/`](./math-primary-high/README.md) | `baicai-edu-math-primary-high` | 小学高年级多方法数学（4–6 年级为主）：一回合教学、策略诊断、分层练习、学生出题考 AI、真实情境建模；方法步骤随技能安装，背景材料见 [methods](<math-primary-high/docs/methods.md>) |
 | [`chinese-reading/`](./chinese-reading/README.md) | `baicai-edu-chinese-reading` | 完整语文：阅读、写作、读写迁移、出题、评改、经验桥接 |
 | [`english/`](./english/README.md) | `baicai-edu-english` | 英语：可理解输入、对话协商、输出、支架、任务、用法积累、间隔提取、儿童新闻 |
 | [数学画板](<./math-board/README.md>) | `baicai-edu-math-board` | 低年级数学必需、高年级可选，也可独立使用的 Web 教具：切换图案、分组、同形合并，以 JSON 表达回答 |

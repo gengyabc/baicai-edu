@@ -27,7 +27,7 @@ Read only the rows matching the behavior being changed, together with the affect
 | Shared versus band-specific math behavior | [math-common](<../../math-common/skills/math-common/SKILL.md>) and [ADR-0001](<../adr/0001-math-shared-contracts.md>); teaching implementations stay in the owning band |
 | Learning support, support-only evidence, or neutral support events | [learn-support](<../../learn/skills/learn-support/SKILL.md>), [session schema](<../../learn/skills/learn-data/references/session-schema.md>), and [finalize protocol](<../../learn/skills/learn-data/references/finalize-session.md>) |
 
-For package dependencies, skill calls, and scenario sequences, consult the [skill map](<../skill-map/call-graph.md>). For upper-primary method provenance, consult [method background](<../math-primary-high-methods.md>); it is maintainer material, not installed teaching rules.
+For package dependencies, skill calls, and scenario sequences, consult the [skill map](<../skill-map/call-graph.md>). For upper-primary method provenance, consult [method background](<../../math-primary-high/docs/methods.md>); it is maintainer material, not installed teaching rules.
 
 ## Finish a skill change
 
