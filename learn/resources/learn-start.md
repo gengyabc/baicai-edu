@@ -1,6 +1,7 @@
 ---
 name: learn-start
 description: Choose a subject or learning goal, switch learners or create a profile for a new student, and prepare to start learning.
+disable-model-invocation: true
 resources: llm-safety-boundaries.md teaching-transition.md finalize-session.md ui-locale.md subject-contract.md session-lifecycle.md teaching-resolver.md grade-band-defaults.md create-student.md learner-stage.md
 resource-loading: on-demand
 ---

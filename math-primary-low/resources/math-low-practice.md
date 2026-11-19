@@ -1,6 +1,7 @@
 ---
 name: math-low-practice
 description: Leveled math practice. Use to confirm error patterns with similar items, explain causes by contrast, stabilize independent calculation, consolidate or revisit taught skills, add practice on request, or connect already-mastered knowledge.
+user-invocable: false
 resources: math-teaching-core.md targeted-practice-rules.md math-segment-fields.md
 ---
 

@@ -1,6 +1,7 @@
 ---
 name: usage-based-language-learning
 description: Pattern learning. Load when the student needs to learn an English sentence pattern or collocation; build the pattern with multiple meaningful variant examples.
+user-invocable: false
 resources: english-input-adaptation.md english-scaffolding.md english-teaching-core.md english-segment-fields.md
 ---
 # Usage-Based Language Learning

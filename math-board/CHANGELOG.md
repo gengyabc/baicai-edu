@@ -1,7 +1,43 @@
 # Changelog
 
 All notable changes to `baicai-edu-math-board` are recorded here. 0.6.0 was the
-first published version; 0.6.1 is the current release.
+first published version; 0.6.2 is the current release.
+
+## [0.6.2] - 2026-11-19
+
+### Settings
+
+- The `/math-board-settings` command is gone. It was the only user-facing command
+  the board registered, and it took a hand-written settings JSON on the learner's
+  command line: a debug escape hatch for an operation the model already drives
+  through `math_board_settings`, with no teaching purpose. Registration, the
+  `pendingCommands` half of the configuration projection, and the `command/run` /
+  `command/done` replay branches are all removed, so the board now contributes no
+  command at all; the projection keeps only the tool channel. Its state version
+  moves to 3 because the persisted shape dropped `pendingCommands`.
+- `math-primary-low` raises its `baicai-edu-math-board` floor to `^0.6.2` so a
+  fresh install resolves this version instead of 0.6.1.
+
+### Teacher reference
+
+- The teacher reference figure is gone: its `math_board_reference` tool, the
+  `eduBoardReference` session projection, its system-prompt section, its client
+  view and model, its locale strings, its wire schemas and its CSS. Nothing
+  displayed it — the client never subscribed to that projection, so the inlined
+  `TeacherReference` component was unreachable — and the shared math contract
+  already told the model not to call its `show` or `hide`. Non-geometric known
+  conditions stay in conversation text; the geometry demo is the only teacher
+  drawing surface. The board now contributes three tools, three projections and
+  five prompt sections.
+
+### Cleanup
+
+- Removed seven leftovers a dead-surface audit found: five CSS rules no component
+  uses (`.eb-brand`, `.eb-chevron`, `.eb-color-menu`, `.eb-color-option`,
+  `.eb-menu-value` — the old absolutely-positioned logo and the colour dropdown,
+  both replaced by the top bar and the flat colour rail), plus the `eb-rail-note`
+  and `eb-overlay-text` class names, which had no rule and no query hook; the
+  styling they appeared to rely on is `eb-rail-aside` and `eb-overlay-card`.
 
 ## [0.6.1] - 2026-11-19
 

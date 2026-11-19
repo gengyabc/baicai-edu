@@ -1,6 +1,7 @@
 ---
 name: chinese-reading-session
 description: Reading teaching and diagnosis. Use when the student studies a passage or unanswered reading items, evaluates existing reading answers, or explains reading evidence in Feynman mode.
+user-invocable: false
 resources: chinese-reading-core.md chinese-feedback-core.md chinese-writing-core.md chinese-error-labels.md pedagogy-core.md next-step.md
 ---
 

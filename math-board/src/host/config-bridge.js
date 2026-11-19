@@ -1,7 +1,6 @@
 /** Session-log settings bridge. Drawing objects never cross this boundary. */
 export const CONFIG_KEY = 'eduBoardConfig';
 export const CONFIG_TOOL = 'math_board_settings';
-export const CONFIG_COMMAND = 'math-board-settings';
 export const CONFIG_KIND = 'edu-board-config';
 const MAX_CHANGES = 100;
 const MAX_PENDING = 256;
@@ -53,7 +52,7 @@ export function createConfigBridge(M) {
     return clone(result);
   };
   const initialView = () => ({ revision: 0, settings: settings(M.defaultSettings()), changes: [], floorRevision: 0 });
-  const init = () => ({ view: initialView(), pendingTools: {}, pendingCommands: {} });
+  const init = () => ({ view: initialView(), pendingTools: {} });
   function request(value) {
     if (value?.action === 'get') { exact(value, ['action']); return { action: 'get' }; }
     exact(value, ['action', 'settings', 'scope', 'expectedRevision']);
@@ -86,24 +85,23 @@ export function createConfigBridge(M) {
     return value;
   }
   function validateState(value) {
-    exact(value, ['view', 'pendingTools', 'pendingCommands']); validateView(value.view);
-    for (const pending of [value.pendingTools, value.pendingCommands]) {
-      if (!record(pending) || Object.keys(pending).length > MAX_PENDING) throw Error('Invalid configuration pending calls');
-      for (const [id, input] of Object.entries(pending)) {
-        if (!id || id.length > 200 || request(input).action !== 'set') throw Error('Invalid configuration call');
-      }
+    exact(value, ['view', 'pendingTools']); validateView(value.view);
+    const pending = value.pendingTools;
+    if (!record(pending) || Object.keys(pending).length > MAX_PENDING) throw Error('Invalid configuration pending calls');
+    for (const [id, input] of Object.entries(pending)) {
+      if (!id || id.length > 200 || request(input).action !== 'set') throw Error('Invalid configuration call');
     }
     return value;
   }
-  function pending(state, field, id, input) {
+  function pending(state, id, input) {
     if (typeof id !== 'string' || !id || id.length > 200) return state;
-    const entries = Object.entries(state[field]).filter(([key]) => key !== id).slice(-(MAX_PENDING - 1));
-    return { ...state, [field]: Object.fromEntries([...entries, [id, input]]) };
+    const entries = Object.entries(state.pendingTools).filter(([key]) => key !== id).slice(-(MAX_PENDING - 1));
+    return { ...state, pendingTools: Object.fromEntries([...entries, [id, input]]) };
   }
-  function settle(state, field, id, payload, seq) {
-    if (typeof id !== 'string' || !own(state[field], id)) return state;
-    const input = state[field][id], remaining = { ...state[field] }; delete remaining[id];
-    const settled = { ...state, [field]: remaining };
+  function settle(state, id, payload, seq) {
+    if (typeof id !== 'string' || !own(state.pendingTools, id)) return state;
+    const input = state.pendingTools[id], remaining = { ...state.pendingTools }; delete remaining[id];
+    const settled = { ...state, pendingTools: remaining };
     if (payload === null) return settled;
     try {
       const output = change(payload), current = state.view;
@@ -118,11 +116,7 @@ export function createConfigBridge(M) {
     if (!record(event) || !integer(event.seq) || !record(event.data)) return state;
     const data = event.data;
     if (event.type === 'tool/call' && data.name === CONFIG_TOOL) {
-      try { const input = parseRequest(data.arguments); return input.action === 'set' ? pending(state, 'pendingTools', data.callId, input) : state; }
-      catch { return state; }
-    }
-    if (event.type === 'command/run' && data.name === CONFIG_COMMAND && data.source?.kind === 'user') {
-      try { const input = parseRequest(data.args); return input.action === 'set' ? pending(state, 'pendingCommands', data.commandId, input) : state; }
+      try { const input = parseRequest(data.arguments); return input.action === 'set' ? pending(state, data.callId, input) : state; }
       catch { return state; }
     }
     if (event.type === 'tool/result') {
@@ -134,18 +128,11 @@ export function createConfigBridge(M) {
         const text = message.content.filter(block => block?.type === 'text').map(block => block.text).join('');
         try { output = JSON.parse(text); } catch { /* An unstructured result is never a settings update. */ }
       }
-      return settle(state, 'pendingTools', message.toolCallId, output, event.seq);
-    }
-    if (event.type === 'command/done') {
-      let output = null;
-      if (data.kind === 'success' && typeof data.text === 'string') {
-        try { output = JSON.parse(data.text); } catch { /* Failed parsing leaves only lifecycle cleanup. */ }
-      }
-      return settle(state, 'pendingCommands', data.commandId, output, event.seq);
+      return settle(state, message.toolCallId, output, event.seq);
     }
     return state;
   }
-  /** One domain operation used by the agent tool and the user-command adapter. */
+  /** The one domain operation, driven by the agent tool. */
   function createService(stateOf) {
     const reservations = new WeakMap();
     function run(session, rawInput, source) {
@@ -154,12 +141,12 @@ export function createConfigBridge(M) {
       if (!state) throw Error('Math board configuration projection is unavailable');
       const current = state.view;
       if (input.action === 'get') return { kind: CONFIG_KIND, status: 'current', revision: current.revision, settings: clone(current.settings) };
-      const field = source?.channel === 'tool' ? 'pendingTools' : source?.channel === 'command' ? 'pendingCommands' : null;
-      if (!field || typeof source.id !== 'string' || !own(state[field], source.id) || !equal(state[field][source.id], input)) {
-        throw Error('Configuration writes require their exact logged tool or user-command invocation');
+      if (source?.channel !== 'tool' || typeof source.id !== 'string'
+        || !own(state.pendingTools, source.id) || !equal(state.pendingTools[source.id], input)) {
+        throw Error('Configuration writes require their exact logged tool invocation');
       }
       const reserved = reservations.get(session);
-      if (reserved && current.revision < reserved.revision && own(state[reserved.field], reserved.id)) {
+      if (reserved && current.revision < reserved.revision && own(state.pendingTools, reserved.id)) {
         throw Error('Another configuration update is still settling; read settings and retry');
       }
       reservations.delete(session);
@@ -167,8 +154,8 @@ export function createConfigBridge(M) {
         throw Error(`Configuration revision changed: expected ${input.expectedRevision}, current ${current.revision}`);
       }
       const output = { kind: CONFIG_KIND, revision: current.revision + 1, settings: input.settings, scope: input.scope, status: 'recorded' };
-      reservations.set(session, { id: source.id, field, revision: output.revision });
-      // The caller framework commits this carrier in command/done or tool/result. No private log types.
+      reservations.set(session, { id: source.id, revision: output.revision });
+      // The caller framework commits this carrier in tool/result. No private log types.
       return clone(output);
     }
     return { run };

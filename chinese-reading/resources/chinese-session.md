@@ -1,6 +1,7 @@
 ---
 name: chinese-session
 description: Chinese routing. Load when the learning entry sets subject = chinese, resumes a Chinese turn, or switches reading/writing domains; dispatch one child skill by goal and mode.
+user-invocable: false
 resources: chinese-target.md chinese-grade-defaults.md session-lifecycle.md
 resource-loading: on-demand
 ---

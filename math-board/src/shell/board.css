@@ -22,17 +22,8 @@
 .eb-danger{color:#B74035}
 .eb-danger-solid{background:#C14B40!important;border-color:#A83C32!important;color:#FFF!important;box-shadow:0 2px 0 #8E3027}
 
-/* Teacher references are isolated from both student canvases and their answer paths. */
+/* The question strip above the canvas: the teacher's latest message, never part of a draft. */
 .eb-reference-stack{flex:none;max-height:48%;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px}
-.eb-teacher-reference{flex:none;border:1px solid var(--dsw-alias-border-l1);border-radius:13px;background:var(--dsw-alias-bg-base);padding:10px 14px;min-width:0}
-.eb-teacher-reference-head{display:flex;align-items:center;gap:10px;font-size:13px}
-.eb-teacher-reference-title{flex:1;min-width:0;overflow-wrap:anywhere}
-.eb-workbench .eb-teacher-reference-head button{min-height:32px;padding:4px 8px;font-size:12px}
-.eb-teacher-reference-hint{margin:3px 0 0;font-size:12px;color:var(--dsw-alias-label-secondary);line-height:1.5}
-.eb-teacher-reference-body>p{margin:8px 0;font-size:13px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
-.eb-teacher-diagram{overflow:auto;max-height:240px;overscroll-behavior:contain;background:#fff;color:#263d50;border-radius:8px}
-.eb-teacher-diagram svg{display:block;max-width:none;flex:none}
-.eb-teacher-diagram:focus-visible{outline:3px solid #489AD4;outline-offset:2px}
 /* The demo page scrolls as a whole (absolute, own overflow) so a long description or a
    zoomed figure is reachable; the figure frame scrolls its own content in both axes. */
 .eb-tabpanel .eb-demo-workspace{position:absolute;inset:0;display:flex;flex-direction:column;gap:10px;padding:10px 10px 72px;overflow:auto;overscroll-behavior:contain}
@@ -109,7 +100,6 @@
 }
 
 /* The palette is a narrow rail; the canvas owns everything else. */
-.eb-brand{position:absolute;z-index:4;top:12px;left:14px;display:flex;align-items:center;justify-content:center;width:44px;height:44px;pointer-events:none}
 .eb-palette{position:absolute;z-index:3;left:8px;top:62px;bottom:78px;width:62px;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:2px 0}
 .eb-palette::-webkit-scrollbar{display:none}
 .eb-workbench .eb-shape-tool{width:54px;min-height:52px;padding:6px;border-radius:13px;flex:none;border:1px solid transparent}
@@ -154,7 +144,6 @@
 .eb-dock .eb-mode-toggle{padding:6px 10px;border:1px solid #DCE4DF;background:#F9FCF7;border-radius:9px;font-size:12px}
 .eb-color-dot{display:inline-block;flex:none;width:19px;height:19px;border-radius:999px;border:1px solid #233A2626;box-shadow:inset 0 1px 1px #FFF6}
 .eb-color-value{font-size:12px;font-weight:650;min-width:24px;text-align:left}
-.eb-chevron{font-size:11px;color:#7C8C80;line-height:1}
 .eb-dock .eb-note-button{width:42px;min-height:40px;padding:7px;position:relative;color:#5E7B44}
 .eb-dock .eb-note-button.eb-contextual{background:#F0F7E9}
 .eb-note-dot{position:absolute;top:7px;right:8px;width:6px;height:6px;border-radius:50%;background:#4CAF50;border:1px solid #FFF}
@@ -164,12 +153,8 @@
 /* Menus, toast and modal editors. */
 .eb-menu{position:absolute;z-index:12;min-width:236px;max-width:calc(100% - 24px);padding:7px;border:1px solid #D5DFE3;border-radius:15px;background:var(--dsw-alias-bg-base);box-shadow:0 14px 44px #243B5326}
 .eb-more-menu{right:68px;bottom:70px}
-.eb-color-menu{left:112px;bottom:70px;min-width:190px}
 .eb-menu-head{padding:7px 10px;font-size:11px;color:#80909B}
 .eb-menu button{width:100%;justify-content:flex-start;text-align:left;padding:9px 10px;border-radius:9px}
-.eb-menu-value{flex:1;font-size:13px;font-weight:600}
-.eb-color-option{min-height:42px}
-.eb-color-option .icon{margin-left:auto;width:16px;height:16px}
 .eb-menu-note{margin:4px 10px 6px;font-size:11px;color:#71817A;overflow-wrap:anywhere}
 .eb-menu-line{height:1px;background:#E9EDEF;margin:6px 3px}
 .eb-menu-check{display:flex;align-items:center;gap:9px;padding:9px 10px;min-height:42px;font-size:12px;line-height:1.4}
@@ -205,7 +190,6 @@
   .eb-stage-wrap{left:66px;bottom:70px;padding:6px 6px 0}
   .eb-palette{left:4px;top:56px;bottom:72px;width:56px}
   .eb-workbench .eb-shape-tool{width:50px;min-height:48px;padding:5px}
-  .eb-brand{top:8px;left:9px;width:38px;height:38px}
   .eb-dock{left:6px;right:6px;bottom:5px;height:54px}
   .eb-dock .eb-divider{margin:0 2px}
   .eb-dock .eb-zoom-out,.eb-dock .eb-zoom-in{display:none}
@@ -221,7 +205,6 @@
   .eb-overlay{padding:12px}
   .eb-overlay-card{padding:16px;border-radius:15px}
   .eb-more-menu{right:6px}
-  .eb-color-menu{left:6px}
 }
 @media(max-width:430px){
   .eb-dock .eb-redo{display:none}
@@ -236,7 +219,7 @@
   .eb-dock{height:50px;bottom:5px}
   .eb-floating{bottom:7px}
   .eb-status-toast{bottom:68px}
-  .eb-more-menu,.eb-color-menu{bottom:62px}
+  .eb-more-menu{bottom:62px}
 }
 /* Flat creation colours use the dock's former empty space. Other tools keep
    their order and existing appearance; narrow screens give colours their own row. */

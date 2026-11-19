@@ -1,6 +1,7 @@
 ---
 name: learn-core
 description: Cross-subject teaching rules. Load for learning entry and subject skills during teaching, answer confirmation, scaffolding adjustment, Feynman-mode switches, or end-signal judgments.
+user-invocable: false
 resources: pedagogy-core.md informed-full-solution-choice.md confirm-before-accept.md difficulty-adjustment.md guidance-non-response-handling.md session-end-signals.md feynman-mode.md feynman-skill-whitelist.md prestart-settings-interpretation.md llm-safety-boundaries.md assistant-positioning.md grade-band-defaults.md supportive-conversation.md ui-locale.md session-lifecycle.md
 resource-loading: on-demand
 ---

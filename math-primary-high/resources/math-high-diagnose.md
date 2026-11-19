@@ -1,6 +1,7 @@
 ---
 name: math-high-diagnose
 description: Upper-primary math strategy diagnosis and error triage. Use when a grade 4-6 math starting point is unclear, two guided turns stall, the student submits error items, practice needs an error pattern identified, or self-report conflicts with performance.
+user-invocable: false
 resources: math-teaching-core.md strategy-diagnosis-rules.md targeted-practice-rules.md problem-design.md math-personalization.md topic-map.md math-segment-fields.md
 resource-loading: on-demand
 ---

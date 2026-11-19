@@ -1,6 +1,7 @@
 ---
 name: chinese-core
 description: Chinese shared rules. Load before reading, writing, read-write transfer, task generation, feedback, or long-term training; when reading stalls because of missing life experience for emotion, imagery, or character situation, bridge via the internal action table.
+user-invocable: false
 resources: chinese-non-response.md chinese-personalization.md chinese-reading-core.md chinese-writing-core.md chinese-feedback-core.md chinese-task-generation.md chinese-assessment-rubric.md chinese-error-labels.md chinese-target.md learning-recommendations.md chinese-grade-defaults.md chinese-profile-fields.md experience-gap-bridging.md grade-band-defaults.md difficulty-adjustment.md pedagogy-core.md confirm-before-accept.md guidance-non-response-handling.md feynman-skill-whitelist.md feynman-mode.md prestart-settings-interpretation.md subject-contract.md session-schema.md
 resource-loading: on-demand
 ---

@@ -1,6 +1,7 @@
 ---
 name: math-low-core
 description: Math shared rules taught with CGI (Cognitively Guided Instruction). Load before math teaching, strategy diagnosis, leveled practice, or student-makes-AI-problems; read field conventions when generating math learning records.
+user-invocable: false
 resources: math-teaching-core.md problem-design.md math-personalization.md board-task-boundary.md progression-map.md fraction-relations.md relational-thinking.md scaffold-calibration.md structured-drawing.md strategy-diagnosis-rules.md math-student-problem-design.md targeted-practice-rules.md math-segment-fields.md math-target.md learning-recommendations.md math-grade-defaults.md math-profile-fields.md session-lifecycle.md feynman-mode.md difficulty-adjustment.md micro-lesson-contract.md representation-contract.md board-contract.md handwritten-work-contract.md subject-contract.md teaching-resolver.md ui-locale.md math-language-contract.md
 resource-loading: on-demand
 ---

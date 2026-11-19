@@ -1,6 +1,7 @@
 ---
 name: chinese-read-write-transfer
 description: Read-write transfer. Use when the student understands a text and wants to reuse its writing moves on a new topic, or when resuming an unfinished reading-to-writing transfer practice.
+user-invocable: false
 resources: chinese-writing-core.md chinese-task-generation.md chinese-assessment-rubric.md chinese-feedback-core.md chinese-error-labels.md
 ---
 

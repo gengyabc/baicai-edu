@@ -1,6 +1,7 @@
 ---
 name: comprehensible-input
 description: Comprehensible input. Load when reading English stories or materials, or when the student struggles to understand new material; carry a little new language in familiar context.
+user-invocable: false
 resources: english-input-adaptation.md english-scaffolding.md english-teaching-core.md english-segment-fields.md
 ---
 # Comprehensible Input — Krashen

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createBoardModel } from '../quantity/model.js';
-import { createConfigBridge, applyHostConfig, CONFIG_KEY, CONFIG_TOOL, CONFIG_COMMAND, CONFIG_KIND } from './config-bridge.js';
+import { createConfigBridge, applyHostConfig, CONFIG_KEY, CONFIG_TOOL, CONFIG_KIND } from './config-bridge.js';
 
 const M = createBoardModel();
 const customSettings = (value = 2) => {
@@ -19,8 +19,6 @@ const toolResult = (seq, id, value) => ({
   type: 'tool/result', seq,
   data: { message: { role: 'tool', source: { kind: 'tool', callId: id }, toolCallId: id, content: value === null ? [] : [{ type: 'text', text: JSON.stringify(value) }] } },
 });
-const commandRun = (seq, id, input) => ({ type: 'command/run', seq, data: { commandId: id, name: CONFIG_COMMAND, args: JSON.stringify(input), source: { kind: 'user' } } });
-const commandDone = (seq, id, kind, text) => ({ type: 'command/done', seq, data: { commandId: id, kind, text } });
 const recorded = (revision, settings, scope) => ({ kind: CONFIG_KIND, status: 'recorded', revision, settings, scope });
 
 test('initial view is revision 0 defaults with no history', () => {
@@ -60,29 +58,18 @@ test('a correlated tool write publishes one client-visible change', () => {
   bridge.validateView(view);
 });
 
-test('a correlated user command write behaves identically', () => {
-  const bridge = createConfigBridge(M);
-  const settings = customSettings();
-  const state = fold(bridge, [
-    commandRun(1, 'cmd-1', { action: 'set', settings, scope: 'future', expectedRevision: 0 }),
-    commandDone(2, 'cmd-1', 'success', JSON.stringify(recorded(1, settings, 'future'))),
-  ]);
-  const view = bridge.view(state);
-  assert.equal(view.revision, 1);
-  assert.equal(view.changes[0].scope, 'future');
-});
-
 test('uncorrelated, malformed, failed and unrelated payloads never publish', () => {
   const bridge = createConfigBridge(M);
   const settings = customSettings();
-  const base = [commandRun(1, 'cmd-1', { action: 'set', settings, scope: 'future', expectedRevision: 0 })];
+  const base = [toolCall(1, 'call-1', { action: 'set', settings, scope: 'future', expectedRevision: 0 })];
   const attempts = [
-    [commandDone(2, 'cmd-1', 'error', 'boom')],
-    [commandDone(2, 'cmd-1', 'success', 'not json')],
-    [commandDone(2, 'other-id', 'success', JSON.stringify(recorded(1, settings, 'future')))],
-    [commandDone(2, 'cmd-1', 'success', JSON.stringify(recorded(2, settings, 'future')))],
-    [commandDone(2, 'cmd-1', 'success', JSON.stringify(recorded(1, customSettings(), 'existing')))],
-    [toolCall(2, 'call-1', { action: 'set', settings, scope: 'future', expectedRevision: 0 }), toolResult(3, 'call-1', { ...recorded(1, settings, 'future'), kind: 'other' })],
+    [toolResult(2, 'other-id', recorded(1, settings, 'future'))],
+    [toolResult(2, 'call-1', recorded(2, settings, 'future'))],
+    [toolResult(2, 'call-1', recorded(1, customSettings(), 'existing'))],
+    [toolCall(2, 'call-2', { action: 'set', settings, scope: 'future', expectedRevision: 0 }), toolResult(3, 'call-2', { ...recorded(1, settings, 'future'), kind: 'other' })],
+    // The retired user-command channel never publishes anything.
+    [{ type: 'command/run', seq: 2, data: { commandId: 'call-1', name: 'math-board-settings', args: JSON.stringify({ action: 'set', settings, scope: 'future', expectedRevision: 0 }), source: { kind: 'user' } } }],
+    [{ type: 'command/done', seq: 2, data: { commandId: 'call-1', kind: 'success', text: JSON.stringify(recorded(1, settings, 'future')) } }],
   ];
   for (const extra of attempts) assert.equal(bridge.view(fold(bridge, [...base, ...extra])).revision, 0);
   assert.equal(bridge.view(fold(bridge, [{ type: 'assistant/message', seq: 1, data: {} }])).revision, 0);
@@ -126,7 +113,7 @@ test('the service rejects writes without an exact logged invocation and stale re
   assert.equal(output.revision, 0);
   assert.throws(() => service.run(session, { action: 'set', settings, scope: 'existing', expectedRevision: 0 }, { channel: 'tool', id: 'ghost' }), /exact logged/);
   assert.equal(service.run(session, { action: 'set', settings, scope: 'existing', expectedRevision: 0 }, { channel: 'tool', id: 'call-1' }).revision, 1);
-  assert.throws(() => service.run(session, { action: 'set', settings, scope: 'existing', expectedRevision: 0 }, { channel: 'command', id: 'cmd-1' }), /exact logged/);
+  assert.throws(() => service.run(session, { action: 'set', settings, scope: 'existing', expectedRevision: 0 }, { channel: 'command', id: 'call-1' }), /exact logged/);
 });
 
 // CONFIG_KEY is the wire table name the Client reads through props.useProjection.

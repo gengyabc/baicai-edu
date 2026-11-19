@@ -1,6 +1,7 @@
 ---
 name: learn-general-session
 description: General-task teaching. When teaching resolution selects the general path, run explanation, practice, feedback, and verification around student materials or real goals; supports ordinary and Feynman modes.
+user-invocable: false
 resources: pedagogy-core.md session-schema.md
 ---
 

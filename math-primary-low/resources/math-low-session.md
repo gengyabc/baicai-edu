@@ -1,6 +1,7 @@
 ---
 name: math-low-session
 description: Math teaching mainline. Use when the learning entry routes to math, resumes an unfinished math focus, or returns to teaching after diagnosis/practice/student-made problems; supports learn and feynman modes.
+user-invocable: false
 resources: board-task-boundary.md representation-contract.md board-contract.md ui-locale.md micro-lesson-contract.md target-parsing.md math-teaching-core.md math-segment-fields.md
 resource-loading: on-demand
 ---

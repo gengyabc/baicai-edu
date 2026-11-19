@@ -1,6 +1,7 @@
 ---
 name: interaction-hypothesis
 description: Negotiated interaction. Load when spoken English meaning is unclear and the student needs clarification, confirmation, and back-and-forth meaning negotiation.
+user-invocable: false
 resources: english-teaching-core.md english-input-adaptation.md english-scaffolding.md english-segment-fields.md
 ---
 # Interaction Hypothesis — Long

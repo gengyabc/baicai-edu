@@ -1,6 +1,7 @@
 ---
 name: math-common
 description: Shared math rules for both primary bands. Load from a math band skill for Chinese/English teaching delivery, an agreed micro-lesson, a student-made problem, practice evidence, a geometry figure on the Teacher demo tab, or reading or writing the math board; returns rules only.
+user-invocable: false
 resources: math-language-contract.md micro-lesson-contract.md student-problem-contract.md practice-evidence-contract.md representation-contract.md board-contract.md handwritten-work-contract.md
 resource-loading: on-demand
 ---

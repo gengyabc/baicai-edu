@@ -1,6 +1,7 @@
 ---
 name: chinese-writing-session
 description: Writing teaching. Use when the student has a prompt but no draft, revises an existing draft, asks for composition feedback, or explains writing choices in Feynman mode.
+user-invocable: false
 resources: chinese-writing-core.md chinese-assessment-rubric.md chinese-feedback-core.md chinese-error-labels.md chinese-task-generation.md pedagogy-core.md
 ---
 

@@ -35,7 +35,7 @@ The canvas, the notes and the edit trace live in browser-local storage, isolated
 | To learn about | Go to |
 |---|---|
 | Quantity board: pattern rail, topic reference, selection, grouping, merging, colour levels, student path | [Interface and interaction](docs/interface.md) |
-| Geometry tab, teacher demo page, and the isolated teacher reference figure | [Geometry mode](docs/geometry.md) |
+| Geometry tab and teacher demo page | [Geometry mode](docs/geometry.md) |
 | First-run tours, the safe practice system, and the chapter extension interface | [First-run tutorials](docs/tutorials.md) |
 | Snapshot and trace formats, storage, version migration, save/open | [Data and submission](docs/data.md) |
 | Who may clear the board, and how a clear request travels and fails | [Task-boundary clearing](docs/clearing.md) |
@@ -78,7 +78,7 @@ dsh plugin --profile web add baicai-edu-math-board        # 没有教学包、�
 | 想了解 | 位置 |
 |---|---|
 | 数量画板：图案轨、题目参考、选择、分组、合并、颜色阶梯、学生操作路径 | [界面与交互](docs/interface.zh.md) |
-| 几何 tab、教师演示页与完全隔离的老师参考图 | [几何模式](docs/geometry.zh.md) |
+| 几何 tab 与教师演示页 | [几何模式](docs/geometry.zh.md) |
 | 首次导览、安全练习系统与章节扩展接口 | [首次教程与安全练习](docs/tutorials.zh.md) |
 | 快照与修改记录格式、存储、版本迁移、保存与打开 | [数据与提交](docs/data.zh.md) |
 | 谁能清空画板，清空请求怎样传递、怎样失败 | [任务切换清空](docs/clearing.zh.md) |

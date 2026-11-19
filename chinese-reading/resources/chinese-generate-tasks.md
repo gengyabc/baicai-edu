@@ -1,6 +1,7 @@
 ---
 name: chinese-generate-tasks
 description: Chinese task generation. Use when the student asks for reading questions from a passage, writing prompts (including continuation/rewrite), or focused item practice, with role-appropriate scoring criteria and answer-key delivery.
+user-invocable: false
 resources: chinese-task-generation.md chinese-reading-core.md chinese-writing-core.md chinese-assessment-rubric.md chinese-error-labels.md
 ---
 

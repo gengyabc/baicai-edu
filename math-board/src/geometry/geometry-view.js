@@ -925,7 +925,6 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     React.useEffect(() => {
       if (!tabActive) return undefined;
       const onKey = (event) => {
-        if (event.target?.closest?.('.eb-teacher-reference')) return;
         if (event.key === 'Delete' || event.key === 'Backspace') {
           if (!selection.length || overlay || rename || writing) return;
           const tag = event.target?.tagName;
@@ -1567,7 +1566,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
           h('button', { type: 'button', onClick: () => setRename(null) }, t('cancel')),
           h('button', { type: 'button', className: 'eb-primary', onClick: applyRename }, t('apply')))));
     const writingNode = writing && h('div', { className: 'eb-overlay' },
-      h('div', { className: 'eb-overlay-card eb-overlay-text', role: 'dialog', 'aria-modal': 'true', 'aria-label': writing.id ? t('editText') : t('addText') },
+      h('div', { className: 'eb-overlay-card', role: 'dialog', 'aria-modal': 'true', 'aria-label': writing.id ? t('editText') : t('addText') },
         h('h2', null, writing.id ? t('editText') : t('addText')),
         h('textarea', {
           ref: textRef, maxLength: G.TEXT_MAX, defaultValue: writing.value, placeholder: t('textHint'),

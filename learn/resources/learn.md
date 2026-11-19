@@ -1,6 +1,7 @@
 ---
 name: learn
 description: Start adaptive learning from a topic, materials, error items, or profile goals; prefer applicable subject packages, fall back to general-task teaching when none apply, and support different education stages.
+disable-model-invocation: true
 resources: session-lifecycle.md llm-safety-boundaries.md target-parsing.md teaching-resolver.md ui-locale.md next-step.md
 resource-loading: on-demand
 ---

@@ -1,6 +1,7 @@
 ---
 name: math-high-session
 description: Upper-primary math teaching mainline (grades 4-6). Use when the learning entry routes to math, resumes an unfinished math focus, or returns to teaching after diagnosis/practice/student-made problems/modeling; supports learn and feynman modes.
+user-invocable: false
 resources: prerequisite-learning.md representation-contract.md board-contract.md board-task-boundary.md batch-board-boundary.md micro-lesson-contract.md target-parsing.md derivation-teaching.md proof-teaching.md scaffold-calibration.md adaptive-thresholds.md ui-locale.md math-grade-defaults.md math-teaching-core.md pedagogy-core.md word-problem-derivation.md mathematical-strategies.md learn-act-allocation.md math-segment-fields.md
 resource-loading: on-demand
 ---

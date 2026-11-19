@@ -4,11 +4,6 @@
     "description": "Express quantity ideas with kid-friendly patterns and named groups; students set their own level colours and attach the board file."
   },
   "title": "Math board",
-  "teacherReference": "Teacher diagram",
-  "teacherReferenceHint": "Read-only reference, not your work. Never included in your answer. Use labels and stated conditions, not visual measurements.",
-  "teacherReferenceShow": "Show diagram",
-  "teacherReferenceHide": "Collapse diagram",
-  "teacherReferenceScroll": "Diagram, scroll to explore",
   "workspaceSubtitle": "Place shapes · group them · name the amounts",
   "toolbox": "Toolbox",
   "tapToAdd": "Tap to place, or drag one in",

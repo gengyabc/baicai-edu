@@ -1,6 +1,7 @@
 ---
 name: math-high-practice
 description: Upper-primary leveled math practice. Use to confirm grade 4-6 error patterns with similar items, explain causes by contrast, stabilize independent calculation, consolidate or revisit taught skills, add practice on request, work a multi-part exercise sub-question by sub-question, or connect already-mastered knowledge.
+user-invocable: false
 resources: math-teaching-core.md targeted-practice-rules.md batch-board-boundary.md math-segment-fields.md
 ---
 

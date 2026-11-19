@@ -9,7 +9,7 @@ Call tools directly using the current callable tool catalog and schemas. `math-b
 | Intent | Action |
 |---|---|
 | Geometry teaching, teacher drawing, or figure recovery | **Teacher Geometry Demonstration** |
-| Non-geometric known conditions | Conversation text; see **Teacher Reference** |
+| Non-geometric known conditions | Conversation text only |
 | Explicit per-item value or magnitude change | **Settings from Natural Language** |
 | Authorized quantity clear | `math_board_clear` under the current band's boundary rule; this contract grants no clear authorization |
 
@@ -17,9 +17,9 @@ Teacher drawing tools affect teacher material only, not student drafts, submissi
 
 **Receipts:** `current` confirms stored teacher state; `recorded` confirms a write request, not client execution or browser visibility. Report the receipt or limitation, not placement inferred from plans or logs. Technical recovery keeps the pending task, returns no performance segment, and ends without another exercise.
 
-## Teacher Reference
+## Non-geometric conditions
 
-State non-geometric conditions in conversation text. Neither student tab displays `math_board_reference`; do not call its `show` or `hide` to supply a diagram. If querying it, call `get` first; any permitted write requires that revision as `expectedRevision`. It contains teacher material, not a local draft; no student clear is needed.
+State a non-geometric condition in conversation text. The board has no teacher-figure surface for it: neither student tab displays one, and no tool draws into a separate reference area. Words, equations, tables, and the student's own paper carry it instead.
 
 ## Teacher Geometry Demonstration
 

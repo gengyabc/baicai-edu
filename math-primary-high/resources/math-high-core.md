@@ -1,6 +1,7 @@
 ---
 name: math-high-core
 description: Upper-primary math shared rules with task-selected methods and optional representations. Load before grade 4-6 math teaching, strategy diagnosis, leveled practice, student-made problems, or real-world modeling; read field conventions when generating math learning records.
+user-invocable: false
 resources: math-teaching-core.md problem-design.md strategy-diagnosis-rules.md topic-map.md adaptive-thresholds.md fraction-relations.md early-algebra.md derivation-teaching.md word-problem-derivation.md proof-teaching.md scaffold-calibration.md counterexamples-and-proposition-direction.md geometry-reasoning.md mathematical-strategies.md logical-constraints.md pigeonhole-existence.md invariants-coloring.md extremal-optimization.md elementary-games.md boundary-variation.md number-theory-reasoning.md path-network-construction.md prerequisite-learning.md learn-act-allocation.md math-personalization.md progression-map.md math-segment-fields.md structured-drawing.md board-task-boundary.md batch-board-boundary.md math-target.md learning-recommendations.md math-grade-defaults.md math-profile-fields.md session-lifecycle.md ui-locale.md math-language-contract.md difficulty-adjustment.md micro-lesson-contract.md representation-contract.md board-contract.md teaching-resolver.md subject-contract.md
 resource-loading: on-demand
 ---

@@ -1,6 +1,7 @@
 ---
 name: child-news-reader
 description: Children's news reading. Load when the student chooses English news or provides a news link; verify sources, age-filter, and rewrite to the student's level.
+user-invocable: false
 resources: english-input-adaptation.md english-scaffolding.md english-teaching-core.md english-segment-fields.md
 resource-loading: on-demand
 ---

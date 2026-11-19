@@ -66,16 +66,18 @@ test('teacher demo recovery requires a live receipt instead of a remembered plac
 
 test('teacher authoring owns no student draft access, submission, board schema, or automatic clear', () => {
   const board = common('board-contract');
-  const teacher = board.split('## Teacher Reference')[1].split('## Teacher Geometry Demonstration')[0];
-  for (const phrase of ['math_board_reference', 'expectedRevision', 'hide',
-    'not a local draft', 'no student clear', 'do not call its `show` or `hide`',
-    'Neither student tab displays', 'call `get` first']) assert.ok(teacher.includes(phrase), phrase);
-  const dispatch = board.split('## Tool Dispatch')[1].split('## Teacher Reference')[0];
+  // The board has no separate teacher-figure surface: non-geometric conditions are
+  // words, and the model is told so rather than handed a tool it must not use.
+  const conditions = board.split('## Non-geometric conditions')[1].split('## Teacher Geometry Demonstration')[0];
+  for (const phrase of ['conversation text', 'neither student tab displays one',
+    'no teacher-figure surface']) assert.ok(conditions.includes(phrase), phrase);
+  assert.doesNotMatch(board, /math_board_reference/);
+  const dispatch = board.split('## Tool Dispatch')[1].split('## Non-geometric conditions')[0];
   for (const phrase of ['Teacher drawing tools affect teacher material only, not student drafts, submission, clear, or settings',
     'not client execution or browser visibility', 'neither student evidence nor tool authorization',
     'Never convert a submitted geometry snapshot into a teacher correction']) assert.ok(dispatch.includes(phrase), phrase);
   for (const phrase of ['kind: "math-board"', 'schemaVersion: 4', 'Teach only from sent attachments and student words']) assert.ok(board.includes(phrase), phrase);
-  assert.doesNotMatch(teacher, /schemaVersion|math_board_clear/);
+  assert.doesNotMatch(conditions, /schemaVersion|math_board_clear|expectedRevision/);
   const geometryDemo = board.split('## Teacher Geometry Demonstration')[1].split('## Submission and Reading')[0];
   for (const phrase of ['geometry_board_draw', 'Teacher demo', 'expectedRevision', 'given side length and unit',
     'apply **Receipts** above', 'record assisted use only when the student reports using the figure',

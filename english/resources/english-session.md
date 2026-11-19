@@ -1,6 +1,7 @@
 ---
 name: english-session
 description: English teaching mainline. Use when the learning entry routes to English, resumes an unfinished English focus, or runs story, conversation, task, vocabulary review, and news-reading turns; supports learn and feynman modes.
+user-invocable: false
 resources: ui-locale.md next-step.md english-grade-defaults.md english-teaching-core.md english-turn-arc.md english-input-adaptation.md english-scaffolding.md english-segment-fields.md
 resource-loading: on-demand
 ---

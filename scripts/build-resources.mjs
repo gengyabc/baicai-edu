@@ -108,6 +108,17 @@ export function citedOwn(body) {
   return files
 }
 
+/**
+ * Optional frontmatter keys the rendered header must carry through.
+ *
+ * `skills/` frontmatter is not what an installed package reads: the provider
+ * registers each skill from `resources/<name>.md` and reads these keys back
+ * from that header. A dropped key fails silently — invocation keys widened the
+ * surface (every internal skill became user-invocable and every user-only entry
+ * model-loadable), and `when-to-use` would simply never reach the catalog.
+ */
+export const CARRIED_KEYS = ['user-invocable', 'disable-model-invocation', 'when-to-use']
+
 const header = (fields) => ['---', ...Object.entries(fields).flatMap(([key, value]) => (
   Array.isArray(value) ? (value.length === 0 ? [] : [`${key}: ${value.join(' ')}`]) : [`${key}: ${value}`]
 )), '---', ''].join('\n')
@@ -164,6 +175,9 @@ export function flattenSkill(skillDirectory, referenceDirectories) {
   }
   const ownFiles = [...new Set(ownExisting)]
   const headerFields = { name: fields.name, description: fields.description }
+  for (const key of CARRIED_KEYS) {
+    if (fields[key] !== undefined) headerFields[key] = fields[key]
+  }
   if (resources.length > 0) {
     headerFields.resources = resources
     if (fields['resource-loading'] === 'on-demand') headerFields['resource-loading'] = 'on-demand'

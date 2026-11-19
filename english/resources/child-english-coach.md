@@ -1,6 +1,7 @@
 ---
 name: child-english-coach
 description: English activity orchestration. Load when the student wants free English play, has no specified goal, or wants one activity that combines story, talk, tasks, and review; supplies cross-turn plans for the English mainline without creating its own learning record.
+user-invocable: false
 resources: english-teaching-core.md english-input-adaptation.md english-scaffolding.md english-segment-fields.md english-turn-arc.md
 resource-loading: on-demand
 ---

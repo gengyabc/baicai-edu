@@ -1,6 +1,7 @@
 ---
 name: output-hypothesis
 description: Pushed output. Load when the student has a clear meaning but cannot say or write it, for English writing, student-created items, or evaluating existing expression; keep the original meaning and do not write for them.
+user-invocable: false
 resources: english-scaffolding.md english-teaching-core.md english-input-adaptation.md english-segment-fields.md
 ---
 # Output Hypothesis — Swain

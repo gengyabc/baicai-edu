@@ -1,6 +1,7 @@
 ---
 name: learn-recommend
 description: Learning recommendations. Load when the student wants to learn but does not know what, asks what to learn next, wants different content, chooses “switch content” in a stage choice, or the lifecycle identifies a math cold opening; provide candidates, a preferred pick, and recommendation reasons in the active UI locale from current subject records.
+user-invocable: false
 resources: teaching-resolver.md teaching-transition.md target-parsing.md ui-locale.md
 ---
 

@@ -1,6 +1,7 @@
 ---
 name: english-core
 description: English shared rules. Load before English teaching, story and conversation activities, vocabulary/pattern review, news reading, or generating English learning records.
+user-invocable: false
 resources: english-input-adaptation.md english-teaching-core.md english-turn-arc.md english-scaffolding.md english-personalization.md english-grade-defaults.md english-target.md english-error-labels.md english-segment-fields.md learning-recommendations.md english-profile-fields.md feynman-mode.md difficulty-adjustment.md subject-contract.md ui-locale.md
 resource-loading: on-demand
 ---

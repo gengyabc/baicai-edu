@@ -1,6 +1,7 @@
 ---
 name: learn-data
 description: Student data read/write protocol. Load before reading or initializing profiles, restoring sessions, generating learning records, modifying data, or end-of-session save.
+user-invocable: false
 resources: teaching-transition.md ui-locale.md teaching-resolver.md profile-schema.md grade-band-defaults.md subject-contract.md session-lifecycle.md create-student.md finalize-session.md session-retention.md target-parsing.md session-schema.md next-step.md learning-plan.md feynman-skill-whitelist.md prestart-settings-interpretation.md high-risk-deletion.md
 resource-loading: on-demand
 ---

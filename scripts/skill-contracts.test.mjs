@@ -7,6 +7,7 @@ import { spawnSync } from 'node:child_process'
 import test from 'node:test'
 
 import { apply } from '../learn/skill-provider.mjs'
+import { CARRIED_KEYS } from './build-resources.mjs'
 
 // Static protocol guards: these do not simulate student/model behavior.
 const root = fileURLToPath(new URL('..', import.meta.url))
@@ -692,6 +693,31 @@ test('invocation policy preserves user-only entries and model-loadable internals
     }
     if (!entries.has(name)) assert.match(frontmatter, /^user-invocable: false$/m, name)
   }
+})
+
+test('rendered resources carry every key the installed provider reads back', () => {
+  // An installed package never reads `skills/<name>/SKILL.md`: the provider
+  // registers each skill from its rendered `resources/<name>.md`, so a header
+  // that drops a key fails silently — invocation keys widened the surface, and
+  // a dropped `when-to-use` would never reach the catalog.
+  const field = (frontmatter, key) => new RegExp(`^${key}: (.+)$`, 'm').exec(frontmatter)?.[1]
+  for (const bundle of bundles) {
+    for (const entry of readdirSync(join(root, bundle, 'skills'))) {
+      const source = text(skillPath(bundle, entry)).match(/^---\n([\s\S]*?)\n---/)?.[1]
+      const rendered = text(`${bundle}/resources/${entry}.md`).match(/^---\n([\s\S]*?)\n---/)?.[1]
+      assert.ok(source && rendered, `${bundle}/${entry}: missing frontmatter`)
+      for (const key of ['user-invocable', 'disable-model-invocation', 'when-to-use']) {
+        assert.equal(field(rendered, key), field(source, key), `${bundle}/${entry}: rendered header lost ${key}`)
+      }
+    }
+  }
+  // Drift guard: the provider reads `fields['<key>']` back from the rendered
+  // header, so every key it reads must be one the renderer carries.
+  const provider = text('learn/lib/skill-resources.mjs')
+  const read = new Set([...provider.matchAll(/fields\['([\w-]+)'\]/g)].map((match) => match[1]))
+  const carried = new Set(['name', 'description', 'resources', 'resource-loading'])
+  for (const key of CARRIED_KEYS) carried.add(key)
+  for (const key of read) assert.ok(carried.has(key), `provider reads ${key}, which the rendered header never carries`)
 })
 
 test('cleanup is user-only, confirmed, bounded and independent of finalize', () => {
@@ -1563,9 +1589,9 @@ test('shared math contract is a rule source, never a teaching implementation', (
   }
   const manifest = JSON.parse(text('math-common/package.json'))
   assert.equal(manifest.name, 'baicai-edu-math')
-  assert.deepEqual(manifest.dependencies, { 'baicai-edu-learn': '^0.1.3' })
+  assert.deepEqual(manifest.dependencies, { 'baicai-edu-learn': '^0.1.4' })
   for (const band of ['math-primary-low', 'math-primary-high']) {
-    assert.equal(JSON.parse(text(`${band}/package.json`)).dependencies['baicai-edu-math'], '^0.1.3', band)
+    assert.equal(JSON.parse(text(`${band}/package.json`)).dependencies['baicai-edu-math'], '^0.1.4', band)
   }
 })
 
@@ -1973,8 +1999,8 @@ test('high-grade methodology is kept as material and never registered as skills'
   assert.deepEqual(manifest.files, ['cordis.patch.yml', 'build.json', 'docs', 'resources', 'skills', 'README.md', 'LICENSE', 'CHANGELOG.md'])
   assert.ok(!manifest.files.includes('sources'))
   assert.deepEqual(manifest.dependencies, {
-    'baicai-edu-learn': '^0.1.3',
-    'baicai-edu-math': '^0.1.3',
+    'baicai-edu-learn': '^0.1.4',
+    'baicai-edu-math': '^0.1.4',
   })
   const installed = readdirSync(join(root, 'math-primary-high', 'skills')).sort()
   assert.deepEqual(installed, ['math-high-application-modeling', 'math-high-core', 'math-high-diagnose',

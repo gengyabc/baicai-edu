@@ -92,6 +92,8 @@ async function provideHost(ctx, provided) {
       return { stateOf: () => value };
     } });
   }
+  // A spy, not a dependency: the board registers no user-facing command, and the
+  // assertions below pin that nothing appears in the learner's command menu.
   if (provided.includes('commands')) ctx.provide('commands', { register: (definition) => { state.commands.add(definition.name); return () => state.commands.delete(definition.name); } });
   if (provided.includes('systemPrompt')) ctx.provide('systemPrompt', {
     section: (section) => { state.sections.add(section.name); return () => state.sections.delete(section.name); },
@@ -145,30 +147,28 @@ test('the board activates without any host services, then registers when they ar
     assert.equal(state.projections.size, 0);
     const late = await provideHost(ctx, ['sessionProjections', 'commands', 'systemPrompt', 'tools']);
     await settleServices(ctx);
-    assert.equal(late.projections.size, 4);
-    assert.equal(state.tools.size, 4);
+    assert.equal(late.projections.size, 3);
+    assert.equal(state.tools.size, 3);
     assert.ok(ctx.tools.get('geometry_board_draw'));
-    assert.equal(late.commands.size, 1);
-    assert.equal(late.sections.size, 6);
+    assert.equal(late.commands.size, 0);
+    assert.equal(late.sections.size, 5);
   } finally { await ctx.fiber.dispose(); }
 });
 
-for (const missing of ['tools', 'commands', 'systemPrompt']) {
+for (const missing of ['tools', 'systemPrompt']) {
   test(`missing ${missing} does not block projections; late service recovers decorations`, TEST_OPTS, async () => {
     const provided = ['sessionProjections', 'tools', 'commands', 'systemPrompt'].filter(name => name !== missing);
     const { ctx, fiber, state } = await bootBoard(provided);
     try {
       assert.equal(STATE[fiber.state], 'active');
-      assert.equal(state.projections.size, 4);
+      assert.equal(state.projections.size, 3);
       if (missing === 'tools' || missing === 'systemPrompt') assert.equal(state.tools.size, 0);
-      if (missing === 'commands') assert.equal(state.tools.size, 4);
       const late = await provideHost(ctx, [missing]);
       await settleServices(ctx);
-      assert.equal(state.tools.size, 4);
+      assert.equal(state.tools.size, 3);
       assert.ok(ctx.tools.get('geometry_board_draw'));
-      assert.equal(state.projections.size, 4);
-      if (missing === 'commands') assert.equal(late.commands.size, 1);
-      if (missing === 'systemPrompt') assert.equal(late.sections.size, 6);
+      assert.equal(state.projections.size, 3);
+      if (missing === 'systemPrompt') assert.equal(late.sections.size, 5);
     } finally { await ctx.fiber.dispose(); }
   });
 }
@@ -188,7 +188,7 @@ test('the board plugin settles ACTIVE under the real cordis loader', TEST_OPTS, 
     }
     // The board provides no service of its own; it registers projection UNITS.
     assert.deepEqual([...(fiber.provisions ?? [])].map((impl) => impl.name), []);
-    assert.deepEqual([...state.projections].sort(), ['eduBoardClear', 'eduBoardConfig', 'eduBoardGeometryDemo', 'eduBoardReference']);
+    assert.deepEqual([...state.projections].sort(), ['eduBoardClear', 'eduBoardConfig', 'eduBoardGeometryDemo']);
   } finally {
     await ctx.fiber.dispose();
   }
@@ -197,19 +197,19 @@ test('the board plugin settles ACTIVE under the real cordis loader', TEST_OPTS, 
 test('tool registry replacement re-registers once without restarting projections', TEST_OPTS, async () => {
   const { ctx, fiber, state } = await bootBoard('full');
   try {
-    assert.equal(state.tools.size, 4);
+    assert.equal(state.tools.size, 3);
     await state.toolFiber.dispose();
     await settleServices(ctx);
     assert.equal(STATE[fiber.state], 'active');
     assert.equal(state.tools.size, 0);
-    assert.equal(state.projections.size, 4);
-    assert.equal(state.sections.size, 6);
+    assert.equal(state.projections.size, 3);
+    assert.equal(state.sections.size, 5);
     await provideHost(ctx, ['tools']);
     await settleServices(ctx);
-    assert.equal(state.tools.size, 4);
+    assert.equal(state.tools.size, 3);
     assert.ok(ctx.tools.get('geometry_board_draw'));
-    assert.equal(state.projections.size, 4);
-    assert.equal(state.projectionRegistrations, 4, 'tool replacement must not remount projections');
+    assert.equal(state.projections.size, 3);
+    assert.equal(state.projectionRegistrations, 3, 'tool replacement must not remount projections');
     await fiber.dispose();
     await settleServices(ctx);
     assert.equal(state.tools.size, 0, 'disposing the board removes every tool from the surviving registry');
@@ -222,11 +222,13 @@ test('the board registers its tools and prompt sections when the host has them',
   const { ctx, fiber, state } = await bootBoard('full');
   try {
     assert.equal(STATE[fiber.state], 'active');
-    assert.deepEqual([...state.tools].sort(), ['geometry_board_draw', 'math_board_clear', 'math_board_reference', 'math_board_settings']);
+    assert.deepEqual([...state.tools].sort(), ['geometry_board_draw', 'math_board_clear', 'math_board_settings']);
     assert.deepEqual([...state.sections].sort(), [
       'edu-math-board-clear', 'edu-math-board-geometry', 'edu-math-board-geometry-demo',
-      'edu-math-board-reference', 'edu-math-board-settings', 'edu-math-board-submission',
+      'edu-math-board-settings', 'edu-math-board-submission',
     ]);
+    // Settings are a model-only tool; the board contributes no slash command.
+    assert.equal(state.commands.size, 0);
   } finally {
     await ctx.fiber.dispose();
   }

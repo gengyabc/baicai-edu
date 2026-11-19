@@ -1,6 +1,7 @@
 ---
 name: scaffolding-zpd
 description: Scaffolding and fade. Load as support when an English task hits a clear stuck point that needs graded hints then gradual withdrawal.
+user-invocable: false
 resources: english-scaffolding.md english-segment-fields.md
 ---
 # Scaffolding and ZPD — Vygotsky

@@ -4,6 +4,17 @@ All notable changes to `baicai-edu-english` are recorded here. This package has
 not been published before 0.1.0, so that release is the current state rather
 than an upgrade path.
 
+## [0.1.4] - 2026-11-19
+
+### Packaging
+
+- Rendered `resources/` now carry `user-invocable` from each skill's source
+  frontmatter. The renderer copied only `name` and `description`, and the
+  installed provider registers a skill from its rendered file, so the 0.1.3
+  tarball registered every rule skill here as user-invocable and listed it in the
+  learner's command menu. Version floors on `baicai-edu-learn` (and
+  `baicai-edu-math`) move to `^0.1.4`, which already carries the same fix.
+
 ## [0.1.3] - 2026-11-19
 
 ### Skills

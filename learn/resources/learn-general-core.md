@@ -1,6 +1,7 @@
 ---
 name: learn-general-core
 description: General-task rules. Load when teaching resolution selects the general path and needs initialization, goal classification, recommendation, or task-evidence interpretation; continue real teaching even without an applicable specialist package.
+user-invocable: false
 resources: general-contract.md teaching-resolver.md
 ---
 

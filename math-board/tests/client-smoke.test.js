@@ -95,20 +95,6 @@ test('the generated bundle registers and its pages construct without a missing b
   assert.ok(ctx.locale.bind()('title'), 'the locale must be registered by the bundle');
 });
 
-test('shipped teacher reference factories render validated shapes without module closures', () => {
-  const model = extractFactory(bundle, 'createReferenceModel')();
-  const ctx = makeHost(react);
-  const View = extractFactory(bundle, 'createTeacherReferenceView')(ctx.React, key => key, model);
-  const tree = View({ sessionId: 'smoke', view: { revision: 1, reference: {
-    title: 'Given sides', description: '9 cm and 1 cm', width: 300, height: 100,
-    shapes: [{ type: 'rect', x: 20, y: 40, width: 180, height: 20 }],
-  } } });
-  const walk = node => !node || typeof node !== 'object' ? [] : [node, ...node.children.flat(Infinity).flatMap(walk)];
-  assert.equal(walk(tree).filter(node => node.type === 'rect').length, 1);
-  assert.equal(walk(tree).filter(node => node.type === 'svg')[0].props.role, 'img');
-  assert.equal(View({ sessionId: 'smoke', view: { revision: 2, reference: null } }), null);
-});
-
 test('shipped teacher demo renders a labeled rectangle without losing the launcher', () => {
   const mod = loadBundle();
   const ctx = makeHost(react);

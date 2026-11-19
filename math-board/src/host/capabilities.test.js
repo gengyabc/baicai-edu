@@ -4,8 +4,10 @@ import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 
 // A standalone board install has no teaching bundle and no model route. The
-// plugin must still activate, keep its local projections and commands, and
-// contribute no tools or prompt text that would ride model conversations.
+// plugin must still activate, keep its local projections, and contribute no
+// tools, commands or prompt text that would ride model conversations. The board
+// registers no user-facing command at all: settings are a model-only tool, so
+// nothing may appear in the learner's command menu.
 const moduleUrl = pathToFileURL(path.resolve(import.meta.dirname, '../../index.js')).href;
 
 async function mount(services) {
@@ -42,28 +44,30 @@ test('without a projection registry the board activates and registers nothing', 
   assert.deepEqual(captured.prompts, []);
 });
 
-test('without a model route the board still activates with projections and commands only', async () => {
+test('without a model route the board still activates with projections only', async () => {
   const { captured } = await mount({ tools: false, commands: true, systemPrompt: false });
   assert.deepEqual(captured.tools, []);
   assert.deepEqual(captured.prompts, []);
-  assert.deepEqual(captured.commands.map(command => command.name), ['math-board-settings']);
+  assert.deepEqual(captured.commands, []);
   assert.deepEqual(captured.projections.map(projection => projection.key).sort(),
-    ['eduBoardClear', 'eduBoardConfig', 'eduBoardGeometryDemo', 'eduBoardReference']);
+    ['eduBoardClear', 'eduBoardConfig', 'eduBoardGeometryDemo']);
 });
 
 test('without a system prompt the tools register but no instruction text is injected', async () => {
   const { captured } = await mount({ tools: true, commands: false, systemPrompt: false });
   assert.deepEqual(captured.tools.map(tool => tool.name).sort(),
-    ['geometry_board_draw', 'math_board_clear', 'math_board_reference', 'math_board_settings']);
+    ['geometry_board_draw', 'math_board_clear', 'math_board_settings']);
   assert.deepEqual(captured.prompts, []);
 });
 
 test('a full host gets every tool and every instruction section exactly once', async () => {
   const { captured } = await mount({ tools: true, commands: true, systemPrompt: true });
-  assert.equal(captured.tools.length, 4);
-  assert.equal(captured.commands.length, 1);
+  assert.equal(captured.tools.length, 3);
+  // Settings stay a model-only tool: no `/math-board-settings` command exists,
+  // because a learner-facing JSON escape hatch has no teaching purpose.
+  assert.deepEqual(captured.commands, []);
   assert.deepEqual(captured.prompts.sort(), [
     'edu-math-board-clear', 'edu-math-board-geometry', 'edu-math-board-geometry-demo',
-    'edu-math-board-reference', 'edu-math-board-settings', 'edu-math-board-submission',
+    'edu-math-board-settings', 'edu-math-board-submission',
   ]);
 });

@@ -4,6 +4,19 @@ All notable changes to `baicai-edu-learn` are recorded here. This package has
 not been published before 0.1.0, so that release is the current state rather
 than an upgrade path.
 
+## [0.1.4] - 2026-11-19
+
+### Packaging
+
+- Rendered `resources/` now carry `user-invocable` and
+  `disable-model-invocation` from each skill's source frontmatter. The renderer
+  copied only `name` and `description`, and the installed provider registers a
+  skill from its rendered file, so the 0.1.3 tarball registered every skill with
+  DSH's defaults: all internal rules were user-invocable, and `learn-start`,
+  `learn`, and `learn-clean` were model-loadable. The boundary declared in
+  `skills/` now reaches the installed copy, and a contract test compares the two
+  headers so a later render change cannot drop it again.
+
 ## [0.1.3] - 2026-11-19
 
 ### Skills

@@ -5,7 +5,7 @@
 // module path, so importing `@deepseek-ai/dsh-tools` would make the bundle fail
 // to activate wherever DSH was installed somewhere else. Instead the schemas
 // keep DSH's own keyword subset here and carry no bounds; the models
-// (`model.js`, `reference-model.js`, `geometry/model.js`) enforce sizes, ids,
+// (`quantity/model.js`, `geometry/model.js`) enforce sizes, ids,
 // containment and duplicates on execute and on replay.
 //
 // One rule goes beyond plain JSON Schema: OpenAI-compatible gateways
@@ -20,55 +20,6 @@
 /** Prefer a root-level `oneOf` only when a recorded tool call already used one. */
 export function withActionUnion(wire, invoke) {
   return invoke?.parameters?.oneOf === undefined ? wire : { oneOf: invoke.parameters.oneOf };
-}
-
-const referenceNumber = { type: 'number', description: '有限非负数，须位于参考图 viewbox 内。' };
-const referenceShape = (type, properties) => ({
-  type: 'object', additionalProperties: false, required: ['type', ...Object.keys(properties)],
-  properties: { type: { type: 'string', const: type }, ...properties },
-});
-
-export const referenceSchema = {
-  type: 'object', additionalProperties: false, required: ['title', 'description', 'width', 'height', 'shapes'],
-  properties: {
-    title: { type: 'string', description: '老师参考图标题，最多 120 字符。' },
-    description: { type: 'string', description: '已知条件的说明，最多 1000 字符；不是答案或学生证据。' },
-    width: { type: 'number', description: 'viewbox 宽度，有限数 100–1200。' },
-    height: { type: 'number', description: 'viewbox 高度，有限数 100–800。' },
-    shapes: { type: 'array', description: '1–40 个只读示意图元素；矩形宽高、圆半径严格为正且整体不超出 viewbox。', items: { oneOf: [
-      referenceShape('rect', { x: referenceNumber, y: referenceNumber, width: referenceNumber, height: referenceNumber }),
-      referenceShape('line', { x1: referenceNumber, y1: referenceNumber, x2: referenceNumber, y2: referenceNumber }),
-      referenceShape('circle', { cx: referenceNumber, cy: referenceNumber, r: referenceNumber }),
-      referenceShape('text', { x: referenceNumber, y: referenceNumber, text: { type: 'string', description: '最多 120 字符，仅作为纯文本；不解析 SVG、HTML 或 URL。' } }),
-    ] } },
-  },
-};
-
-export const REFERENCE_ACTION_UNION = [
-  { type: 'object', additionalProperties: false, required: ['action'], properties: { action: { type: 'string', const: 'get' } } },
-  { type: 'object', additionalProperties: false, required: ['action', 'expectedRevision', 'reference'], properties: {
-    action: { type: 'string', const: 'show' }, expectedRevision: { type: 'integer' }, reference: referenceSchema,
-  } },
-  { type: 'object', additionalProperties: false, required: ['action', 'expectedRevision'], properties: {
-    action: { type: 'string', const: 'hide' }, expectedRevision: { type: 'integer' },
-  } },
-];
-
-/**
- * Object-rooted parameters for `math_board_reference`.
- * `show` must carry `expectedRevision` and `reference`, `hide` `expectedRevision`,
- * `get` only `action`; `reference` is the only action-shaped field that can sit
- * at the root, so the other actions' payload never appears there.
- */
-export function referenceParameters() {
-  return {
-    type: 'object', additionalProperties: false, required: ['action'],
-    properties: {
-      action: { type: 'string', enum: ['get', 'show', 'hide'], description: 'get 读取当前参考图；show 用 expectedRevision 和 reference 替换；hide 用 expectedRevision 收起。' },
-      expectedRevision: { type: 'integer', description: 'show 或 hide 必填：上一次 get 返回的 revision；get 不要带。' },
-      reference: { ...referenceSchema, description: '仅 show 必填：老师参考图内容。' },
-    },
-  };
 }
 
 const demoNumber = { type: 'number', description: '画板坐标，落在 800×600 画布边距 24 以内。' };

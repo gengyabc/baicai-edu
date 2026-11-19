@@ -1,6 +1,7 @@
 ---
 name: learn-clean
 description: Clean learning records; supports high-risk complete deletion of a specified student or all student data, requiring separate confirmation and not auto-recoverable.
+disable-model-invocation: true
 resources: high-risk-deletion.md ui-locale.md
 ---
 

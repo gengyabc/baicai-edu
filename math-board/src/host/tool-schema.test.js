@@ -77,7 +77,7 @@ test('registered tool schemas stay inside the DSH keyword subset', async () => {
     ? await import(pathToFileURL(validatorPath).href)
     : { assertSupportedJsonSchema: () => {} };
   const { tools } = await registeredTool();
-  assert.equal(tools.length, 4);
+  assert.equal(tools.length, 3);
   for (const tool of tools) {
     assert.doesNotThrow(() => assertSupportedJsonSchema(tool.output.schema));
     assert.doesNotThrow(() => assertSupportedJsonSchema(tool.parameters));
@@ -100,50 +100,14 @@ test('registered tool schemas stay inside the DSH keyword subset', async () => {
 });
 
 test('settings tool keeps its contract after keyword removal', async () => {
-  const { tool, command, prompts } = await registeredTool();
+  const { tool, prompts } = await registeredTool();
   assert.equal(tool.name, 'math_board_settings');
   assert.deepEqual(tool.parameters.required, ['action']);
   assert.deepEqual(Object.keys(tool.parameters.properties), ['action', 'settings', 'scope', 'expectedRevision']);
   assert.equal(tool.parameters.properties.action.enum.join(','), 'get,set');
   assert.deepEqual(tool.output.schema.required, ['kind', 'status', 'revision', 'settings']);
   assert.equal(tool.output.schema.properties.kind.const, 'edu-board-config');
-  assert.equal(command.name, 'math-board-settings');
-  assert.deepEqual(prompts, ['edu-math-board-geometry-demo', 'edu-math-board-reference', 'edu-math-board-clear', 'edu-math-board-submission', 'edu-math-board-geometry', 'edu-math-board-settings']);
-});
-
-test('reference tool registers exact structures, plain JSON, and teaching boundaries', async () => {
-  const { tools } = await registeredTool();
-  const tool = tools.find(entry => entry.name === 'math_board_reference');
-  assert.ok(tool);
-  assert.equal(tool.parameters.type, 'object');
-  assert.deepEqual(tool.parameters.required, ['action']);
-  assert.deepEqual(tool.parameters.properties.action.enum, ['get', 'show', 'hide']);
-  assert.equal(tool.parameters.properties.expectedRevision.type, 'integer');
-  const reference = tool.parameters.properties.reference;
-  assert.deepEqual(reference.required, ['title', 'description', 'width', 'height', 'shapes']);
-  assert.equal(reference.additionalProperties, false);
-  const shapes = reference.properties.shapes.items.oneOf;
-  assert.deepEqual(shapes.map(shape => shape.properties.type.const), ['rect', 'line', 'circle', 'text']);
-  assert.ok(shapes.every(shape => shape.additionalProperties === false));
-  assert.deepEqual(tool.output.schema.required, ['kind', 'status', 'revision', 'reference']);
-  assert.equal(tool.output.schema.properties.kind.const, 'edu-board-reference');
-  assert.equal(tool.isConcurrencySafe({ action: 'get' }), true);
-  assert.equal(tool.isConcurrencySafe({ action: 'show' }), false);
-  assert.equal(tool.isConcurrencySafe({ action: 'hide' }), false);
-  const current = { kind: 'edu-board-reference', status: 'current', revision: 0, reference: null };
-  assert.deepEqual(tool.output.render({}, current), [{ type: 'text', text: JSON.stringify(current) }]);
-  await assert.rejects(tool.execute({ action: 'get', draft: true }, { agent: { session: {} }, callId: 'invalid' }), /fields/);
-  // A recorded action union from an older tool-call log stays replayable: the
-  // handler accepts the old oneOf payload and still reads it through request().
-  const { REFERENCE_ACTION_UNION, withActionUnion } = await import('./board-schema.js');
-  const invocation = { parameters: { oneOf: REFERENCE_ACTION_UNION } };
-  const replayed = withActionUnion(tool.parameters, invocation);
-  assert.deepEqual(replayed.oneOf, REFERENCE_ACTION_UNION);
-  assert.equal(withActionUnion(tool.parameters, { parameters: tool.parameters }), tool.parameters);
-  const { REFERENCE_PROMPT } = await import('../../index.js');
-  for (const boundary of ['教学门槛', '已知条件', '不读取任何学生草稿', '不是学生作答证据', '不表示客户端已显示或已目视验证', '工具不可用或失败时用文字']) {
-    assert.ok(REFERENCE_PROMPT.includes(boundary), boundary);
-  }
+  assert.deepEqual(prompts, ['edu-math-board-geometry-demo', 'edu-math-board-clear', 'edu-math-board-submission', 'edu-math-board-geometry', 'edu-math-board-settings']);
 });
 
 test('registered geometry tool recovers an empty teacher page and publishes its figure without student APIs', async () => {
@@ -183,31 +147,6 @@ test('registered geometry tool recovers an empty teacher page and publishes its 
   assert.equal(view.figure.title, args.figure.title);
   assert.equal(view.figure.board.elements[0].type, 'rectangle');
   assert.equal(view.figure.board.elements[0].note, '周长24厘米');
-  assert.deepEqual(await tool.execute({ action: 'get' }, exec), { ...recorded, status: 'current' });
-});
-
-test('registered reference execute and projection replay roundtrip without student APIs', async () => {
-  const { tools, projections } = await registeredTool();
-  const tool = tools.find(entry => entry.name === 'math_board_reference');
-  const projection = projections.find(entry => entry.definition.key === 'eduBoardReference');
-  assert.equal(projection.definition.stateVersion, 1);
-  const session = { get draft() { throw Error('Must never access student draft'); } };
-  const exec = { agent: { session }, callId: 'show-reference' };
-  const reference = { title: 'Given', description: 'Known conditions', width: 100, height: 100,
-    shapes: [{ type: 'line', x1: 0, y1: 0, x2: 100, y2: 100 }] };
-  const args = { action: 'show', expectedRevision: 0, reference };
-  await assert.rejects(tool.execute(args, exec), /exact logged/);
-  projection.state = projection.definition.apply(projection.state, { type: 'tool/call', seq: 1,
-    data: { name: tool.name, callId: exec.callId, arguments: JSON.stringify(args) } });
-  const recorded = await tool.execute(args, exec);
-  assert.deepEqual(recorded, { kind: 'edu-board-reference', status: 'recorded', revision: 1, reference });
-  projection.state = projection.definition.apply(projection.state, { type: 'tool/result', seq: 2,
-    data: { message: { role: 'tool', source: { kind: 'tool', callId: exec.callId }, toolCallId: exec.callId,
-      content: tool.output.render(args, recorded) } } });
-  const view = projection.definition.wire.view(projection.state);
-  projection.definition.stateSchema.parse(projection.state);
-  projection.definition.wire.viewSchema.parse(view);
-  assert.deepEqual(view, { revision: 1, reference });
   assert.deepEqual(await tool.execute({ action: 'get' }, exec), { ...recorded, status: 'current' });
 });
 

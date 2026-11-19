@@ -1,6 +1,7 @@
 ---
 name: task-based-language-learning
 description: Task activity. Load when using English to achieve a concrete outcome (role-play, game, mini-project); do not wrap mechanical drills as tasks.
+user-invocable: false
 resources: english-input-adaptation.md english-scaffolding.md english-teaching-core.md english-segment-fields.md
 ---
 # Task-Based Language Teaching

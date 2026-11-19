@@ -1,6 +1,7 @@
 ---
 name: math-high-application-modeling
 description: Upper-primary real-world math modeling. Use when a grade 4-6 student wants to solve a real situation (budget, journey, recipe, survey, packaging) by deciding assumptions, choosing a representation, calculating, and validating the result.
+user-invocable: false
 resources: math-teaching-core.md problem-design.md fraction-relations.md derivation-teaching.md word-problem-derivation.md scaffold-calibration.md math-segment-fields.md
 resource-loading: on-demand
 ---

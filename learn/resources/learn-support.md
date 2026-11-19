@@ -1,6 +1,7 @@
 ---
 name: learn-support
 description: Learning support. Load when the student asks about usefulness, fears they cannot learn, resists or is required to learn, wants to talk first, leaves choices to the AI, wants to learn but methods are unclear or ineffective, seeks help with time/resource constraints, or needs start/persist/recover support; a single wrong answer, silence, or short reply does not trigger. Return method advice only to the current teaching owner.
+user-invocable: false
 resources: supportive-conversation.md value.md confidence.md autonomy.md strategies.md persistence.md learner-stage.md evidence.md llm-safety-boundaries.md session-schema.md session-lifecycle.md
 resource-loading: on-demand
 ---

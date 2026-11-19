@@ -1,6 +1,7 @@
 ---
 name: learn-read-image
 description: Image reading. Use when the student's message or file carries a photo, scan, screenshot, or digital ink of handwritten or printed work in any subject and it must be read before judging; transcribes faithfully, marks ambiguity, and never diagnoses.
+user-invocable: false
 resources: handoff.md reading.md record.md
 ---
 

@@ -4,11 +4,6 @@
     "description": "用图案与可命名分组表达数量想法，量级颜色由学生自己设定，并把画板文件放进回答。"
   },
   "title": "数学画板",
-  "teacherReference": "老师示意图",
-  "teacherReferenceHint": "只读参考，不是你的作答，不会放入回答。图形不作为测量依据，以标注和题目条件为准。",
-  "teacherReferenceShow": "显示示意图",
-  "teacherReferenceHide": "收起示意图",
-  "teacherReferenceScroll": "示意图，可滚动查看",
   "workspaceSubtitle": "摆图形 · 圈一组 · 自己说数量",
   "toolbox": "工具箱",
   "tapToAdd": "点一下放到画布；也可以拖进来",

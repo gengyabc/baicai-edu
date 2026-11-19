@@ -1,6 +1,7 @@
 ---
 name: math-low-student-problem
 description: Student makes problems for the AI. Use when the student asks to invent math problems to quiz the AI, or has already chosen invent-and-judge to test transfer of newly learned knowledge.
+user-invocable: false
 resources: math-teaching-core.md math-student-problem-design.md ui-locale.md math-segment-fields.md
 ---
 

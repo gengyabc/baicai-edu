@@ -444,7 +444,6 @@ export function createBoardView(React, M, ctx, t, css, art, applyHostConfig, T, 
       // Only the visible tab hears Escape, so a hidden page cannot cancel the other one.
       if (!tabActive) return undefined;
       const onKey = (event) => {
-        if (event.target?.closest?.('.eb-teacher-reference')) return;
         if (event.key === 'Delete' || event.key === 'Backspace') {
           // An overlay owns the keyboard. A text field or the question
           // menu keeps the key. A focused shape outside the selection is removed on

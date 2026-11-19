@@ -22,8 +22,8 @@ export function createPracticeRail(React, t) {
     h('header', { className: 'eb-rail-head' },
       h('strong', null, t(definition.titleKey)),
       h('span', { className: 'eb-rail-count' }, `${Math.min(index + 1, total)}/${total}`),
-      h('small', { className: 'eb-rail-note' }, t('practiceSealed')),
-      definition.noteKey && h('small', { className: 'eb-rail-note eb-rail-aside' }, t(definition.noteKey))),
+      h('small', null, t('practiceSealed')),
+      definition.noteKey && h('small', { className: 'eb-rail-aside' }, t(definition.noteKey))),
     h('ol', { className: 'eb-rail-steps', 'aria-label': t('practiceSteps') },
       chapter.steps.map((step, position) => {
         const state = chapter.states[position];

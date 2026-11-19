@@ -1,6 +1,7 @@
 ---
 name: math-high-student-problem
 description: Student makes upper-primary math problems for the AI. Use when a grade 4-6 student asks to invent math problems to quiz the AI, wants to test the AI's answer, or has already chosen invent-and-judge to test transfer of newly learned knowledge.
+user-invocable: false
 resources: math-teaching-core.md math-student-problem-design.md ui-locale.md math-segment-fields.md
 ---
 

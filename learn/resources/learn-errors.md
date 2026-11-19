@@ -1,6 +1,7 @@
 ---
 name: learn-errors
 description: Parse user-provided files and materials (error items, images, drafts, Markdown), extract content, and record it; hand images to learn-read-image; use when the student provides a file path, asks to analyze an image, or to scan the raw directory.
+user-invocable: false
 resources: teaching-resolver.md
 ---
 

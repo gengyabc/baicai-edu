@@ -1,6 +1,7 @@
 ---
 name: spaced-retrieval
 description: Spaced retrieval. Load when exposure records exist and old vocabulary or expressions need recall without looking; prioritize review from the records.
+user-invocable: false
 resources: english-input-adaptation.md english-teaching-core.md english-scaffolding.md english-segment-fields.md
 ---
 # Spaced Retrieval Practice
