@@ -4,6 +4,22 @@ All notable changes to `baicai-edu-chinese-reading` are recorded here. This
 package has not been published before 0.1.0, so that release is the current
 state rather than an upgrade path.
 
+## [Unreleased]
+
+### Skills
+
+- `chinese-core` and `chinese-session` register only their routing (93 KB to
+  6.8 KB and 42 KB to 6.2 KB): a subject-contract lookup reads the role it was
+  asked for, and a routed lesson reads the reference its branch names. The
+  `learning-recommendations` role is condensed into one gap-to-task table with
+  its ordering and reason rules intact.
+
+### Packaging
+
+- Both skills declare `resource-loading: on-demand`, so the provider registers
+  their body alone and every reference stays installed beside the base
+  directory.
+
 ## [0.1.0] - 2026-11-18
 
 First release on npm. Depends on `baicai-edu-learn` for the single skill

@@ -81,7 +81,7 @@ node scripts/install.mjs math-primary-low --profile web --dry-run
 
 `learn` 自带 `learn-general-core`、`learn-general-session` 与 `learn-support`，单独安装即可使用通用任务教学和五类支持；不按年龄另装包，不反向安装所有学科。专门包仍提供各自教学方法，缺包不妨碍通用路径。此源码变更本身不表示正在使用的 profile 已更新或启用。
 
-依赖只声明在各包的 `package.json` → `dependencies`：`baicai-edu-math`、两个 band、语文学科与英语声明 `baicai-edu-learn: ^0.1.0`，两个 band 另外声明 `baicai-edu-math: ^0.1.0`（低年级数学另加 `baicai-edu-math-board: ^0.6.0`）。任何包都不再声明 `"private": true`，因为 npm 会拒绝发布私有包，而 DSH 的官方 bundle 校验也按“公开 bundle”读取。
+依赖只声明在各包的 `package.json` → `dependencies`：`baicai-edu-math`、两个 band、语文学科与英语声明 `baicai-edu-learn: ^0.1.0`，两个 band 另外声明 `baicai-edu-math: ^0.1.0`（低年级数学另加 `baicai-edu-math-board: ^0.6.1`）。任何包都不再声明 `"private": true`，因为 npm 会拒绝发布私有包，而 DSH 的官方 bundle 校验也按“公开 bundle”读取。
 
 安装器从这些声明递归生成依赖优先、按包去重的闭包，把它们 pack 成 tarball 后执行**一次**：
 

@@ -6,8 +6,19 @@ than an upgrade path.
 
 ## [Unreleased]
 
+### Skills
+
+- `english-core`, `english-session`, `child-news-reader`, and
+  `child-english-coach` register only their routing and read a branch reference
+  when the turn reaches it, taking their initial prompts from 71/47/34/29 KB to
+  7.2/9.4/13.2/4.8 KB. `english-teaching-core` and `english-segment-fields` are
+  condensed with the method table, feedback rules, evidence classification, and
+  delivery rules intact.
+
 ### Packaging
 
+- Those skills declare `resource-loading: on-demand`; the provider registers
+  their body alone and the references stay installed beside the base directory.
 - Locale catalogs now ship as `resources/references/locales/<locale>.json` at the
   path the skill prose cites, so an installed skill can read them instead of
   falling back to plain text for every process label.

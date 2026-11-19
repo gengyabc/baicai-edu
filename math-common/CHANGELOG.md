@@ -13,6 +13,12 @@ upgrade path.
   message, a subject, or a filename. Delivery, task-local switches, and the
   `zh-CN` fallback are unchanged.
 
+### Packaging
+
+- `math-common` declares `resource-loading: on-demand`: the registered prompt is
+  the contract table itself (43 KB to 3.5 KB), and a band reads only the
+  contract its branch names from the installed base directory.
+
 ## [0.1.0] - 2026-11-18
 
 First release on npm. Both primary math bands depend on it, so it is installed

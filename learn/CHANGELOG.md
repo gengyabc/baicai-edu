@@ -31,9 +31,18 @@ than an upgrade path.
   restating them.
 - `learn-profile` treats `language` as an editable shared field, while a
   one-turn request to switch language stays task-local.
+- `learn-support`'s conversational guidance is condensed by about 45% while
+  keeping the listening, correcting, inviting, declining, and exiting rules it
+  owns.
 
 ### Packaging
 
+- A skill may declare `resource-loading: on-demand` in its frontmatter; the
+  provider then registers its body alone, and every reference stays installed
+  beside the base directory for the branch that names it. `learn`,
+  `learn-core`, `learn-data`, `learn-support`, `learn-feynman`, `learn-save`,
+  and `learn-start` use it, taking their initial prompts from 60/92/158/99/55/52/41 KB
+  to 3.2/9.6/12.1/6.6/2.2/3.9/11.5 KB.
 - The provider publishes each skill's `resources/` directory as its base
   directory, and rendered resources now include `references/locales/*.json`.
   Until now the catalogs never reached an installed skill, so every process

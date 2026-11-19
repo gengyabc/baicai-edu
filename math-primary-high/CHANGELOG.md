@@ -6,8 +6,21 @@ state rather than an upgrade path.
 
 ## [Unreleased]
 
+### Skills
+
+- `math-high-core` registers only its routing rules (320 KB to 16 KB): a
+  subject-contract lookup reads the role it was asked for, and a teaching turn
+  reads the rows that match its task. Its 36 references are compressed by about
+  a third, keeping each branch's triggers, checks, and evidence boundaries.
+- `math-high-session`, `math-high-application-modeling`, and
+  `math-high-diagnose` read their branch references on demand, taking their
+  initial prompts from 111/45/39 KB to 20/5.3/5.0 KB.
+
 ### Packaging
 
+- Every skill above declares `resource-loading: on-demand`; the provider
+  registers its body alone and the references stay installed beside the base
+  directory.
 - Locale catalogs now ship as `resources/references/locales/<locale>.json` at the
   path the skill prose cites, so an installed skill can read them instead of
   falling back to plain text for every process label.

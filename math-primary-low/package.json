@@ -36,7 +36,7 @@
   "dependencies": {
     "baicai-edu-learn": "^0.1.1",
     "baicai-edu-math": "^0.1.1",
-    "baicai-edu-math-board": "^0.6.0"
+    "baicai-edu-math-board": "^0.6.1"
   },
   "files": [
     "cordis.patch.yml",
