@@ -20,5 +20,3 @@ Follow the “Method skills” contract in `english-core`.
 6. Return what the child understood and which context clues were provided; classification follows its `references/english-segment-fields.md`.
 ## Example
 “Look, a rocket! It goes up, up, up. Is it going up or down?”
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

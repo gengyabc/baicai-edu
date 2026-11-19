@@ -36,11 +36,13 @@ Preview and confirm the scope first, then separately type the confirmation phras
 
 ### Install
 
-From the registry, install a subject package by name — this shared package comes in as a dependency. Installing it alone gives general-task teaching and the five support areas:
+From the registry, name every bundle you want enabled. pnpm installs a dependency, but DSH enables only the bundles its call selects, so this shared package is listed explicitly. Installing it alone gives general-task teaching and the five support areas:
 
 ```bash
-dsh plugin --profile web add baicai-edu-math-primary-low    # low-band math; the board comes with it
-dsh plugin --profile web add baicai-edu-learn               # shared capability only
+# low-band math: shared packages, board and band, all selected
+dsh plugin --profile web add baicai-edu-learn baicai-edu-math baicai-edu-math-board baicai-edu-math-primary-low
+# shared capability only
+dsh plugin --profile web add baicai-edu-learn
 ```
 
 From this checkout, use the unified entry (it packs the dependency closure into tarballs, matching the registry layout):
@@ -104,11 +106,13 @@ System state lives in `outputs/students/`; user-dropped originals live in `data/
 
 ### 安装
 
-从 registry 装时只写学科包名即可，本共享包作为依赖一并带入；只装它时提供通用任务教学与五类支持：
+从 registry 装时请显式列出要启用的 bundle：pnpm 会装依赖，但 DSH 只启用本次命令选中的 bundle，所以本共享包要写出来。只装它时提供通用任务教学与五类支持：
 
 ```bash
-dsh plugin --profile web add baicai-edu-math-primary-low    # 低年级数学，画板随之带入
-dsh plugin --profile web add baicai-edu-learn               # 只装共享能力
+# 低年级数学：共享包、画板与本年级段包一起选中
+dsh plugin --profile web add baicai-edu-learn baicai-edu-math baicai-edu-math-board baicai-edu-math-primary-low
+# 只装共享能力
+dsh plugin --profile web add baicai-edu-learn
 ```
 
 本仓库本地 checkout 用统一入口（它把依赖闭包 pack 成 tarball 安装，与 registry 布局一致）：

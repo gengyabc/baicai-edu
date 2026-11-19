@@ -47,5 +47,3 @@ Dispatched only by `math-high-session`; per its "Central Dispatch Contract", ret
 Before merging, read `math-high-core`'s `references/math-segment-fields.md`: `next_target` → `next_step_candidate`; `confidence` is diagnosis metadata only.
 
 The student-visible wrap-up is one sentence on the core issue and one sentence on the next step.
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

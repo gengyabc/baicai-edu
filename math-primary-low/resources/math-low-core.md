@@ -60,5 +60,3 @@ If `math-common` cannot be loaded, keep teaching under this safe fallback and do
 | Grade defaults: initialization, re-choosing grade, or choosing the default domain | `references/math-grade-defaults.md` |
 | Profile fields: preference keys and `/learn-start` options, level keys, writing the subject profile | `references/math-profile-fields.md` |
 | Diagnosis rules: error causes, `error_type`, and `label` | `references/strategy-diagnosis-rules.md` (same file as in the condition table above) |
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

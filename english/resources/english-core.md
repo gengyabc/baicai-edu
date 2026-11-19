@@ -62,5 +62,3 @@ Only `english-session` dispatches method skills. A method provides only practice
 - Do not list vocabulary or give word-meaning glosses; the student guesses or looks up new words, and gets a single hint only when explicitly asking for help.
 - Waiting state and presented material go to the session summary, and the entry syncs the log context; the log, the next-step choice card, and saving belong to the entry.
 - Do not fabricate sentences the student said, word lists, scores, levels, or cross-session memory; with no storage, speak only about this turn's observations.
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

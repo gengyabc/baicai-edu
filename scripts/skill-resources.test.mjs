@@ -12,42 +12,48 @@ import { apply, MAX_CONTENT_BYTES } from '../learn/skill-provider.mjs'
 const root = fileURLToPath(new URL('..', import.meta.url))
 const bundles = ['learn', 'math-common', 'math-primary-low', 'math-primary-high', 'chinese-reading', 'english']
 
-// The installed tree has no `references/` directory for prose files, so a body
-// path of `references/<name>.md` only resolves if the rendered skill says what
-// it points at. These tests guard that statement and the truncation message
-// that depends on it; they do not check any teaching content.
-const layoutNote = /`references\/<name>\.md` path below is the installed `<name>\.md`/
+// Reference files keep the `references/` segment their prose cites, so a body
+// path resolves literally against the base directory the provider publishes.
+// These tests guard that layout and the truncation message that depends on it;
+// they do not check any teaching content.
+const referencesDir = 'references'
 const listedResources = (text) => /^resources: (.+)$/m.exec(text)?.[1].split(/\s+/).filter(Boolean) ?? []
 
-test('every skill that names resources tells the model where they are installed', () => {
+test('every skill that names resources installs it under references/', () => {
+  const missing = []
   for (const bundle of bundles) {
     for (const entry of readPackage(join(root, bundle))) {
       const listed = listedResources(readFileSync(join(root, bundle, 'resources', `${entry.name}.md`), 'utf8'))
-      if (listed.length === 0) continue
-      assert.match(entry.content, layoutNote, `${bundle}/${entry.name} lacks the installed-layout note`)
-      // The note has to precede the inlined sections it describes.
-      const sectionsAt = entry.content.indexOf('## Skill resources')
-      if (sectionsAt !== -1) assert.ok(
-        entry.content.indexOf('This skill\'s base directory holds every file') < sectionsAt,
-        `${bundle}/${entry.name}: the layout note must come before the resource sections`,
-      )
+      for (const name of listed) {
+        if (!existsSync(join(root, bundle, 'resources', referencesDir, name))) missing.push(`${bundle}/${entry.name} -> ${name}`)
+      }
     }
   }
+  assert.deepEqual(missing, [])
 })
 
-test('the layout note names each inlined resource and its installed path', () => {
+test('an inlined resource section is also installed at its cited path', () => {
   const skill = renderSkill(join(root, 'learn', 'resources', 'learn-general-core.md'))
-  assert.match(skill.content, layoutNote)
   for (const name of ['teaching-resolver', 'general-contract']) {
     assert.match(skill.content, new RegExp(`### ${name}\\n`), `learn-data should inline ${name}`)
     assert.ok(
-      readFileSync(join(root, 'learn', 'resources', `${name}.md`), 'utf8').length > 0,
-      `${name}.md must be installed beside the base directory`,
+      readFileSync(join(root, 'learn', 'resources', referencesDir, `${name}.md`), 'utf8').length > 0,
+      `${name}.md must be installed under references/`,
     )
   }
 })
 
-test('a skill with no resources carries no layout note', () => {
+// The provider runs wherever DSH runs, Windows included. A path built by `join`
+// has `\` there, so the resource directory must come from `dirname`: slicing a
+// path on `/` finds no separator at all, resolves every resource against a
+// mangled directory, and silently registers a body without its rules.
+test('resource lookup is platform-neutral, not split on a forward slash', () => {
+  const source = readFileSync(join(root, 'learn', 'lib', 'skill-resources.mjs'), 'utf8')
+  assert.doesNotMatch(source, /lastIndexOf\('\/'\)/)
+  assert.match(source, /const directory = dirname\(file\)/)
+})
+
+test('a skill with no resources carries no resource section', () => {
   const dir = mkdtempSync(join(tmpdir(), 'skill-resources-'))
   try {
     mkdirSync(join(dir, 'resources'))
@@ -56,7 +62,6 @@ test('a skill with no resources carries no layout note', () => {
     ].join('\n'))
     const [skill] = readPackage(dir)
     assert.equal(skill.name, 'bare')
-    assert.doesNotMatch(skill.content, layoutNote)
     assert.doesNotMatch(skill.content, /## Skill resources/)
   } finally {
     rmSync(dir, { recursive: true, force: true })
@@ -64,7 +69,7 @@ test('a skill with no resources carries no layout note', () => {
 })
 
 // Keep the installed-path promise even when a skill opts out of inlining.
-test('every cited reference is installed beside the base directory and inlined by default', () => {
+test('every cited reference is installed at its cited path and inlined by default', () => {
   const unaccounted = []
   for (const bundle of bundles) {
     for (const entry of readPackage(join(root, bundle))) {
@@ -72,7 +77,7 @@ test('every cited reference is installed beside the base directory and inlined b
       const file = join(root, bundle, 'resources', `${entry.name}.md`)
       const onDemand = /^resource-loading: on-demand$/m.test(readFileSync(file, 'utf8'))
       for (const name of new Set([...body.matchAll(/references\/([A-Za-z0-9_.-]+\.md)/g)].map((m) => m[1]))) {
-        const installed = existsSync(join(root, bundle, 'resources', name))
+        const installed = existsSync(join(root, bundle, 'resources', referencesDir, name))
         const inlined = sections.includes(`### ${name.replace(/\.md$/, '')}\n`)
         if (!installed || inlined === onDemand) unaccounted.push(`${bundle}/${entry.name} -> ${name} (installed: ${installed}, inlined: ${inlined}, on demand: ${onDemand})`)
       }
@@ -94,7 +99,7 @@ test('upper-primary core loads only its routing rules and ships its branch refer
   }
   const source = join(root, 'math-primary-high', 'skills', 'math-high-core', 'references')
   for (const name of readdirSync(source).filter((name) => name.endsWith('.md'))) {
-    const installed = readFileSync(join(dir, name), 'utf8')
+    const installed = readFileSync(join(dir, referencesDir, name), 'utf8')
     const citation = `---\ncited: math-high-core/references/${name}\n---\n`
     const body = installed.startsWith(citation) ? installed.slice(citation.length) : installed
     assert.equal(body.trim(), readFileSync(join(source, name), 'utf8').trim(), name)
@@ -153,7 +158,7 @@ test('high-load routers keep a small initial prompt and retain their branch file
       assert.doesNotMatch(skill.content, /## Skill resources|left out of this prompt/, name)
       for (const reference of references) {
         assert.ok(listedResources(rendered).includes(reference), `${name} should list ${reference}`)
-        assert.ok(existsSync(join(dir, reference)), `${name} should ship ${reference}`)
+        assert.ok(existsSync(join(dir, referencesDir, reference)), `${name} should ship ${reference}`)
       }
     }
   }
@@ -198,12 +203,12 @@ test('an unresolvable citation is reported, not dropped', () => {
 test('an oversized skill drops whole resources at their boundary and names them', () => {
   const dir = mkdtempSync(join(tmpdir(), 'skill-cap-'))
   try {
-    mkdirSync(join(dir, 'resources'))
+    mkdirSync(join(dir, 'resources', referencesDir), { recursive: true })
     // Two resources of ~4.5 KB each under an 8 KB cap: the first fits whole, the
     // second must be dropped whole rather than sliced to fill the remaining room.
     const resource = (marker) => `# ${marker}\n\n${'body '.repeat(900)}\n`
-    writeFileSync(join(dir, 'resources', 'first.md'), resource('first'))
-    writeFileSync(join(dir, 'resources', 'second.md'), resource('second'))
+    writeFileSync(join(dir, 'resources', referencesDir, 'first.md'), resource('first'))
+    writeFileSync(join(dir, 'resources', referencesDir, 'second.md'), resource('second'))
     writeFileSync(join(dir, 'resources', 'huge.md'), [
       '---', 'name: huge', 'description: oversized', 'resources: first.md second.md', '---', '', '# Huge', '', 'Body.', '',
     ].join('\n'))
@@ -216,7 +221,7 @@ test('an oversized skill drops whole resources at their boundary and names them'
     assert.doesNotMatch(skill.content, /### second/)
     assert.deepEqual(skill.omitted, ['second'])
     assert.match(skill.content, /left out of this prompt to stay within its size limit/)
-    assert.match(skill.content, /`<name>\.md`/)
+    assert.match(skill.content, /`references\/<name>\.md`/)
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }

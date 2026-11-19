@@ -1,21 +1,9 @@
 # CGI-style primary math teaching skills for baicai-edu, focused on grades 1-3.
-#
-# Skills come from the one provider shipped by baicai-edu-learn; this bundle
-# activates it like every skill package. All activations share the entry id,
-# and DSH composes them with the LAST bundle layer winning, so the row here
-# must name the same whole closure as learn's: a subject sorts after learn
-# and can be the row that remains. A root the install lacks stays a path
-# and is skipped, so a partial local install registers nothing rather than
-# guessing what is installed.
+# One provider implementation, one loader row per selected bundle. This row
+# owns only this bundle's skills, so DSH can remove them when it is disabled.
 - insert:
-    - id: edu-skills
+    - id: edu-skills-math-primary-low
       name: baicai-edu-learn/skill-provider.mjs
       config:
         packages:
-          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('baicai-edu-learn/package.json')
-          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('baicai-edu-math/package.json')
-          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('baicai-edu-math-board/package.json')
-          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('baicai-edu-math-primary-low/package.json')
-          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('baicai-edu-math-primary-high/package.json')
-          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('baicai-edu-chinese-reading/package.json')
-          - !!js process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve('baicai-edu-english/package.json')
+          - !!js (() => { const resolve = process.getBuiltinModule('node:module').createRequire(baseUrl + 'x').resolve; try { return resolve('baicai-edu-math-primary-low/package.json') } catch { return 'baicai-edu-math-primary-low/package.json' } })()

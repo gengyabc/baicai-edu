@@ -27,7 +27,7 @@ test('real DSH installs, composes, deduplicates and preserves explicit disableme
     npm_config_cache: join(home, 'pnpm-cache'),
   };
   const run = (command, args) => {
-    const result = spawnSync(command, args, { cwd: root, env, encoding: 'utf8' });
+    const result = spawnSync(command, args, { cwd: root, env, encoding: 'utf8', timeout: 60_000 });
     assert.ifError(result.error);
     assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
     return result.stdout;
@@ -42,14 +42,11 @@ test('real DSH installs, composes, deduplicates and preserves explicit disableme
     install('math-primary-high');
     assert.deepEqual(selected(readManifest()), high);
     assert.deepEqual(Object.keys(readManifest().dependencies).sort(), [...high].sort());
-    // Every skill package activates the same provider entry. `--dump-config`
-    // lists the layers (bundle rows are not composed), and DSH composes rows
-    // sharing an id into one entry.
     const highDump = run('dsh', ['--profile', profile, '--dump-config']);
-    assert.ok([...highDump.matchAll(/^- id: edu-skills$/gm)].length >= 1);
-    assert.doesNotMatch(highDump, /^- id: edu-math-board$/m);
-    // The composed entry must name the roots of the row DSH kept.
-    assert.ok(highDump.includes('baicai-edu-math-primary-high/package.json'));
+    for (const id of ['edu-skills', 'edu-skills-math', 'edu-skills-math-primary-high']) {
+      assert.match(highDump, new RegExp(`^- id: ${id}$`, 'm'));
+    }
+    assert.doesNotMatch(highDump, /^- id: (?:edu-math-board|edu-skills-math-primary-low)$/m);
 
     // An explicit opt-in adds the board; subsequent low installation reuses it.
     install('math-primary-high', 'math-board');
@@ -67,11 +64,10 @@ test('real DSH installs, composes, deduplicates and preserves explicit disableme
     assert.deepEqual(selected(manifest), all);
     assert.deepEqual(Object.keys(manifest.dependencies).sort(), [...all].sort());
     const composed = run('dsh', ['--profile', profile, '--dump-config']);
-    // One provider entry, and the board's own row; no per-package provider rows.
-    for (const id of ['edu-skills', 'edu-math-board']) {
-      assert.ok([...composed.matchAll(new RegExp(`^- id: ${id}$`, 'gm'))].length >= 1, id);
-    }
-    assert.doesNotMatch(composed, /id: edu-[a-z-]+-skills$/m, 'per-package provider entries are gone');
+    // Each bundle owns a separate row, but only learn ships the provider module.
+    const educationIds = [...composed.matchAll(/^- id: (edu-(?:skills[\w-]*|math-board))$/gm)].map(([, id]) => id);
+    assert.deepEqual(educationIds.sort(), ['edu-math-board', 'edu-skills', 'edu-skills-chinese-reading',
+      'edu-skills-english', 'edu-skills-math', 'edu-skills-math-primary-high', 'edu-skills-math-primary-low']);
     // Every skill package teaches from ONE installed module: the profile holds
     // the provider once, and only `learn` ships it.
     assert.ok(existsSync(join(home, 'profiles', profile, 'node_modules', 'baicai-edu-learn', 'skill-provider.mjs')));
@@ -99,8 +95,9 @@ test('real DSH installs, composes, deduplicates and preserves explicit disableme
     assert.ok(!selected(readManifest()).includes('baicai-edu-math'));
     assert.ok('baicai-edu-math' in readManifest().dependencies);
     const bandOnly = run('dsh', ['--profile', profile, '--dump-config']);
-    assert.ok([...bandOnly.matchAll(/^- id: edu-skills$/gm)].length >= 1);
-    assert.ok(bandOnly.includes('baicai-edu-math-primary-high/package.json'));
+    assert.doesNotMatch(bandOnly, /^- id: edu-skills-math$/m);
+    assert.match(bandOnly, /^- id: edu-skills-math-primary-high$/m);
+    assert.match(bandOnly, /^- id: edu-skills-math-primary-low$/m);
   } finally {
     // home is the exact directory returned by mkdtempSync above, never a user path.
     rmSync(home, { recursive: true });

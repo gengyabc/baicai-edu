@@ -47,5 +47,3 @@ Read `math-high-core`'s `references/math-segment-fields.md` and return evidence 
 - `next_step_candidate` is the remaining part or a neighboring situation; `recommended_targets` may include a knowledge point the situation exposed.
 
 The student sees the situation, the current part, the question, and the relationships and results already established.
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

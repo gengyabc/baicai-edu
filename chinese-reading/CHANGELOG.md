@@ -4,7 +4,7 @@ All notable changes to `baicai-edu-chinese-reading` are recorded here. This
 package has not been published before 0.1.0, so that release is the current
 state rather than an upgrade path.
 
-## [Unreleased]
+## [0.1.1] - 2026-11-19
 
 ### Skills
 
@@ -19,6 +19,9 @@ state rather than an upgrade path.
 - Both skills declare `resource-loading: on-demand`, so the provider registers
   their body alone and every reference stays installed beside the base
   directory.
+- This bundle registers only its own skills when enabled. Missing other
+  subjects no longer prevent it from loading, and a disabled bundle does not
+  register its skills just because its package is present on disk.
 
 ## [0.1.0] - 2026-11-18
 

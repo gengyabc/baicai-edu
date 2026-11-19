@@ -28,5 +28,3 @@ Return the student-visible reply, the updated turn_state, and one segment when r
 A real segment uses the common required fields, with mode/submode as the current actual mode; append `scope_id` and `teaching` (evidence_namespace `general_v1`), and fill ability_evidence per `references/session-schema.md` in `learn-data`: describe independent capability, performance under support, AI-collaboration capability, and the observation conditions separately, and a watched result is only exposure. Leave unknowns empty.
 
 Do not return a specialist package's current_levels, confirmed_skills, skill_errors_observed, or diagnosis; general_progress is saved uniformly by finalize. next_step_candidate is a suggestion the student can choose and does not auto-switch the goal. After a small goal is completed, wait on the shared next-step menu.
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

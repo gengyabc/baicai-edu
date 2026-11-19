@@ -82,5 +82,3 @@ After creating and activating the profile, a learning entry prompts the student 
 4. Only after the required files, directories, and session are all written successfully, reply with the form of address and any explicit learning goal, and prompt the student to enter `/learn` or state their wish directly; pure chat does not invent a goal and continues per step 2. On failure, report the incomplete operation and keep the profile for retry.
 
 `outputs/students/` is created by the first write if it does not exist.
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

@@ -157,5 +157,3 @@ When there is evidence about the relationship, summarize it in one sentence the 
 Read `references/math-segment-fields.md`. With no actual student mathematical performance this turn (teacher-only examples, recommendation or act choices, unanswered tasks), return `session_segment: null` and record continuation context. Otherwise return the single `session_segment`: `subject: math`, `mode` from the caller, `submode` by that reference's merge rules, `source` matching `target_context.source` (file sources normalized per the shared target protocol), and all leaf evidence merged into it. Modeling records its assumptions and validation in `strategy_summary`; it adds no required fields.
 
 Completion condition: all required fields present, with evidence for strategy, confirmation, difficulty, and the optional stage and diagnosis.
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

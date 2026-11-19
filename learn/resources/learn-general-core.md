@@ -21,5 +21,3 @@ This implementation has no fixed subject directory; the five roles are provided 
 | Learning recommendation | Learning recommendation in `references/general-contract.md` |
 
 All stages and unknown stages are supported; stage affects only expression and support and never auto-generates a mastery level. All evidence carries `teaching.evidence_namespace: general_v1` and the scope_id, and isolation rules follow the resolver reference.
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

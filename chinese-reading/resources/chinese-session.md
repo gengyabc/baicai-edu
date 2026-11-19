@@ -85,5 +85,3 @@ resource-loading: on-demand
 路由完成条件：目标子 skill 已收到以上上下文并接管本轮；仅需补问或等待入口处理文件时停在当前步骤。教学、反馈及唯一 `session_segment` 均由该子 skill 产出，路由器只交接，不追加教学或记录。
 
 每次子 skill 返回后，把唯一段及最新阶段交回入口，按 `learn-data` 的 `references/session-lifecycle.md` 记录、恢复或切换。
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

@@ -52,5 +52,3 @@ Use `ask_user_question` with the prompt `ui.clean.confirm_scope_prompt` and opti
 3. Delete file by file with safe path arguments, do not concatenate untrusted commands, and never recursively delete a student root directory. A missing file counts as already gone; on a permission or I/O error, stop immediately and do not escalate privileges around it.
 4. Verify the targets no longer exist and the retained files are unchanged, then report the scope and counts; on partial failure, list what is done and not done separately, and a retry re-previews and re-confirms only the remaining items.
 5. Discard this session's affected snapshots, material references, and pending save plans, and stop the old teaching loop, so that a later save cannot write the emptied records back. Tell the user to re-enter via `/learn-start`, and not to continue saving in any other old session.
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

@@ -21,5 +21,3 @@ Choose only when a new target is needed. Priority: the text after `/learn-feynma
 ## Turn
 
 The subject skill returns a reply and one segment, with both `mode` and `submode` set to `feynman`. Skill evidence and errors are recorded for this turn only and written back by finalize. Crisis signals take priority: stop teaching per the safety flow in `learn-core`.
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

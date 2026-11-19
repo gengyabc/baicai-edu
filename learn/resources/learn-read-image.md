@@ -33,5 +33,3 @@ Read in order:
 ## Fallback
 
 If the archive write fails, follow `references/record.md`: keep the reading, return `archived: false`, and let the current owner state that the original was not archived; do not pretend it was saved. If the image cannot be read or its format is unsupported (including HEIC or HEIF), return a request for a JPG or PNG or text; the current owner asks, and the reader does not convert, guess, or promise recognition accuracy. If the current subject contract cannot be loaded, transcribe with the generic rules and mark step checks unknown; do not claim subject-specific hints were applied.
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

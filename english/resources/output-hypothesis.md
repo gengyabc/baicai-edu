@@ -21,5 +21,3 @@ Follow the “Method skills” contract in `english-core`.
 
 ## Example
 “Your robot has a special power. What can it do?” Wait for the child's idea; a sentence beginning is only a later support if needed.
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

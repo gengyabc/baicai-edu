@@ -20,5 +20,3 @@ Follow the “Method skills” contract in `english-core`.
 6. Return examples already shown and the child's actual use. Its `references/english-segment-fields.md` distinguishes imitation from independent transfer.
 ## Example
 “I want a banana.” “I want a red kite.” “What do you want for our picnic?”
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

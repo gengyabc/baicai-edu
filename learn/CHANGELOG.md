@@ -4,7 +4,7 @@ All notable changes to `baicai-edu-learn` are recorded here. This package has
 not been published before 0.1.0, so that release is the current state rather
 than an upgrade path.
 
-## [Unreleased]
+## [0.1.3] - 2026-11-19
 
 ### Skills
 
@@ -37,6 +37,15 @@ than an upgrade path.
 
 ### Packaging
 
+- Cited prose now ships at `resources/references/<name>.md`, the path a skill
+  body already cites, so reading `references/session-lifecycle.md` from the
+  registered base directory resolves literally. Previously the files sat flat
+  beside it and every rendered body carried a sentence explaining the mapping —
+  a sentence easy to skim past, and skipping it sends the reader to a path that
+  does not exist. The rendering note is gone and the provider looks up listed
+  resources under `references/`. Skill files stay at `resources/<name>.md`;
+  `readPackage` reads only that level, so reference files no longer depend on
+  being skipped for having no `name`/`description` frontmatter.
 - A skill may declare `resource-loading: on-demand` in its frontmatter; the
   provider then registers its body alone, and every reference stays installed
   beside the base directory for the branch that names it. `learn`,
@@ -47,6 +56,15 @@ than an upgrade path.
   directory, and rendered resources now include `references/locales/*.json`.
   Until now the catalogs never reached an installed skill, so every process
   label fell through to the plain-text fallback.
+- A skill's reference directory is now found with `dirname` instead of a search
+  for `/` in the path. On Windows every path built by `join` uses `\`, so that
+  search found no separator, resolved each resource against a mangled directory,
+  and registered every skill body without the reference sections it inlines —
+  silently, because a missing resource is skipped by design. Resource lookup is
+  guarded as platform-neutral in `scripts/skill-resources.test.mjs`.
+- Each enabled bundle gets its own activation row while sharing the provider
+  implementation. The shared entry no longer loads skills from disabled
+  bundles merely because they are still installed.
 
 ## [0.1.0] - 2026-11-18
 

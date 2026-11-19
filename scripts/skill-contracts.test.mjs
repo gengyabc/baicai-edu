@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict'
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { isAbsolute, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
 import test from 'node:test'
+
+import { apply } from '../learn/skill-provider.mjs'
 
 // Static protocol guards: these do not simulate student/model behavior.
 const root = fileURLToPath(new URL('..', import.meta.url))
@@ -1560,9 +1563,9 @@ test('shared math contract is a rule source, never a teaching implementation', (
   }
   const manifest = JSON.parse(text('math-common/package.json'))
   assert.equal(manifest.name, 'baicai-edu-math')
-  assert.deepEqual(manifest.dependencies, { 'baicai-edu-learn': '^0.1.1' })
+  assert.deepEqual(manifest.dependencies, { 'baicai-edu-learn': '^0.1.3' })
   for (const band of ['math-primary-low', 'math-primary-high']) {
-    assert.equal(JSON.parse(text(`${band}/package.json`)).dependencies['baicai-edu-math'], '^0.1.1', band)
+    assert.equal(JSON.parse(text(`${band}/package.json`)).dependencies['baicai-edu-math'], '^0.1.3', band)
   }
 })
 
@@ -1740,29 +1743,10 @@ test('batch sub-questions separate exploration distribution from one board for t
   }
 })
 
-test('one provider serves every skill package, and each activation names its closure', () => {
-  // There is exactly ONE provider module, shipped by `learn`. Every skill
-  // package's cordis.patch.yml activates it through `baicai-edu-learn`, so any
-  // install that pulls one bundle in (they all depend on learn) resolves the
-  // same file. Copying it beside each package was the old failure mode; the
-  // patch rows are now the only per-package part, and they must stay suffixes
-  // of learn's row so a last-wins composed entry keeps every root it needs.
+test('one provider implementation serves distinct and bundle-owned skill registrations', () => {
   const provider = text('learn/skill-provider.mjs')
-  const activation = (directory) => {
-    const patch = text(`${directory}/cordis.patch.yml`)
-    const names = [...patch.matchAll(/resolve\('(baicai-edu-[a-z-]+)\/(?:package\.json|skill-provider\.js)'\)/g)].map((match) => match[1])
-    // The provider row must name the module as a plain specifier. `!!js` parses
-    // into an `{ __jsExpr }` object, and compatibility preflight reads `row.name`
-    // before the loader interpolates it, so an expression there fails
-    // `name.startsWith` and DSH disables the row instead of activating it.
-    const activationRoot = patch.match(/^\s*name: baicai-edu-learn\/skill-provider\.mjs$/m)
-    assert.ok(activationRoot !== null, `${directory}/cordis.patch.yml does not activate baicai-edu-learn's provider`)
-    assert.equal([...patch.matchAll(/- id: edu-skills$/gm)].length, 1, `${directory} activates edu-skills more than once`)
-    return names
-  }
-  const learnRoots = activation('learn')
+  const ids = new Set()
   for (const bundle of bundles) {
-    activation(bundle)
     // One provider module, not one per package.
     assert.ok(!existsSync(join(root, bundle, 'skill-provider.js')), `${bundle} still ships a provider copy`)
     // The provider activation is self-contained: learn is a declared dependency.
@@ -1785,15 +1769,15 @@ test('one provider serves every skill package, and each activation names its clo
     assert.ok(manifest.files.includes('resources'), `${bundle} does not ship resources/`)
     assert.ok(manifest.files.includes('build.json'), `${bundle} does not ship build.json`)
     assert.ok(!manifest.files.includes('skill-provider.js'), `${bundle} still lists a provider copy`)
-    // DSH composes all rows with this id into one entry whose config the last
-    // bundle layer wins; by `dsh.profile.bundles` order (reconcile appends, so a
-    // subject comes after learn), a subject's row is what remains. It must list
-    // every root the provider needs, and that list must be learn's closure.
-    const roots = activation(bundle)
-    if (bundle !== 'learn') {
-      assert.deepEqual(roots, learnRoots,
-        `${bundle}/cordis.patch.yml is the row DSH keeps; it must name learn's whole closure`)
-    }
+    const patch = text(`${bundle}/cordis.patch.yml`)
+    const patchIds = [...patch.matchAll(/^\s*- id: ([\w-]+)$/gm)].map((match) => match[1])
+    assert.equal(patchIds.length, 1, bundle)
+    assert.ok(!ids.has(patchIds[0]), `${bundle} must own a distinct loader row`)
+    ids.add(patchIds[0])
+    // Compatibility preflight reads row.name before Loader evaluates !!js.
+    assert.match(patch, /^\s*name: baicai-edu-learn\/skill-provider\.mjs$/m)
+    const roots = [...patch.matchAll(/resolve\('([^']+\/package\.json)'\)/g)].map((match) => match[1])
+    assert.deepEqual(roots, [`${manifest.name}/package.json`], `${bundle} must not register another bundle's skills`)
   }
   assert.ok(!existsSync(join(root, 'math-board', 'skill-provider.js')),
     'math-board has no skills and must not carry a provider')
@@ -1803,6 +1787,52 @@ test('one provider serves every skill package, and each activation names its clo
     const manifest = JSON.parse(text(`${bundle}/package.json`))
     assert.equal(manifest.exports?.['./package.json'], './package.json',
       `${bundle} must export ./package.json for the activation row`)
+  }
+})
+
+test('a partial install keeps the provider row: a missing package stays a specifier', () => {
+  // Loader evaluates the row with baseUrl bound to the profile. The guarded
+  // resolver preserves the unresolved specifier when a root is missing, and
+  // the same provider also accepts legacy arrays with several explicit roots.
+  const evaluate = new Function('ctx', 'expr', 'with (ctx) { return eval(expr) }')
+  const installed = ['learn', 'chinese-reading']
+  const profile = mkdtempSync(join(tmpdir(), 'edu-partial-install-'))
+  try {
+    const installedNames = installed.map((bundle) => JSON.parse(text(`${bundle}/package.json`)).name)
+    for (const name of installedNames) {
+      const packageDir = join(profile, 'node_modules', name)
+      mkdirSync(join(packageDir, 'resources'), { recursive: true })
+      writeFileSync(join(packageDir, 'package.json'), '{}\n')
+      writeFileSync(join(packageDir, 'resources', 'probe.md'),
+        `---\nname: ${name}-probe\ndescription: probe skill\n---\n\n# Probe\n\nBody.\n`)
+    }
+    const baseUrl = `${profile}/`
+    const packages = bundles.flatMap((bundle) => {
+      const rows = [...text(`${bundle}/cordis.patch.yml`).matchAll(/^\s+- !!js (.+)$/gm)].map((match) => match[1])
+      assert.equal(rows.length, 1, `${bundle}/cordis.patch.yml must name its own root once`)
+      return rows.map((expression) => {
+        const specifier = /resolve\('([^']+)'\)/.exec(expression)?.[1]
+        assert.ok(specifier?.endsWith('/package.json'), `${bundle}: every row resolves a manifest`)
+        const value = evaluate({ baseUrl }, expression)
+        const name = specifier.slice(0, specifier.indexOf('/'))
+        if (installedNames.includes(name)) {
+          assert.ok(isAbsolute(value) && existsSync(value), `${bundle}: installed ${name} must resolve to its manifest`)
+        } else {
+          assert.equal(value, specifier, `${bundle}: a missing ${name} must keep its specifier instead of disabling the row`)
+        }
+        return value
+      })
+    })
+    const registered = []
+    apply({
+      logger: { info() {}, warn() {} },
+      skills: { register(entry) { registered.push(entry) } },
+      effect(register) { for (const _ of register()) { /* drain registrations */ } },
+    }, { packages })
+    assert.deepEqual(registered.map((entry) => entry.name).sort(),
+      installedNames.map((name) => `${name}-probe`).sort())
+  } finally {
+    rmSync(profile, { recursive: true, force: true })
   }
 })
 
@@ -1855,7 +1885,7 @@ test('committed resources match a fresh build, and every shipped file resolves',
       if (header === null) continue
       const resources = /^resources: (.*)$/m.exec(header[1])?.[1]?.split(/\s+/).filter(Boolean) ?? []
       for (const resource of resources) {
-        assert.ok(existsSync(join(root, bundle, 'resources', resource)),
+        assert.ok(existsSync(join(root, bundle, 'resources', 'references', resource)),
           `${bundle}/${path} lists ${resource}, which the package does not ship`)
       }
     }
@@ -1864,14 +1894,9 @@ test('committed resources match a fresh build, and every shipped file resolves',
   assert.ok(!existsSync(join(root, 'math-board', 'resources')), 'math-board must not ship resources/')
 })
 
-test('one subject package name installs its whole bundle closure', () => {
-  // Registry install: `dsh plugin add <subject>` runs pnpm, which installs the
-  // package and its declared dependencies; DSH then appends every NEWLY added
-  // dependency that declares dsh.bundle to dsh.profile.bundles
-  // (dsh-plugin-manager reconcile: it iterates `dependencies`, skips names
-  // already present before the install, and pushes those with a bundle).
-  // So a subject must declare every bundle a learner needs, or the install
-  // silently enables a subset — the failure this test exists to prevent.
+test('registry install instructions explicitly select each subject bundle closure', () => {
+  // Installation of a dependency is not activation of its DSH bundle. The
+  // published command must name each required bundle as a direct dependency.
   const dirs = ['learn', 'math-common', 'math-board', 'math-primary-low', 'math-primary-high', 'chinese-reading', 'english']
   const pkg = (dir) => JSON.parse(text(`${dir}/package.json`))
   const byName = new Map(dirs.map((dir) => [pkg(dir).name, dir]))
@@ -1907,16 +1932,38 @@ test('one subject package name installs its whole bundle closure', () => {
     }
     return [...seen].sort()
   }
+  const registryCommands = [...text('docs/installation.md').matchAll(/^dsh plugin --profile web add ((?:baicai-edu-[a-z-]+ ?)+)$/gm)]
+    .map(([, names]) => names.trim().split(/\s+/))
   for (const [subject, expected] of Object.entries(closures)) {
-    assert.deepEqual(closureOf(subject), [...expected].sort(), `${subject} closure changed — update the install docs too`)
+    const closure = [...expected].sort()
+    assert.deepEqual(closureOf(subject), closure, `${subject} closure changed — update the install docs too`)
+    assert.deepEqual(registryCommands.filter((names) => names.includes(subject)).map((names) => names.sort()),
+      [closure], `docs/installation.md must explicitly install the whole ${subject} bundle closure`)
   }
+})
 
-  // The install docs must show the one-name form, not the stale list-everything form.
-  const installDoc = text('docs/installation.md')
-  assert.ok(installDoc.includes('dsh plugin --profile web add baicai-edu-math-primary-low'),
-    'docs/installation.md must show the single subject-package install')
-  assert.ok(!/add baicai-edu-learn baicai-edu-math/.test(installDoc),
-    'docs/installation.md still tells the reader to list dependencies by hand')
+test('every shipped README selects the whole closure it names', () => {
+  // Shipping README is the install instructions a receiver reads on npm. DSH
+  // enables only the bundles a call selects, so a command that names one subject
+  // and relies on a transitive dependency leaves the shared rules unregistered.
+  const dirs = ['learn', 'math-common', 'math-board', 'math-primary-low', 'math-primary-high', 'chinese-reading', 'english']
+  const byName = new Map(dirs.map((dir) => [JSON.parse(text(`${dir}/package.json`)).name, dir]))
+  const closureOf = (name, seen = new Set()) => {
+    if (seen.has(name)) return seen
+    seen.add(name)
+    for (const dependency of Object.keys(JSON.parse(text(`${byName.get(name)}/package.json`)).dependencies ?? {})) closureOf(dependency, seen)
+    return seen
+  }
+  for (const dir of dirs) {
+    const commands = [...text(`${dir}/README.md`).matchAll(/^dsh plugin --profile web add ((?:baicai-edu-[a-z-]+ ?)+)$/gm)]
+      .map(([, names]) => names.trim().split(/\s+/))
+    for (const names of commands) {
+      const named = new Set(names)
+      const required = new Set(names.flatMap((name) => [...closureOf(name)]))
+      assert.deepEqual([...required].sort(), [...named].sort(),
+        `${dir}/README.md: add ${names.join(' ')} must also select every bundle it depends on`)
+    }
+  }
 })
 
 test('high-grade methodology is kept as material and never registered as skills', () => {
@@ -1926,8 +1973,8 @@ test('high-grade methodology is kept as material and never registered as skills'
   assert.deepEqual(manifest.files, ['cordis.patch.yml', 'build.json', 'docs', 'resources', 'skills', 'README.md', 'LICENSE', 'CHANGELOG.md'])
   assert.ok(!manifest.files.includes('sources'))
   assert.deepEqual(manifest.dependencies, {
-    'baicai-edu-learn': '^0.1.1',
-    'baicai-edu-math': '^0.1.1',
+    'baicai-edu-learn': '^0.1.3',
+    'baicai-edu-math': '^0.1.3',
   })
   const installed = readdirSync(join(root, 'math-primary-high', 'skills')).sort()
   assert.deepEqual(installed, ['math-high-application-modeling', 'math-high-core', 'math-high-diagnose',

@@ -31,5 +31,3 @@ Loading this skill returns its base directory. Read only the references required
 - Stage fit, session ownership, clear authorization, method selection, diagnostic depth, batch tracking, and modeling work stay local to the band.
 - The handwriting contract supplies reading hints and deterministic step-check facts only; it assigns no error type, label, mastery, or next move, and names no grade.
 - If this skill cannot be loaded or is disabled, the band continues under the safe fallback in its own core skill and does not claim the shared contract was applied. This skill is never a math specialist and is never selected by the teaching resolver.
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

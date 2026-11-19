@@ -20,10 +20,10 @@ The entry routes on `subject: english` to `english-session`, so English sub-skil
 
 ### Install
 
-From the registry, the English package name is enough — `baicai-edu-learn` comes in as a dependency:
+From the registry, name both bundles: pnpm installs the shared dependency, but DSH enables only what the call selects.
 
 ```bash
-dsh plugin --profile web add baicai-edu-english
+dsh plugin --profile web add baicai-edu-learn baicai-edu-english
 ```
 
 From this checkout, use the unified entry (it packs the closure into a tarball, matching the registry layout):
@@ -72,10 +72,10 @@ baicai-edu 的英语教学技能包：故事与可理解输入、对话协商、
 
 ### 安装
 
-从 registry 装时只写英语包名即可，`baicai-edu-learn` 作为依赖一并带入：
+从 registry 装时请把两个 bundle 都写出来：pnpm 会装共享依赖，但 DSH 只启用本次选中的 bundle。
 
 ```bash
-dsh plugin --profile web add baicai-edu-english
+dsh plugin --profile web add baicai-edu-learn baicai-edu-english
 ```
 
 本仓库本地 checkout 用统一入口（它把闭包 pack 成 tarball 安装，与 registry 布局一致）：

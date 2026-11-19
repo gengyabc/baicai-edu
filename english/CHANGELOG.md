@@ -4,7 +4,7 @@ All notable changes to `baicai-edu-english` are recorded here. This package has
 not been published before 0.1.0, so that release is the current state rather
 than an upgrade path.
 
-## [Unreleased]
+## [0.1.3] - 2026-11-19
 
 ### Skills
 
@@ -22,6 +22,9 @@ than an upgrade path.
 - Locale catalogs now ship as `resources/references/locales/<locale>.json` at the
   path the skill prose cites, so an installed skill can read them instead of
   falling back to plain text for every process label.
+- This bundle registers only its own skills when enabled. Missing other
+  subjects no longer prevent it from loading, and a disabled bundle does not
+  register its skills just because its package is present on disk.
 
 ## [0.1.0] - 2026-11-18
 

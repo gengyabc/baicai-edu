@@ -94,5 +94,3 @@ Band selection belongs to `learn-data`'s `references/teaching-resolver.md`. The 
 - `personal.interests` and subject preferences change context or representation only; they never replace the mathematics under discussion and never set the stage.
 - Do not narrate preparation, do not paste the student's raw JSON, and do not restate the process. Student-visible replies carry the task, the question, and the relationships already shown.
 - Do not fabricate performed steps, scores, classmates' answers, or cross-session memory; speak only from the snapshot, the material sent, and this turn's observations.
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

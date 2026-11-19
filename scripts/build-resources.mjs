@@ -2,10 +2,14 @@
 //
 // Each skill package ships a `resources/` tree that holds, per skill, the union
 // of every file that skill needs: its body, its own references, and the
-// references it cites by another skill's name. Two files per skill:
+// references it cites by another skill's name:
 //
-//   resources/<name>.md          body + `resources:` header naming cited own files
-//   resources/<name>~resources.md  the shared resource directory (care of), if any
+//   resources/<name>.md              body + `resources:` header naming cited files
+//   resources/references/<file>.md    one file per cited reference
+//   resources/references/locales/     locale catalogs, as their prose cites them
+//
+// Reference files keep the `references/` segment their prose cites, so a body
+// path resolves literally against the base directory the provider publishes.
 //
 // The install-time rebuild (scripts/install.mjs) writes those files from the
 // sources named in `build.json`, which is the only place a package knows where
@@ -104,19 +108,6 @@ export function citedOwn(body) {
   return files
 }
 
-// A rendered body still cites `references/<name>.md`, which is the path inside
-// the source skill package. The installed tree has no `references/` directory
-// for prose: each named file sits at `<name>.md` beside the published base
-// directory, whether or not the provider inlines it. Locale catalogs are the one
-// thing that keeps its `references/` path. Stating that once, where the model
-// reads it, is cheaper than rewriting several hundred body citations and keeps
-// the build's own `references/` parsing intact.
-const RESOURCE_LAYOUT = [
-  "This skill's base directory holds every file it names: a `references/<name>.md` path below",
-  'is the installed `<name>.md` beside that base directory, because an installed skill keeps',
-  'no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.',
-].join(' ')
-
 const header = (fields) => ['---', ...Object.entries(fields).flatMap(([key, value]) => (
   Array.isArray(value) ? (value.length === 0 ? [] : [`${key}: ${value.join(' ')}`]) : [`${key}: ${value}`]
 )), '---', ''].join('\n')
@@ -181,8 +172,7 @@ export function flattenSkill(skillDirectory, referenceDirectories) {
   // shared files never overwrite it; only `resources` decides what is inlined.
   const files = new Map(sharedFiles.map(([name, text]) => [name, text]))
   for (const name of ownFiles) files.set(name, readFileSync(join(skillDirectory, 'references', name), 'utf8').trim() + '\n')
-  const layout = resources.length > 0 ? `\n${RESOURCE_LAYOUT}\n` : ''
-  return { body: `${header(headerFields)}${body.trimEnd()}\n${layout}`, shared: [...files], problems }
+  return { body: `${header(headerFields)}${body.trimEnd()}\n`, shared: [...files], problems }
 }
 
 /**
@@ -210,7 +200,7 @@ export function buildResources(packageName, { root = ROOT, write = true } = {}) 
     const flattened = flattenSkill(join(source, entry.name), shared)
     problems.push(...flattened.problems.map((problem) => `${entry.name}: ${problem}`))
     files.set(`resources/${entry.name}.md`, flattened.body)
-    for (const [name, text] of flattened.shared) files.set(`resources/${name}`, text)
+    for (const [name, text] of flattened.shared) files.set(`resources/references/${name}`, text)
     // Catalogs keep the path their prose cites, so one base directory resolves
     // them. Two skills of one package owning the same catalog file would make
     // that path ambiguous: fail loudly instead of shipping one of them.

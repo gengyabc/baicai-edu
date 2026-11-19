@@ -20,5 +20,3 @@ Follow the “Method skills” contract in `english-core`.
 6. Return the result, language used and support separately, using its `references/english-segment-fields.md` for evidence classification. Completing a task is not proof of independent English production.
 ## Example
 “You have five coins. Choose three foods for a dinosaur picnic and tell me what to buy.”
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

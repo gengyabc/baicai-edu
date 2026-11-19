@@ -1,25 +1,12 @@
 #!/usr/bin/env node
-// Register every installed baicai-edu skill with DSH's skill registry.
+// Every selected baicai-edu skill bundle has its own DSH loader row. The rows
+// reuse this implementation but each names only its bundle's package root.
+// Registrations belong to that row's effect, so DSH disposes them when the row
+// is removed. The packages array remains compatible with explicit legacy config.
 //
-// Each skill package ships a `cordis.patch.yml` that activates THIS file, and in
-// a registry (or packed-tarball) install every named dependency is a direct
-// dependency of the profile, so all six activations resolve to the profile's
-// one copy of `baicai-edu-learn/skill-provider.mjs`.
-//
-// Every activation shares one entry id, so the profile composes a single entry —
-// and a single `config.packages` list, because the last layer's row wins. That
-// is why this entry is inserted by the LAYER THAT IS FIRST in bundle order
-// (`baicai-edu-learn`, always a transitive dependency of a subject install and its
-// own direct dependency): its row is the one left standing, and it must name the
-// whole closure. A top-level bundle that sorts after it would be defeated by
-// this row's last-wins config.
-//
-// The provider reads each named package's `resources/` directory and registers
-// one skill per rendered file. Citations are inlined by default; on-demand
-// references and locale catalogs are read from the registered `resources/` base.
-// A package the activation cannot resolve keeps its unresolved path and is
-// skipped: a partial local `link:` install registers nothing rather than
-// guessing what is installed.
+// Read the named roots' rendered resources, skipping unresolved specifiers.
+// Citations are inlined by default; on-demand references and locale catalogs
+// are read from the registered resources base.
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { isAbsolute } from 'node:path';

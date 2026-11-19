@@ -20,5 +20,3 @@ Follow the “Method skills” contract in `english-core`.
 6. Return a next-step suggestion to session. Automatic reminders require an explicit user request and actual scheduling support; this method does not create reminders or a parallel progress record.
 ## Example
 Practice “under” while hiding a toy today; retrieve it in a treasure hunt on another day.
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

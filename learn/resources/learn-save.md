@@ -24,5 +24,3 @@ Use only when the student explicitly asks to save. Do not call it automatically 
 Read and execute `references/finalize-session.md` from `learn-data`. After a successful save, end the original active loop; continuing to learn afterward opens a new log. Write the log events or performance successfully first, then enter the idempotency gate; if preparation fails, do not report it as saved.
 
 On success, reply with one sentence matching the actual content: subject learning record, general-task progress, or learning plan saved. For an empty no-op, say there is no long-term record to summarize, and do not write temporary emotions as a lasting plan; on commit failure keep the log so it can be retried, and if only cleanup fails, report it separately per finalize.
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

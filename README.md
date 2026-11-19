@@ -75,16 +75,16 @@ Math is split into two packages by band: lower primary mainly grades 1–3, uppe
 
 ### Install
 
-As a DSH plugin, one subject per command. Its dependencies are installed and enabled by the same call:
+As a DSH plugin, explicitly select each subject and its required bundles:
 
 ```bash
-dsh plugin --profile web add baicai-edu-math-primary-low    # low-band math; brings learn, math-common and math-board
-dsh plugin --profile web add baicai-edu-math-primary-high   # upper-band math; the board is optional, add it separately
-dsh plugin --profile web add baicai-edu-chinese-reading     # Chinese
-dsh plugin --profile web add baicai-edu-english             # English
+dsh plugin --profile web add baicai-edu-learn baicai-edu-math baicai-edu-math-board baicai-edu-math-primary-low
+dsh plugin --profile web add baicai-edu-learn baicai-edu-math baicai-edu-math-primary-high
+dsh plugin --profile web add baicai-edu-learn baicai-edu-chinese-reading
+dsh plugin --profile web add baicai-edu-learn baicai-edu-english
 ```
 
-`dsh plugin` forwards its arguments to pnpm inside the profile; DSH then adds the bundles installed by this call that declare `dsh.bundle` to that profile's selection, so the dependency closure switches on by itself and dependencies are never listed by hand. The bundles stay visible in DSH's plugin management, where you can disable or re-enable them. All seven `baicai-edu-*` packages are published on npm (`0.1.2`, with `math-board` at `0.6.0` and `chinese-reading` at `0.1.0`), so `add` by package name installs the dependency closure from the registry. The list below is local-checkout only and exists for development in this repository.
+List required bundles explicitly: pnpm can download a dependency without DSH enabling its bundle. For Electron desktop, install and enable the corresponding packages in plugin management. The checkout installer below selects dependencies for you. All seven packages are on npm: skill packages `0.1.3`, `chinese-reading` `0.1.1`, `math-board` `0.6.1`.
 
 Local checkout in this repository uses the unified entry (it packs the dependency closure into tarballs and installs it the same one-pass way):
 
@@ -102,7 +102,7 @@ node scripts/install.mjs all --profile web
 node scripts/install.mjs all --dry-run
 ```
 
-Either route needs Node.js 22 or newer plus a working DSH/pnpm. Both install the whole dependency closure as top-level profile bundles in one pass, so a package is never downloaded but left disabled; do not hand-link a single subject package instead, because `link:` does not bring its dependencies. Re-installing keeps bundles you disabled by hand. After installing, restart if DSH says so and refresh the Web session, then type `/learn-start` to start. Dependencies, migration and failure handling in full: [installation guide](docs/installation.md).
+Either route needs Node.js 22 or newer plus a working DSH/pnpm. Both install the whole dependency closure as top-level profile bundles in one pass; do not hand-link a single subject package instead, because `link:` does not bring its dependencies. Re-installing keeps bundles you disabled by hand. After installing, restart if DSH says so and refresh the Web session, then type `/learn-start` to start. Dependencies, migration and failure handling in full: [installation guide](docs/installation.md).
 
 ### Using it
 
@@ -253,16 +253,16 @@ Node.js 22 or newer is required (see [.nvmrc](./.nvmrc)), and there are no third
 
 ### 安装
 
-作为 DSH 插件安装，一个学科一条命令，依赖随同一次装上并启用：
+作为 DSH 插件安装，每条命令显式选中学科及其必需 bundle：
 
 ```bash
-dsh plugin --profile web add baicai-edu-math-primary-low    # 低年级数学，带入 learn、math-common 与 math-board
-dsh plugin --profile web add baicai-edu-math-primary-high   # 高年级数学，画板可选，需另行安装
-dsh plugin --profile web add baicai-edu-chinese-reading     # 语文
-dsh plugin --profile web add baicai-edu-english             # 英语
+dsh plugin --profile web add baicai-edu-learn baicai-edu-math baicai-edu-math-board baicai-edu-math-primary-low
+dsh plugin --profile web add baicai-edu-learn baicai-edu-math baicai-edu-math-primary-high
+dsh plugin --profile web add baicai-edu-learn baicai-edu-chinese-reading
+dsh plugin --profile web add baicai-edu-learn baicai-edu-english
 ```
 
-`dsh plugin` 把参数透传给 profile 内的 pnpm；随后 DSH 会把本次装上新声明 `dsh.bundle` 的依赖加入该 profile 的选择，依赖闭包因此自动启用，不需要手写依赖名。这些 bundle 会出现在 DSH 的插件管理里，可在此禁用或重新启用。七个 `baicai-edu-*` 包均已发布到 npm（`0.1.2`，`math-board` 为 `0.6.0`、`chinese-reading` 为 `0.1.0`），按包名 `add` 即从 registry 装齐依赖闭包；下面的本地 checkout 入口只用于本仓库开发调试。
+请显式列出必需 bundle：pnpm 下载依赖不等于 DSH 启用它。Electron 桌面端请在插件管理中安装并启用对应各包。下方的 checkout 安装器会自动列出依赖。七个包均已发布到 npm：技能包 `0.1.3`、`chinese-reading` `0.1.1`、`math-board` `0.6.1`。
 
 本仓库本地 checkout 用统一入口（它把依赖闭包 pack 成 tarball，按同样的一次性方式安装）：
 
@@ -280,7 +280,7 @@ node scripts/install.mjs all --profile web
 node scripts/install.mjs all --dry-run
 ```
 
-两种方式都需要 Node.js 22 或更高版本与可用的 DSH/pnpm。两种方式都把整个依赖闭包作为 profile 顶层 bundle 一次安装，避免“包已下载但未启用”；不要只手工 link 一个学科包，`link:` 不会带上它的依赖。重复安装保留此前手动禁用的 bundle。安装后按 DSH 输出决定是否重启并刷新 Web 会话，输入 `/learn-start` 开始。完整依赖、迁移与失败处理见[安装说明](docs/installation.md)。
+两种方式都需要 Node.js 22 或更高版本与可用的 DSH/pnpm。两种方式都把整个依赖闭包作为 profile 顶层 bundle 一次安装；不要只手工 link 一个学科包，`link:` 不会带上它的依赖。重复安装保留此前手动禁用的 bundle。安装后按 DSH 输出决定是否重启并刷新 Web 会话，输入 `/learn-start` 开始。完整依赖、迁移与失败处理见[安装说明](docs/installation.md)。
 
 ### 使用
 

@@ -36,19 +36,19 @@ provider 由 `learn` 携带（`learn/skill-provider.mjs` + `learn/lib/skill-reso
 
 ```yaml
 - insert:
-    - id: edu-skills
-      name: !!js …createRequire(baseUrl + 'x').resolve('baicai-edu-learn/package.json') → skill-provider.mjs
+    - id: edu-skills-english
+      name: baicai-edu-learn/skill-provider.mjs
       config:
-        packages: [ … 闭包里每个包的 package.json 路径 … ]
+        packages: [ … 仅当前 bundle 的 package.json 路径 … ]
 ```
 
 - **只有一份 provider 代码**：任何学科包都依赖 `baicai-edu-learn`，所以任何安装都能解析到同一个模块；不再有各包内的副本，也没有 `sync` 与副本比对。设计理由见 [ADR-0004](adr/0004-single-skill-provider.md)。
-- **闭包整份列出**：`name` 是包内路径（各次激活完全相同），`config.packages` 列出闭包中的七个包。DSH 把同 id 的插入行组合成一个条目，而各 bundle 层**后写入者生效**；因此每一行都列出完整闭包，无论最终留下的是哪一行的最后一层，provider 都拿得到全部根路径。装不上或未安装的包保留为未解析路径，provider 跳过它（本地半装不会凭空注册不存在的包）。
-- **代码与文档分离**：技能正文渲染进各包的 `resources/`（每个技能一个文件，附它引用的资源文件），所以只有代码、没有 `skills/` 的安装同样能注册完整技能。`skills/` 仍随包发布，供阅读与维护。
+- **每个 bundle 单独启用**：六个 `cordis.patch.yml` 各用不同的条目 ID，仍指向同一个模块，只传入本包路径。缺少其他学科不会影响启动；禁用某个 bundle 时，DSH 可以卸载对应技能而不影响其他条目。共享 `learn` 和学科必需 bundle 要显式启用。不建议混用旧版共享条目和新版独立条目。
+- **代码与文档分离**：技能正文渲染进各包的 `resources/`（每个技能一个文件，它引用的资源文件放在 `resources/references/`），所以只有代码、没有 `skills/` 的安装同样能注册完整技能。`skills/` 仍随包发布，供阅读与维护。
 - **目录数据不内联**：`references/locales/*.json` 是查表数据而非散文，正文里内联会按每个键占上下文，还得让模型去解析一份文档。因此 catalog 按散文引用的相对路径原样落进 `resources/references/locales/`，由 provider 把 `resources/` 发布为技能的 base directory，模型据此用 read 工具读取。两个技能同名 catalog 会让路径二义，构建直接报错。
 - **自包含**：`baicai-edu-learn` 单独安装时，`learn-general-*` 的引用都在 `learn/resources/` 里，不依赖其他学科包。
 - **引用按「归属 + 搜索」解析**：正文引用写的是 `references/<name>.md`（源码包内的相对路径）。归属技能的写法有六种（相邻反引号、`'s`、`的`、表格两列、代词 "its"、普通链接），任何只认其中一种的正则都会漏，而漏掉是静默的——文件既不内联也不拷贝，安装后的技能就指着一条不存在的路径。因此 `sharedCitations` 先取路径前最近、且确实拥有该文件的技能名，退回到「搜索路径里唯一拥有者」。解析不出来的引用进 `problems` 并在构建时 warn，不再被丢弃。
-- **渲染正文自带路径说明**：安装后的树只有 `<name>.md` 摆在 base directory 里，没有 `references/` 这一层（catalog 除外）。`build-resources.mjs` 给每个带资源的技能在正文末尾追加一句说明讲清这个对应关系；改渲染逻辑时别把它当成可删的装饰。测试同时检查路径说明与引用文件是否随包安装。
+- **引用文件保留 `references/` 路径**：散文引用写的是 `references/<name>.md`，安装后的树照样落在 `resources/references/<name>.md`，所以正文里的路径对 provider 发布的 base directory 直接成立，不需要额外说明去翻译。技能文件本身仍是 `resources/<name>.md` 一层；`readPackage` 只看该层的 `.md`，`references/` 是子目录，资源文件因此不会混进技能列表。渲染正文不再追加任何路径说明句——路径已经字面可读。测试检查每个列出的资源都装在 `resources/references/` 下、引用路径均能解析。
 - **分支资源按需读**：默认仍内联。技能可在源文件 frontmatter 加 `resource-loading: on-demand`；构建照常收录引用，但 provider 只加载技能正文。多分支技能可用这一选项避免把整套规则交给每一轮；正文须保留每个分支的触发条件、必读项和归属技能。单一流程若每次都需要某份参考，可继续内联。
 - **大小上限是自家保护网**：`skill-provider.mjs` 的 512 KiB 上限并非 DSH 限制。超过 200 KiB 的注册内容会记录 `large but whole` 供审查；需要省上下文时优先精简正文、按分支加载。超上限时整份略过个别内联资源并逐个点名，文件仍可在 base directory 中读取。
 
@@ -66,10 +66,9 @@ provider 由 `learn` 携带（`learn/skill-provider.mjs` + `learn/lib/skill-reso
 
 ## 发布后验收
 
-- 至少用隔离 `DSH_HOME` 真装一次，**且只写学科包名**：`dsh plugin --profile web add baicai-edu-math-primary-low`，确认 `node_modules` 里出现 `baicai-edu-learn`、`baicai-edu-math`、`baicai-edu-math-board`（依赖闭包由 pnpm 自动补齐），并确认 `dsh --profile web --dump-config` 里 `edu-skills` 条目的 `config.packages` 列全闭包、技能注册齐全（低年级数学闭包注册 20 个技能，全装 43 个）、不是静默少一批。tarball 里有文件只说明包装对了，不等于接收方已注册。
-- **`dsh.profile.bundles` 只记本次直接装的包**（上例只有 `baicai-edu-math-primary-low`），闭包其余成员作为依赖装进 `node_modules`、由那一行 patch 的 `config.packages` 指到绝对路径——所以「bundles 里没看到 `baicai-edu-learn`」不是故障，别据此判断装坏了。
+- 用隔离 `DSH_HOME` 真实安装[低年级数学及其必需 bundle](installation.md#接收方怎么装dsh-已装好)，然后确认实际技能目录有低年级技能、不含未安装的高年级技能。禁用低年级 bundle（不卸载），确认其技能消失、共享技能仍在；重新启用后再确认恢复。`--dump-config` 只证明配置组合，不证明技能已注册。
 - **闭包里每个包的版本都要看一眼，不只看目录里有没有它。** `node_modules` 出现 `baicai-edu-learn` 只证明闭包补齐了，不证明它是新版本；上面那次事故里目录都在、版本全是旧的。逐包 `node -p "require('./node_modules/<包>/package.json').version"`，确认共享包不低于本轮依赖范围的下限。刚发布的版本可能还在 pnpm 的 release-age 窗口内而解析成前一个 patch，这对同一 minor 的功能没有影响，但下限不符就是真的装错了。
-- 接收方侧的前置条件只有 DSH 与可用模型路由；插件的 `baicai-edu-learn: ^0.1.1` 等范围由 npm 自动满足。
+- 接收方侧的前置条件只有 DSH 与可用模型路由；插件的 `baicai-edu-learn: ^0.1.3` 等范围由 npm 自动满足。
 - 真实界面（工具栏、卡片、画布交互）仍需在 Web 页面上验收；命令返回零只表示 DSH 命令完成。
 
 ## 验证

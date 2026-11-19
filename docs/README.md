@@ -12,7 +12,7 @@
 
 | 文档 | 内容 |
 |---|---|
-| [安装说明](installation.md) | 接收方 `dsh plugin --profile web add <学科包>`、本地 checkout 安装、依赖闭包、重复安装与失败处理、隔离验证 |
+| [安装说明](installation.md) | 接收方按闭包列出 `dsh plugin --profile web add <bundle…>`、本地 checkout 安装、依赖闭包、重复安装与失败处理、隔离验证 |
 | [发布与技能渲染](publishing.md) | `publish.mjs` 发布流程、`resources/` 渲染、单份 provider 的注册方式、发布后隔离验收 |
 
 ## 架构与决策

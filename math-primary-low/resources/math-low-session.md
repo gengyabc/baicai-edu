@@ -145,5 +145,3 @@ When there is evidence about the relationship, give one sentence the student can
 Read core's `references/math-segment-fields.md`. Return one `session_segment` only when the student actually performed mathematics: `subject: math`, the caller's `mode`, the merged `submode`, `source` normalized to match `target_context.source`, and the merged leaf evidence. A pure demonstration, recommendation, or activity choice returns `session_segment: null`; the lifecycle still writes resumable context.
 
 Acceptance: either a null segment with context only, or all required fields supported by student work, keeping supplied methods, exposed support, and independent selection distinct.
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

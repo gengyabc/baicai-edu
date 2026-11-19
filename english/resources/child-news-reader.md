@@ -154,5 +154,3 @@ On recovery, resume the pending step: do not re-run intake, search again, resele
 - **No voice/visual capability:** do not imply speech evaluation or picture inspection; §4.1 image display still applies.
 - **Distressing news:** offer a safe alternative and ask the parent before continuing.
 - **Copyright restriction:** summarize independently, keep attribution and link.
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

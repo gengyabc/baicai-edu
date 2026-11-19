@@ -19,5 +19,3 @@ Follow the “Method skills” contract in `english-core`.
 
 ## Example
 If a location task is blocked, identify whether the child cannot locate the cat or cannot express the location; these need different support. Apply the shared ladder only to the observed gap.
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

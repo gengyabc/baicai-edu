@@ -45,5 +45,3 @@ Read `math-low-core`'s `references/math-segment-fields.md` and return evidence f
 - `strategy_summary` separates problem composition, independent solving, explaining an already revealed answer, and transfer; strengths/difficulties record only student evidence.
 - `skill_errors_observed` records only the student's actual erroneous reasoning/judgments; AI errors, undiscovered errors, and unanswered items are not counted.
 - `next_step_candidate` is one neighboring check/transfer target.
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

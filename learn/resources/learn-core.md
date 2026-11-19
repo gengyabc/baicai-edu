@@ -70,5 +70,3 @@ A teaching session keeps one in-context record of what has already been loaded; 
 - A path can only be reused after resolving its owner: the reference relative to the skill base directory that the owner skill returned; re-reading a path that a different skill has already read is not a duplicate.
 - A parent skill that needs its child's content depends on the child having been loaded earlier in the session. When the child is not in context, load it rather than reconstruct its rules from memory.
 - One explicit re-read is allowed when the cached copy may be wrong (an external edit, a pending-save recovery, or a student-visible file just written): acting on a stale copy costs more than reading again.
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

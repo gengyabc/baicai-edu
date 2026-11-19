@@ -5,17 +5,17 @@
 // every entry there as a skill directory.
 //
 // A skill package ships `resources/`: one rendered `<name>.md` per skill (its
-// frontmatter plus a `resources:` header) and one file per resource it needs.
-// This module turns that directory back into skill definitions — the body plus
-// a `## Skill resources` section — so a provider can register them as the one
-// `content` string DSH hands to the model.
+// frontmatter plus a `resources:` header) and, under `resources/references/`, one
+// file per reference it needs. This module turns that directory back into skill
+// definitions — the body plus a `## Skill resources` section — so a provider can
+// register them as the one `content` string DSH hands to the model.
 //
 // Nothing here looks at where a package was installed: the caller passes the
 // package root it already resolved, so a registry install, a packed tarball and
 // a `link:` checkout read the same way. A package without `resources/` ships no
 // skills (the board, for instance).
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 const HEADER = /^---\n([\s\S]*?)\n---\n?/;
 
@@ -33,10 +33,14 @@ function headerFields(text) {
 
 /** The resources a skill needs, as `[heading, section text]` in listed order. */
 function resourceSections(file, fields) {
-  const directory = file.slice(0, file.lastIndexOf('/'));
+  // `dirname`, not a search for `/`: the provider runs on Windows too, where a
+  // path built by `join` has no forward slash at all — slicing on `/` then
+  // resolved every resource against a mangled directory and the sections were
+  // dropped silently, leaving the skill body without its rules.
+  const directory = dirname(file);
   const sections = [];
   for (const name of (fields?.resources ?? '').split(/\s+/).filter(Boolean)) {
-    const path = join(directory, name);
+    const path = join(directory, 'references', name);
     if (!existsSync(path)) continue;
     const heading = name.includes('/') ? name : name.replace(/\.md$/, '');
     sections.push([heading, `### ${heading}\n\n${readFileSync(path, 'utf8').trim()}`]);
@@ -46,13 +50,13 @@ function resourceSections(file, fields) {
 
 /**
  * What a size-limited skill says in place of the sections it could not inline.
- * The names stay usable because every resource is also installed as `<name>.md`
- * beside the base directory, which the rendered body states.
+ * The names stay usable because every resource is also installed at
+ * `references/<name>.md` under the base directory, the path the body cites.
  */
 function omittedNote(headings) {
   return [
     'These resources were left out of this prompt to stay within its size limit; each is installed',
-    `beside this skill as \`<name>.md\` and should be read when the body names it: ${headings.join(', ')}.`,
+    `as \`references/<name>.md\` under this skill's base directory and should be read when the body names it: ${headings.join(', ')}.`,
   ].join(' ');
 }
 

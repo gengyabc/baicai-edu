@@ -76,5 +76,3 @@ Only an error item gets an `error_history` entry; ordinary work keeps only the r
 - Update `updated_at`.
 
 In the reply, first affirm the student's willingness to look back at the material, then give one core finding, the evidence, and the next step, and state the original and new names. For ordinary work, say the reading is recorded and hand the next teaching move to the current teaching turn; do not diagnose.
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

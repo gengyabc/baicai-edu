@@ -80,5 +80,3 @@ resources: chinese-writing-core.md chinese-assessment-rubric.md chinese-feedback
 ## 结束状态规则
 
 用阶段小结交回入口，保持会话可接续。
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

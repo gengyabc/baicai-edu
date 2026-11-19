@@ -4,7 +4,7 @@ All notable changes to `baicai-edu-math` are recorded here. This package has not
 been published before 0.1.0, so that release is the current state rather than an
 upgrade path.
 
-## [Unreleased]
+## [0.1.3] - 2026-11-19
 
 ### Skills
 
@@ -18,6 +18,9 @@ upgrade path.
 - `math-common` declares `resource-loading: on-demand`: the registered prompt is
   the contract table itself (43 KB to 3.5 KB), and a band reads only the
   contract its branch names from the installed base directory.
+- This bundle registers only its own skills when enabled. Missing other
+  subjects no longer prevent it from loading, and a disabled bundle does not
+  register its skills just because its package is present on disk.
 
 ## [0.1.0] - 2026-11-18
 

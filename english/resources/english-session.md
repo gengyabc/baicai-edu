@@ -70,5 +70,3 @@ When there is evidence of understanding or expression, summarize in one sentence
 Read `english-core` `references/english-segment-fields.md` and return the single `session_segment`: `subject: english`, `mode` inherited from the caller, `submode` as above, and `source` aligned to `target_context.source`. Method-skill evidence is merged into the same record, not logged as another turn. `diagnosis` uses only one main label; `current_levels` gives a partial update only when evidence is sufficient.
 
 Completion condition: required fields are complete, and understanding, expression, correction, or difficulty has evidence; optional fields without evidence are omitted.
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
-import { applyOverrides, install, planInstallation } from './install.mjs';
+import { applyOverrides, install, packLocal, planInstallation } from './install.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const subjectPackages = {
@@ -65,16 +65,74 @@ test('packed installs declare pnpm overrides so a tarball pulls its siblings fro
     assert.match(written, /overrides:/);
     assert.match(written, /"baicai-edu-learn": "file:\/tmp\/stage\/baicai-edu-learn-0\.1\.0\.tgz"/);
     assert.ok(written.includes('nodeLinker: hoisted'), 'existing settings stay intact');
-    // A reinstall replaces the block wholesale instead of appending to it.
+    // A reinstall updates only the named entries instead of appending to them.
     applyOverrides(join(home, 'profiles'), 'web', [
       { name: 'baicai-edu-learn', spec: '/tmp/stage2/baicai-edu-learn-0.1.0.tgz' },
     ]);
     const again = readFileSync(settings, 'utf8');
     assert.equal([...again.matchAll(/^overrides:$/gm)].length, 1);
-    assert.ok(!again.includes('/tmp/stage/'), 'a stale tarball path would break the next install');
+    assert.ok(!again.includes('/tmp/stage/baicai-edu-learn'), 'the replaced tarball must not persist');
+    assert.ok(again.includes('/tmp/stage/baicai-edu-math'), 'an untouched override must persist');
     assert.ok(again.includes('/tmp/stage2/baicai-edu-learn-0.1.0.tgz'));
     // The block stays: it names the artifacts a reinstall re-runs `pnpm add` with.
     writeFileSync(settings, original);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+for (const eol of ['\n', '\r\n']) {
+  test(`reinstall preserves unrelated pnpm overrides (${JSON.stringify(eol)})`, () => {
+    const home = mkdtempSync(join(tmpdir(), 'baicai-edu-home-'));
+    try {
+      const path = join(home, 'pnpm-workspace.yaml');
+      writeFileSync(path, ['overrides: # pinned by the user', '  "other>dep": 1.2.3',
+        '  baicai-edu-learn: old', '', 'nodeLinker: hoisted', ''].join(eol));
+      applyOverrides(home, '.', [{ name: 'baicai-edu-learn', spec: 'learn.tgz' }]);
+      assert.equal(readFileSync(path, 'utf8'), ['overrides: # pinned by the user', '  "other>dep": 1.2.3',
+        '  "baicai-edu-learn": "file:learn.tgz"', '', 'nodeLinker: hoisted', ''].join(eol));
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+}
+
+test('unsupported override forms fail without changing pnpm settings', () => {
+  const home = mkdtempSync(join(tmpdir(), 'baicai-edu-home-'));
+  try {
+    const path = join(home, 'pnpm-workspace.yaml');
+    const original = 'overrides: { other: 1.2.3 }\r\n';
+    writeFileSync(path, original);
+    assert.throws(() => applyOverrides(home, '.', [{ name: 'baicai-edu-learn', spec: 'learn.tgz' }]),
+      /Cannot safely edit overrides/);
+    assert.equal(readFileSync(path, 'utf8'), original);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('local pack uses the filename from npm JSON output', () => {
+  const stage = mkdtempSync(join(tmpdir(), 'baicai-edu-pack-'));
+  try {
+    const filename = 'baicai-edu-learn-0.1.2.tgz';
+    writeFileSync(join(stage, filename), '');
+    for (const output of [[{ filename }], { 'baicai-edu-learn': { filename } }]) {
+      const result = packLocal({ packages: ['learn'] }, { stage,
+        run: () => ({ status: 0, stdout: JSON.stringify(output, null, 2) }),
+      });
+      assert.equal(result.specs[0].spec, join(stage, filename));
+    }
+  } finally {
+    rmSync(stage, { recursive: true, force: true });
+  }
+});
+
+test('a profile without pnpm settings names the missing file instead of an ENOENT', () => {
+  const home = mkdtempSync(join(tmpdir(), 'baicai-edu-home-'));
+  try {
+    assert.throws(() => applyOverrides(join(home, 'profiles'), 'web', [
+      { name: 'baicai-edu-learn', spec: '/tmp/stage/baicai-edu-learn-0.1.0.tgz' },
+    ]), /pnpm-workspace\.yaml is missing/);
   } finally {
     rmSync(home, { recursive: true, force: true });
   }
@@ -170,7 +228,7 @@ test('installation uses one shell-free DSH call with the packed tarballs', () =>
         if (command === 'npm') {
           const stage = args[args.indexOf('--pack-destination') + 1];
           writeFileSync(join(stage, 'baicai-edu-math board-0.1.0.tgz'), '');
-          return { status: 0, stdout: 'baicai-edu-math board-0.1.0.tgz\n', stderr: '' };
+          return { status: 0, stdout: JSON.stringify({ filename: 'baicai-edu-math board-0.1.0.tgz' }), stderr: '' };
         }
         return { status: 0 };
       },
@@ -189,11 +247,168 @@ test('installation uses one shell-free DSH call with the packed tarballs', () =>
   }
 });
 
+// A profile this CLI cannot create (the desktop app owns its own) used to pass
+// silently and surface later as ENOENT on a profile path the user never typed.
+test('a profile that could not be created is reported with its reason', () => {
+  const fakeRoot = fixture({ learn: {} });
+  const home = mkdtempSync(join(tmpdir(), 'baicai-edu-home-'));
+  try {
+    const messages = [];
+    const status = install(['learn', '--profile', 'desktop'], {
+      root: fakeRoot.path,
+      dshHome: home,
+      log() {},
+      error: (value) => messages.push(value),
+      run: () => ({ status: 1, stdout: '', stderr: 'error: profile "desktop" is managed exclusively by the Electron application' }),
+    });
+    assert.equal(status, 1);
+    assert.match(messages.join('\n'), /could not create profile desktop/);
+    assert.match(messages.join('\n'), /managed exclusively by the Electron application/);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+    fakeRoot.cleanup();
+  }
+});
+
+test('install reuses existing education tarballs relative to the profile', () => {
+  const fakeRoot = fixture({ learn: {}, english: {} });
+  const home = mkdtempSync(join(tmpdir(), 'baicai-edu-home-'));
+  try {
+    const profile = join(home, 'profiles', 'web');
+    mkdirSync(profile, { recursive: true });
+    const previous = join(profile, 'baicai-edu-english-0.1.2.tgz');
+    writeFileSync(previous, '');
+    writeFileSync(join(profile, 'pnpm-workspace.yaml'), 'packages:\n  - .\n');
+    writeFileSync(join(profile, 'package.json'), JSON.stringify({
+      dependencies: { 'baicai-edu-english': 'file:./baicai-edu-english-0.1.2.tgz' },
+    }));
+    const status = install(['learn'], {
+      root: fakeRoot.path, dshHome: home, log() {},
+      run: (command, args) => {
+        if (command === 'dsh') {
+          assert.ok(args.includes(previous));
+          return { status: 0 };
+        }
+        assert.equal(args[1], './learn', 'the existing English tarball should not be repacked');
+        const filename = 'baicai-edu-learn-0.1.2.tgz';
+        writeFileSync(join(args[args.indexOf('--pack-destination') + 1], filename), '');
+        return { status: 0, stdout: JSON.stringify([{ filename }]) };
+      },
+    });
+    assert.equal(status, 0);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+    fakeRoot.cleanup();
+  }
+});
+
+test('install leaves unrelated profile-relative file dependencies to pnpm', () => {
+  const fakeRoot = fixture({ learn: {} });
+  const home = mkdtempSync(join(tmpdir(), 'baicai-edu-home-'));
+  try {
+    const profile = join(home, 'profiles', 'web');
+    mkdirSync(join(profile, 'local-addon'), { recursive: true });
+    writeFileSync(join(profile, 'pnpm-workspace.yaml'), 'packages:\n  - .\n');
+    writeFileSync(join(profile, 'package.json'), JSON.stringify({ dependencies: { addon: 'file:./local-addon' } }));
+    const calls = [];
+    const errors = [];
+    const status = install(['learn'], {
+      root: fakeRoot.path, dshHome: home, log() {}, error: message => errors.push(message),
+      run: (command, args) => {
+        if (command === 'npm') {
+          const filename = 'baicai-edu-learn-0.1.2.tgz';
+          writeFileSync(join(args[args.indexOf('--pack-destination') + 1], filename), '');
+          return { status: 0, stdout: JSON.stringify([{ filename }]) };
+        }
+        calls.push(args);
+        return { status: 0 };
+      },
+    });
+    assert.equal(status, 0, errors.join('\n'));
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].length, 5);
+    assert.doesNotMatch(readFileSync(join(profile, 'pnpm-workspace.yaml'), 'utf8'), /addon/);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+    fakeRoot.cleanup();
+  }
+});
+
+// The staging directory lives on the OS temp path, so it can be cleaned between
+// installs. Reinstalling is exactly the remedy a stale-path error would name, so
+// it has to work: the stale artifact is packed again when this checkout ships it.
+test('a cleaned staging directory is repacked instead of failing the reinstall', () => {
+  const calls = [];
+  const fakeRoot = fixture({ learn: {}, english: {} });
+  const home = mkdtempSync(join(tmpdir(), 'baicai-edu-home-'));
+  try {
+    const profileDir = join(home, 'profiles', 'web');
+    mkdirSync(profileDir, { recursive: true });
+    writeFileSync(join(profileDir, 'pnpm-workspace.yaml'), 'packages:\n  - .\n');
+    writeFileSync(join(profileDir, 'package.json'), JSON.stringify({
+      dependencies: { 'baicai-edu-english': 'file:/var/folders/gone/baicai-edu-english-0.1.2.tgz' },
+    }));
+    const status = install(['learn'], {
+      root: fakeRoot.path,
+      dshHome: home,
+      log() {},
+      error() {},
+      run: (command, args) => {
+        calls.push([command, args]);
+        if (command !== 'npm') return { status: 0 };
+        const directory = args[1].replace('./', '');
+        const name = `baicai-edu-${directory}`;
+        const stage = args[args.indexOf('--pack-destination') + 1];
+        writeFileSync(join(stage, `${name}-0.1.2.tgz`), '');
+        return { status: 0, stdout: JSON.stringify([{ filename: `${name}-0.1.2.tgz` }]), stderr: '' };
+      },
+    });
+    assert.equal(status, 0);
+    assert.deepEqual(calls.filter(([command]) => command === 'npm').map(([, args]) => args[1]),
+      ['./learn', './english'], 'the bundle with the cleaned tarball is packed again');
+    const [, dshArgs] = calls[calls.length - 1];
+    for (const name of ['learn', 'english']) {
+      assert.ok(dshArgs.some((arg) => arg.endsWith(`baicai-edu-${name}-0.1.2.tgz`)), dshArgs.join(' '));
+    }
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+    fakeRoot.cleanup();
+  }
+});
+
+test('an artifact this checkout cannot repack names the profile edit that unblocks it', () => {
+  const fakeRoot = fixture({ learn: {} });
+  const home = mkdtempSync(join(tmpdir(), 'baicai-edu-home-'));
+  try {
+    const profileDir = join(home, 'profiles', 'web');
+    mkdirSync(profileDir, { recursive: true });
+    writeFileSync(join(profileDir, 'pnpm-workspace.yaml'), 'packages:\n  - .\n');
+    writeFileSync(join(profileDir, 'package.json'), JSON.stringify({
+      dependencies: { 'baicai-edu-elsewhere': 'file:/var/folders/gone/baicai-edu-elsewhere-0.1.0.tgz' },
+    }));
+    const messages = [];
+    const status = install(['learn'], {
+      root: fakeRoot.path,
+      dshHome: home,
+      log() {},
+      error: (value) => messages.push(value),
+      run: () => assert.fail('must not execute'),
+    });
+    assert.equal(status, 1);
+    assert.match(messages.join('\n'), /baicai-edu-elsewhere/);
+    assert.match(messages.join('\n'), /dsh plugin --profile web remove baicai-edu-elsewhere/);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+    fakeRoot.cleanup();
+  }
+});
+
 test('failed command, missing DSH, and signal exits are never reported as success', () => {
   const home = mkdtempSync(join(tmpdir(), 'baicai-edu-home-'));
   try {
     mkdirSync(join(home, 'profiles', 'web'), { recursive: true });
     writeFileSync(join(home, 'profiles', 'web', 'pnpm-workspace.yaml'), 'packages:\n  - .\n');
+    writeFileSync(join(home, 'profiles', 'web', 'package.json'), '{}\n');
     for (const result of [{ status: 2 }, { status: null, signal: 'SIGTERM' }, { error: new Error('ENOENT') }]) {
       const messages = [];
       assert.notEqual(install(['math-primary-low'], { dshHome: home,
@@ -201,7 +416,7 @@ test('failed command, missing DSH, and signal exits are never reported as succes
           ? (() => {
             const stage = args[args.indexOf('--pack-destination') + 1];
             writeFileSync(join(stage, 'x-0.1.0.tgz'), '');
-            return { status: 0, stdout: 'x-0.1.0.tgz\n', stderr: '' };
+            return { status: 0, stdout: JSON.stringify([{ filename: 'x-0.1.0.tgz' }]), stderr: '' };
           })()
           : result),
         log: value => messages.push(value), error: value => messages.push(value) }), 0,
@@ -275,13 +490,12 @@ test('dependency declarations are the only graph and patch registrations stay un
     }
     const patch = readFileSync(join(root, key, manifest.dsh.bundle.patch), 'utf8');
     for (const [, id] of patch.matchAll(/- id: ([\w-]+)/g)) {
-      // All skill packages share the edu-skills entry on purpose (DSH composes
-      // them into one); every other id must appear once.
-      if (id === 'edu-skills') continue;
       assert.ok(!seenIds.has(id), `duplicate patch registration: ${id}`);
       seenIds.add(id);
     }
   }
-  assert.deepEqual([...seenIds].sort(), ['edu-math-board'],
-    'every skill package activates the shared edu-skills entry; the board adds its own row');
+  assert.deepEqual([...seenIds].sort(), [
+    'edu-math-board', 'edu-skills', 'edu-skills-chinese-reading', 'edu-skills-english',
+    'edu-skills-math', 'edu-skills-math-primary-high', 'edu-skills-math-primary-low',
+  ], 'each bundle owns a distinct activation row');
 });

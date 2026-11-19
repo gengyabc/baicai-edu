@@ -73,5 +73,3 @@ resource-loading: on-demand
 - `strategy_summary` 区分独立完成与提示后表现；`strengths`、`difficulties`、`diagnosis` 和技能追踪均以已发生的学生表现为依据。尚未作答、只有 AI 示范或只有出题时，相关表现字段留空；无明确主标签时省略 `diagnosis`。
 - `next_step_candidate` 是建议，`feynman_handoff_recommended` 是入口的候选提示，均不代表学生已选择或已完成。下一步流程选择由入口用 `ask_user_question` 呈现。
 - 需确认或撤销技能时读取 `learn-core` 的 `references/feynman-skill-whitelist.md`；诊断标签及与技能错误的分工只由本 skill 的 `references/chinese-error-labels.md` 定义。
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

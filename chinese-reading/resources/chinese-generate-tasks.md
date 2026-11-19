@@ -48,5 +48,3 @@ resources: chinese-task-generation.md chinese-reading-core.md chinese-writing-co
 ## 结束状态规则
 
 一句话说明这组题练什么、怎么算过关，交回入口用 `ask_user_question` 提供「现在做」「换一组」「讨论怎么开始」；选择帮助仍按共享引导规则推进，不直接揭示答案。
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

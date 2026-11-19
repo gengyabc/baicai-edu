@@ -24,5 +24,3 @@ Reuse teaching per `references/teaching-resolver.md` in `learn-data`; Route And 
 ## Continue
 
 The base menu for ordinary learning keeps `ui.stage.continue`, `ui.stage.feynman`, and `ui.stage.end`, and adds `ui.stage.switch_content`. Continue hands off to the current subject to advance; Feynman loads `learn-feynman`; End hands off to lifecycle finalize; Switch content loads `learn-recommend`, which only recommends and does not switch the task. Resolve all labels through the active UI locale (`learn-data` `references/ui-locale.md`). Merge and display the `stage_options` returned by the subject per `references/next-step.md` in `learn-data`; additional actions go back to the subject that declared them.
-
-This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

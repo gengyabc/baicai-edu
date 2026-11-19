@@ -2,26 +2,25 @@
 
 ## 两种安装来源
 
-- **registry 发布**：每个包声明发布版本范围（如 `"baicai-edu-learn": "^0.1.1"`），不声明 `"private": true`，并声明 `engines.dsh: ">=0.2.2-rc.1 <0.3.0"`——DSH 不满足这个范围时会直接拒绝安装与激活，不会装上一个跑不起来的插件。接收方只需装 **DSH**，用自己的 dsh 命令按包名安装；不需要你的 checkout、profile 或任何本机路径。**当前状态**：七个 `baicai-edu-*` 包已发布到 npm（`0.1.2`，`math-board` 为 `0.6.0`、`chinese-reading` 为 `0.1.0`），按包名 `add` 即装齐依赖闭包；发布与发布后验收见[发布与技能渲染](publishing.md)。
+- **registry 发布**：每个包声明发布版本范围（如 `"baicai-edu-learn": "^0.1.3"`），不声明 `"private": true`，并声明 `engines.dsh: ">=0.2.2-rc.1 <0.3.0"`——DSH 不满足这个范围时会直接拒绝安装与激活，不会装上一个跑不起来的插件。接收方只需装 **DSH**，用自己的 dsh 命令按包名安装；不需要你的 checkout、profile 或任何本机路径。**当前状态**：七个 `baicai-edu-*` 包已发布到 npm（技能包 `0.1.3`、`chinese-reading` 为 `0.1.1`、`math-board` 为 `0.6.1`）；依赖由 pnpm 装入，启用则要在命令里逐个列出（见下节）。发布与发布后验收见[发布与技能渲染](publishing.md)。
 - **本地 checkout**：`scripts/install.mjs` 按 `package.json` 的必需依赖遍历同仓库 bundle，把依赖闭包**逐个 `npm pack` 成 tarball**，再把这批 tarball 一次交给 `dsh` 安装。本地与 registry 因而得到同一种 `node_modules` 布局：闭包里每个包都是 profile 的直接依赖，也正是单份技能 provider 能解析全部包的前提。**不要再用 `link:` 装本地 checkout**：pnpm 不会安装被链接包的依赖，profile 只会得到闭包的一部分。技能仍从安装处读取，本地改动重装一次即生效；宿主代码修改按 DSH 重载或重启诊断生效。
 
 ## 接收方怎么装（DSH 已装好）
 
-一个学科一条命令，**只写学科包名**：
+每条命令显式安装并选择该学科的必需 bundle：
 
 ```bash
-dsh plugin --profile web add baicai-edu-math-primary-low     # 低年级数学
-dsh plugin --profile web add baicai-edu-math-primary-high    # 高年级数学（画板可选，见下）
-dsh plugin --profile web add baicai-edu-chinese-reading      # 语文
-dsh plugin --profile web add baicai-edu-english              # 英语
+dsh plugin --profile web add baicai-edu-learn baicai-edu-math baicai-edu-math-board baicai-edu-math-primary-low
+dsh plugin --profile web add baicai-edu-learn baicai-edu-math baicai-edu-math-primary-high
+dsh plugin --profile web add baicai-edu-learn baicai-edu-chinese-reading
+dsh plugin --profile web add baicai-edu-learn baicai-edu-english
 ```
 
-`dsh plugin` 是 pnpm 的透传入口（`dsh plugin --help`：「pnpm arguments, forwarded verbatim」）。装完一个包后，DSH 的 `reconcile` 会把**本次新增**且声明了 `dsh.bundle` 的依赖一并写进 `dsh.profile.bundles`：它按依赖名遍历当前 `dependencies`，跳过安装前就存在的（`beforeDeps`），把新出现的 bundle 追加进选择。因此 `add baicai-edu-math-primary-low` 一条命令就会启用 `baicai-edu-learn`、`baicai-edu-math`、`baicai-edu-math-board` 和它自己，**不需要把依赖再列一遍**。
+pnpm 下载间接依赖不等于 DSH 启用对应 bundle。Electron 桌面端请在插件管理中安装并启用同一组包。
 
-- 按需加载：只装哪个学科，就只有那个学科的技能注册；共享的 `baicai-edu-learn` 随依赖装入并启用，因为学科包需要它的生命周期与数据协议。
+- 按需加载：只装哪个学科，就只有那个学科的技能注册；学科包需要共享的 `baicai-edu-learn` 提供生命周期与数据协议，因此需要同时启用。
 - 高年级数学不依赖画板，要画板就**另外**装一次：`dsh plugin --profile web add baicai-edu-math-board`。低年级数学已在依赖里声明画板，会自动带上。
 - 已手动禁用的 bundle 不会被重装强行启用；要恢复它，先在 DSH 插件管理里明确启用。
-- 这条自动启用行为来自 DSH 0.2.2-rc.1 的 `dsh-plugin-manager`（`reconcile`），属于上游行为而非本仓库保证；换 DSH 版本后请以实际安装结果为准。
 
 装完按 DSH 的提示重启或刷新 Web 页面即可，**不需要再配置模型**：插件不注册、不改写任何模型 provider，会话继续使用接收方 DSH 里已经选好的模型与凭据。插件本身也不发网络请求、不带 API key。要求 DSH 的模型路由已能在接收方机器上正常对话（这与插件无关）。
 
@@ -31,7 +30,7 @@ dsh plugin --profile web add baicai-edu-english              # 英语
 node scripts/install.mjs all --profile web --from registry --dry-run
 ```
 
-（该入口仅在本仓库内可用，接收方直接执行上面的 `dsh plugin ... add`。）
+（该入口仅在本仓库内可用，接收方直接执行上面对应的 `dsh plugin ... add`。）
 
 ## 本地 checkout 安装
 
@@ -65,7 +64,7 @@ node scripts/install.mjs math-primary-low --profile web --dry-run
 
 默认 profile 是 `web`。脚本根据自身位置解析仓库，不依赖固定 checkout 路径；从其他工作目录调用时传入脚本的实际路径。安装完成后按 DSH 输出决定是否重启，再刷新原有 Web 页面；脚本不会启动替代服务器。
 
-**本地安装为什么先 pack**：`pnpm add link:<目录>` 只链接该目录本身、不装它的 `dependencies`，profile 里只有部分包，单份 provider 就找不到其余包。安装器因此走「pack 闭包 → 一次 `dsh plugin add <tarballs>`」，并在 profile 的 `pnpm-workspace.yaml` 写 `overrides`（DSH 没有对应命令，由安装器写入；重装时整块替换），让某个 tarball 声明的兄弟依赖也解析到本地 tarball，而不是 registry 上同名已发布版本（`baicai-edu-*` 已发布，本地调试仍需这层 overrides 才吃得到未发布的改动）。每次重装都重新 pack 闭包，并把之前装过的其它学科包按仍留在 profile 里的 tarball 路径一并重新 add，因此逐个安装学科不会互相清掉。pack 产物放在系统临时目录，重装会生成新的目录并替换 profile 里的引用。
+**本地安装为什么先 pack**：`pnpm add link:<目录>` 只链接该目录本身、不装它的 `dependencies`，profile 里只有部分包，单份 provider 就找不到其余包。安装器因此走「pack 闭包 → 一次 `dsh plugin add <tarballs>`」，并在 profile 的 `pnpm-workspace.yaml` 写 `overrides`（DSH 没有对应命令，由安装器写入；重装只更新本次使用的教育包规则，保留其他规则），让某个 tarball 声明的兄弟依赖也解析到本地 tarball，而不是 registry 上同名已发布版本（`baicai-edu-*` 已发布，本地调试仍需这层 overrides 才吃得到未发布的改动）。每次重装都重新 pack 闭包，并把之前装过的其它学科包按仍留在 profile 里的 tarball 路径一并重新 add，因此逐个安装学科不会互相清掉。pack 产物放在系统临时目录，重装会生成新的目录并替换 profile 里的引用。
 
 ## 依赖关系与唯一来源
 
@@ -91,11 +90,11 @@ node scripts/install.mjs math-primary-low --profile web
 dsh plugin --profile web add <临时目录>/baicai-edu-learn-*.tgz <临时目录>/baicai-edu-math-*.tgz <临时目录>/baicai-edu-math-board-*.tgz <临时目录>/baicai-edu-math-primary-low-*.tgz
 ```
 
-每个 bundle 成为 profile 的顶层依赖，由 DSH 原生处理安装与启用。技能由 `learn` 携带的唯一 provider 从各包的 `resources/` 注册；学科 patch 不复制共享规则，不重复插入画板，六个技能包激活的是同一个 `edu-skills` 条目。`all` 只是三个已交付学科（数学两个年级段包）的快捷选择，不扫描实验目录为新学科。两个数学包互不依赖：科目 id 都是 `math`，使用唯一技能名 `math-low-*` / `math-high-*`，由[教学解析](../learn/skills/learn-data/references/teaching-resolver.md)统一选择：已知 1–3 年级优先 low、4–6 年级优先 high，缺年级默认 low；优先级不是内容门槛，low 也可教高阶内容，已安装但未被选中的包不影响正在进行的任务。共享数学契约由 `baicai-edu-math` 提供，闭包中只出现一次；它不含 band 的 core / session 教学技能，不会被解析成第三个数学实现。
+每个 bundle 成为 profile 的顶层依赖，由 DSH 原生处理安装与启用。技能由 `learn` 携带的唯一 provider 从各包的 `resources/` 注册；学科 patch 不复制共享规则，不重复插入画板，六个技能包各有自己的启用条目，复用同一份 provider 实现。`all` 只是三个已交付学科（数学两个年级段包）的快捷选择，不扫描实验目录为新学科。两个数学包互不依赖：科目 id 都是 `math`，使用唯一技能名 `math-low-*` / `math-high-*`，由[教学解析](../learn/skills/learn-data/references/teaching-resolver.md)统一选择：已知 1–3 年级优先 low、4–6 年级优先 high，缺年级默认 low；优先级不是内容门槛，low 也可教高阶内容，已安装但未被选中的包不影响正在进行的任务。共享数学契约由 `baicai-edu-math` 提供，闭包中只出现一次；它不含 band 的 core / session 教学技能，不会被解析成第三个数学实现。
 
-## registry 安装为什么只写学科包
+## 安装与启用是两件事
 
-`dsh plugin add <包名>` 由 pnpm 真实安装该包**及其 `dependencies`**，随后 DSH 的 `reconcile` 把本次新增、且声明了 `dsh.bundle` 的依赖补进 `dsh.profile.bundles`。所以 registry 装法只写学科包名即可，依赖不必重列。
+`dsh plugin add <包名>` 也会下载该包的依赖，但仅下载的依赖不一定进入 `dsh.profile.bundles`。使用仓库脚本会自动列出必需 bundle；直接调用 DSH 时请按上面的示例显式列出。
 
 本地安装走同一个 `dsh plugin ... add`，只是参数是安装器 pack 出来的 tarball，因此依赖同样整份装在 profile 顶层。`link:` 与 `file:<目录>` 都不要用：pnpm 不安装被链接/目录依赖的间接依赖，闭包不会展开。
 
@@ -106,10 +105,13 @@ dsh plugin --profile web add <临时目录>/baicai-edu-learn-*.tgz <临时目录
 ## 已有 profile、重复安装与失败
 
 - 已经安装了学科但缺依赖：用统一入口重装该学科，会补齐缺失的顶层依赖。不会移除其他学科、用户配置或学生数据。
-- 多学科和重复输入先去重；再次安装任意学科都会把之前装过的包按 profile 里登记的 tarball 路径一并重新 add，所以逐学科安装不会互相清掉，共享包、画板仍各只有一份。
+- 多学科和重复输入先去重；再次安装任意学科会一并重新 add 已登记的教育包 tarball。其他插件的本地依赖由 pnpm 原样处理，不会被安装器接管。
+- **未安装或未启用的学科不会注册技能**：每个启用条目只读取自己的技能资源，缺少其他学科不影响它启动。更新时请一起更新已经安装的技能包，避免旧版共享激活条目继续加载其他学科。
+- **app 管理的 profile 不能从 CLI 装**：Electron 桌面端自己管理 `desktop` 这类 profile，`dsh plugin --profile desktop add` 会被拒绝（`profile "desktop" is managed exclusively by the Electron application`）。脚本以前忽略这个退出码，最后只剩一句指向 `profiles/desktop/package.json` 的 ENOENT；现在直接报出 DSH 给的原因。这种 profile 请在桌面端的插件管理里安装。
 - **尊重手动禁用**：当前 DSH CLI 不会因重装自动启用此前已安装但被禁用的 bundle。脚本不绕过该行为；要恢复它，先在 DSH 插件管理中明确启用对应 bundle。脚本返回零只表示 DSH 命令完成，不能当成所有插件均已激活或界面已目视验证。
 - 依赖不存在、包名不匹配、循环、非本地依赖或参数错误会在调用 DSH 前失败。执行失败会返回非零，保留原始 DSH 输出；不声称事务回滚，修复具体错误后重试。
-- pack 产物在系统临时目录，profile 的依赖与 `pnpm-workspace.yaml` 的 `overrides` 指向那里；重装会重新 pack 并改写这些引用。临时目录被系统清理后，先重装一次即可，不需要改 profile。
+- pack 产物在系统临时目录，profile 的依赖与 `pnpm-workspace.yaml` 的 `overrides` 指向那里；重装会重新 pack 并改写这些引用。临时目录被系统清理后，直接重装一次即可：指向已消失 tarball 的依赖会从本 checkout 重新 pack，不需要改 profile。只有本 checkout 也没有那个包时才会失败，并给出明确的下一步（`dsh plugin --profile <名字> remove <包名>` 后重装），而不是让人「再装一次」——那一步本来就跑在同一个死路上。
+- `npm pack` 使用紧挨产物的临时缓存（调用方设置过 `NPM_CONFIG_CACHE` 时以它为准），并从 JSON 输出读取 tarball 文件名。`pnpm-workspace.yaml` 的 `overrides` 使用块映射；安装器保留其它规则和 LF/CRLF 换行。如果现有写法无法安全合并，脚本报错且不改写该文件。
 - 安装不负责构建画板，画板源码修改后仍须执行它的 build；技能（`skills/` 与 `references/`）修改后先跑 `node scripts/build-resources.mjs` 再重装，否则装的是旧的 `resources/`（`publish.mjs check` 与契约测试会拦下未重建的情况）。
 
 ## 验证

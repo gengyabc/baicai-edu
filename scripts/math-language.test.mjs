@@ -68,7 +68,7 @@ test('math skill source filenames remain English and rendered language contract 
       assert.match(entry, /^[A-Za-z0-9_./-]+$/, `${bundle}: ${entry}`)
     }
   }
-  assert.equal(text('math-common/resources/math-language-contract.md'), contract)
+  assert.equal(text('math-common/resources/references/math-language-contract.md'), contract)
   for (const [bundle, skill] of bands) {
     assert.match(text(`${bundle}/resources/${skill}.md`), /references\/math-language-contract\.md/)
   }
