@@ -207,6 +207,58 @@ export function applyOverrides(profilesRoot, profile, specs) {
   writeFileSync(path, mergeOverrides(settings, specs, path));
 }
 
+/**
+ * Drop the tarball overrides a previous checkout install declared.
+ *
+ * `--from registry` asks for the published packages, but a `file:` override wins
+ * over the requested range: pnpm answers "Already up to date" and the profile
+ * keeps the old copies — including one built before the fix that made the
+ * reinstall necessary. DSH has no command for overrides, so the script that
+ * writes them clears them when the install stops pointing at checkouts.
+ * @returns whether the file changed.
+ */
+export function clearOverrides(profilesRoot, profile) {
+  const path = join(profilesRoot, profile, 'pnpm-workspace.yaml');
+  let settings;
+  try {
+    settings = readFileSync(path, 'utf8');
+  } catch (error) {
+    if (error.code === 'ENOENT') return false;
+    throw error;
+  }
+  const stripped = stripTarballOverrides(settings, path);
+  if (stripped === settings) return false;
+  writeFileSync(path, stripped);
+  return true;
+}
+
+/** Remove only the `file:` rows of the overrides block, keeping everything else. */
+function stripTarballOverrides(settings, path) {
+  const eol = settings.match(/\r?\n/)?.[0] ?? '\n';
+  const bom = settings.startsWith('\uFEFF') ? '\uFEFF' : '';
+  const lines = settings.slice(bom.length).split(/\r?\n/);
+  const headers = lines.flatMap((line, i) => /^(?:overrides|"overrides"|'overrides')\s*:/.test(line) ? [i] : []);
+  if (headers.length === 0) return settings;
+  const unsupported = () => new Error(`Cannot safely edit overrides in ${path}; use one top-level block mapping`);
+  if (headers.length > 1) throw unsupported();
+  const [header] = headers;
+  if (!/^(?:overrides|"overrides"|'overrides')\s*:\s*(?:#.*)?$/.test(lines[header])) throw unsupported();
+  const kept = [];
+  for (let i = header + 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^\s*(?:#.*)?$/.test(line)) { kept.push(i); continue; }
+    if (/^\S/.test(line)) break;
+    const row = /^(\s+)("(?:[^"\\]|\\.)*"|'(?:[^']|'')*'|[^'"\s][^:]*?):\s*(\S.*)$/.exec(line);
+    if (!row) throw unsupported();
+    kept.push(i);
+    // A `file:` value is a tarball this script wrote; anything else is the user's.
+    if (!/^["']?file:/.test(row[3].trim())) continue;
+    lines[i] = null;
+  }
+  if (!lines.some(line => line === null)) return settings;
+  return bom + lines.filter(line => line !== null).join(eol);
+}
+
 /** Edit pnpm's block mapping without reserializing unrelated settings. */
 function mergeOverrides(settings, specs, path) {
   const eol = settings.match(/\r?\n/)?.[0] ?? '\n';
@@ -339,18 +391,22 @@ export function install(argv, { root = repositoryRoot, run = spawnSync, log = co
       return 0;
     }
     log(`Bundles (dependencies first): ${plan.packages.join(' -> ')}`);
+    const profilesRoot = join(dshHome ?? defaultDshHome(), 'profiles');
     if (plan.from === 'registry') {
       const args = ['plugin', '--profile', plan.profile, 'add', ...plan.names];
       // JSON quoting is for readable previews only; execution never uses a shell.
       log(['dsh', ...args].map(arg => JSON.stringify(arg)).join(' '));
       if (plan.dryRun) return 0;
+      // A leftover `file:` override would satisfy pnpm first and silently keep
+      // the checkout copies, so the request has to mean the registry.
+      const cleared = clearOverrides(profilesRoot, plan.profile);
+      if (cleared) log(`Dropped local tarball overrides so the published versions resolve`);
       return runDsh(args, run, error, log);
     }
     if (plan.dryRun) {
       log(`npm pack ${plan.packages.join(', ')} -> dsh plugin --profile ${plan.profile} add <packed tarballs>`);
       return 0;
     }
-    const profilesRoot = join(dshHome ?? defaultDshHome(), 'profiles');
     initializeProfile(profilesRoot, plan.profile, run);
     const { specs } = artifacts(plan, profilesRoot, plan.profile, { root, run });
     applyOverrides(profilesRoot, plan.profile, specs);

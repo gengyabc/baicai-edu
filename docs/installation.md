@@ -24,7 +24,7 @@ pnpm 下载间接依赖不等于 DSH 启用对应 bundle。Electron 桌面端请
 
 装完按 DSH 的提示重启或刷新 Web 页面即可，**不需要再配置模型**：插件不注册、不改写任何模型 provider，会话继续使用接收方 DSH 里已经选好的模型与凭据。插件本身也不发网络请求、不带 API key。要求 DSH 的模型路由已能在接收方机器上正常对话（这与插件无关）。
 
-本仓库的安装器在两种模式下都显式展开必需 bundle；`--from registry` 按发布包名安装（预览不修改 profile）：
+本仓库的安装器在两种模式下都显式展开必需 bundle；`--from registry` 按发布包名安装（预览不修改 profile），并会先清掉上一次本地 checkout 安装留下的 `file:` overrides —— 那些覆盖优先于版本范围，pnpm 会让旧 tarball 继续「已是最新」，修复了 bug 却仍装着旧副本就是这么发生的：
 
 ```bash
 node scripts/install.mjs all --profile web --from registry --dry-run

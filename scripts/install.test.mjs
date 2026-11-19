@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
-import { applyOverrides, install, packLocal, planInstallation } from './install.mjs';
+import { applyOverrides, clearOverrides, install, packLocal, planInstallation } from './install.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const subjectPackages = {
@@ -76,6 +76,44 @@ test('packed installs declare pnpm overrides so a tarball pulls its siblings fro
     assert.ok(again.includes('/tmp/stage2/baicai-edu-learn-0.1.0.tgz'));
     // The block stays: it names the artifacts a reinstall re-runs `pnpm add` with.
     writeFileSync(settings, original);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('a registry install drops the tarball overrides a checkout install left behind', () => {
+  // `file:` wins over the requested range, so pnpm would answer "Already up to
+  // date" and keep the checkout copies — the exact failure that survives a
+  // correct fix, because the stale copy is what the profile reports.
+  const home = mkdtempSync(join(tmpdir(), 'baicai-edu-home-'));
+  try {
+    const profileDir = join(home, 'profiles', 'web');
+    mkdirSync(profileDir, { recursive: true });
+    const settings = join(profileDir, 'pnpm-workspace.yaml');
+    writeFileSync(settings, [
+      'packages:', '  - .', '', 'nodeLinker: hoisted', '', 'overrides:',
+      '  "baicai-edu-learn": "file:/tmp/stage/baicai-edu-learn-0.1.4.tgz"',
+      "  'baicai-edu-math': 'file:/tmp/stage/baicai-edu-math-0.1.4.tgz'",
+      '  "other>dep": 1.2.3', '', 'minimumReleaseAgeExclude:', '  - dshmarket@1.73.21', ''].join('\n'));
+    assert.equal(clearOverrides(join(home, 'profiles'), 'web'), true);
+    assert.equal(readFileSync(settings, 'utf8'), [
+      'packages:', '  - .', '', 'nodeLinker: hoisted', '', 'overrides:',
+      '  "other>dep": 1.2.3', '', 'minimumReleaseAgeExclude:', '  - dshmarket@1.73.21', ''].join('\n'));
+    // Nothing left to strip, and a profile without the file, are both no-ops.
+    assert.equal(clearOverrides(join(home, 'profiles'), 'web'), false);
+    assert.equal(clearOverrides(join(home, 'profiles'), 'absent'), false);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('an unsupported overrides block stops a registry install instead of guessing', () => {
+  const home = mkdtempSync(join(tmpdir(), 'baicai-edu-home-'));
+  try {
+    const path = join(home, 'pnpm-workspace.yaml');
+    writeFileSync(path, 'overrides: {baicai-edu-learn: file:a.tgz}\n');
+    assert.throws(() => clearOverrides(home, '.'), /Cannot safely edit overrides/);
+    assert.equal(readFileSync(path, 'utf8'), 'overrides: {baicai-edu-learn: file:a.tgz}\n');
   } finally {
     rmSync(home, { recursive: true, force: true });
   }
