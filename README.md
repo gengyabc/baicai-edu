@@ -84,7 +84,7 @@ dsh plugin --profile web add baicai-edu-learn baicai-edu-chinese-reading
 dsh plugin --profile web add baicai-edu-learn baicai-edu-english
 ```
 
-List required bundles explicitly: pnpm can download a dependency without DSH enabling its bundle. For Electron desktop, install and enable the corresponding packages in plugin management. The checkout installer below selects dependencies for you. All seven packages are on npm: skill packages `0.1.3`, `chinese-reading` `0.1.1`, `math-board` `0.6.1`.
+List required bundles explicitly: pnpm can download a dependency without DSH enabling its bundle. For Electron desktop, install and enable the corresponding packages in plugin management. The checkout installer below selects dependencies for you. All seven packages are on npm: skill packages `0.1.4`, `chinese-reading` `0.1.2`, `math-board` `0.6.2`.
 
 Local checkout in this repository uses the unified entry (it packs the dependency closure into tarballs and installs it the same one-pass way):
 
@@ -262,7 +262,7 @@ dsh plugin --profile web add baicai-edu-learn baicai-edu-chinese-reading
 dsh plugin --profile web add baicai-edu-learn baicai-edu-english
 ```
 
-请显式列出必需 bundle：pnpm 下载依赖不等于 DSH 启用它。Electron 桌面端请在插件管理中安装并启用对应各包。下方的 checkout 安装器会自动列出依赖。七个包均已发布到 npm：技能包 `0.1.3`、`chinese-reading` `0.1.1`、`math-board` `0.6.1`。
+请显式列出必需 bundle：pnpm 下载依赖不等于 DSH 启用它。Electron 桌面端请在插件管理中安装并启用对应各包。下方的 checkout 安装器会自动列出依赖。七个包均已发布到 npm：技能包 `0.1.4`、`chinese-reading` `0.1.2`、`math-board` `0.6.2`。
 
 本仓库本地 checkout 用统一入口（它把依赖闭包 pack 成 tarball，按同样的一次性方式安装）：
 

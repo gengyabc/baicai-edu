@@ -54,8 +54,8 @@ provider 由 `learn` 携带（`learn/skill-provider.mjs` + `learn/lib/skill-reso
 
 ## 每次发版的清单
 
-1. **版本**：改过哪个包就升哪个包的 `version`；`0.x` 阶段 `^0.1.0` 只接受 `0.1.x`，所以 `learn` 或 `math-common` 一旦跳 `0.2.0`，六个包里的依赖范围要同时改，否则接收方装不上。`math-board` 现在领跑到 `0.6.1`，`math-primary-low` 的 `^0.6.1` 跟着它走（范围下限已抬到新版本，理由见下一小点）。
-   - **依赖范围的下限要跟着新版本走，不只是跨 minor 时才改。** `^0.1.0` 在语义上接受 `0.1.1`，但「接受」不等于「解析到」：pnpm 的 `minimumReleaseAge` 会把刚发布的 `0.1.1` 判定为太新，实际装出来是 `0.1.0`（2026-11-19 真实发生过：只装学科包 `baicai-edu-math-primary-low@0.1.1`，闭包里 `learn`/`math` 全是 `0.1.0`，新加的 locale 目录根本没被加载）。凡依赖方与被依赖方同批发布，依赖范围要写成新版本的下限（如 `^0.1.1`），因为 `0.x` 的 caret 拒绝 `0.1.0`，解析器没有回退空间。改完记得同步 `scripts/skill-contracts.test.mjs` 里的范围断言。`math-board` 0.6.1 同理：`math-primary-low` 已从 `^0.6.0` 抬到 `^0.6.1`，否则装出来的可能仍是带教师演示引导的 0.6.0。
+1. **版本**：改过哪个包就升哪个包的 `version`；`0.x` 阶段 `^0.1.0` 只接受 `0.1.x`，所以 `learn` 或 `math-common` 一旦跳 `0.2.0`，六个包里的依赖范围要同时改，否则接收方装不上。`math-board` 现在领跑到 `0.6.2`，`math-primary-low` 的 `^0.6.2` 跟着它走（范围下限已抬到新版本，理由见下一小点）。
+   - **依赖范围的下限要跟着新版本走，不只是跨 minor 时才改。** `^0.1.0` 在语义上接受 `0.1.1`，但「接受」不等于「解析到」：pnpm 的 `minimumReleaseAge` 会把刚发布的 `0.1.1` 判定为太新，实际装出来是 `0.1.0`（2026-11-19 真实发生过：只装学科包 `baicai-edu-math-primary-low@0.1.1`，闭包里 `learn`/`math` 全是 `0.1.0`，新加的 locale 目录根本没被加载）。凡依赖方与被依赖方同批发布，依赖范围要写成新版本的下限（如 `^0.1.1`），因为 `0.x` 的 caret 拒绝 `0.1.0`，解析器没有回退空间。改完记得同步 `scripts/skill-contracts.test.mjs` 里的范围断言。同月 0.6.0 → 0.6.2 同理：`math-primary-low` 的范围下限始终跟着 `math-board` 走（现已 `^0.6.2`），否则装出来的可能仍是旧板。
 2. **文档**：README 里新增的普通过程说明放进 `<包>/docs/`（双语成对），并确认 `docs` 在该包 `files` 里——`check` 会因为链接目标没打进 tarball 直接报错。跨包与仓库根文档只能写绝对 URL（`https://github.com/gengyabc/baicai-edu/blob/main/…`），`../` 在 npm 页面上没有任何父目录。
 3. **变更记录**：七个包都维护 `CHANGELOG.md`，并在各自 `files` 里列出，随 tarball 一起发布；首次发布（0.1.0 / `math-board` 0.6.0）已记录，之后每次升级都要追加一节。未发布的工作写在 `Unreleased` 下，发版时再落到版本号标题。
 4. **DSH 兼容范围**：七个包都声明 `engines.dsh: ">=0.2.2-rc.1 <0.3.0"`，未满足时 DSH 会拒绝安装与激活（机制见 `dsh-app-boot` 的 `evaluatePluginCompatibility`，比较用 `semver.satisfies(..., { includePrerelease: true })`，所以 rc 版本正常参与区间判断）。下限是**本仓库集成测试实际启动过的版本**，不是推测版本；上调或放宽前必须在那个 DSH 版本上真装一次。0.3.0 被挡在外面是故意的：它一旦破坏 API，未验证的安装会在运行时坏掉，而静默坏掉比装不上更难排查。
@@ -68,7 +68,7 @@ provider 由 `learn` 携带（`learn/skill-provider.mjs` + `learn/lib/skill-reso
 
 - 用隔离 `DSH_HOME` 真实安装[低年级数学及其必需 bundle](installation.md#接收方怎么装dsh-已装好)，然后确认实际技能目录有低年级技能、不含未安装的高年级技能。禁用低年级 bundle（不卸载），确认其技能消失、共享技能仍在；重新启用后再确认恢复。`--dump-config` 只证明配置组合，不证明技能已注册。
 - **闭包里每个包的版本都要看一眼，不只看目录里有没有它。** `node_modules` 出现 `baicai-edu-learn` 只证明闭包补齐了，不证明它是新版本；上面那次事故里目录都在、版本全是旧的。逐包 `node -p "require('./node_modules/<包>/package.json').version"`，确认共享包不低于本轮依赖范围的下限。刚发布的版本可能还在 pnpm 的 release-age 窗口内而解析成前一个 patch，这对同一 minor 的功能没有影响，但下限不符就是真的装错了。
-- 接收方侧的前置条件只有 DSH 与可用模型路由；插件的 `baicai-edu-learn: ^0.1.3` 等范围由 npm 自动满足。
+- 接收方侧的前置条件只有 DSH 与可用模型路由；插件的 `baicai-edu-learn: ^0.1.4` 等范围由 npm 自动满足。
 - 真实界面（工具栏、卡片、画布交互）仍需在 Web 页面上验收；命令返回零只表示 DSH 命令完成。
 
 ## 验证

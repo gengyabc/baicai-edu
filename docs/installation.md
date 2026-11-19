@@ -2,7 +2,7 @@
 
 ## 两种安装来源
 
-- **registry 发布**：每个包声明发布版本范围（如 `"baicai-edu-learn": "^0.1.3"`），不声明 `"private": true`，并声明 `engines.dsh: ">=0.2.2-rc.1 <0.3.0"`——DSH 不满足这个范围时会直接拒绝安装与激活，不会装上一个跑不起来的插件。接收方只需装 **DSH**，用自己的 dsh 命令按包名安装；不需要你的 checkout、profile 或任何本机路径。**当前状态**：七个 `baicai-edu-*` 包已发布到 npm（技能包 `0.1.3`、`chinese-reading` 为 `0.1.1`、`math-board` 为 `0.6.1`）；依赖由 pnpm 装入，启用则要在命令里逐个列出（见下节）。发布与发布后验收见[发布与技能渲染](publishing.md)。
+- **registry 发布**：每个包声明发布版本范围（如 `"baicai-edu-learn": "^0.1.4"`），不声明 `"private": true`，并声明 `engines.dsh: ">=0.2.2-rc.1 <0.3.0"`——DSH 不满足这个范围时会直接拒绝安装与激活，不会装上一个跑不起来的插件。接收方只需装 **DSH**，用自己的 dsh 命令按包名安装；不需要你的 checkout、profile 或任何本机路径。**当前状态**：七个 `baicai-edu-*` 包已发布到 npm（技能包 `0.1.4`、`chinese-reading` 为 `0.1.2`、`math-board` 为 `0.6.2`）；依赖由 pnpm 装入，启用则要在命令里逐个列出（见下节）。发布与发布后验收见[发布与技能渲染](publishing.md)。
 - **本地 checkout**：`scripts/install.mjs` 按 `package.json` 的必需依赖遍历同仓库 bundle，把依赖闭包**逐个 `npm pack` 成 tarball**，再把这批 tarball 一次交给 `dsh` 安装。本地与 registry 因而得到同一种 `node_modules` 布局：闭包里每个包都是 profile 的直接依赖，也正是单份技能 provider 能解析全部包的前提。**不要再用 `link:` 装本地 checkout**：pnpm 不会安装被链接包的依赖，profile 只会得到闭包的一部分。技能仍从安装处读取，本地改动重装一次即生效；宿主代码修改按 DSH 重载或重启诊断生效。
 
 ## 接收方怎么装（DSH 已装好）
@@ -80,7 +80,7 @@ node scripts/install.mjs math-primary-low --profile web --dry-run
 
 `learn` 自带 `learn-general-core`、`learn-general-session` 与 `learn-support`，单独安装即可使用通用任务教学和五类支持；不按年龄另装包，不反向安装所有学科。专门包仍提供各自教学方法，缺包不妨碍通用路径。此源码变更本身不表示正在使用的 profile 已更新或启用。
 
-依赖只声明在各包的 `package.json` → `dependencies`：`baicai-edu-math`、两个 band、语文学科与英语声明 `baicai-edu-learn: ^0.1.0`，两个 band 另外声明 `baicai-edu-math: ^0.1.0`（低年级数学另加 `baicai-edu-math-board: ^0.6.1`）。任何包都不再声明 `"private": true`，因为 npm 会拒绝发布私有包，而 DSH 的官方 bundle 校验也按“公开 bundle”读取。
+依赖只声明在各包的 `package.json` → `dependencies`：`baicai-edu-math`、两个 band、语文学科与英语声明 `baicai-edu-learn: ^0.1.4`，两个 band 另外声明 `baicai-edu-math: ^0.1.4`（低年级数学另加 `baicai-edu-math-board: ^0.6.2`）。任何包都不再声明 `"private": true`，因为 npm 会拒绝发布私有包，而 DSH 的官方 bundle 校验也按“公开 bundle”读取。
 
 安装器从这些声明递归生成依赖优先、按包去重的闭包，把它们 pack 成 tarball 后执行**一次**：
 
