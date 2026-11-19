@@ -23,7 +23,6 @@ import { createGeometryEditChapter } from '../src/geometry/geometry-edit.js';
 import { createGeometryAdjustChapter } from '../src/geometry/geometry-adjust.js';
 import { createGeometryFilesChapter } from '../src/geometry/geometry-files.js';
 import { createGeometryDemoPage, readDemoView } from '../src/teacher-demo/geometry-demo-view.js';
-import { createTeacherDemoChapter } from '../src/teacher-demo/teacher-demo-practice.js';
 import { placeFigure } from '../src/geometry/place-figure.js';
 import { captionBox, captionPosition, visibleCaption } from '../src/geometry/caption.js';
 import {
@@ -47,21 +46,12 @@ const QUANTITY_KEY = `baicai-edu-math-board:v4:${SESSION}`;
 const GEOMETRY_KEY = `baicai-edu-math-board:geometry:v1:${SESSION}`;
 const QUANTITY_PRACTICE = 'baicai-edu-math-board:practice:v2:quantity';
 const GEOMETRY_PRACTICE = 'baicai-edu-math-board:practice:v2:geometry';
-const DEMO_PRACTICE = 'baicai-edu-math-board:practice:v2:teacher-demo';
 
 function translate(dictionary, key, params = {}) {
   assert.equal(typeof dictionary[key], 'string', `Missing locale key: ${key}`);
   return dictionary[key].replace(/\{(\w+)\}/g, (match, name) => (Object.hasOwn(params, name) ? String(params[name]) : match));
 }
 const zh = (key, params) => translate(locale, key, params);
-
-function segmentFigure() {
-  let board = G.reduce(G.empty(), { type: 'addPoint', x: 80, y: 90 });
-  board = G.reduce(board, { type: 'addPoint', x: 220, y: 90 });
-  const [a, b] = board.points;
-  board = G.reduce(board, { type: 'addElement', elementType: 'segment', points: [a.id, b.id], role: 'main' });
-  return { title: '线段', description: '只读', board };
-}
 
 function realDraftKeys(storage) {
   return new Map([...storage].filter(([name]) => !name.startsWith('baicai-edu-math-board:practice:')
@@ -239,7 +229,7 @@ function mountShell(options = {}) {
     placeFigure, captionPosition, captionBox, visibleCaption,
     createBoardControls, createGeometryPractice, createGeometryBasicsChapter, createGeometryPracticeFrames,
     geometryPracticeChapters: geometryChapters,
-    createPracticeProgress, createPracticeRail, createTeacherDemoChapter, createQuantityPractice,
+    createPracticeProgress, createPracticeRail, createQuantityPractice,
     quantityPracticeChapters: quantityChapters,
     geometryHiddenPoints, geometryCaptionLabel, geometryPointLabel, geometryPointDot, geometryShapeNode, geometryStroke,
     geometryViewport, geometryTextOverflow, geometryFrame, geometryFrameInputs,
@@ -387,11 +377,10 @@ function installFileDb(records) {
   return { puts, restore() { globalThis.indexedDB = previous; } };
 }
 
-test('registered factories carry the shipped step ids for Q01–Q20, G01–G21, F01–F03 and D01–D04', async () => {
+test('registered factories carry the shipped step ids for Q01–Q20, G01–G21 and F01–F03', async () => {
   const build = await readFile(new URL('../build.mjs', import.meta.url), 'utf8');
   assert.match(build, /quantityPracticeChapters: \[createQuantityAdjustChapter, createQuantityOrganizeChapter, createQuantityNotesChapter, createQuantityFilesChapter\]/);
   assert.match(build, /geometryPracticeChapters: \[createGeometryConstructChapter, createGeometryEditChapter, createGeometryAdjustChapter, createGeometryFilesChapter\]/);
-  assert.equal(/geometryPracticeChapters: \[[^\]]*createTeacherDemoChapter/.test(build), false);
   const page = await readFile(new URL('../src/quantity/view-component.js', import.meta.url), 'utf8');
   const listed = page.match(/const practiceSteps = \[([^\]]+)\]/);
   assert.ok(listed, 'quantity basics steps are declared on the quantity page');
@@ -407,7 +396,6 @@ test('registered factories carry the shipped step ids for Q01–Q20, G01–G21, 
   const edit = createGeometryEditChapter({ G, emptyFrame: frames.empty });
   const geometryAdjust = createGeometryAdjustChapter({ G, emptyFrame: frames.empty });
   const geometryFiles = createGeometryFilesChapter({ G, emptyFrame: frames.empty });
-  const demo = createTeacherDemoChapter({ G, emptyFrame: frames.empty, placeFigure });
   const shippedQuantity = {
     Q01: ['add', 'add-second'], Q02: ['move'], Q03: ['select-one', 'select-many', 'deselect'],
     Q04: ['organize-name', 'organize-reselect'], Q05: ['organize-peer', 'organize-group', 'organize-group-name', 'organize-ungroup'],
@@ -437,13 +425,11 @@ test('registered factories carry the shipped step ids for Q01–Q20, G01–G21, 
   assert.deepEqual(construct.steps, ['construct-parallelogram', 'construct-rectangle', 'construct-select-side', 'construct-midpoint', 'construct-drag', 'construct-auxiliary', 'construct-auxiliary-off']);
   assert.deepEqual(edit.steps, ['edit-rename', 'edit-text-add', 'edit-text-change', 'edit-delete', 'edit-point-note', 'edit-element-note', 'edit-caption', 'edit-deselect', 'edit-board-note']);
   assert.deepEqual(geometryAdjust.steps, ['adjust-grid', 'adjust-snap', 'adjust-undo', 'adjust-redo', 'adjust-zoom', 'adjust-scroll', 'adjust-fit', 'adjust-clear']);
-  assert.deepEqual(demo.steps, ['demo-read', 'demo-view', 'demo-copy', 'demo-return']);
   const quantityIds = [...quantityBasics, ...organize.steps, ...notes.steps, ...adjust.steps, ...quantityFiles.steps];
   for (const [code, ids] of Object.entries(shippedQuantity)) for (const id of ids) assert.ok(quantityIds.includes(id), `${code} ${id}`);
   const geometryIds = [...geometryBasics.steps, ...construct.steps, ...edit.steps, ...geometryAdjust.steps, ...geometryFiles.steps];
   for (const [code, ids] of Object.entries(shippedGeometry)) for (const id of ids) assert.ok(geometryIds.includes(id), `${code} ${id}`);
   assert.deepEqual(quantityFiles.steps, ['files-save', 'files-open'], 'F01 save and F02 open; F03 is the cancel and download feedback on these steps');
-  assert.deepEqual([...demo.steps], ['demo-read', 'demo-view', 'demo-copy', 'demo-return']);
   const empty = G.empty();
   const geometryGoal = createGeometryPractice();
   geometryGoal.observe({ type: 'draw', tool: 'segment', before: empty, after: empty });
@@ -617,23 +603,6 @@ test('the quick tour reaches every step, and its end offers the chaptered tutori
     assert.equal(shell.visibleNodes().some((node) => String(node.props && node.props.className || '') === 'eb-tour-hint'), false,
       'the line goes away once it has been followed');
   } finally { shell.unmount(); }
-});
-
-test('no teacher figure does not start the teacher guide', () => {
-  const none = mountShell();
-  try {
-    none.press(none.t('title'));
-    none.tab('demo');
-    assert.equal(none.visibleNodes().some((node) => node.props && node.props['data-practice-step'] !== undefined), false);
-    assert.equal(none.storage.has(DEMO_PRACTICE), false);
-  } finally { none.unmount(); }
-  const empty = mountShell({ useProjection: () => ({ revision: 1, figure: { title: '空', description: '', board: G.empty() } }) });
-  try {
-    empty.press(empty.t('title'));
-    empty.tab('demo');
-    assert.equal(empty.storage.has(DEMO_PRACTICE), false);
-    assert.equal(empty.visibleNodes().some((node) => node.props && node.props['data-practice-step'] !== undefined), false);
-  } finally { empty.unmount(); }
 });
 
 for (const pointerType of ['mouse', 'touch']) {
@@ -995,99 +964,6 @@ test('storage failure still allows exit, warns that resume is not guaranteed, an
     assert.equal(JSON.parse(storage.get(draftKey)).objects[0].shape, 'cat');
     assert.equal(app.sends, 0);
   } finally { app.dispose(); }
-});
-
-test('the teacher guide does not call onCopy, and hiding the figure does not complete the copy', () => {
-  let figure = segmentFigure();
-  const shell = mountShell({ useProjection: () => ({ revision: 1, figure }) });
-  const scroll = (left, top) => {
-    const scroller = shell.find((node) => node.props.className === 'eb-demo-canvas-scroll');
-    scroller.props.ref.current.scrollLeft = left;
-    scroller.props.ref.current.scrollTop = top;
-    scroller.props.onScroll();
-    shell.refresh();
-  };
-  try {
-    shell.press(shell.t('title'), 'mouse');
-    shell.tab('demo');
-    const geometry = shell.raw(GEOMETRY_KEY);
-    assert.equal(shell.step(), 'demo-read');
-    shell.press(shell.t('teacherDemoContinue'), 'touch');
-    shell.press(shell.t('zoomIn'), 'mouse');
-    scroll(24, 12);
-    assert.equal(shell.step(), 'demo-copy');
-    shell.press(shell.t('demoCopy'), 'touch');
-    assert.equal(shell.step(), 'demo-return');
-    assert.equal(shell.raw(GEOMETRY_KEY), geometry, 'the guide copy does not call onCopy');
-    assert.equal(JSON.parse(shell.raw(DEMO_PRACTICE)).entries['teacher-demo-basics'].goal.copied, true);
-  } finally { shell.unmount(); }
-  figure = segmentFigure();
-  const hidden = mountShell({ useProjection: () => ({ revision: 2, figure }) });
-  try {
-    hidden.press(hidden.t('title'));
-    hidden.tab('demo');
-    hidden.press(hidden.t('teacherDemoContinue'), 'mouse');
-    hidden.press(hidden.t('zoomIn'), 'touch');
-    const scroller = hidden.find((node) => node.props.className === 'eb-demo-canvas-scroll');
-    scroller.props.ref.current.scrollLeft = 18;
-    scroller.props.ref.current.scrollTop = 8;
-    scroller.props.onScroll();
-    hidden.refresh();
-    assert.equal(hidden.step(), 'demo-copy');
-    figure = null;
-    hidden.refresh();
-    assert.equal(hidden.visibleNodes().some((node) => node.type === 'button' && text(node) === hidden.t('demoCopy')), false);
-    assert.equal(JSON.parse(hidden.raw(DEMO_PRACTICE)).entries['teacher-demo-basics'].goal.copied, false);
-    const exit = hidden.find((node) => node.type === 'button' && text(node) === hidden.t('practiceExit'));
-    assert.ok(!exit.props.disabled);
-  } finally { hidden.unmount(); }
-});
-
-test('opening geometry during the teacher guide does not cover the return frame', () => {
-  const figure = segmentFigure();
-  const shell = mountShell({ useProjection: () => ({ revision: 1, figure }) });
-  const scroll = (left, top) => {
-    const scroller = shell.find((node) => node.props.className === 'eb-demo-canvas-scroll');
-    scroller.props.ref.current.scrollLeft = left;
-    scroller.props.ref.current.scrollTop = top;
-    scroller.props.onScroll();
-    shell.refresh();
-  };
-  try {
-    shell.press(shell.t('title'));
-    shell.tab('demo');
-    assert.equal(shell.step(), 'demo-read');
-    shell.tab('geometry');
-    assert.equal(shell.storage.has(GEOMETRY_PRACTICE), false, 'an early guide step does not start geometry basics');
-    assert.equal(shell.visibleNodes().some((node) => node.props && node.props['data-practice-step'] !== undefined), false);
-    shell.tab('demo');
-    shell.press(shell.t('teacherDemoContinue'), 'touch');
-    shell.press(shell.t('zoomIn'), 'mouse');
-    scroll(24, 12);
-    shell.press(shell.t('demoCopy'), 'touch');
-    assert.equal(shell.step(), 'demo-return');
-    shell.tab('geometry');
-    assert.equal(shell.step(), 'demo-return');
-    assert.equal(shell.visibleNodes().some((node) => node.type === 'button' && text(node) === shell.t('teacherDemoViewCopy')), true);
-    assert.equal(shell.storage.has(GEOMETRY_PRACTICE), false, 'coming back still has not written geometry practice');
-    const guide = JSON.parse(shell.raw(DEMO_PRACTICE)).entries['teacher-demo-basics'];
-    assert.equal(guide.goal.copied, true);
-    assert.ok(guide.frame.board.elements.length >= 1, 'the teacher-demo record still holds the copy');
-    shell.press(shell.t('teacherDemoViewCopy'));
-    assert.equal(shell.step(), 'demo-complete', 'confirming the copy keeps the guide open on its last step');
-    shell.tab('demo');
-    shell.tab('geometry');
-    assert.equal(shell.storage.has(GEOMETRY_PRACTICE), false, 'an open guide on its last step still holds the visit, so no basics yet');
-    shell.press(shell.t('practiceExit'));
-    assert.equal(shell.visibleNodes().some((node) => node.props && node.props['data-practice-step'] !== undefined), false, 'the same visit does not open geometry basics the moment the guide closes');
-    shell.tab('demo');
-    shell.tab('geometry');
-    assert.equal(shell.storage.has(GEOMETRY_PRACTICE), false, 'a later visit does not open the tutorial by itself either');
-    shell.start();
-    assert.equal(shell.storage.has(GEOMETRY_PRACTICE), true, 'the tutorial opens when the student asks for it');
-    assert.deepEqual(Object.keys(JSON.parse(shell.raw(GEOMETRY_PRACTICE)).entries), ['geometry-basics']);
-    assert.equal(shell.step(), 'point');
-  } finally { shell.unmount(); }
 });
 
 test('after practice, quantity insert can attach a trace, geometry insert has none, and neither sends or deletes the draft', () => {

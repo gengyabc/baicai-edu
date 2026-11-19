@@ -12,10 +12,15 @@ test('published package includes runtime sources, excludes tests, and builds ind
   const temporary = await mkdtemp(join(tmpdir(), 'math-board-package-'));
   // Only remove the dedicated directory returned by mkdtemp, never the checkout.
   t.after(() => rm(temporary, { recursive: true, force: true }));
-  const [packed] = JSON.parse(execFileSync('npm', [
+  const report = JSON.parse(execFileSync('npm', [
     'pack', '--json', '--ignore-scripts', '--pack-destination', temporary,
   ], { cwd: root, encoding: 'utf8', env: { ...process.env, NPM_CONFIG_CACHE: join(temporary, 'cache') } }));
-  const files = new Set(packed.files.map(file => file.path));
+  // npm ≤ 11 prints an array of packs; npm ≥ 12 prints an object keyed by package name.
+  const packed = (Array.isArray(report) ? report : Object.values(report ?? {}))
+    .find((entry) => entry && Array.isArray(entry.files));
+  assert.ok(packed, `npm pack did not report a file list: ${JSON.stringify(report).slice(0, 400)}`);
+  // A file entry is an object with `path`; older npm versions printed bare strings.
+  const files = new Set(packed.files.map((file) => (typeof file === 'string' ? file : file.path)));
   for (const source of await readdir(join(root, 'src'), { recursive: true })) {
     if (!/\.(js|css)$/.test(source) || source.endsWith('.test.js') || source.startsWith('testing/')) continue;
     assert.ok(files.has(`src/${source}`), `Missing runtime source: ${source}`);

@@ -140,7 +140,7 @@ test('chapters resume exact practice and reset to step start without awarding re
 
 test('every step goal reads as one action line and one check line, or one closing line', async () => {
   const { readFile } = await import('node:fs/promises');
-  const goalPrefixes = ['practiceGoal_', 'geometryPracticeGoal_', 'teacherDemoPracticeGoal_'];
+  const goalPrefixes = ['practiceGoal_', 'geometryPracticeGoal_'];
   const isGoal = (key) => goalPrefixes.some((prefix) => key.startsWith(prefix));
   const limit = { zh: 90, en: 300 };
   for (const language of ['en', 'zh']) {
@@ -173,7 +173,7 @@ test('a goal that acts on a selection says to select it first, and clicks are cl
   const selectionLabels = ['名字', '圈为一组', '解散组', '合并', '拆开', '复制', '划去', '删除所选', '重命名的点', '修改文字'];
   const nothingSelected = ['什么都不选', '不选中任何对象', '没有任何对象'];
   for (const [key, value] of Object.entries(zh)) {
-    if (!/^(practiceGoal_|geometryPracticeGoal_|teacherDemoPracticeGoal_)/.test(key) || /[_-]complete$/.test(key)) continue;
+    if (!/^(practiceGoal_|geometryPracticeGoal_)/.test(key) || /[_-]complete$/.test(key)) continue;
     const [action] = value.split('\n');
     if (selectionLabels.some((label) => action.includes(label))
       && !action.includes('先选中') && !action.includes('只选中')

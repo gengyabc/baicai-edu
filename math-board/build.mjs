@@ -23,7 +23,6 @@ import { createGeometryModel } from './src/geometry/model.js';
 import { createTeacherReferenceView } from './src/reference/reference-view.js';
 import { createDemoModel } from './src/teacher-demo/demo-model.js';
 import { readDemoView, createGeometryDemoPage } from './src/teacher-demo/geometry-demo-view.js';
-import { createTeacherDemoChapter } from './src/teacher-demo/teacher-demo-practice.js';
 import { placeFigure } from './src/geometry/place-figure.js';
 import { captionBox, captionPosition, visibleCaption } from './src/geometry/caption.js';
 import {
@@ -75,7 +74,6 @@ window.__ModuleLoader__.load({
     const createDemoModel = ${createDemoModel.toString()};
     const readDemoView = ${readDemoView.toString()};
     const createGeometryDemo = ${createGeometryDemoPage.toString()};
-    const createTeacherDemoChapter = ${createTeacherDemoChapter.toString()};
     const placeFigure = ${placeFigure.toString()};
     const visibleCaption = ${visibleCaption.toString()};
     const captionPosition = ${captionPosition.toString()};
@@ -133,7 +131,6 @@ window.__ModuleLoader__.load({
           quantityPracticeChapters: [createQuantityAdjustChapter, createQuantityOrganizeChapter, createQuantityNotesChapter, createQuantityFilesChapter],
           createGeometryPractice, createGeometryBasicsChapter, createGeometryPracticeFrames,
           geometryPracticeChapters: [createGeometryConstructChapter, createGeometryEditChapter, createGeometryAdjustChapter, createGeometryFilesChapter],
-          createTeacherDemoChapter,
           createTutorialController, createTutorialOverlay, isTutorialSeen, markTutorialSeen, advanceTutorial,
           measureTourTarget, tourHoldsNotePanel, tourInsertMode,
           quantityTutorialSteps, geometryTutorialSteps,

@@ -131,24 +131,17 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     const [practiceOpen, setPracticeOpen] = React.useState(false);
     // One line after the quick tour ends, pointing at the chaptered tutorial.
     const [tourHint, setTourHint] = React.useState(false);
-    const [guideShown, setGuideShown] = React.useState(false);
     const practiceOpenRef = React.useRef(false);
-    const guideShownRef = React.useRef(false);
     practiceOpenRef.current = practiceOpen;
-    guideShownRef.current = guideShown;
     const alive = React.useRef(true);
     const practiceRef = React.useRef(null);
-    const guideMode = props.guideMode === true;
-    if ((props.practice || guideMode) && !practiceRef.current) practiceRef.current = guideMode
-      ? props.guideProgress
-      : shared.createPracticeProgress({
-        mode:'geometry',chapters:practiceChapters,validateFrame:practiceFrames.validate,
-      });
+    if (props.practice && !practiceRef.current) practiceRef.current = shared.createPracticeProgress({
+      mode:'geometry',chapters:practiceChapters,validateFrame:practiceFrames.validate,
+    });
     const [progress,setProgress] = React.useState(() => practiceRef.current?.snapshot());
     const practiceEvents = React.useRef([]);
-    const practiceState = progress?.goal;
-    function editable() { return alive.current && (props.practice || guideMode || (!practiceOpenRef.current && !guideShownRef.current)); }
-    function practiceEvent(event) { if ((props.practice || guideMode) && alive.current) { practiceEvents.current.push(event); setProgress({...practiceRef.current.snapshot()}); } }
+    function editable() { return alive.current && (props.practice || !practiceOpenRef.current); }
+    function practiceEvent(event) { if (props.practice && alive.current) { practiceEvents.current.push(event); setProgress({...practiceRef.current.snapshot()}); } }
     function selectUser(ids) { setSelection(ids); practiceEvent({type:'select',selection:ids,after:boardRef.current}); }
     const workspaceRef = React.useRef(null);
     const gesture = React.useRef(null);
@@ -206,7 +199,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
 
     React.useEffect(() => {
       alive.current = true;
-      if (props.practice || guideMode) {
+      if (props.practice) {
         const next = practiceRef.current.enter(); applyPracticeFrame(next.frame); setProgress(next); setReady(true);
         return () => { alive.current = false; gesture.current = null; };
       }
@@ -218,7 +211,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       return () => { alive.current = false; gesture.current = null; };
     }, [key]);
     React.useEffect(() => {
-      if (!ready || props.practice || guideMode || !alive.current) return;
+      if (!ready || props.practice || !alive.current) return;
       try { localStorage.setItem(key, JSON.stringify(board)); } catch { setStatus(t('storageError')); }
     }, [board, ready, key]);
     React.useEffect(() => {
@@ -248,21 +241,12 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       return () => document.removeEventListener('pointerdown', closeMenus);
     }, [moreOpen]);
 
-    const tabActive = props.tabActive === true && !practiceOpen && !guideShown;
+    const tabActive = props.tabActive === true && !practiceOpen;
     React.useEffect(() => {
-      if (props.tabActive || guideMode || props.practice) return undefined;
-      const guideOpen = typeof props.guide === 'function' && props.guide()?.open;
-      if (!guideOpen) setPracticeOpen(false);
+      if (props.tabActive || props.practice) return undefined;
+      setPracticeOpen(false);
       return undefined;
     }, [props.tabActive]);
-    React.useEffect(() => {
-      if (guideMode || props.practice) return undefined;
-      if (!props.tabActive || practiceOpen) { setGuideShown(false); return undefined; }
-      const api = typeof props.guide === 'function' ? props.guide() : null;
-      const goalStep = api?.open ? api.progress?.snapshot()?.goal?.step : null;
-      setGuideShown(goalStep === 'demo-return' || goalStep === 'demo-complete');
-      return undefined;
-    }, [props.tabActive, practiceOpen]);
     function startGeometryTour() {
       setTourHint(false);
       if (!practiceChapters.length) return;
@@ -273,7 +257,6 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     }
     // First contact is the quick tour over the real board; the chaptered tutorial is
     // opt-in from「更多操作 → 查看教程」and never opens by itself.
-    const openGuideHere = typeof props.guide === 'function' ? props.guide()?.open : false;
     // An existing practice record means this board has already been introduced.
     const practiceStarted = (() => {
       try { return globalThis.localStorage?.getItem('baicai-edu-math-board:practice:v2:geometry') != null; }
@@ -281,8 +264,8 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     })();
     const quickTour = useTutorial ? useTutorial({
       mode: 'geometry', steps: shared.geometryTutorialSteps,
-      active: props.tabActive === true && !props.practice && !guideMode && !openGuideHere && !practiceStarted,
-      visible: props.tabActive === true && !props.practice && !guideMode,
+      active: props.tabActive === true && !props.practice && !practiceStarted,
+      visible: props.tabActive === true && !props.practice,
       ready, rootRef: workspaceRef,
       onStart() { setMoreOpen(false); setOverlay(null); setRename(null); setWriting(null); },
       onFinish() { setStatus(t('tutorialDone')); setTourHint(true); },
@@ -311,7 +294,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       applyPracticeFrame(next.frame); setProgress(next);
     }
     React.useEffect(() => {
-      if (!(props.practice || guideMode) || !ready || !alive.current) return;
+      if (!props.practice || !ready || !alive.current) return;
       const events=practiceEvents.current.splice(0), wasSupplementing=practiceRef.current.snapshot().supplementing;
       let next;
       if (events.length) for (const event of events) next=practiceRef.current.observe(event,practiceFrame());
@@ -336,7 +319,6 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       if (editLive && !(selection.length === 1 && selection[0] === editMark)) setSelection([editMark]);
     },[ready,board,history,selection,tool,pending,auxiliary,grid,snap,zoom,fit,progress]);
     function closePage() {
-      if (guideMode) { props.onGuideExit?.(); return; }
       if (props.practice) props.onPracticeExit(); else setPracticeOpen(false); props.close?.();
     }
 
@@ -1050,7 +1032,6 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       if (insertMode === 'practice') { signalTour('geometry-insert'); setStatus(t('tutorialInsertPractice')); return; }
       if (insertMode === 'block') { setStatus(t('tutorialInsertLater')); return; }
       if (!editable()) return;
-      if (guideMode) { setStatus(t('practiceInsertBlocked')); return; }
       if (props.practice) {
         practiceEvent({type:'insert',after:boardRef.current});
         setStatus(t('geometryPracticeInsert')); return;
@@ -1090,7 +1071,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       return (async () => {
         // Validation runs before anything is published: a bad file changes nothing.
         const next = G.validate(JSON.parse(await file.text()));
-        if (!editable() || props.practice || guideMode) return;
+        if (!editable() || props.practice) return;
         forgetConstruction();
         publish(next); setHistory({ past: [], future: [] }); setSelection([]); setPending([]);
         revision.current += 1;
@@ -1197,7 +1178,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     const saveFile = () => {
       setMoreOpen(false);
       if (!editable()) return;
-      if (props.practice || guideMode) {
+      if (props.practice) {
         if (!practiceFiles()) { setStatus(t('practiceFilesUnavailable')); return; }
         return savePracticeFile();
       }
@@ -1206,7 +1187,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     const openFile = () => {
       setMoreOpen(false);
       if (!editable()) return;
-      if (props.practice || guideMode) {
+      if (props.practice) {
         if (!practiceFiles()) { setStatus(t('practiceFilesUnavailable')); return; }
         return openPracticeFile();
       }
@@ -1214,7 +1195,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     };
     const importInput = (event) => {
       if (!editable()) return;
-      if (props.practice || guideMode) {
+      if (props.practice) {
         if (!practiceFiles()) return;
         const file = event.target.files && event.target.files[0];
         event.target.value = '';
@@ -1380,7 +1361,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     // inside the frame. `non-scaling-stroke` is deliberately not used: a magnified figure
     // must look magnified, exactly as the quantity board's zoom scales its artwork.
     const canvas = h('div', { ref: canvasRef, className: 'eb-canvas-scroll', 'data-tour-id': 'geometry-canvas',
-      onScroll: props.practice || guideMode ? () => {
+      onScroll: props.practice ? () => {
         const after = { left: canvasRef.current?.scrollLeft || 0, top: canvasRef.current?.scrollTop || 0 };
         const before = scrollRef.current;
         if (before.left !== after.left || before.top !== after.top) {
@@ -1507,7 +1488,7 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       controls.menuItem(icon('open'), t('import'), openFile),
       controls.menuItem(icon('save'), t('export'), saveFile),
       picker.fileNameState && h('p', { className: 'eb-menu-note' }, picker.fileNameState),
-      !props.practice && !guideMode && (practiceChapters.length > 0 || useTutorial) && h(React.Fragment, null,
+      !props.practice && (practiceChapters.length > 0 || useTutorial) && h(React.Fragment, null,
         h('div', { className: 'eb-menu-line' }),
         // The quick tour can be replayed on its own without touching chapter progress.
         useTutorial && shared.geometryTutorialSteps && controls.menuItem(null, t('tutorialQuickTour'), () => quickTour.start?.()),
@@ -1602,35 +1583,14 @@ export function createGeometryPage(React, G, ctx, t, shared) {
     const statusNode = controls.status(status);
     const practiceChapter = practiceChapters.find((item) => item.id === progress?.current);
     const practiceTitleKey = practiceChapter?.titleKey || 'geometryPracticeBasics';
-    function confirmGuideView() {
-      const goal = practiceRef.current?.snapshot().goal;
-      if (!guideMode || goal?.step !== 'demo-return') return;
-      if (props.guideLiveId !== goal.figureId) { setStatus(t('teacherDemoFigureUnavailable')); return; }
-      if (!(boardRef.current.elements?.length > 0)) return;
-      setProgress(practiceRef.current.observe({ type: 'view-copy', figureId: goal.figureId }, practiceFrame()));
-    }
-    // Practice and the teacher-demo guide both hang a step rail beside the canvas.
+    // Practice hangs a step rail beside the canvas.
     const practiceRail = props.practice && PracticeRail && progress?.goal && h(PracticeRail, {
       progress, chapters: practiceChapters, onNavigate: navigatePractice,
       onExit: () => props.onPracticeExit(),
       goalKey: (step) => `geometryPracticeGoal_${step}`,
       stepKey: (step) => `practiceStep_${step}`,
     });
-    const guideRail = guideMode && h('aside', {
-      className: 'eb-practice-rail', 'aria-label': t('teacherDemoPractice'), 'data-practice-step': practiceState?.step,
-    },
-    h('header', { className: 'eb-rail-head' },
-      h('strong', null, t('teacherDemoPractice')),
-      h('span', { className: 'eb-rail-count' }, `${progress.chapters[0].steps.indexOf(practiceState?.step) + 1}/${progress.chapters[0].steps.length}`)),
-    h('div', { className: 'eb-rail-goal', role: 'status', 'aria-live': 'polite' },
-      h('p', null, props.guideLiveId !== practiceState?.figureId
-        ? t('teacherDemoFigureUnavailable')
-        : t(`teacherDemoPracticeGoal_${practiceState?.step || 'demo-return'}`))),
-    h('div', { className: 'eb-rail-acts' },
-      practiceState?.step === 'demo-return' && props.guideLiveId === practiceState?.figureId
-        && button(t('teacherDemoViewCopy'), confirmGuideView, { className: 'eb-primary' }),
-      button(t('practiceExit'), () => props.onGuideExit?.(), { className: 'eb-rail-exit' })));
-    const tourHintNode = tourHint && !props.practice && !guideMode && h('div', { className: 'eb-tour-hint', role: 'status' },
+    const tourHintNode = tourHint && !props.practice && h('div', { className: 'eb-tour-hint', role: 'status' },
       h('span', null, t('tutorialDoneHint')),
       h('button', { type: 'button', className: 'eb-primary', onClick: () => startGeometryTour() }, t('tutorialReplay')),
       h('button', { type: 'button', onClick: () => setTourHint(false), 'aria-label': t('close'), title: t('close') }, t('close')));
@@ -1638,11 +1598,10 @@ export function createGeometryPage(React, G, ctx, t, shared) {
       step: tour.steps[tour.index], stepIndex: tour.index, stepCount: tour.steps.length,
       t, hole: quickTour.hole, onSkip: () => quickTour.finish?.(),
     });
-    if (props.bindClose && !guideMode) props.bindClose(practiceOpen ? () => {setPracticeOpen(false);props.close?.();} : closePage);
-    if (props.bindAppend && !props.practice && !guideMode) props.bindAppend(appendFigure);
-    const guideApi = !guideMode && typeof props.guide === 'function' ? props.guide() : null;
+    if (props.bindClose) props.bindClose(practiceOpen ? () => {setPracticeOpen(false);props.close?.();} : closePage);
+    if (props.bindAppend && !props.practice) props.bindAppend(appendFigure);
     return h(React.Fragment, null,
-      h('div', { className: `eb-geometry-owner${props.practice || guideMode ? ' eb-has-rail' : ''}`, hidden: practiceOpen || guideShown },
+      h('div', { className: `eb-geometry-owner${props.practice ? ' eb-has-rail' : ''}`, hidden: practiceOpen },
         h('div', { className: 'eb-practice-main' },
           h('div', {
             className: 'eb-workspace eb-geometry-workspace', ref: workspaceRef,
@@ -1655,21 +1614,14 @@ export function createGeometryPage(React, G, ctx, t, shared) {
               if (event.key === 'y' || event.key === 'Y') { event.preventDefault(); redo(); }
             },
           }, tools, stage, dock, moreMenuNode, statusNode, tourHintNode, overlayNode, renameNode, writingNode, tourNode)),
-        practiceRail || guideRail),
+        practiceRail),
       h('a', { hidden: true, ref: picker.downloadAnchorRef, download: t('geometryAttachmentName'),
         'data-practice-file': props.practice ? 'geometry' : undefined }),
       h('input', { hidden: true, type: 'file', accept: '.json,application/json', ref: fileInputRef, onChange: importInput,
         'data-practice-file': props.practice ? 'geometry' : undefined }),
       practiceOpen && h(PracticeBoard, { ...props, practice: true, onPracticeExit: () => setPracticeOpen(false),
-        bindAppend: undefined, guide: undefined, guideMode: false }),
-      guideShown && !practiceOpen && guideApi?.progress && h(GuideBoard, {
-        ...props, guide: undefined, guideMode: true, practice: false,
-        guideProgress: guideApi.progress, guideLiveId: guideApi.liveId,
-        onGuideExit: () => { setGuideShown(false); guideApi.close?.(); },
-        bindAppend: undefined, bindClose: undefined, tabActive: true,
-      }));
+        bindAppend: undefined }));
   }
   function PracticeBoard(props) { return Board(props); }
-  function GuideBoard(props) { return Board(props); }
   return Board;
 }

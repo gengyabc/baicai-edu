@@ -2,9 +2,9 @@
 
 All notable changes to `baicai-edu-math-board` are recorded here. 0.6.0 is the
 first published version, so everything under it is the current state rather than
-an upgrade path; entries above it ship in the next release.
+an upgrade path; 0.6.1 is the next release and has not been published yet.
 
-## [Unreleased]
+## [0.6.1]
 
 ### Documentation
 
@@ -90,6 +90,24 @@ an upgrade path; entries above it ship in the next release.
   part, but a shape that landed above the current scroll stayed off-screen. The old
   effect also scaled `y` from the viewBox's top edge, which the gutter origin would have
   put 24 units out.
+
+### Teacher demo
+
+- The teacher demo page is now only a read-only figure viewer. Its short guide
+  (`teacher-demo-basics`, D01–D04) and the always-present 查看教程 door at the bottom
+  right are gone, together with the step rail it borrowed from the geometry page, the
+  "继续这段引导" resume button, and the geometry page's 查看可编辑副本 rail that only
+  that guide could reach. Copying a figure still appends it to the real geometry draft
+  through the same 放到我的几何画板 button; the demo no longer has its own practice frame,
+  its own progress record (`practice:v2:teacher-demo`) or guide copy states. The
+  student-side practice on the quantity and geometry pages is unchanged.
+
+### Tests
+
+- `tests/package.test.js` reads `npm pack --json` in both shapes: npm ≤ 11 prints an
+  array of packs, npm ≥ 12 prints an object keyed by package name. The old destructuring
+  threw `object is not iterable` under npm 12, and a failed pack now reports the raw
+  output instead of that type error.
 
 ## [0.6.0]
 
