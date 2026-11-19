@@ -2,7 +2,7 @@
 
 ## 两种安装来源
 
-- **registry 发布**：每个包声明发布版本范围（如 `"baicai-edu-learn": "^0.1.0"`），不声明 `"private": true`，并声明 `engines.dsh: ">=0.2.2-rc.1 <0.3.0"`——DSH 不满足这个范围时会直接拒绝安装与激活，不会装上一个跑不起来的插件。接收方只需装 **DSH**，用自己的 dsh 命令按包名安装；不需要你的 checkout、profile 或任何本机路径。**当前状态**：七个 `baicai-edu-*` 包已发布到 npm（`0.1.0`，`math-board` 为 `0.6.0`），按包名 `add` 即装齐依赖闭包；发布与发布后验收见[发布与技能渲染](publishing.md)。
+- **registry 发布**：每个包声明发布版本范围（如 `"baicai-edu-learn": "^0.1.1"`），不声明 `"private": true`，并声明 `engines.dsh: ">=0.2.2-rc.1 <0.3.0"`——DSH 不满足这个范围时会直接拒绝安装与激活，不会装上一个跑不起来的插件。接收方只需装 **DSH**，用自己的 dsh 命令按包名安装；不需要你的 checkout、profile 或任何本机路径。**当前状态**：七个 `baicai-edu-*` 包已发布到 npm（`0.1.2`，`math-board` 为 `0.6.0`、`chinese-reading` 为 `0.1.0`），按包名 `add` 即装齐依赖闭包；发布与发布后验收见[发布与技能渲染](publishing.md)。
 - **本地 checkout**：`scripts/install.mjs` 按 `package.json` 的必需依赖遍历同仓库 bundle，把依赖闭包**逐个 `npm pack` 成 tarball**，再把这批 tarball 一次交给 `dsh` 安装。本地与 registry 因而得到同一种 `node_modules` 布局：闭包里每个包都是 profile 的直接依赖，也正是单份技能 provider 能解析全部包的前提。**不要再用 `link:` 装本地 checkout**：pnpm 不会安装被链接包的依赖，profile 只会得到闭包的一部分。技能仍从安装处读取，本地改动重装一次即生效；宿主代码修改按 DSH 重载或重启诊断生效。
 
 ## 接收方怎么装（DSH 已装好）

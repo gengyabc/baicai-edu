@@ -51,19 +51,21 @@ provider 由 `learn` 携带（`learn/skill-provider.mjs` + `learn/lib/skill-reso
 ## 每次发版的清单
 
 1. **版本**：改过哪个包就升哪个包的 `version`；`0.x` 阶段 `^0.1.0` 只接受 `0.1.x`，所以 `learn` 或 `math-common` 一旦跳 `0.2.0`，六个包里的依赖范围要同时改，否则接收方装不上。`math-board` 现在领跑到 `0.6.0`，`math-primary-low` 的 `^0.6.0` 跟着它走。
+   - **依赖范围的下限要跟着新版本走，不只是跨 minor 时才改。** `^0.1.0` 在语义上接受 `0.1.1`，但「接受」不等于「解析到」：pnpm 的 `minimumReleaseAge` 会把刚发布的 `0.1.1` 判定为太新，实际装出来是 `0.1.0`（2026-11-19 真实发生过：只装学科包 `baicai-edu-math-primary-low@0.1.1`，闭包里 `learn`/`math` 全是 `0.1.0`，新加的 locale 目录根本没被加载）。凡依赖方与被依赖方同批发布，依赖范围要写成新版本的下限（如 `^0.1.1`），因为 `0.x` 的 caret 拒绝 `0.1.0`，解析器没有回退空间。改完记得同步 `scripts/skill-contracts.test.mjs` 里的范围断言。
 2. **文档**：README 里新增的普通过程说明放进 `<包>/docs/`（双语成对），并确认 `docs` 在该包 `files` 里——`check` 会因为链接目标没打进 tarball 直接报错。跨包与仓库根文档只能写绝对 URL（`https://github.com/gengyabc/baicai-edu/blob/main/…`），`../` 在 npm 页面上没有任何父目录。
 3. **变更记录**：七个包都维护 `CHANGELOG.md`，并在各自 `files` 里列出，随 tarball 一起发布；首次发布（0.1.0 / `math-board` 0.6.0）已记录，之后每次升级都要追加一节。未发布的工作写在 `Unreleased` 下，发版时再落到版本号标题。
 4. **DSH 兼容范围**：七个包都声明 `engines.dsh: ">=0.2.2-rc.1 <0.3.0"`，未满足时 DSH 会拒绝安装与激活（机制见 `dsh-app-boot` 的 `evaluatePluginCompatibility`，比较用 `semver.satisfies(..., { includePrerelease: true })`，所以 rc 版本正常参与区间判断）。下限是**本仓库集成测试实际启动过的版本**，不是推测版本；上调或放宽前必须在那个 DSH 版本上真装一次。0.3.0 被挡在外面是故意的：它一旦破坏 API，未验证的安装会在运行时坏掉，而静默坏掉比装不上更难排查。
 5. **checks**：`node scripts/publish.mjs check` 必须为绿，`node --test scripts/*.test.mjs` 全过；CI 与本地是同一条命令。
 6. **发布**：`node scripts/publish.mjs publish`（首次发布前先 `publish` 带 `--dry-run` 看一遍清单）；它把 7 个 tarball 逐个上暂存区并打印 stage id，此时**还没有任何版本上线**。只发了部分包时，把要发的包名列在命令后面（见上），不要指望脚本替你跳过已在线版本。
 7. **批准上线**：用 `NPM_OTP=<码> node scripts/publish.mjs approve <stage-id> …`，或到 npmjs.com 的 **Staged Packages** 页面勾选后批量 `Approve`（一次 2FA 覆盖全部）。批准完用 `npm view <包名> version` 确认拿到真实版本，`latest` 不再是 `0.0.0-stage`。
-8. **发布后同步**：根 [README](../README.md) 与[安装说明](installation.md) 里「尚未发布到 npm / 只能走 checkout」的说法要改掉，否则接收方仍会绕远路；再打 git tag `v0.1.0` 标记这次发布（首版 `2026-11-18` 已发布并打 tag）。
+8. **发布后同步**：根 [README](../README.md) 与[安装说明](installation.md) 里「尚未发布到 npm / 只能走 checkout」的说法要改掉，否则接收方仍会绕远路；再打 git tag 标记这次发布（首版 `v0.1.0` 已于 `2026-11-18` 发布并打 tag，此后按发布版本递增，如 `v0.1.2`）。
 
 ## 发布后验收
 
 - 至少用隔离 `DSH_HOME` 真装一次，**且只写学科包名**：`dsh plugin --profile web add baicai-edu-math-primary-low`，确认 `node_modules` 里出现 `baicai-edu-learn`、`baicai-edu-math`、`baicai-edu-math-board`（依赖闭包由 pnpm 自动补齐），并确认 `dsh --profile web --dump-config` 里 `edu-skills` 条目的 `config.packages` 列全闭包、技能注册齐全（低年级数学闭包注册 20 个技能，全装 43 个）、不是静默少一批。tarball 里有文件只说明包装对了，不等于接收方已注册。
 - **`dsh.profile.bundles` 只记本次直接装的包**（上例只有 `baicai-edu-math-primary-low`），闭包其余成员作为依赖装进 `node_modules`、由那一行 patch 的 `config.packages` 指到绝对路径——所以「bundles 里没看到 `baicai-edu-learn`」不是故障，别据此判断装坏了。
-- 接收方侧的前置条件只有 DSH 与可用模型路由；插件的 `baicai-edu-learn: ^0.1.0` 等范围由 npm 自动满足。
+- **闭包里每个包的版本都要看一眼，不只看目录里有没有它。** `node_modules` 出现 `baicai-edu-learn` 只证明闭包补齐了，不证明它是新版本；上面那次事故里目录都在、版本全是旧的。逐包 `node -p "require('./node_modules/<包>/package.json').version"`，确认共享包不低于本轮依赖范围的下限。刚发布的版本可能还在 pnpm 的 release-age 窗口内而解析成前一个 patch，这对同一 minor 的功能没有影响，但下限不符就是真的装错了。
+- 接收方侧的前置条件只有 DSH 与可用模型路由；插件的 `baicai-edu-learn: ^0.1.1` 等范围由 npm 自动满足。
 - 真实界面（工具栏、卡片、画布交互）仍需在 Web 页面上验收；命令返回零只表示 DSH 命令完成。
 
 ## 验证
