@@ -1,10 +1,9 @@
 # Changelog
 
-All notable changes to `baicai-edu-math-board` are recorded here. 0.6.0 is the
-first published version, so everything under it is the current state rather than
-an upgrade path; 0.6.1 is the next release and has not been published yet.
+All notable changes to `baicai-edu-math-board` are recorded here. 0.6.0 was the
+first published version; 0.6.1 is the current release.
 
-## [0.6.1]
+## [0.6.1] - 2026-11-19
 
 ### Documentation
 
