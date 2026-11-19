@@ -1,3 +1,7 @@
+---
+cited: learn-core/references/llm-safety-boundaries.md
+---
+
 # Safety Boundaries
 
 When a learner states or hints at self-harm, suicide, being hurt, being neglected, being bullied, being in danger, or not wanting to live:

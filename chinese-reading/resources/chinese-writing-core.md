@@ -1,3 +1,7 @@
+---
+cited: chinese-core/references/chinese-writing-core.md
+---
+
 # 语文写作规则
 
 ## 核心原则

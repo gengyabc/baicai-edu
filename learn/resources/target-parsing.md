@@ -1,3 +1,7 @@
+---
+cited: learn-data/references/target-parsing.md
+---
+
 # Parse Learning Target
 
 The `target_context` shape shared by `/learn`, `/learn-feynman`, and the restore flow. Input is explicit user text, the current subject, and existing material; mode is specified by the entry and does not take part in material category judgment. Classification of the remaining text and of the target after file handoff is done by the subject target classification designated by the entry; this file does not list subjects.

@@ -1,3 +1,7 @@
+---
+cited: learn-data/references/learning-plan.md
+---
+
 # Learning Plan and Task Frames
 
 Read when a teaching owner creates, changes, saves, or resumes a prerequisite learning path. This is a subject-neutral storage protocol; the current teaching session decides dependencies, teaching actions and evidence sufficiency. Subjects without a learning_plan retain their existing flow.

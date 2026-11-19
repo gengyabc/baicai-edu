@@ -1,3 +1,7 @@
+---
+cited: chinese-core/references/chinese-target.md
+---
+
 # 语文目标分类
 
 共享 `target_context` 形状、空文本和文件路径的处理见 `learn-data` 的 `references/target-parsing.md`。本文分类语文剩余文本和文件交接后的目标。明确 intent 优先于模糊关键词；无法判断时只问一个短问题。

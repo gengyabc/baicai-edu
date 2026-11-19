@@ -1,3 +1,7 @@
+---
+cited: math-high-core/references/problem-design.md
+---
+
 # Choosing Problems by Quantity Relationship
 
 Choose the current problem by mathematical purpose and structure. For quantity stories, CGI distinctions remain useful: join, separate, part-part-whole, compare, equal groups (multiplication), measurement (quotitive) division, partitive (equal-sharing) division, and multiplicative comparison, plus multi-step, multi-constraint, ratio, percent, and non-routine problems; the unknown can be in different positions. The stem and any illustration do not name an operation or strategy. Being able to do one problem type or one unknown position does not imply the others.

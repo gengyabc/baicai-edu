@@ -1,19 +1,13 @@
 # Structured Math Board: Lower-Primary Supplement
 
-Shared protocol: load `math-common` when a board attachment arrives, the student asks how to use the board, or the teacher will supply a board reference; the load result gives its base directory, and `references/board-contract.md` there owns the submission boundary, field meanings, attachment read order, edit-history interpretation, trust boundary, tentative interpretation, and settings.
-
-This file adds the lower-primary clear, teaching-use, and support rules. Teacher references follow **Teacher Reference** in the shared contract. Geometric figures follow **Teacher Geometry Demonstration** there: geometry-related teaching and geometry problems call `geometry_board_draw` so the related figure is on the Teacher demo tab, and they enter the student geometry draft only when the student copies them. The submitted-board limits below concern student work, not that separate read-only reference. The quantity and geometry tabs do not show it, and it is not a student-board task boundary or clear request.
-
-## Local Rules
-
-- Task-boundary clearing follows `references/board-task-boundary.md`; automatic clearing before a real new task is this package's authorization, and the shared contract does not authorize it.
+For a board attachment, board-use request, or teacher reference, load `math-common` and read `references/board-contract.md` from its returned base directory. Follow **Teacher Reference** for non-geometric conditions and **Teacher Geometry Demonstration** for geometry (also read `math-common`'s `references/representation-contract.md` before calling `geometry_board_draw`). The submitted-board limits below concern student work, not the separate Teacher demo tab. Task-boundary clearing belongs only to local `references/board-task-boundary.md`.
 
 ## Per-Turn Teaching
 
-The board is an optional expressive tool. A new learning session does not read snapshots or histories sent in a previous one. With no board attachment this session, do not talk about blocks, piles, or editing the board; talk about them only when the student has attached a snapshot, asks how to use it, says they want to use the board, or when a tool is proposed per `references/scaffold-calibration.md`. When posing a problem or re-asking an unanswered one, do not write how to lay it out. A Teacher demo figure is separate: geometry-related teaching and geometry problems still call `geometry_board_draw` and say the figure is on the Teacher demo tab. The student may represent quantities with their own groupings, values, shorthand, spoken words, or equations; understand them as declared and do not require every unit to be drawn. When a hint is needed, follow "Minimal Intervention" in `references/math-teaching-core.md`.
+Board use is optional. A new learning session does not read snapshots or histories sent in a previous one. Talk about board use only with an attachment this session, a student request or choice, or a tool proposal under `references/scaffold-calibration.md`. When posing or re-asking a problem, do not write how to lay it out. Accept the student's groupings, values, shorthand, words or equations without requiring every unit to be drawn; for hints use **Minimal Intervention** in `references/math-teaching-core.md`.
 
-For geometry submissions, follow **Geometry Snapshot Boundary** in the shared `references/board-contract.md`. The steps below concern quantity snapshots only.
+Use **Geometry Snapshot Boundary** in shared `references/board-contract.md` for geometry submissions; the steps below concern quantity snapshots only.
 
-1. Read the snapshot against the problem: first separate "how many shapes" from "how much each represents", then look at groups, merge sources, and notes; be able to point out which data supports the current observation and which relationships still await the student's explanation.
-2. When the meaning is unclear, follow "Tentative Interpretation" in the shared contract: offer one reading or one local question and wait; data that can be assembled into an equation is only a clue, and do not decide the operation for the student.
-3. After a clear explanation, advance only one step on the current focus and accumulate evidence per the shared confirmation protocol. A tidy layout, a coincidentally correct quantity, or having merged and split shapes never alone constitutes evidence of mastery.
+1. After opening the snapshot per the shared contract, distinguish the number of shapes from their represented values. Use explicit groups, merge sources and notes; separate observed data from unconfirmed relationships.
+2. If unclear, apply **Tentative Interpretation**: offer one grounded reading or one local question and wait. An equation the data could fit is a clue; do not decide the operation for the student.
+3. After clarification, advance one step per shared confirmation rules. Tidy layouts, coincidentally correct quantities and merge/split actions alone do not establish mastery.

@@ -25,7 +25,7 @@
 
 1. **只有一份 provider**：`learn/skill-provider.mjs`（代码）与 `learn/lib/skill-resources.mjs`（读取渲染结果）。六个技能包的 `cordis.patch.yml` 只保留一行激活，指向 `baicai-edu-learn/skill-provider.mjs`；不再复制 provider，`sync` 与副本比对随之删除。
 2. **闭包整份列出**：每次激活的 `config.packages` 都列出闭包中七个包（`baicai-edu-learn` 加各学科与画板）。因为组合时最后一行生效，每一行都必须能独立覆盖全部根路径；未安装的包保留为未解析路径并由 provider 跳过，而不是猜。
-3. **技能正文随包渲染**：`scripts/build-resources.mjs` 把 `skills/` 渲染成各包的 `resources/`（每个技能一个文件，外加它引用的资源文件，含跨包引用），安装与运行只读 `resources/`。这样只有代码的安装也能注册完整技能，跨包引用被内联，引用文件缺失在构建期就报错。`resources/` 必须提交，`publish.mjs check` 与契约测试会比对重建结果。
+3. **技能正文随包渲染**：`scripts/build-resources.mjs` 把 `skills/` 渲染成各包的 `resources/`（每个技能一个文件，外加它引用的资源文件，含跨包引用），安装与运行只读 `resources/`。这样只有代码的安装也能注册完整技能，直接引用默认内联；标记 `resource-loading: on-demand` 的技能只加载正文，按正文的分支路由从已安装的 `resources/` 读取对应文件。两种方式均随包构建引用文件。`resources/` 必须提交，`publish.mjs check` 与契约测试会比对重建结果。
 4. **本地安装改为 pack**：`scripts/install.mjs` 把闭包逐个 `npm pack` 后一次 `dsh plugin add`，并在 profile 写临时 `overrides`。本地与 registry 因此共用同一种布局，单份 provider 才能解析全部包。重装会重新 pack 闭包，并把之前装过的其它学科包按 profile 中仍登记的 tarball 路径一并重新 add。
 
 ## 影响

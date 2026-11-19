@@ -1,3 +1,7 @@
+---
+cited: math-high-core/references/topic-map.md
+---
+
 # Teaching concept graph v1 (grades 4–6 focus)
 
 Each entry: `id | usual entry band (indicative, not mandated) | prerequisite IDs | misconception probes | transfer target`.

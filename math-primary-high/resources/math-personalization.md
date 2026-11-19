@@ -1,3 +1,7 @@
+---
+cited: math-high-core/references/math-personalization.md
+---
+
 # Math Personalization
 
 Shared boundaries (must not override the goal, privacy, one detail per turn, or self-assessment priority) follow `learn-core`'s `references/prestart-settings-interpretation.md`. This file specifies how that information is used in upper-primary math.

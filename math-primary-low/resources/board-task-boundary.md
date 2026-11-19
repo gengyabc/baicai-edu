@@ -1,3 +1,7 @@
+---
+cited: math-low-core/references/board-task-boundary.md
+---
+
 # Task Boundary and Board Clearing
 
 This automatic task-boundary rule applies only to `math-primary-low` when it owns the teaching session. The upper-primary package treats the board as optional and requires an explicit student clear request. In this file, "clear" means only clearing the math board; it does not involve chat, attachments, or the student profile. The teaching AI judges from the sent conversation whether it is actually entering a new problem, a new activity, or a new topic. This rule applies even with no board attachment or when the board is not open.

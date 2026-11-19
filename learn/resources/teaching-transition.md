@@ -1,3 +1,7 @@
+---
+cited: learn-data/references/teaching-transition.md
+---
+
 # Cross-Subject Target Handoff
 
 Executed only by the shared lifecycle; a recommendation returns only an authorized target and does not write session identity. Cross-subject choices and explicit cross-subject targets both use this protocol. Real target identity and teaching resolution follow `references/teaching-resolver.md`, and saving still goes only through Finalize. All paths are derived from the current student and a valid subject id; arbitrary file paths in the log are not accepted, and old logs or evidence are not moved.

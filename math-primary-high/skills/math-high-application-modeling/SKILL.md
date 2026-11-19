@@ -2,13 +2,14 @@
 name: math-high-application-modeling
 description: Upper-primary real-world math modeling. Use when a grade 4-6 student wants to solve a real situation (budget, journey, recipe, survey, packaging) by deciding assumptions, choosing a representation, calculating, and validating the result.
 user-invocable: false
+resource-loading: on-demand
 ---
 
 # Upper Primary Application Modeling
 
 ## Start and Input
 
-Load `math-high-core` and follow its "Start and Input". Also read `math-high-core`'s `references/math-teaching-core.md`, `references/problem-design.md`, `references/fraction-relations.md` (for ratio, percent, and decimal load). The six-part cycle below contains the installed modeling steps.
+Load or reuse `math-high-core`; follow its "Start and Input" and applicable branch reads. Use its returned base directory for local references and reuse files already read. Read `references/math-teaching-core.md` before teaching, `references/problem-design.md` when choosing or adapting a task, and `references/fraction-relations.md` for ratio, percent, or decimal work.
 
 Use a real situation only: one the student supplies, one the extracted material actually contains, or one the student agrees to use after being asked. Do not invent data and present it as real; when a quantity must be assumed, label it as an assumption and say what would change the answer. Personalization may choose the setting of the situation only when the student explicitly asks for a real-life task; interests do not supply the numbers.
 

@@ -1,3 +1,7 @@
+---
+cited: math-high-core/references/strategy-diagnosis-rules.md
+---
+
 # Strategy Diagnosis Rules
 
 `math-high-diagnose` gathers evidence and returns; this file limits inference. Judge the mathematical relationship, representation, procedure, and explanation actually shown. CGI-derived stage fields use only the values in `references/progression-map.md`; they describe particular strategies, not the whole grade-4-6 curriculum or a ranking of teaching methods.

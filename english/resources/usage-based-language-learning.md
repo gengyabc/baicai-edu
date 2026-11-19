@@ -1,6 +1,7 @@
 ---
 name: usage-based-language-learning
 description: Pattern learning. Load when the student needs to learn an English sentence pattern or collocation; build the pattern with multiple meaningful variant examples.
+resources: english-input-adaptation.md english-scaffolding.md english-teaching-core.md english-segment-fields.md
 ---
 # Usage-Based Language Learning
 ## Principle
@@ -19,3 +20,5 @@ Follow the “Method skills” contract in `english-core`.
 6. Return examples already shown and the child's actual use. Its `references/english-segment-fields.md` distinguishes imitation from independent transfer.
 ## Example
 “I want a banana.” “I want a red kite.” “What do you want for our picnic?”
+
+This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

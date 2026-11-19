@@ -1,3 +1,7 @@
+---
+cited: math-low-core/references/math-student-problem-design.md
+---
+
 # Student-Made Problems: Lower-Primary Supplement
 
 Load `math-common` and read `references/student-problem-contract.md` from its returned base directory. It owns composition, answer by mode, grading, correction, and evidence.

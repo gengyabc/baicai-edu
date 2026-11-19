@@ -1,6 +1,7 @@
 ---
 name: output-hypothesis
 description: Pushed output. Load when the student has a clear meaning but cannot say or write it, for English writing, student-created items, or evaluating existing expression; keep the original meaning and do not write for them.
+resources: english-scaffolding.md english-teaching-core.md english-input-adaptation.md english-segment-fields.md
 ---
 # Output Hypothesis — Swain
 ## Principle
@@ -20,3 +21,5 @@ Follow the “Method skills” contract in `english-core`.
 
 ## Example
 “Your robot has a special power. What can it do?” Wait for the child's idea; a sentence beginning is only a later support if needed.
+
+This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

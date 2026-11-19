@@ -1,3 +1,7 @@
+---
+cited: math-low-core/references/targeted-practice-rules.md
+---
+
 # Practice Evidence: Lower-Primary Supplement
 
 Shared contract: load `math-common` when practice needs the evidence strategy; the load result gives its base directory, and `references/practice-evidence-contract.md` there owns the four Tiers and non-Tier Consolidate / Revisit purpose, one problem at a time, the count cap, per-problem adjustment, the stop condition, and transfer evidence.

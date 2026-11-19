@@ -1,56 +1,39 @@
 # Recursive Prerequisite Learning
 
-Read when a route-critical tool gap is confirmed, a tool-learning child task reveals another gap, a recursive plan resumes, or dependencies become too burdensome. `math-high-session` remains the teaching owner and sole leaf dispatcher. Read `learn-data`'s `references/learning-plan.md` from its loaded base directory before creating, changing, saving, or restoring `context.learning_plan`; that shared contract owns the shape, authorization, persistence, and recovery. These are learning dependencies, not runtime function calls.
+Read for a confirmed route-critical gap, a further child dependency, plan resume, or burdensome dependencies. `math-high-session` owns teaching and leaf dispatch. Before creating, changing, saving or restoring `context.learning_plan`, read `learn-data`'s `references/learning-plan.md` from its loaded base directory for schema, authorization, persistence and recovery. These are dependencies, not runtime function calls.
 
 ## 1. Identify the next dependency
 
-Ordinary agreed new learning, including session's `micro_lesson`, does not by itself create `learning_plan`. Build a child only for an evidenced necessary dependency under this protocol; a ready existing child may use the same micro-lesson act without changing owner or bypassing its independent return condition.
+Reuse demonstrated / self-reported / unknown tool evidence and support. Try self-report provisionally; probe minimally only if it changes the next action. Unknown is not missing. A “why” may concern selection; a wrong answer, grade, terminology, silence or “no ideas” alone does not establish a gap.
 
-Reuse demonstrated / self-reported / unknown tool evidence with support conditions. Unknown is not missing: ask a minimal discriminating task only if it changes the next action. A self-report may be tried provisionally without confirming mastery. A student's question about why a method helps usually concerns selection, not inability to execute it. Do not diagnose a tool gap from one wrong answer, unfamiliar terminology, grade, silence, or no ideas alone.
-
-When a necessary tool is genuinely missing, enter a tool-learning child task instead of explaining that tool inside the parent and calling the gap repaired. Choose only the nearest useful dependency; do not prescribe a chapter or test the whole prerequisite graph. Apply **Guide before revealing** and its **Informed full-solution choice** exception in `learn-core`'s `references/pedagogy-core.md` to parent and child tasks alike. Informed full-solution choice is not conditional on completing prerequisite study; it does not establish tool readiness or repair a gap. Respect pause/end without a compulsory recursive lesson or invented performance.
-
-Completion: an evidenced dependency or a reachable selection bridge is identified; unanswered probes wait.
+Choose the nearest necessary evidenced tool, not a chapter, curriculum inventory or inline parent demonstration. Ordinary agreed new learning (`micro_lesson` included) creates no plan. Apply **Guide before revealing** and **Informed full-solution choice** in `learn-core`'s `references/pedagogy-core.md` in both frames: informed choice requires no prerequisite study and proves no readiness. Honor pause/end; unanswered probes wait.
 
 ## 2. Preserve the parent; enter one child
 
-The session returns `learning_plan_update` to lifecycle using the shared protocol, including its owner authorization and the plan actually provided to the student; lifecycle persists `context.learning_plan`. `learn-data`'s `references/learning-plan.md` is authoritative for the update envelope and write order. Keep `root_scope_id` and the resolved teaching implementation. A local frame `id`/`parent_id` identifies the child; it is not a new subject, provider, scope, act, leaf, or diagnosis label.
-
-Before entry, synchronize the parent's original problem/material references, received answer, pending question, mode/activity, active act/leaf step, established relations and supplied support into its frame `task`. Create one child with its goal, missing-tool evidence and observable `return_condition`; set `active_frame_id` and project the child's task fields into context: focus, mode, activity, target_context and materials to their corresponding context fields, and task.turn_state into context.turn_state. Retain the root scope, teaching and plan alongside that projection. Only the active frame consumes the next reply. Parent questions remain stored, not simultaneously posed.
-
-Provide a short readable plan: original goal, current child, confirmed gaps versus unverified dependencies, provisional order, what independent tool use will permit a return, and next step. Ask lifecycle to record it before advancing; report the actual save result, distinguishing session recording from final long-term save. Never write profiles from a leaf.
-
-Use the suitable existing skill through session dispatch: diagnosis only when evidence needs clarification, practice when its trigger applies, otherwise the mainline's task-selected teaching. Reuse loaded instructions; do not create one skill per tool or switch bands for lower-grade tools. A leaf that finds a gap returns the evidence/suggestion and wait position; it does not call another leaf. The same-turn two-dispatch limit still applies; `await_student` stops the turn immediately.
-
-If the child reveals another confirmed prerequisite, reconsider the route and nearest dependency before descending again, then repeat this process only after preserving its position. If its tools are available, stop decomposing and teach the child normally: inquiry, representations, labeled examples, explanation and fading are all available. Recursion is not a ban on teaching.
-
-Completion: one active child and one pending question, a preserved parent, and a student-visible plan match the recorded state.
+1. Snapshot the parent's full task, including materials, received answer, pending position, mode/activity, act/leaf and help. Keep `root_scope_id` and teaching; local `id`/`parent_id` are not new scope, owner, act or diagnosis.
+2. Create one child with goal, gap evidence and observable `return_condition`; set `active_frame_id` and project the child's task fields into context per the shared contract, including task.turn_state into context.turn_state. Only the active child consumes replies; store the parent's question rather than posing both.
+3. Show original goal, current child, confirmed versus unverified dependencies, tentative order, independent-use return condition and next step. Session returns the owner-authorized `learning_plan_update` to lifecycle before advancing; report actual recording versus durable saving. Leaves never write profiles.
+4. Use diagnosis only to clarify evidence, practice when triggered, otherwise mainline teaching. Leaves report gap evidence and wait position, never dispatch a leaf; respect two dispatches per turn, with `await_student` stopping immediately. Reuse existing skills, not new skills or another band. Reconsider the route before descending for a further confirmed gap; otherwise teach normally, including examples/explanation/fading or a ready child's `micro_lesson`, without bypassing the return condition.
 
 ## 3. Check readiness; return one parent
 
-For a guided-learning return, a new appropriate task must show independent tool use under stated conditions before returning. This readiness check is not a prerequisite for the shared informed full-solution path. “I understand”, reciting an example, or filling arithmetic after the teacher chose the method is not that evidence. Supplied examples and critical constructions remain teacher help. Local readiness does not automatically confirm long-term mastery or promote a strategy stage.
+Guided return requires fresh independent tool use under stated conditions, not agreement, recitation or arithmetic after teacher selection. Attribute supplied examples/constructions as teacher help. Record child evidence, complete it and restore exactly one parent with its original answer, question and support; never substitute the child's answer. Reconnect the tool to the original obstacle, leave untested selection with the student, and re-evaluate there. Local readiness is not durable mastery or a stage promotion.
 
-Record the child's actual evidence, complete that child, and restore exactly one parent, including its original problem, answer, pending position and support. Do not use the child's answer as the parent's answer. Reconnect the learned tool to the parent's obstacle, leaving the student to judge its purpose where selection is still unknown. Re-evaluate readiness at that parent rather than popping the whole chain.
-
-A verified student alternative may remove a dependency: revise the plan and skip unnecessary study rather than completing a compulsory list. Mark an obsolete child as no longer required with its reason; do not fabricate independent success as its completion evidence.
-
-Completion: a justified single-layer return or a concrete child learning step; parent strategy selection remains unknown until shown.
+A verified alternative can remove the dependency: mark the obsolete child no longer required with a reason, not invented success.
 
 ## 4. Park, renegotiate, or continue
 
-Dependencies are too large/deep when evidence shows several unavailable tools or a substantial child learning process and the parent no longer offers intelligible progress. Judge the actual burden, not a fixed global depth or grade. A repeated tool/goal on the ancestor path without new evidence is a cycle warning: stop descending, review the dependency judgment, representation, and route. More calls are not progress.
+Judge actual burden (several unavailable tools, lengthy child learning, no intelligible progress), not a fixed global depth or grade. A repeated ancestor tool/goal without new evidence is a cycle warning. Repeated non-progress warrants reviewing tool, representation and route before descending again.
 
-Record the current target and whole return chain, park the blocked goal, and provide/update the plan. Recommend learning the child as the nearer goal, explaining the specific dependencies. Use the shared process-choice tool for decisions, while mathematical thinking questions remain plain text. Distinguish:
+Record target and return chain, park the blocked goal, update the visible plan and recommend the nearer child with reasons. Use the shared process-choice tool for decisions, plain text for mathematical questions:
 
-- **Learn child first, return later:** preserve the parent's goal and return chain; no ordinary topic-switch cleanup.
-- **Abandon parent, choose a new goal:** explicitly terminate automatic return, then use lifecycle's authorized target-change/save flow.
-- **Keep the original goal:** explain the likely extra prerequisite time and uncertainty, retain it, and continue minimal tool learning with normal teaching and stall checks. Refusal does not authorize skipping dependencies or unbounded recursion.
-- **Decline necessary child work too:** renegotiate a feasible path or pause/end. Do not claim readiness or block exit.
+- **Learn child first, return later:** retain goal and chain; no topic-switch cleanup.
+- **Abandon parent, choose a new goal:** end automatic return; use lifecycle's authorized target-change/save.
+- **Keep the original goal:** explain time and uncertainty; continue minimal tool teaching with stall checks, not unchecked recursion or skipped dependencies.
+- **Decline necessary child work too:** renegotiate or pause/end without claiming readiness.
 
-After repeated non-progress, review before another descent. Honor stop, mode changes and explicit new targets before resuming the plan; Feynman mode keeps the student as presenter. A park is not abandonment or mastery, and a recommendation is not an accepted target change.
-
-Completion: an authorized concrete next step or a recorded pause/choice; the parent has not silently disappeared.
+Honor explicit mode changes, stops and new targets before resuming; Feynman keeps the student as presenter. Parking is not abandonment; recommendation is not acceptance.
 
 ## Evidence
 
-The session produces at most one merged segment for real performance; plan-only, choices, and teacher-only explanation use `session_segment: null`. In existing `strategy_summary`/`ability_evidence`, identify the actual child goal/local frame, independent versus supported tool execution, teacher proposals, and parent selection still untested. Do not add a long-term obstacle type, strategy score or aggregated ability level. Log/current-state plan snapshots are task recovery information, not mastery evidence. Submitted board material stays attributed to its actual task, with no implicit clear or settings authorization.
+Session merges actual performance into at most one segment; plan/choice/teacher-only turns use `session_segment: null`. In `strategy_summary`/`ability_evidence`, attribute local frame/goal, independent versus supported execution, teacher proposals and untested parent selection. Plan snapshots support recovery, not scores, stages or persistent obstacle labels. Board submissions keep task attribution; they do not authorize clears or settings changes.

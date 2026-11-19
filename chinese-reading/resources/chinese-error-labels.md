@@ -1,3 +1,7 @@
+---
+cited: chinese-core/references/chinese-error-labels.md
+---
+
 # 语文错误标签表
 
 语文阅读和写作统一使用这份标签表。

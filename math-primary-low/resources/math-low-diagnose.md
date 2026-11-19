@@ -1,6 +1,7 @@
 ---
 name: math-low-diagnose
 description: Math strategy diagnosis and error triage. Use when the math-goal starting point is unclear, two guided turns stall, the student submits error items, practice needs error-pattern ID, or self-report conflicts with performance.
+resources: math-teaching-core.md strategy-diagnosis-rules.md targeted-practice-rules.md problem-design.md math-segment-fields.md
 ---
 
 # Math Diagnosis
@@ -44,3 +45,5 @@ Dispatched only by `math-low-session`; per its "Central Dispatch Contract", retu
 Before merging, read `math-low-core`'s `references/math-segment-fields.md`: `next_target` → `next_step_candidate`; `confidence` is diagnosis metadata only.
 
 The student-visible wrap-up is one sentence on the core issue and one sentence on the next step.
+
+This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

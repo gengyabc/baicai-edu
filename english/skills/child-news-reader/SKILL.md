@@ -2,6 +2,7 @@
 name: child-news-reader
 description: Children's news reading. Load when the student chooses English news or provides a news link; verify sources, age-filter, and rewrite to the student's level.
 user-invocable: false
+resource-loading: on-demand
 ---
 
 # Child News Reader
@@ -16,12 +17,12 @@ Reuse the entry handoff: snapshot, `target_context`, materials / `material_refs`
 
 ## 2. Shared teaching rules
 
-Read through `english-core`:
+Reuse the material already read by `english-session`; otherwise read the matching `english-core` reference from its base directory before acting:
 
-- Language level and difficulty changes: `references/english-input-adaptation.md`; keep emotional maturity separate from readability.
-- Hints and fading support: `references/english-scaffolding.md`.
-- Feedback and method selection: `references/english-teaching-core.md`.
-- Evidence mapping: `references/english-segment-fields.md`.
+- Adapt article or difficulty: `references/english-input-adaptation.md`; separate maturity from readability.
+- Give or fade hints: `references/english-scaffolding.md`.
+- Plan reading or give feedback: `references/english-teaching-core.md`.
+- Map evidence for the session handoff: `references/english-segment-fields.md`.
 
 Read for meaning and enjoyment, not a test after every paragraph. Student-visible text follows core's English-only delivery rules.
 

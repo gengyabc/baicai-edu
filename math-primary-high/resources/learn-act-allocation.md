@@ -1,3 +1,7 @@
+---
+cited: math-high-core/references/learn-act-allocation.md
+---
+
 # Learning Act Allocation
 
 Every math turn in this package belongs to one of the act sets below. An act set determines the task, the required output format, and the stop condition; which method file is read is decided separately by difficulty type per `math-teaching-core.md`.

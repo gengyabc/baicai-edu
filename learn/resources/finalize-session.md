@@ -1,3 +1,7 @@
+---
+cited: learn-data/references/finalize-session.md
+---
+
 # Finalize Session
 
 Before running, read this skill's `references/profile-schema.md`, `references/session-schema.md`, and `references/session-retention.md`, plus `learn-core`'s `references/feynman-skill-whitelist.md`. Aggregate `session_segments` into five patches (subject profile, diagnosis history, memory, current state, milestones), merge-write them into the four subject files, then clear the log.

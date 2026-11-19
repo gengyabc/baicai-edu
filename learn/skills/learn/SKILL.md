@@ -2,11 +2,12 @@
 name: learn
 description: Start adaptive learning from a topic, materials, error items, or profile goals; prefer applicable subject packages, fall back to general-task teaching when none apply, and support different education stages.
 disable-model-invocation: true
+resource-loading: on-demand
 ---
 
 # Learn
 
-Load `learn-core` and `learn-data` (only the ones not yet loaded this session; already loaded ones are reused per `learn-core`'s "Load Once, Reuse After"), then read and execute `references/session-lifecycle.md` from `learn-data`. A new session uses `entry_point: learn` and initial `mode: learn`; an existing session resumes according to the lifecycle.
+Load or reuse `learn-core` and `learn-data` per "Load Once, Reuse After". Read and execute `references/session-lifecycle.md` from `learn-data` before opening, resuming, or routing. On a crisis cue, apply `learn-core`'s `references/llm-safety-boundaries.md` first. A new session uses `entry_point: learn` and initial `mode: learn`; an existing session resumes per lifecycle. Read named references from the returned base directory of their owner.
 
 ## Choose a Target
 

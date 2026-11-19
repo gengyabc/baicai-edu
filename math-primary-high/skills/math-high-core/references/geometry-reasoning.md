@@ -1,48 +1,30 @@
 # Geometry: Area Transformations and Auxiliary Objects
 
-Read when an area route needs splitting, completing or rearranging regions, an equal-area claim needs its conditions, or an auxiliary construction needs a purpose. A diagram alone is not a trigger. Use `references/derivation-teaching.md` for planning and bridging and `references/proof-teaching.md` for argument validity; this is not a new teaching loop, act, leaf or protocol. `math-high-session` retains the current act and dispatch.
+Read for splitting, completing or rearranging area, justifying equal areas, or choosing an auxiliary construction, not for a diagram alone. `math-high-session` keeps the current act. Use `references/derivation-teaching.md` and `references/proof-teaching.md`; this is not a new teaching loop.
 
-## Tools and representation
+Use only needed `area-perimeter`, `geometry-attributes`, `unit-measure` and `multiplicative-thinking` tools from `references/topic-map.md`: target region, additivity, compatible units, perpendicular height and relevant area relation. Probe only decision-changing unknowns; a confirmed gap uses `references/prerequisite-learning.md` without replacing the parent problem.
 
-Connect only the chosen route's tools to `area-perimeter`, `geometry-attributes`, `unit-measure` and `multiplicative-thinking` in `references/topic-map.md`: identify the target region, use area additivity and consistent units, recognize a base and its perpendicular height, and use the required basic area relationship. Unknown tools need only a decision-changing probe; a confirmed missing tool follows `references/prerequisite-learning.md`, preserving the parent geometry problem rather than inserting several formulas into it.
+Use stated conditions, student explanations and unambiguous information from already-read submitted images; conjectures need grounds. Paper, words and tables suffice. Follow `references/structured-drawing.md` for submitted boards; board geometry comes from student declarations, not visual inspection. For a drawable teaching task, use `math-common`'s representation and board contracts and `geometry_board_draw` on the Teacher demo tab. Leave a still-open partition or auxiliary choice off the figure.
 
-Use stated conditions, student declarations and unambiguous information from already-read submitted images. A student conjecture remains a conjecture until justified. Length, equality, parallelism and perpendicularity need explicit grounds, not visual appearance. Words, paper diagrams and tables are valid. When this turn teaches or poses a drawable geometric figure, load `math-common` and follow its representation contract: call `geometry_board_draw` so that figure is on the Teacher demo tab, leaving a still-open partition or auxiliary choice off the figure. For an attached board read `references/structured-drawing.md` first. Board position and shape size are not continuous area, length or coordinate measurements. If a decisive relation is missing, clarify that relation once and wait.
+## Bridge from student work
 
-## Bridge from the actual obstacle
-
-| Current evidence | Useful next action |
+| Obstacle | Next move |
 |---|---|
-| No route for an irregular region | Locate the target, known whole and missing part; invite one computable partition or completion, leaving the choice to the student. |
-| A valid student partition is already proposed | Verify coverage and continue that partition. A complement route is an alternative, not a correction. |
-| Correct number but no reason for subtraction/addition | Ask which region each term represents and why the removed part lies inside the whole, or why the pieces exactly cover the target. Repeating multiplication does not repair this warrant. |
-| A construction seems arbitrary | Connect a student-visible clue to the needed relation: a notch may suggest extending an edge to a rectangle; a base-height comparison may suggest a perpendicular to the base line. Leave the useful object open when its choice is still the learning goal. |
-| A moved or rearranged shape seems to settle the claim | Check what was preserved, whether every removed piece was counted, and whether the destination has gaps or overlaps. |
-
-For each area route, check **coverage**, no **internal overlap**, no **omissions**, and the region represented by every term. Shared boundaries have no area; multiplying compatible lengths gives square units. A complement calculation needs containment and removal of exactly the missing region. Rigid movement preserves area; a claimed filling also needs no gaps or overlaps. Equal area implies neither equal shape nor equal boundary length: it is not congruence or equal perimeter.
-
-An auxiliary object must be constructible with the required properties. State the clue and expected use before giving one. When the teacher supplies it, label it teacher-supplied and let the student justify its consequences; subsequent arithmetic or repetition is not independent discovery. General proof checks remain in the proof reference, not a separate geometry proof protocol.
-
-For triangles, height is the perpendicular distance from the vertex to the line containing the chosen base. A perpendicular foot may lie on the extension of the base, not on the segment itself. Equal base lengths and equal perpendicular heights justify equal areas when the triangle area relation is available; same base alone does not. A stated parallel line can establish common distance, but a line merely looking parallel cannot.
-
-Completion: the student connects each term or transformation to a region or a justified geometric relationship over the actual conditions; an unexplained correct answer leaves that reasoning unknown. At a real strategy decision or stall, use the monitoring guidance in `references/mathematical-strategies.md` to ask what the attempt established and why to continue or change it, rather than demand a report after each calculation.
-
-## Evidence
-
-Keep student route selection, supported calculation, teacher-supplied constructions and still-unknown explanation or transfer separate. Repeating a supplied partition or formula is supported work; local tool readiness does not establish independent parent construction.
-
-Recording: `references/math-segment-fields.md` — at most one merged performance segment per turn for actual student work; teacher-only explanation, a choice or a plan uses `session_segment: null`. Tool children and recovery: `references/prerequisite-learning.md`. This supplement adds no method scores, obstacle labels or plan fields. Near transfer and changed-condition boundaries remain optional; respect refusal or ending.
+| No route | Locate target, known whole and missing part; leave a computable partition/completion to the student |
+| Valid student partition | Verify and keep it; a complement is an alternative |
+| Correct value, unclear add/subtract | Ask what region each term represents and why it belongs |
+| Auxiliary object seems arbitrary | Link a clue to the needed relation: a notch suggests completing a rectangle; a base-height comparison suggests a perpendicular. Keep the choice open when that is the goal |
+| Rearrangement treated as proof | Check what the movement preserves and what fills the destination |
 
 ## Opening and private route checks
 
-| Goal or route | Teaching action | Acceptance |
-|---|---|---|
-| Find an area-preserving transformation | Reuse evidenced area/movement tools; invite a computable transformation while leaving destination, partition and movement open | The teacher figure contains only known conditions, not the protected construction |
-| Follow a student complement route | Check containment, computable extra regions and exact recovery of the target | Keep the route if justified; identify any missing area tool without rejecting the route or assuming readiness |
-| Learn an assigned transformation | Give permitted explicit guidance | Record teacher route selection separately from student execution |
-| Supply a separate-example demonstration | Follow `references/scaffold-calibration.md` | Its prerequisites do not depend on the protected target formula |
-| Verify a partition/rearrangement | Check the region represented by every term, coverage and preservation | Equal numerical results alone do not validate the partition |
-| Verify equal triangle areas | Establish equal bases and perpendicular heights from stated/justified conditions | Common base alone is insufficient; an external perpendicular foot is allowed |
-| A condition or dimension changes | Recheck the affected base, height, containment or coverage | Changed numbers alone do not establish boundary discrimination |
-| Only appearance suggests a relation | Ask for the relevant stated condition and wait | No pixel measurement or board layout establishes it |
+- **Partition/rearrangement:** verify coverage and preservation, no gaps or internal overlap, and the region for each term. Shared boundaries have no area; use square units. Rigid movement preserves area, not a claimed filling. Equal numerical results do not verify a partition; equal area implies neither congruence nor equal perimeter.
+- **Complement:** Check containment, computable extra regions and removal of exactly the missing area; retain a justified route even if a tool is still missing.
+- **Equal triangles:** justify equal bases and perpendicular distances to their base lines; a foot can be on an extension. Common base alone is insufficient. A stated parallel can justify common height; appearance cannot.
+- **Changed dimension/condition:** recheck the affected height, base, containment or coverage; new numbers alone are not boundary discrimination.
+- **Authority:** No pixel measurement or board layout establishes coordinates, dimensions, equality, parallelism or perpendicularity. Clarify one missing decisive relation and wait.
+- **Disclosure:** Keep checked answers private; an independent figure shows known conditions, not the protected construction. Verify an auxiliary object's required properties and link it to its purpose. For a separate demonstration use `references/scaffold-calibration.md` without depending on the protected formula; for assigned transformations use permitted guidance. Private coordinates/advanced checks are not prerequisites or board primitives.
 
-Keep checked answers private during independent exploration. Shared reveal rules in the derivation/proof references govern demonstrations and informed full solutions. Coordinates or advanced calculations used privately for verification do not become student prerequisites or board primitives.
+Completion: connect terms and transformations to justified regions/relations; use `references/mathematical-strategies.md` at a decision or stall. Label supplied partitions, formulas and constructions as help; distinguish student route choice, execution and still-unknown justification/transfer.
+
+Recording: `references/math-segment-fields.md` — at most one merged performance segment; teacher-only explanation, a choice or a plan: `session_segment: null`. This supplement adds no method scores, obstacle labels or plan fields.

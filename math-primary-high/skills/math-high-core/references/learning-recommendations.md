@@ -1,59 +1,45 @@
 # Upper Primary Math Learning Recommendations
 
-Read by `learn-recommend` through the subject contract. This file decides the content, difficulty, reasons, and ordering of math candidates for grades 4–6; lifecycle owns selection, saving, and handoff. Recommendations supply no performance evidence.
+`learn-recommend` reads this subject-contract role for candidate content, difficulty, reasons and ranking; shared flow owns selection, saving and handoff. Recommendations create no performance evidence.
 
-## Evidence and Scope
+## Evidence and Candidates: Relationship × Strategy × Structure
 
-Use only the existing snapshot (at most its recent 5 session summaries and 20 recent errors) and current real performance. Summaries are not full turn logs: independent, supported, delayed, and comparable conditions remain unknown unless explicitly recorded. Do not scan old sessions or raw materials to reconstruct missing history.
+Use current performance and the snapshot (at most 5 session summaries and 20 recent errors). Independent, supported, delayed and comparable conditions remain unknown unless recorded; do not reconstruct them from older logs or raw files.
 
-## Candidates: Relationship × Strategy × Structure
+Choose one observable relationship, strategy and structure. Check methods, unknown positions, numbers and support in `strategy_summary`, then `priority_targets`, `developing_topics`, errors and `session_history[0].next_step`. A saved step is a candidate, not a schedule.
 
-Choose one observable relationship × strategy × structure, not “learn fractions” or “improve reasoning”. First inspect the specific methods, problem types, unknown positions, numbers, and support in `strategy_summary`, then `priority_targets`, `developing_topics`, recent errors, and `session_history[0].next_step`. A saved next step is a candidate, not an automatic task or schedule.
-
-- Stages and domains follow `references/progression-map.md`; arithmetic, multi-digit, fraction, and symbolic tracks stay distinct. Unknown stage supports low-load exploration, not an entrance battery or a grade-based diagnosis.
-- Choose relationships/numbers per `references/problem-design.md`. Change mainly one load factor; grade is not a content gate. Interests and preferences supply context only under `references/math-personalization.md`; `material_difficulty` adjusts load, not mastery.
-- For a supported near-neighbor step, read at most one relevant edge in the existing `references/topic-map.md`, not the whole graph. Ratio, percent, proportion, and unknowns as relations are ready when their earlier relationships are usable, not on a fixed unit schedule.
+Keep domains/stages separate per `references/progression-map.md`. Use `references/problem-design.md` for task load, `references/math-personalization.md` for context, and at most one relevant edge in `references/topic-map.md` for a supported near-neighbor. Unknown stage calls for low-load exploration, not a battery. Grade is not a content gate; `material_difficulty` adjusts load, not mastery. Introduce ratio, percent, proportion and relational unknowns when their prerequisites are usable.
 
 ## Candidate and Opening
 
-Keep the existing `id / focus / target_context / reason / basis` shape. Topic names describe mathematics, not “teach me”. Reasons never overwrite student-authored `target_context.intent`. For new candidates, describe the goal and first activity in `reason`, and pair a proposed fresh opening with `target_context.math_opening_hint: micro_lesson | practice | probe | challenge` per **Selected opening expectation** in `learn-data`'s `references/target-parsing.md`. A continuation instead retains the current scope and pending point without a fresh hint. Choose from evidence, not a rule that every learning session starts with a problem:
+Keep `id / focus / target_context / reason / basis`. For new candidates, name the mathematical goal and first activity in `reason`, and optionally propose `target_context.math_opening_hint` per **Selected opening expectation** in `learn-data`'s `references/target-parsing.md`. Preserve student-authored `target_context.intent`. A continuation instead retains the current scope and pending point without a fresh hint.
 
-| Evidence | Small candidate | Suggested opening |
-|---|---|---|
-| Several comparable performances or an existing diagnosis confirm one blocking relation | Repair that minimal relevant gap, such as equivalence with the same whole | `micro_lesson` when the gap is clear and teaching fits; `probe` if the cause is still ambiguous |
-| Usable tool execution is evidenced, but route selection depended on teacher cues or is the observed obstacle | Find and assess one route linking that tool to an unfamiliar target; follow the route-ownership guidance below | `probe` for an unhinted selection check; `micro_lesson` when learning to choose a route is agreed; not more of the same calculations |
-| Recent completion depended on hints/examples, with no independent evidence and no separately evidenced route-selection obstacle | Consolidate the same relation | `practice`: fresh unhinted check before further scaffolding, not a harder topic |
-| Recent comparable independent explanation or method selection | One near-neighbor new relation or a structural/meaningful-context variation | `micro_lesson` for new learning; `challenge` for transfer without revealing the method |
-| Explicit later-check suggestion, or earlier success without recent comparable performance | Offer one fresh look back | `practice`, unhinted; claim neither forgetting nor a due date without the required records |
-| One error only | Local clarification, keeping the cause tentative | `probe` only when discriminating evidence is needed, not a stable-weakness label |
-| Grade/interests only or no history | A low-load exploratory relationship | `probe` or a clearly agreed learning opening; reason says “we could start from …”, not an invented past observation |
-| Self-report only | Try the student's stated goal provisionally | Match the request without treating self-report as demonstrated mastery |
+| Evidence | Candidate / opening |
+|---|---|
+| Comparable work or diagnosis confirms a blocker | Minimal repair: `micro_lesson` for an agreed clear gap; `probe` if the cause is unclear. |
+| Can execute a supplied method but route choice was supported or blocked | Connect a known tool to an unknown: uncued `probe` or agreed route-finding `micro_lesson`, not more calculations. |
+| Only hinted/example success, with no separate route obstacle | Consolidate the same relation: a fresh unhinted `practice` before more support or difficulty. |
+| Recent comparable independent explanation or selection | Near-neighbor `micro_lesson` or uncued structural/context `challenge`. |
+| Agreed later check or older success with no recent comparable evidence | Fresh `practice`; claim no forgetting or due date without records. |
+| One error only | Local `probe` if clarification matters; no stable-weakness label. |
+| Grade/interests only or no record | Low-load exploratory `probe` or agreed learning opening; reason describes a possible start, not invented history. |
+| Self-report only | Provisionally match the requested goal; self-report is not demonstrated mastery. |
 
-Match the candidate to the domain's actual relationship, not an arithmetic ladder. An independently justified prerequisite can support neighboring new learning; teacher-supported performance instead calls for a fresh independent check.
+For route finding, apply **先搭桥，再推导** in `references/derivation-teaching.md` after entry. The candidate can describe the activity; omit method cues in the actual independent task. Unknown route source warrants a low-load check, not a diagnosis; target execution if choice is already independent. For agreed transfer consider a changed condition that makes the old route inconvenient; a justified switch is evidence even before a correct value. Do not add route planning to routine fluency.
 
-Hints are optional, temporary, and advisory: only candidates and the selected session context carry them. Session chooses the real action; lifecycle consumes the hint in the first successful opening context write with the advanced pending state. Failed writes retain it for retry. Never put hints into long-term summaries, profiles, ability evidence, or a global mode. Old candidates without hints follow normal rules. A continued same-goal pending task resumes unchanged, and explicit practice, self-derivation, Feynman, or original-solution requests override stale hints.
-
-### Recommend route finding, not calculation volume
-
-When the recorded pattern is **can execute a supplied method, but has not selected a route**, propose finding and assessing a connection from a usable tool to the unknown. Candidate wording describes that activity; the actual independent-check task omits method cues. Use the active UI locale.
-
-Apply **先搭桥，再推导** in `references/derivation-teaching.md` after entry; keep the existing `/learn` route and candidate shape. Geometry transformations/auxiliary objects and multi-step intermediate quantities are initial use cases, not a reason to add a planning layer to routine fluency. If route source was not recorded, say it is unknown and offer a low-load check, not a stable “cannot choose” diagnosis. If the route is already student-owned and only execution is unstable, target execution instead. For agreed transfer after route learning, consider an unhinted fresh task, including a changed condition where the previous route is inconvenient; a justified switch is useful evidence even before a correct final value.
+Session selects the real action; lifecycle consumes the advisory hint only in the first successful opening write with advanced pending state. Retry after failed writes. No hint in profiles, long-term summaries, ability evidence or a global mode. Old candidates without hints follow normal rules; pending continuation and explicit practice, self-derivation, Feynman or full-solution requests override stale hints.
 
 ## Ranking and Reasons
 
-Apply these rules in order:
+1. A reliable explicit goal goes straight to teaching. For “different content”, offer a genuinely different feasible relation/domain.
+2. Prefer latest comparable independent evidence over older suggestions; different scope or support stays separate. Easier success does not erase a harder gap.
+3. Prioritize a confirmed relevant blocker; otherwise weigh consolidation, neighboring learning, transfer and review. Recently independent isomorphic work needs an actual review reason. Usually offer 2–3 distinct candidates, exactly one preferred first choice; one justified candidate suffices.
+4. Give a reason in the active UI locale per `learn-data`'s `references/ui-locale.md`: an observed action, its support/independence, and what the candidate develops (or an honest exploratory basis). Do not expose ids or infer a broad ability label.
 
-1. **Scope first.** An explicit reliable goal goes straight to teaching, not recommendation. For “different content”, prefer a different feasible relationship/domain rather than the old sticking point with new objects.
-2. **Resolve conflicts.** Latest comparable independent evidence may replace an old suggestion. Different task scope or prompting conditions stay separate; simpler success does not erase a harder unresolved gap. Missing support conditions stay unknown.
-3. **Choose the next useful step.** A confirmed relevant blocker comes first. Otherwise compare consolidation, near-neighbor new learning, transfer, and agreed review against recent evidence and goals. Recently independent isomorphic work with no review need does not occupy first place. Usually give 2–3 distinct candidates, exactly one preferred first choice; one justified candidate is sufficient.
-4. **Make reasons checkable.** Use one actual recorded action plus why this next step helps. Use the active UI locale per `learn-data`'s `references/ui-locale.md`, not topic-map ids or profile keys. State the observed action, its independence/support and the relationship this next step develops; avoid broad ability labels.
+Seeing/skipping a card is not selection. Preserve pending order; shared flow handles delegation. At session end return one evidence-based `next_step_candidate`.
 
-Seeing, skipping, or not answering the card authorizes no selection; delegated choice follows the shared flow. A pending recommendation resumes with its original ordering. At session end use one evidence-based `next_step_candidate`, not a new recommendation database.
+## Prerequisites and Package Fit
 
-## Tools, Prerequisites, and Package Fit
+A board/diagram need or isolated tool gap does not by itself justify `math-primary-low`. Use local support; enter `references/prerequisite-learning.md` only for a confirmed necessary dependency, not a proposed lesson.
 
-A need for objects, diagrams, board use, or one weak prerequisite does not by itself justify `math-primary-low`; support the student inside this package with grade-appropriate language. Only an evidenced necessary dependency enters `references/prerequisite-learning.md`; a proposed lesson alone creates no plan.
-
-Known grades 1–3 fit the lower band, with general teaching as resolver fallback when unavailable. If recorded stage appears wrong, the shared profile flow confirms it. Package changes follow `learn-data`'s `references/teaching-resolver.md`: the subject supplies evidence/rationale, learn owns process choices, confirmation, saving, and re-resolution for a new task. No direct leaf/package hot-swap or automatic installation. `learn-recommend` owns goal choices only under its recommendation gate; a tool suggestion alone is not that trigger.
-
-Completion: every candidate has an immediately actionable small goal, an evidence/default basis, and a matching provisional opening; exactly one is preferred, and recommendation/selection creates no student-performance record.
+For known grades 1–3 prefer low; resolver handles fallback. Subject provides fit evidence; learn owns process choices, confirmation, saving, and re-resolution for a new task per `learn-data`'s `references/teaching-resolver.md`. Profile flow confirms stage corrections. No direct leaf/package hot-swap or automatic installation; a tool suggestion alone is not that trigger for recommendation.

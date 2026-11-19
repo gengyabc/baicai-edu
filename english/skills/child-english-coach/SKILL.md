@@ -2,6 +2,7 @@
 name: child-english-coach
 description: English activity orchestration. Load when the student wants free English play, has no specified goal, or wants one activity that combines story, talk, tasks, and review; supplies cross-turn plans for the English mainline without creating its own learning record.
 user-invocable: false
+resource-loading: on-demand
 ---
 
 # English Activity Orchestration
@@ -12,7 +13,7 @@ Provides a cross-turn plan and method suggestions for one low-pressure English a
 
 Reuse the snapshot, `target_context`, materials, student message, and `context.turn_state` passed in by the entry; keep the current focus and pending question, and do not re-ask for age, grade, or interests already recorded. When information that truly affects the next action is missing, suggest only one short question and wait; do not redo a questionnaire or profile setup.
 
-Read through `english-core`:
+Use the matching reference below from `english-core`'s base directory; reuse what `english-session` already read.
 
 - Before designing an activity and suggesting methods, read the single method selection table (target type + current observation) in `references/english-teaching-core.md`; this skill does not maintain another table. Hand the main or auxiliary method suggestion to the session to decide; do not load method skills yourself.
 - When adjusting material difficulty, read `references/english-input-adaptation.md`, based on actual comprehension; do not infer English level from grade.

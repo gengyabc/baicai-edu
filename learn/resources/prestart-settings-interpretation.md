@@ -1,3 +1,7 @@
+---
+cited: learn-core/references/prestart-settings-interpretation.md
+---
+
 # Prestart Settings Interpretation
 
 Personalization only adjusts tone, examples, and scaffolding; it does not change the learning goal or override the student's current message. How interests become contexts, problems, or bridges is set by the current subject package.

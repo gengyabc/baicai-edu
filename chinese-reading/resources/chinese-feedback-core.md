@@ -1,3 +1,7 @@
+---
+cited: chinese-core/references/chinese-feedback-core.md
+---
+
 # 语文反馈规则
 
 作文整篇评改的维度、档位、修改处数与低年级简化以 `references/chinese-assessment-rubric.md` 为准；安全信号按 `learn-core` 的 `references/llm-safety-boundaries.md` 停教学，优先于反馈。

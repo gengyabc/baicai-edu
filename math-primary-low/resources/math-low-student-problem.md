@@ -1,7 +1,7 @@
 ---
 name: math-low-student-problem
 description: Student makes problems for the AI. Use when the student asks to invent math problems to quiz the AI, or has already chosen invent-and-judge to test transfer of newly learned knowledge.
-resources: ui-locale.md
+resources: math-teaching-core.md math-student-problem-design.md ui-locale.md math-segment-fields.md
 ---
 
 # Student Makes Problems
@@ -45,3 +45,5 @@ Read `math-low-core`'s `references/math-segment-fields.md` and return evidence f
 - `strategy_summary` separates problem composition, independent solving, explaining an already revealed answer, and transfer; strengths/difficulties record only student evidence.
 - `skill_errors_observed` records only the student's actual erroneous reasoning/judgments; AI errors, undiscovered errors, and unanswered items are not counted.
 - `next_step_candidate` is one neighboring check/transfer target.
+
+This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

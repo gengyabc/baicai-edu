@@ -1,6 +1,7 @@
 ---
 name: math-low-practice
 description: Leveled math practice. Use to confirm error patterns with similar items, explain causes by contrast, stabilize independent calculation, consolidate or revisit taught skills, add practice on request, or connect already-mastered knowledge.
+resources: math-teaching-core.md targeted-practice-rules.md math-segment-fields.md
 ---
 
 # Math Practice
@@ -29,3 +30,5 @@ Read `math-low-core`'s `references/math-segment-fields.md` for session to merge:
 - `next_step_candidate` gives a concrete suggestion to continue/re-pick the purpose or add local support; `recommended_targets` are neighboring targets, and `feynman_handoff_recommended` is filled as actually needed.
 
 The student sees only the explanation, the current problem, confirming follow-ups, and the relationships already shown.
+
+This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

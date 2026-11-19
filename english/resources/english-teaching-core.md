@@ -6,9 +6,7 @@ cited: english-core/references/english-teaching-core.md
 
 ## Stance
 
-English is for communication, not a body of knowledge to be memorized before use. First let the student understand in a meaningful situation, then invite them to express; both understanding and expression can start from single words, half sentences, gestures, and first-language supplements. Do not turn English class into a grammar lecture, word dictation, or a series of tests.
-
-Comprehensible input, negotiation of meaning, output attempts, scaffolding and fading, task-driven learning, usage accumulation, and spaced retrieval are all sources of practice, not theory names for students to memorize.
+Start with meaning in a real situation, then invite expression. Accept single words, partial sentences, gestures and first-language supplements as participation. Use the methods below to support communication, not as theory to teach or as a series of tests.
 
 ## Method Selection (single table)
 
@@ -34,9 +32,7 @@ Completion condition: one focus, one main method, and one next action; a method 
 
 ## One Action at a Time
 
-Each turn does only the current step: give one small piece of comprehensible material, ask one real question, clarify one meaning, or give one level of hint, then wait. Keep only one main pending question at a time; do not in one turn teach new words, teach grammar, and ask several questions in a row.
-
-A piece of material, a situation, or a task is a turn arc: each turn still asks only one question, and after it is answered, stay on the same material and change angle, advancing 2–4 angles per `references/english-turn-arc.md`. A single correct answer advances to the next angle and does not end the material.
+Present the material or handle one question, ambiguity or hint, then wait with at most one pending question. After a correct answer, stay with the material and advance to the next of 2–4 angles per `references/english-turn-arc.md`; one answer does not close the arc.
 
 - Questions have a real purpose: choice, information gap, prediction, description, request, rather than checking whether a definition was remembered.
 - Before generating or adjusting material, read `references/english-input-adaptation.md`; present a complete short text as a whole first, then ask questions one at a time.

@@ -1,11 +1,13 @@
 ---
 name: math-low-session
 description: Math teaching mainline. Use when the learning entry routes to math, resumes an unfinished math focus, or returns to teaching after diagnosis/practice/student-made problems; supports learn and feynman modes.
+resources: board-task-boundary.md representation-contract.md board-contract.md ui-locale.md micro-lesson-contract.md target-parsing.md math-teaching-core.md math-segment-fields.md
+resource-loading: on-demand
 ---
 
 # Math Teaching
 
-Load `math-low-core` (or reuse it if already loaded this session), follow its "Start and Input", and read each reference its condition table requires once per session. Teach with CGI.
+Load or reuse `math-low-core`; follow its "Start and Input" and read the matching branch references before teaching with CGI. Read band references from the core's returned base directory; for shared rules use the named owner's returned base directory. Reuse rules already read this session.
 
 ## Learning-Recommendation Gate
 
@@ -18,7 +20,7 @@ Check this gate before teaching, before resuming a leaf, and before a new-proble
 | Recommendation candidates are already pending | Show them again unchanged |
 | The student states a new goal | Hand it to the shared lifecycle; no recommendation choice is needed |
 
-Ordinary chat and Feynman mode never trigger the cold opening. The gate ends when the student is offered the choice: it produces no `session_segment`, does not modify `context.focus` or the profile, and runs no leaf, teaching, board boundary, or board clear. After the student chooses, the shared flow must write the new context successfully before teaching starts; if that write fails, keep `selected_id` for retry. Only actually starting the chosen task runs the board boundary. The role file decides candidates and their order; do not reuse the ordinary resume order. An optional `target_context.math_opening_hint` is handled in Section 1.
+Ordinary chat and Feynman mode never trigger the cold opening. Offering a choice produces no `session_segment`, does not modify `context.focus` or profile, and runs no leaf, teaching, or board boundary/clear. On selection, teach and run the board boundary only after the new context write succeeds; keep `selected_id` for retry on failure. The role file ranks candidates, not the ordinary resume order. Section 1 handles `target_context.math_opening_hint`.
 
 ## Central Dispatch Contract
 
@@ -26,7 +28,7 @@ Math always enters through the lifecycle, then this skill. Mainline teaching and
 
 ### Entry Events
 
-Before any actual new problem, activity, or topic, run core's `references/board-task-boundary.md` (the only boundary rule), even without a board attachment. This includes skipped problems, the teacher's next item, and next problems inside a leaf. On a topic change the lifecycle finalizes the old topic first; only after that succeeds, handle the boundary before starting the new topic. Dispatching, resuming, or switching to Feynman is not by itself a new task.
+Before any actual new problem, activity, or topic, read and run core's `references/board-task-boundary.md` (the only boundary rule), even without a board attachment. Include skips, teacher next items, and next problems inside a leaf. Lifecycle finalizes the old topic first; wait for success before starting the new topic. Dispatch, resume, and Feynman switches alone are not new tasks. Geometry teaching or teacher-figure requests still follow core's geometry rows: read `math-common`'s `references/representation-contract.md` and `references/board-contract.md` before using `geometry_board_draw`.
 
 ### Branch Triggers
 
@@ -143,3 +145,5 @@ When there is evidence about the relationship, give one sentence the student can
 Read core's `references/math-segment-fields.md`. Return one `session_segment` only when the student actually performed mathematics: `subject: math`, the caller's `mode`, the merged `submode`, `source` normalized to match `target_context.source`, and the merged leaf evidence. A pure demonstration, recommendation, or activity choice returns `session_segment: null`; the lifecycle still writes resumable context.
 
 Acceptance: either a null segment with context only, or all required fields supported by student work, keeping supplied methods, exposed support, and independent selection distinct.
+
+This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

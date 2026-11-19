@@ -1,3 +1,7 @@
+---
+cited: math-low-core/references/problem-design.md
+---
+
 # Choosing Problems by Quantity Relationship
 
 Use CGI types: join, separate, part-part-whole, compare, multiplication, measurement (quotitive) division, partitive (equal-sharing) division, multi-step, and non-routine; vary the unknown's position. Success on one type or position does not establish the others. Student problems leave operation and strategy to the student; an agreed, labeled micro-lesson example may connect relation, representation, and method under session's shared contract.

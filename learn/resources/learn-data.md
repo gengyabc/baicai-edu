@@ -1,12 +1,13 @@
 ---
 name: learn-data
 description: Student data read/write protocol. Load before reading or initializing profiles, restoring sessions, generating learning records, modifying data, or end-of-session save.
-resources: teaching-transition.md ui-locale.md teaching-resolver.md profile-schema.md grade-band-defaults.md subject-contract.md session-lifecycle.md create-student.md finalize-session.md session-retention.md target-parsing.md session-schema.md next-step.md learning-plan.md
+resources: teaching-transition.md ui-locale.md teaching-resolver.md profile-schema.md grade-band-defaults.md subject-contract.md session-lifecycle.md create-student.md finalize-session.md session-retention.md target-parsing.md session-schema.md next-step.md learning-plan.md feynman-skill-whitelist.md prestart-settings-interpretation.md high-risk-deletion.md
+resource-loading: on-demand
 ---
 
 # Learn Data
 
-Protocol for reading, initializing, and saving student data. All `references/...` paths in this skill are relative to this skill's directory; for cross-skill files, load that skill by name first and locate files from the base directory it returns. This lookup rule applies to every skill in every package.
+Protocol for reading, initializing, and saving student data. Read only the matching references before each operation. Unqualified `references/...` paths belong to `learn-data`; for other owners, load or reuse the exact skill name and resolve the file from its returned base directory. This lookup rule applies to every skill in every package.
 
 ## Data Root
 
@@ -57,7 +58,7 @@ When a file is missing:
 
 - `session.json` missing or `student_id` empty: tell the student to run `/learn-start` first.
 - Shared profile missing: hand off to `/learn-start` to create it; never fabricate one.
-- Subject `profile.json` missing: after confirming the shared profile exists, first read `references/teaching-resolver.md` to resolve teaching, then initialize per `references/profile-schema.md`; read `references/grade-band-defaults.md` for stage, and read the resolved implementation's subject contract (`references/subject-contract.md`) for default domains, initial levels, and preference keys. For generic or unknown starting points, current_levels/preferences are empty; do not initialize an adult with a primary-school level. Always keep existing subject files.
+- Subject `profile.json` missing: after confirming the shared profile exists, first read `references/teaching-resolver.md` to resolve teaching, then initialize per `references/profile-schema.md` and use `references/grade-band-defaults.md` for stage. Read `references/subject-contract.md` to locate role files from the resolved `teaching.core_skill` base, then read Grade defaults and Profile fields for domain, levels, and preference keys. For generic or unknown starting points, current_levels/preferences are empty; do not initialize an adult with a primary-school level. Always keep existing subject files.
 - `memory.json` / `current_state.json` / `milestones.json` missing: create them with the defaults in `references/profile-schema.md`.
 - `session_log.json` missing (the read tool returns `not found`) is a normal state meaning there is no unfinished session; create it per `references/session-lifecycle.md` when needed. Report a read fault and stop operations that depend on the file only for permission, I/O, or content-corruption errors.
 
@@ -128,3 +129,5 @@ Each teaching turn of a subject produces one segment, appended to the log by the
 - For the boundaries on using interests and experiences, see `references/prestart-settings-interpretation.md` of `learn-core`.
 - Bulk deletion of generated files or clearing learning records happens only after the user actively enters `/learn-clean`, with preview and a second confirmation per that skill; other skills do not auto-load it or perform such cleanup. Regular finalize and retention policy still run per their own protocols.
 - `/learn-clean` is the dedicated exception for explicit deletion and does not follow the Write Protocol's merge-save and profile-completion rules. Ordinary cleanup preserves the shared identity, user originals, and original backups; only that skill's high-risk branch may delete them, after scope confirmation and a separate manual phrase confirmation. High-risk scope, the non-recoverable warning, and execution rules follow that skill's `references/high-risk-deletion.md`.
+
+This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

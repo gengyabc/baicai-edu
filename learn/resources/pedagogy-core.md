@@ -1,3 +1,7 @@
+---
+cited: learn-core/references/pedagogy-core.md
+---
+
 # Pedagogy Core Rules
 
 Cross-subject conversational moves. Subject methods, strategies, question types, and labels belong to the current subject package.

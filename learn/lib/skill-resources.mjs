@@ -31,7 +31,7 @@ function headerFields(text) {
   return fields;
 }
 
-/** The resources a skill needs, as `### <heading>` sections in listed order. */
+/** The resources a skill needs, as `[heading, section text]` in listed order. */
 function resourceSections(file, fields) {
   const directory = file.slice(0, file.lastIndexOf('/'));
   const sections = [];
@@ -39,23 +39,34 @@ function resourceSections(file, fields) {
     const path = join(directory, name);
     if (!existsSync(path)) continue;
     const heading = name.includes('/') ? name : name.replace(/\.md$/, '');
-    sections.push(`### ${heading}\n\n${readFileSync(path, 'utf8').trim()}`);
+    sections.push([heading, `### ${heading}\n\n${readFileSync(path, 'utf8').trim()}`]);
   }
   return sections;
+}
+
+/**
+ * What a size-limited skill says in place of the sections it could not inline.
+ * The names stay usable because every resource is also installed as `<name>.md`
+ * beside the base directory, which the rendered body states.
+ */
+function omittedNote(headings) {
+  return [
+    'These resources were left out of this prompt to stay within its size limit; each is installed',
+    `beside this skill as \`<name>.md\` and should be read when the body names it: ${headings.join(', ')}.`,
+  ].join(' ');
 }
 
 /**
  * One registered skill from its rendered file.
  * @returns `{ name, description, whenToUse?, invocation, content }`, or undefined for an invalid file.
  */
-export function renderSkill(file) {
+export function renderSkill(file, { maxBytes = Infinity } = {}) {
   const text = readFileSync(file, 'utf8');
   const match = HEADER.exec(text);
   const fields = headerFields(text);
   if (match === null || fields?.name === undefined || fields?.description === undefined) return undefined;
   const body = text.slice(match[0].length);
-  const sections = resourceSections(file, fields);
-  return {
+  const skill = {
     name: fields.name,
     description: fields.description,
     whenToUse: fields['when-to-use'],
@@ -63,8 +74,26 @@ export function renderSkill(file) {
       modelInvocable: fields['disable-model-invocation'] !== 'true',
       userInvocable: fields['user-invocable'] !== 'false',
     },
-    content: sections.length === 0 ? body : `${body.trim()}\n\n## Skill resources\n\n${sections.join('\n\n')}\n`,
+    content: body,
   };
+  // On-demand references are still installed beside the resource base. The
+  // skill body routes the reader to the file needed for the current branch.
+  if (fields['resource-loading'] === 'on-demand') return skill;
+  const sections = resourceSections(file, fields);
+  if (sections.length === 0) return skill;
+  // Cut between resources, never inside one: a half-sentence is worse than an
+  // absent section the model can still open by name.
+  const prefix = `${body.trim()}\n\n## Skill resources\n\n`;
+  let content = prefix;
+  const omitted = [];
+  for (const [heading, section] of sections) {
+    const candidate = `${content}${section}\n\n`;
+    if (Buffer.byteLength(candidate, 'utf8') > maxBytes) omitted.push(heading);
+    else content = candidate;
+  }
+  skill.content = omitted.length === 0 ? content : `${content}${omittedNote(omitted)}\n`;
+  skill.omitted = omitted;
+  return skill;
 }
 
 /**
@@ -72,7 +101,7 @@ export function renderSkill(file) {
  * @param root - absolute package root.
  * @returns skill definitions; empty when the package ships no `resources/`.
  */
-export function readPackage(root) {
+export function readPackage(root, { maxBytes = Infinity } = {}) {
   const directory = join(root, 'resources');
   if (!existsSync(directory)) return [];
   // A skill file's path is exactly `<directory>/<name>.md`: a resource name
@@ -83,7 +112,7 @@ export function readPackage(root) {
     .map((entry) => join(directory, entry.name))
     .sort()
     .flatMap((file) => {
-      const skill = renderSkill(file);
+      const skill = renderSkill(file, { maxBytes });
       return skill === undefined ? [] : [skill];
     });
 }

@@ -1,3 +1,7 @@
+---
+cited: math-low-core/references/math-segment-fields.md
+---
+
 # Math Segment Field Conventions
 
 Before producing a math learning record or merging internal sub-flow evidence, first read Session Segments in `learn-data` and the Session Segment section of its `references/session-schema.md`. The full structure, required fields, enums, and write-back mapping belong to the shared schema; this file defines only the math-specific semantics.

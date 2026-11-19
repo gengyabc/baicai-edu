@@ -2,6 +2,7 @@
 name: math-common
 description: Shared math rules for both primary bands. Load from a math band skill for Chinese/English teaching delivery, an agreed micro-lesson, a student-made problem, practice evidence, a geometry figure on the Teacher demo tab, or reading or writing the math board; returns rules only.
 user-invocable: false
+resource-loading: on-demand
 ---
 
 # Shared Math Contracts
@@ -12,7 +13,7 @@ Shared contracts keep both primary bands aligned; the calling band owns teaching
 
 The caller is the current math band, which already holds the current provider, `mode` and confirmed-skill evidence, the current problem and pending step, the practice purpose, and the evidence and signal to return. When an input a rule depends on is missing, take that rule's most conservative branch (for example, without confirmed-skill evidence, never present a deliberately wrong answer as the AI's own).
 
-Loading this skill returns its base directory. Read only the references required by the current branch, and reuse contracts already read this session. Teacher geometry needs both representation ownership and the board tool-call recipe; do not pre-load unrelated contracts or invent one that is missing.
+Loading this skill returns its base directory. Read only the references required by the current branch; reuse contracts already read this session. Teacher geometry needs both representation ownership and the board tool-call recipe: read both contracts before drawing or recovering a figure; do not pre-load unrelated contracts. For nested shared rules, use the named owner's base directory.
 
 | When the band needs | Read | The band keeps |
 |---|---|---|

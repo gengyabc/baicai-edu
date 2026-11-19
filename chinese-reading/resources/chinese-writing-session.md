@@ -1,6 +1,7 @@
 ---
 name: chinese-writing-session
 description: Writing teaching. Use when the student has a prompt but no draft, revises an existing draft, asks for composition feedback, or explains writing choices in Feynman mode.
+resources: chinese-writing-core.md chinese-assessment-rubric.md chinese-feedback-core.md chinese-error-labels.md chinese-task-generation.md pedagogy-core.md
 ---
 
 # 写作教学
@@ -79,3 +80,5 @@ description: Writing teaching. Use when the student has a prompt but no draft, r
 ## 结束状态规则
 
 用阶段小结交回入口，保持会话可接续。
+
+This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

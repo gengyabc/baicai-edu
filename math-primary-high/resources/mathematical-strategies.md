@@ -1,82 +1,66 @@
+---
+cited: math-high-core/references/mathematical-strategies.md
+---
+
 # Mathematical Strategies
 
-Read for fixed-total/different-contribution reasoning, finite choices requiring organization, repeating states/positions, generated old/new structures, the conditional methods below, or when a student's explanation or monitoring is blocked on these structures. Reuse Pólya and the existing derivation/proof loops, not a second mandatory sequence. Methods, topic-map tools, and problem families have many-to-many links: accept a verified student alternative. Names and formulas are not entry requirements. A confirmed tool gap uses `references/prerequisite-learning.md`; unknown tools first need discriminating evidence.
+Read for fixed-count/different-contribution tasks, finite choices, repeats, old/new generation, or a strategy decision blocked on these structures. Reuse Pólya and the current derivation/proof loop; tools and problem families are many-to-many. Keep any verified student alternative. Probe unknown tools only to distinguish next moves; confirmed gaps use `references/prerequisite-learning.md`.
 
 ## Conditional method references
 
-For area splitting/completion, rearrangement, equal-area conditions or choosing an auxiliary object from visible constraints, read `references/geometry-reasoning.md`. It specializes the existing derivation/proof loop; a diagram alone is not its trigger. Link the needed tools to `area-perimeter` and `geometry-attributes` in `references/topic-map.md`, not a fixed geometry course.
-
-For all-divisor counts, least factors completing a square/cube, or parity/prime claims, read `references/number-theory-reasoning.md`. It links factor tools to completeness, minimality and general reasons; remainders/cycles stay here as their single rule source.
-
-For interacting conditions on candidate assignments, elimination/propagation, or checking whether solutions are unique, multiple or absent, read `references/logical-constraints.md`. It specializes Ordered enumeration below and the existing proof checks; do not load it for every story with several conditions.
-
-For finite objects assigned to categories with an at-least/must-exist goal, read `references/pigeonhole-existence.md`. Check why every object belongs to a category and compare total capacity; an existence claim alone or a story keyword does not select division. Distinguish a guaranteed lower bound from an actual count or identification of particular objects.
-
-For route counts or network traversals constrained by connections, direction, obstacles or repetition, read `references/path-network-construction.md`. Distinguish a feasible witness from complete counting; ordinary arithmetic does not require a graph. Ordered enumeration below remains the classification rule source; structural recurrence uses `references/early-algebra.md`.
-
-For repeated legal operations that may preserve a state quantity, or coverage relations with fixed contributions under a useful coloring, read `references/invariants-coloring.md`. A board picture alone does not trigger coloring; verify the actual operations and accept other justified routes.
-
-For a maximum/minimum among feasible objects, or when a proposed best value needs a global bound and an attaining construction, read `references/extremal-optimization.md`. Reuse Ordered enumeration below for finite candidates; an improvement or a successful example alone does not establish optimality.
-
-For finite terminating deterministic perfect-information two-player alternating games, where a strategy must cover every legal opponent response, read `references/elementary-games.md`. It owns rule clarification, small-state backward reasoning and winning guarantees; a game-themed arithmetic story alone is not a trigger.
-
-For an agreed contrast that changes one load-bearing condition of the student's own method, or when they reuse an old reason after a condition changed, read `references/boundary-variation.md`. This file still owns the method families and student monitoring; the new file adds only the one-condition change, the outcomes and the survival statement.
+| Structure | Read |
+|---|---|
+| Split, complete or move an area; justify equal areas or choose an auxiliary object, not just read a diagram | `references/geometry-reasoning.md` |
+| All divisors, least square/cube completion, or general parity/prime claims | `references/number-theory-reasoning.md` |
+| Interacting candidate constraints, propagation or solution completeness | `references/logical-constraints.md` |
+| Finite objects assigned to categories; guarantee, not exact size or identification | `references/pigeonhole-existence.md` |
+| Count routes or construct a traversal under connection, direction, obstacle or repetition rules | `references/path-network-construction.md` |
+| Repeated legal operations or covering pieces with fixed class contributions | `references/invariants-coloring.md` |
+| Maximum/minimum: global bound and attainment, not one improvement | `references/extremal-optimization.md` |
+| Finite terminating deterministic perfect-information two-player alternating game; cover every opponent reply | `references/elementary-games.md` |
+| Agreed one-condition contrast or old reasoning reused after a load-bearing change | `references/boundary-variation.md` |
 
 ## Student monitoring and local obstacles
 
-At a meaningful decision or actual stall, help the student judge what this attempt established, what remains uncertain, and why continuing or changing the organization may help. Use their actual work; do not ask for a monitoring report after every step. A failed attempt may rule out a case or expose a duplicate without solving the problem. Teacher replanning alone is not student monitoring.
+At a decision or stall, ask from actual work: what is established (even a failed attempt can exclude a case), what remains, and why continue or reorganize? Teacher replanning is not student monitoring. Use revisable notes in `strategy_summary`, not labels or stages; e.g. distinguish a copying slip from incomplete classification.
 
-| Evidence in this task | Possible local obstacle | One useful action |
-|---|---|---|
-| Cannot identify the target or constraints | Understanding | Clarify one condition; do not infer a knowledge gap |
-| Relations known but hard to organize | Representation | Connect the student's words, table, drawing or symbols |
-| Can perform needed operations but sees no route | Strategy selection | Explore one structurally simpler case or visible comparison |
-| Has a valid route but cannot perform one operation | Execution | Confirm the tool gap and enter its learning child |
-| Gets the result but cannot explain why | Justification | Examine the first missing warrant, not repeat all computation |
-| Works only on the familiar version | Transfer | Compare one changed structural condition on an agreed task |
-
-These are revisable descriptions in existing `strategy_summary`, not a new diagnosis enum, permanent student type, score or ordered stage. One omitted case might be a copying slip rather than missing classification; ask only what distinguishes the possibilities.
+| Local obstacle | Next move |
+|---|---|
+| Target or condition unclear | Clarify one before inferring any tool gap |
+| Relations known but unorganized | Connect the student's words, diagram, table or symbols |
+| Tools ready but no route | Compare a simpler structural case |
+| Valid route blocked in execution | Confirm the specific tool gap |
+| Correct result without reason | Check the first missing warrant |
+| Works only on a familiar version | Compare one changed condition if agreed |
 
 ## Assume and adjust
 
-**Structure and tools:** a fixed total number, differing per-item contributions, and a target total. Link to `operation-meaning`, `multiplicative-thinking`, and relevant `multi-step-models` in `references/topic-map.md`: compare quantities, preserve total count during replacement, and connect repeated equal changes to a total difference. No equation prerequisite by default.
+**Trigger/tools:** fixed count, different contributions, target total. In `references/topic-map.md`: `operation-meaning`, `multiplicative-thinking`, `multi-step-models`; equations optional.
 
-**Bridge:** simplify one dimension while retaining a constraint, then compare the simplified total with the real total. If the student already assumed all of one kind, use that assumption. Ask about the effect of replacing one item, then connect their unit change to the total discrepancy on a later turn. A proposed assumption needs a purpose, not the phrase “this is a chicken-and-rabbit problem”.
+**Bridge/check:** reuse or try an all-one-kind baseline. What changes when one item is replaced, what stays fixed, and how does that unit change account for the total difference? Privately verify baseline, discrepancy, constant change, integer range and both original totals. A varying change invalidates automatic division; a verified equation or trial table stands.
 
-**Monitor and justify:** which constraint stayed fixed? Does each replacement have the same contribution change? Does the calculated number fit the count and both original totals? If unit change varies, reconsider the model rather than keep dividing. An equation or a justified trial table is equally valid.
-
-**Verification and transfer:** privately check the baseline, discrepancy, fixed replacement change, integer range and original totals; keep the route out of an independent opening. Preserve a student's valid trial method rather than rewriting it as assumption-method discovery. Near transfer retains fixed unit adjustment; an agreed boundary contrast varies that condition and tests applicability, not a compulsory new lesson.
-
-Completion: the student explains the useful assumption/change and checks conditions, or the unverified part remains explicit; a correct quotient alone is not strategy evidence.
+**Evidence:** look for why the assumption and replacement work, not just a quotient. Near transfer retains fixed unit change; a boundary contrast can vary it.
 
 ## Ordered enumeration
 
-**Structure and tools:** finitely many choices under explicit constraints. Link to `operation-meaning`, `multiplicative-thinking`, and, for records/tables, `data-graphs`; these are conditional tools, not a prerequisite exam. Determine what counts as one object and whether order or roles matter before counting.
+**Trigger/tools:** finite constrained choices. Define one counted object, including order/roles. Use `operation-meaning`, `multiplicative-thinking`, `data-graphs` as needed.
 
-**Bridge:** use actual listed cases to form one stable classification or step order. For a missing branch, examine whether the classes cover all possible first choices; for duplicates, trace where the same object entered twice. Do not substitute “be careful” or reteach multiplication when the issue is organization.
+**Bridge/check:** organize the student's cases by a stable step or class. For omissions inspect possible first choices; for duplication trace double entry. Check that classes are exhaustive and mutually exclusive, each allowed choice is counted, and choice sequences correspond one-to-one to objects. Add disjoint classes; multiply justified step counts, splitting branches with different later counts. A complete finite list can prove coverage; probe a missing class without giving its cases or test where an arbitrary object enters an unexplained product.
 
-**Monitor and justify:** classes must be exhaustive and mutually exclusive; within each class, account for every allowed choice. Classification adds disjoint counts; stepwise multiplication counts choice sequences when their correspondence with wanted objects and branch counts are justified. Varying later choice counts may require separate branches, not a single unjustified product. A finite exhaustive list can be a complete argument, not merely a guess from examples.
-
-**Verification and transfer:** privately verify class coverage, branch counts and the one-to-one correspondence with counted objects. For a missing class, probe coverage without supplying its cases; for an unexplained product, inspect where an arbitrary object belongs. Near transfer retains the counting unit. An agreed ordered/unranked contrast changes that unit; identify it before prescribing deduplication.
-
-Completion: the student can explain why the organization has neither omissions nor duplicates; knowing a product or a formula name is insufficient.
+**Evidence:** no omissions/duplicates justified, not a named formula. Near transfer retains the unit; ordered versus unranked changes it, so justify deduplication afresh.
 
 ## Remainders and cycles
 
-**Structure and tools:** a stated repeat rule or a justified returning state, a complete cycle, and a position relative to its start. Link to `whole-number-division`, `operation-meaning`, `factors-multiples`, and `patterns-generalize`. For a confirmed division/remainder gap, enter the nearest tool child; do not silently give a modulus algorithm inside the parent.
+**Trigger/tools:** stated repeat or justified returning state, cycle length and start. Use `whole-number-division`, `operation-meaning`, `factors-multiples`, `patterns-generalize`. Distinguish division difficulty from not seeing or justifying the repeat.
 
-**Bridge:** connect complete groups to the remaining position. Distinguish an arithmetic gap from not recognizing a repeat or not knowing why it persists. Reuse an already-shown grouping and remainder rather than restarting basic division. Ask for the meaning of the remainder before awarding method understanding.
+**Bridge/check:** reuse shown groups; connect complete cycles and leftover to the requested position, including remainder zero (end of a complete cycle in one-based indexing; verify the convention). An explicit endless rule suffices; a finite prefix does not. For operation-generated repeats, justify the same state and transition, not just matching outputs.
 
-**Monitor and justify:** locate cycle length, start position, and the mapping for remainder zero. An observed finite prefix does not determine a unique continuation. A problem's explicit endless repeat rule supplies general structure; examples alone do not prove one. For an operation-generated cycle, justify that the state and transition repeat, not just that a few outputs match.
-
-**Verification and transfer:** privately check complete cycles and the position mapping, including remainder zero as the end of a complete cycle rather than automatically its first item. Sampled positions do not establish the general connection. Near transfer retains a justified repeat and start mapping; an agreed contrast changes that mapping or removes the repeat rule, requiring fresh justification.
-
-Completion: the student connects complete groups, remaining position and repeat justification over the agreed range; computing a remainder alone is not selecting or explaining the strategy.
+**Evidence:** student connects grouping, position and justified repeat, not just a remainder. Near transfer keeps the mapping; a different start mapping or removed rule needs rechecking.
 
 ## Structural recurrence
 
-When a stated generation action separates old and new parts, or a student needs to distinguish that action from a guessed continuation, read `references/early-algebra.md` — its Structural recurrence section owns the local moves and checked cases. Link to `patterns-generalize`, `operation-meaning`, and `multiplicative-thinking` in `references/topic-map.md` only as the route needs them. Keep a valid stepwise route; a closed form is a separate goal. Use `references/derivation-teaching.md` for deriving a general rule and `references/proof-teaching.md` for checking its full scope, not another lesson loop here. Repeating-state methods remain in Remainders and cycles above.
+Stated generation with old/new parts versus guessed continuation: use `references/early-algebra.md` (Structural recurrence), and `patterns-generalize`, `operation-meaning`, `multiplicative-thinking` as needed. Keep a valid stepwise route; a closed form is a separate goal. Derive and check scope via `references/derivation-teaching.md` and `references/proof-teaching.md`.
 
 ## Transfer and evidence boundary
 
-Use near transfer and boundary discrimination separately when needed and agreed; changing a story or numbers alone is not evidence of knowing the method's limits. Do not force a new task at every close. Record student decisions/explanations, teacher hints and constructions, supported execution and still-unknown transfer distinctly. Following a teacher's classification or repeating its summary is supported work, not independent monitoring or mastery.
+Keep private checks out of independent openings. Use agreed near transfer and boundary discrimination separately when useful. Record student decisions/reasons, supplied hints or constructions, supported execution and unknowns separately; copying a classification is not independent monitoring or mastery.

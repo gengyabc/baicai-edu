@@ -1,3 +1,7 @@
+---
+cited: learn-data/references/teaching-resolver.md
+---
+
 # Teaching Implementation Resolution
 
 Starting learning, initialization, target classification, recommendation, restore, and actual teaching share this resolution; callers reuse one resolution result and do not each probe whether a package is available. First handle safety and any pending `finalize_plan`, then resolve. Resolution does not perform teaching and does not write mastery evidence.

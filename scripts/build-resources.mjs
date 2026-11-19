@@ -14,7 +14,7 @@
 // `node scripts/build-resources.mjs` regenerates it and the contract test
 // compares the two.
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -22,30 +22,77 @@ export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 /** Packages that teach skills, in the order their shared resource directories are searched. */
 export const SKILL_PACKAGES = ['learn', 'math-common', 'math-primary-low', 'math-primary-high', 'chinese-reading', 'english']
 
-// `ENGLISH_SKILL` → `english-skill`: a cited `name: file` pair becomes one file name.
-const encode = (skill, file) => `${skill}~${file}`
+/** Skill directories under one reference root that ship `references/<file>`. */
+function ownersOf(file, index) {
+  return [...index].filter(([, directory]) => existsSync(join(directory, file))).map(([owner]) => owner)
+}
 
 /**
- * `skill, file` pairs a body cites through another skill's name, in citation order,
- * without duplicates. Two forms count, because both read as a citation to an author:
+ * `owner → references directory` for every root `build.json` names.
  *
- *   `learn-data` `references/session-schema.md`   backticked name, then the path
- *   [session structure](../learn-data/references/session-schema.md)   ordinary link
- *
- * The second form was silently dropped, so its target never got inlined and the
- * rendered resource kept a `../` path that does not exist after rendering.
+ * `skillResources` entries are not all the same shape: `learn/skills` is a directory
+ * of skill directories, while `math-common/skills/math-common/references` is one
+ * skill's references directory itself. Treating the second as the first silently
+ * lost every `math-common` contract the math bands cite.
+ * @returns `Map<string, string>` in search order; the first root wins a name.
  */
-export function citedFiles(body) {
-  const pairs = []
-  for (const match of body.matchAll(
-    /`([a-z0-9]+(?:-[a-z0-9]+)*)`\s*`?references\/([A-Za-z0-9_.-]+\.md)`?|\((?:\.\.\/)?([a-z0-9]+(?:-[a-z0-9]+)*)\/references\/([A-Za-z0-9_.-]+\.md)\)/g,
-  )) {
-    const owner = match[1] ?? match[3]
-    const file = match[2] ?? match[4]
-    const key = encode(owner, file)
-    if (!pairs.some(([pair]) => pair === key)) pairs.push([key, owner, file])
+export function referenceIndex(referenceDirectories) {
+  const index = new Map()
+  for (const directory of referenceDirectories) {
+    if (!existsSync(directory)) continue
+    if (basename(directory) === 'references') {
+      const owner = basename(dirname(directory))
+      if (!index.has(owner)) index.set(owner, directory)
+      continue
+    }
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue
+      const references = join(directory, entry.name, 'references')
+      if (existsSync(references) && !index.has(entry.name)) index.set(entry.name, references)
+    }
   }
-  return pairs
+  return index
+}
+
+/**
+ * `[owner, file]` for every `references/<file>.md` a body cites from another skill,
+ * in citation order, without duplicates.
+ *
+ * A body names the owning skill in whatever prose shape reads best, so the owner is
+ * not reliably adjacent to the path. All of these are in use:
+ *
+ *   `learn-data` `references/session-schema.md`     backticked name, then the path
+ *   `learn-data`'s `references/session-schema.md`   possessive
+ *   `learn-core` 的 `references/pedagogy-core.md`    Chinese possessive
+ *   `learn-core` | `references/pedagogy-core.md`    a table cell's two columns
+ *   read its `references/micro-lesson-contract.md`  a pronoun, owner named earlier
+ *   [structure](../learn-data/references/x.md)      ordinary link
+ *
+ * Every narrower form that was tried here missed some of them, and a miss is silent:
+ * the file is neither inlined nor copied, so the installed skill cites a path that
+ * does not exist. Resolution is therefore by owner *and* by search — the nearest
+ * earlier skill name that actually owns the file wins, and a file with exactly one
+ * owner in the search path needs no name at all. An unresolvable citation is
+ * reported instead of dropped.
+ * @returns `{ pairs, problems }`; `problems` names citations no owner could supply.
+ */
+export function sharedCitations(body, ownFiles, index) {
+  const pairs = []
+  const problems = []
+  for (const match of body.matchAll(/`?references\/([A-Za-z0-9_.-]+\.md)`?/g)) {
+    const file = match[1]
+    if (ownFiles.includes(file) || pairs.some(([, cited]) => cited === file)) continue
+    const candidates = ownersOf(file, index)
+    const named = [...body.slice(Math.max(0, match.index - 200), match.index)
+      .matchAll(/`([a-z0-9]+(?:-[a-z0-9]+)*)`/g)].map((token) => token[1]).reverse()
+    const owner = named.find((name) => candidates.includes(name)) ?? (candidates.length === 1 ? candidates[0] : undefined)
+    if (owner === undefined) {
+      problems.push(`references/${file}: no owner (candidates: ${candidates.join(', ') || 'none'})`)
+      continue
+    }
+    pairs.push([owner, file])
+  }
+  return { pairs, problems }
 }
 
 /** A skill's own reference files its body cites by bare name, in citation order. */
@@ -56,6 +103,19 @@ export function citedOwn(body) {
   }
   return files
 }
+
+// A rendered body still cites `references/<name>.md`, which is the path inside
+// the source skill package. The installed tree has no `references/` directory
+// for prose: each named file sits at `<name>.md` beside the published base
+// directory, whether or not the provider inlines it. Locale catalogs are the one
+// thing that keeps its `references/` path. Stating that once, where the model
+// reads it, is cheaper than rewriting several hundred body citations and keeps
+// the build's own `references/` parsing intact.
+const RESOURCE_LAYOUT = [
+  "This skill's base directory holds every file it names: a `references/<name>.md` path below",
+  'is the installed `<name>.md` beside that base directory, because an installed skill keeps',
+  'no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.',
+].join(' ')
 
 const header = (fields) => ['---', ...Object.entries(fields).flatMap(([key, value]) => (
   Array.isArray(value) ? (value.length === 0 ? [] : [`${key}: ${value.join(' ')}`]) : [`${key}: ${value}`]
@@ -85,10 +145,11 @@ export function localeCatalogs(skillDirectory) {
 /**
  * Flatten one skill directory into its two resource files.
  * @param skillDirectory - the skill's directory under a skill package's `skills/`.
- * @param referenceDirectories - directories searched, in order, for cited files the skill does not own.
- * @returns `{ body, shared }` file texts, or undefined when a cited file cannot be found.
+ * @param referenceDirectories - roots searched, in order, for cited files the skill does not own.
+ * @returns `{ body, shared, problems }`; `problems` lists citations no owner could supply.
  */
 export function flattenSkill(skillDirectory, referenceDirectories) {
+  const index = referenceIndex(referenceDirectories)
   const text = readFileSync(join(skillDirectory, 'SKILL.md'), 'utf8')
   const match = /^---\n([\s\S]*?)\n---\n?/.exec(text)
   if (match === null) throw new Error(`${skillDirectory}/SKILL.md: missing frontmatter`)
@@ -104,21 +165,24 @@ export function flattenSkill(skillDirectory, referenceDirectories) {
   const ownExisting = own.filter((name) => existsSync(join(skillDirectory, 'references', name)))
   const resources = [...new Set(ownExisting)]
   const sharedFiles = []
-  for (const [pair, owner, file] of citedFiles(body)) {
-    const directory = referenceDirectories.find((candidate) => existsSync(join(candidate, owner, 'references', file)))
-    if (directory === undefined) continue
+  const { pairs, problems } = sharedCitations(body, ownExisting, index)
+  for (const [owner, file] of pairs) {
     const name = resources.includes(file) ? `${owner}/${file}` : file
     if (!resources.includes(name)) resources.push(name)
-    sharedFiles.push([name, `${header({ cited: `${owner}/references/${file}` })}\n${readFileSync(join(directory, owner, 'references', file), 'utf8').trim()}\n`])
+    sharedFiles.push([name, `${header({ cited: `${owner}/references/${file}` })}\n${readFileSync(join(index.get(owner), file), 'utf8').trim()}\n`])
   }
   const ownFiles = [...new Set(ownExisting)]
   const headerFields = { name: fields.name, description: fields.description }
-  if (resources.length > 0) headerFields.resources = resources
+  if (resources.length > 0) {
+    headerFields.resources = resources
+    if (fields['resource-loading'] === 'on-demand') headerFields['resource-loading'] = 'on-demand'
+  }
   // One file per listed resource. A skill's own file wins a name collision, so
   // shared files never overwrite it; only `resources` decides what is inlined.
   const files = new Map(sharedFiles.map(([name, text]) => [name, text]))
   for (const name of ownFiles) files.set(name, readFileSync(join(skillDirectory, 'references', name), 'utf8').trim() + '\n')
-  return { body: `${header(headerFields)}${body}`, shared: [...files] }
+  const layout = resources.length > 0 ? `\n${RESOURCE_LAYOUT}\n` : ''
+  return { body: `${header(headerFields)}${body.trimEnd()}\n${layout}`, shared: [...files], problems }
 }
 
 /**
@@ -144,6 +208,7 @@ export function buildResources(packageName, { root = ROOT, write = true } = {}) 
   for (const entry of readdirSync(source, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue
     const flattened = flattenSkill(join(source, entry.name), shared)
+    problems.push(...flattened.problems.map((problem) => `${entry.name}: ${problem}`))
     files.set(`resources/${entry.name}.md`, flattened.body)
     for (const [name, text] of flattened.shared) files.set(`resources/${name}`, text)
     // Catalogs keep the path their prose cites, so one base directory resolves
@@ -174,7 +239,8 @@ if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(
     ? SKILL_PACKAGES.map((directory) => JSON.parse(readFileSync(join(ROOT, directory, 'package.json'), 'utf8')).name)
     : requested
   for (const packageName of names) {
-    const { files } = buildResources(packageName)
+    const { files, problems } = buildResources(packageName)
+    for (const problem of problems) console.warn(`warn  ${packageName}: ${problem}`)
     console.log(`${packageName}: ${files.size} files`)
   }
 }

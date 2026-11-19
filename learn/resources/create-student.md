@@ -1,3 +1,7 @@
+---
+cited: learn-data/references/create-student.md
+---
+
 # Create Student
 
 Run only after `/learn-start` has collected and confirmed the necessary information. For the field shell, read `references/profile-schema.md`; for stage compatibility, read `references/grade-band-defaults.md`. First read `references/teaching-resolver.md` and adopt its real `subject`, stable `scope_id`, and `teaching` result; do not treat general teaching as a subject identity. Preference keys, `current_levels`, and `active_domain` come from the subject contract (`references/subject-contract.md`) of the returned `core_skill`, without directly assuming a specialist package exists; example values are not initialization defaults.

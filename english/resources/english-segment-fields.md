@@ -4,13 +4,9 @@ cited: english-core/references/english-segment-fields.md
 
 # English Segment Field Conventions
 
-Before producing an English learning record or merging method-skill results, first read the Session Segments of `learn-data` and the Session Segment section of its `references/session-schema.md`. The full structure, required fields, enums, and write-back mapping belong to the shared schema; this file defines only the English incremental semantics.
+Read Session Segments in `learn-data` and the Session Segment section of its `references/session-schema.md` for structure and write-back.
 
-## One Record per Turn
-
-`english-session` returns one `session_segment` per turn; method-skill evidence is merged into that segment, not recorded as another turn and not logged separately. The log is appended by the entry; the profile and finalize are written by the shared flow.
-
-`focus` records the actual focus of this turn; while waiting for the student's next answer, record only evidence already observed, and leave later demonstration, judgment, and level changes to later turns. Asking a question is not itself evidence of student performance.
+`english-session` merges method evidence into one `session_segment`; the entry owns logging and shared flow owns profile writes/finalize. Record actual `focus` and observed performance only; pending questions and planned checks supply no evidence.
 
 ## Evidence Classification (single convention)
 
@@ -24,7 +20,7 @@ Methods return the task that took place, the student's original meaning/expressi
 | Imitation / repeating a given expression | Reading along, copying, or repeating after the target expression was shown; not a first independent retrieval, and evidence is taken again later in a changed context |
 | Not observed / still unknown | Unanswered, empty message, mere agreement, or only a teaching-assistant model; do not fill in as a student error, failure, or ability decline |
 
-One performance may have several facets: for example "correct choice after a hint" records both the support condition and recognition, and the strongest classification may not be picked to hide the support. Task completion, language accuracy, and independent communication are described separately; explaining the gist in the first language can be comprehension evidence but cannot be used to infer independent English production. A student's own correction and echoing after a teaching-assistant restatement are also kept separate.
+Record both activity and support (e.g. hinted recognition). Separate task completion, language accuracy and independent communication. First-language gist can show comprehension, not English production; self-correction is not echoing the AI's correction.
 
 Observe only from the media genuinely available now. Text answers can support reading, written expression, or language use in text dialogue; without audio, do not update listening, pronunciation, or speaking fluency. The provisional CEFR difficulty label on material is not the student's level and cannot be written directly into `current_levels`.
 

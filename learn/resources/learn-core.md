@@ -1,12 +1,17 @@
 ---
 name: learn-core
 description: Cross-subject teaching rules. Load for learning entry and subject skills during teaching, answer confirmation, scaffolding adjustment, Feynman-mode switches, or end-signal judgments.
-resources: pedagogy-core.md confirm-before-accept.md difficulty-adjustment.md guidance-non-response-handling.md session-end-signals.md feynman-mode.md feynman-skill-whitelist.md prestart-settings-interpretation.md llm-safety-boundaries.md assistant-positioning.md
+resources: pedagogy-core.md informed-full-solution-choice.md confirm-before-accept.md difficulty-adjustment.md guidance-non-response-handling.md session-end-signals.md feynman-mode.md feynman-skill-whitelist.md prestart-settings-interpretation.md llm-safety-boundaries.md assistant-positioning.md grade-band-defaults.md supportive-conversation.md ui-locale.md session-lifecycle.md
+resource-loading: on-demand
 ---
 
 # Teaching Rules
 
-Before teaching, read `references/pedagogy-core.md`, apply its **Guide before revealing** gate, including its informed full-solution choice, to every learner-owned task (including explicit requests for a proof, solution, or demonstration), and advance one small goal at a time; before choosing the concrete level by grade, read `references/grade-band-defaults.md` of `learn-data`. Subject domains, question types, initial levels, and strategy stages are defined by the current subject package. Read and apply the remaining rules when the conditions in the table below match; `references/...` is relative to this skill's directory.
+**Safety first:** if a crisis cue appears, stop teaching/support without saving or recording details, and read the safety reference below before responding.
+
+Before teaching, read `references/pedagogy-core.md` and apply **Guide before revealing**, including informed full-solution choice, to every learner-owned task. The explicit complete-solution branch reads `references/informed-full-solution-choice.md` before responding. Advance one small goal at a time. Before choosing a level by grade, read `learn-data`'s `references/grade-band-defaults.md`; the subject package owns concrete domains, tasks, and strategy stages.
+
+Read only the matching rules; reuse those already current. Unqualified references belong to `learn-core`; for a named owner use that skill's returned base directory.
 
 | When | Read |
 |---|---|
@@ -65,3 +70,5 @@ A teaching session keeps one in-context record of what has already been loaded; 
 - A path can only be reused after resolving its owner: the reference relative to the skill base directory that the owner skill returned; re-reading a path that a different skill has already read is not a duplicate.
 - A parent skill that needs its child's content depends on the child having been loaded earlier in the session. When the child is not in context, load it rather than reconstruct its rules from memory.
 - One explicit re-read is allowed when the cached copy may be wrong (an external edit, a pending-save recovery, or a student-visible file just written): acting on a stale copy costs more than reading again.
+
+This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

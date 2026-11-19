@@ -2,11 +2,12 @@
 name: learn-start
 description: Choose a subject or learning goal, switch learners or create a profile for a new student, and prepare to start learning.
 disable-model-invocation: true
+resource-loading: on-demand
 ---
 
 # Start Learning
 
-Load `learn-core` and `learn-data` (only the ones not yet loaded this session; reuse already loaded ones per `learn-core`'s "Load Once, Reuse After"). In order: establish the language, confirm the learning identity, identify the student, resolve the teaching implementation, and activate the profile; teaching is left to `/learn`. If the existing log contains a `finalize_plan`, recover it per the save protocol first and switch only after it succeeds.
+Load or reuse `learn-core` and `learn-data` per "Load Once, Reuse After". All references below belong to `learn-data` unless another owner is named; use the returned base directory. On a crisis cue, apply `learn-core`'s `references/llm-safety-boundaries.md` first. Establish language, confirm the learning identity, identify the student, resolve teaching, and activate the profile; teaching is left to `/learn`. Before switching, follow any pending `references/teaching-transition.md` recovery; if the existing log contains a `finalize_plan`, recover it per `references/finalize-session.md` and switch only after success.
 
 All student-facing process labels and prompts below are locale keys, resolved through the active UI locale per `references/ui-locale.md` in `learn-data` (catalogs in `learn-data`'s `references/locales/`); never hard-code a language-specific literal.
 
@@ -36,11 +37,11 @@ Use `ask_user_question` with the prompt `ui.start.today_prompt`, offering the su
 
 Pure chat reuses the currently available task identity and does not switch an unfinished task; with no identity yet, create a neutral task identity per the resolution protocol and do not invent a learning goal. Afterward confirm only the necessary learner identity; stage and preferences may be skipped, and the chosen pure-chat intent is preserved throughout identity confirmation.
 
-Immediately after successful activation, hand that intent to the lifecycle's create/resume and support gates and persist the minimal chat selection: with an original question, only overlay resume_question and keep the full task; without one, use activity: support. Do not wait for the next message to write it. Only after the write-back succeeds, say the student can chat directly or continue with `/learn`, which guarantees that a later argument-less `/learn` still keeps the chat selection; if write-back fails, stop per the lifecycle and say the selection has not been saved yet, without claiming readiness. Do not auto-recommend or pose questions.
+Immediately after successful activation, read `learn-data`'s `references/session-lifecycle.md` (Open or Resume and Support gate) and use those gates to persist the minimal chat selection: with an original question, only overlay resume_question and keep the full task; without one, use activity: support. Do not wait for the next message to write it. Only after the write-back succeeds, say the student can chat directly or continue with `/learn`, which guarantees that a later argument-less `/learn` still keeps the chat selection; if write-back fails, stop per the lifecycle and say the selection has not been saved yet, without claiming readiness. Do not auto-recommend or pose questions.
 
 Then read `references/teaching-resolver.md` in `learn-data`: it jointly decides the real `subject`, the neutral task identity and stable `scope_id`, and `teaching = { provider, core_skill, session_skill, evidence_namespace }`. For an unknown goal, use `task_<random hex>` per that protocol; an explicit new goal also isolates history per its scope rules; do not write everything to one shared general subject. Do not load a specialist package before the stage is recognized. When no fitting package exists, general-task teaching can be used without requiring installation first.
 
-Changing goals midway requires the lifecycle to save/interrupt the old task and obtain confirmation first; selecting a subject does not hot-swap an unfinished task.
+For a goal change, read `learn-data`'s `references/session-lifecycle.md` (Dispatch and Finalize or Switch Topic): confirm the switch and save/interrupt the old task before switching. Selecting a subject does not hot-swap an unfinished task.
 
 ## 3. Clear the Old Student Selection
 

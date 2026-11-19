@@ -1,12 +1,13 @@
 ---
 name: learn
 description: Start adaptive learning from a topic, materials, error items, or profile goals; prefer applicable subject packages, fall back to general-task teaching when none apply, and support different education stages.
-resources: ui-locale.md
+resources: session-lifecycle.md llm-safety-boundaries.md target-parsing.md teaching-resolver.md ui-locale.md next-step.md
+resource-loading: on-demand
 ---
 
 # Learn
 
-Load `learn-core` and `learn-data` (only the ones not yet loaded this session; already loaded ones are reused per `learn-core`'s "Load Once, Reuse After"), then read and execute `references/session-lifecycle.md` from `learn-data`. A new session uses `entry_point: learn` and initial `mode: learn`; an existing session resumes according to the lifecycle.
+Load or reuse `learn-core` and `learn-data` per "Load Once, Reuse After". Read and execute `references/session-lifecycle.md` from `learn-data` before opening, resuming, or routing. On a crisis cue, apply `learn-core`'s `references/llm-safety-boundaries.md` first. A new session uses `entry_point: learn` and initial `mode: learn`; an existing session resumes per lifecycle. Read named references from the returned base directory of their owner.
 
 ## Choose a Target
 
@@ -23,3 +24,5 @@ Reuse teaching per `references/teaching-resolver.md` in `learn-data`; Route And 
 ## Continue
 
 The base menu for ordinary learning keeps `ui.stage.continue`, `ui.stage.feynman`, and `ui.stage.end`, and adds `ui.stage.switch_content`. Continue hands off to the current subject to advance; Feynman loads `learn-feynman`; End hands off to lifecycle finalize; Switch content loads `learn-recommend`, which only recommends and does not switch the task. Resolve all labels through the active UI locale (`learn-data` `references/ui-locale.md`). Merge and display the `stage_options` returned by the subject per `references/next-step.md` in `learn-data`; additional actions go back to the subject that declared them.
+
+This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

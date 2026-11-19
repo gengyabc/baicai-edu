@@ -1,7 +1,8 @@
 ---
 name: chinese-core
 description: Chinese shared rules. Load before reading, writing, read-write transfer, task generation, feedback, or long-term training; when reading stalls because of missing life experience for emotion, imagery, or character situation, bridge via the internal action table.
-resources: chinese-non-response.md chinese-personalization.md chinese-reading-core.md chinese-writing-core.md chinese-feedback-core.md chinese-task-generation.md chinese-assessment-rubric.md chinese-error-labels.md chinese-target.md learning-recommendations.md chinese-grade-defaults.md chinese-profile-fields.md experience-gap-bridging.md
+resources: chinese-non-response.md chinese-personalization.md chinese-reading-core.md chinese-writing-core.md chinese-feedback-core.md chinese-task-generation.md chinese-assessment-rubric.md chinese-error-labels.md chinese-target.md learning-recommendations.md chinese-grade-defaults.md chinese-profile-fields.md experience-gap-bridging.md grade-band-defaults.md difficulty-adjustment.md pedagogy-core.md confirm-before-accept.md guidance-non-response-handling.md feynman-skill-whitelist.md feynman-mode.md prestart-settings-interpretation.md subject-contract.md session-schema.md
+resource-loading: on-demand
 ---
 
 # 语文规则
@@ -17,7 +18,7 @@ resources: chinese-non-response.md chinese-personalization.md chinese-reading-co
 
 ## 读取规则
 
-按条件读取，不一次全部读入，已读的不重复读。
+这里只列读取入口。查学科契约时只读所需角色；教学按下表读命中的分支，已读的复用。共用规则从归属技能返回的 base directory 读取；语文规则从本技能的 base directory 读取。
 
 所有语文教学子 skill 共用：
 
@@ -72,3 +73,5 @@ resources: chinese-non-response.md chinese-personalization.md chinese-reading-co
 - `strategy_summary` 区分独立完成与提示后表现；`strengths`、`difficulties`、`diagnosis` 和技能追踪均以已发生的学生表现为依据。尚未作答、只有 AI 示范或只有出题时，相关表现字段留空；无明确主标签时省略 `diagnosis`。
 - `next_step_candidate` 是建议，`feynman_handoff_recommended` 是入口的候选提示，均不代表学生已选择或已完成。下一步流程选择由入口用 `ask_user_question` 呈现。
 - 需确认或撤销技能时读取 `learn-core` 的 `references/feynman-skill-whitelist.md`；诊断标签及与技能错误的分工只由本 skill 的 `references/chinese-error-labels.md` 定义。
+
+This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

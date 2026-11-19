@@ -1,6 +1,7 @@
 ---
 name: chinese-read-write-transfer
 description: Read-write transfer. Use when the student understands a text and wants to reuse its writing moves on a new topic, or when resuming an unfinished reading-to-writing transfer practice.
+resources: chinese-writing-core.md chinese-task-generation.md chinese-assessment-rubric.md chinese-feedback-core.md chinese-error-labels.md
 ---
 
 # 读写迁移
@@ -74,3 +75,5 @@ description: Read-write transfer. Use when the student understands a text and wa
 - `confirmed_skills` 与 `skill_errors_observed` 按共用读取的白名单门槛，只记录本轮可验证的技巧应用，不另设阈值。
 
 通用字段按 `chinese-core` 的“回合交付规则”；有明确问题才按标签表写 `diagnosis`，不能仅因迁移技巧未用上而自造标签。
+
+This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

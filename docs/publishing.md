@@ -47,11 +47,15 @@ provider 由 `learn` 携带（`learn/skill-provider.mjs` + `learn/lib/skill-reso
 - **代码与文档分离**：技能正文渲染进各包的 `resources/`（每个技能一个文件，附它引用的资源文件），所以只有代码、没有 `skills/` 的安装同样能注册完整技能。`skills/` 仍随包发布，供阅读与维护。
 - **目录数据不内联**：`references/locales/*.json` 是查表数据而非散文，正文里内联会按每个键占上下文，还得让模型去解析一份文档。因此 catalog 按散文引用的相对路径原样落进 `resources/references/locales/`，由 provider 把 `resources/` 发布为技能的 base directory，模型据此用 read 工具读取。两个技能同名 catalog 会让路径二义，构建直接报错。
 - **自包含**：`baicai-edu-learn` 单独安装时，`learn-general-*` 的引用都在 `learn/resources/` 里，不依赖其他学科包。
+- **引用按「归属 + 搜索」解析**：正文引用写的是 `references/<name>.md`（源码包内的相对路径）。归属技能的写法有六种（相邻反引号、`'s`、`的`、表格两列、代词 "its"、普通链接），任何只认其中一种的正则都会漏，而漏掉是静默的——文件既不内联也不拷贝，安装后的技能就指着一条不存在的路径。因此 `sharedCitations` 先取路径前最近、且确实拥有该文件的技能名，退回到「搜索路径里唯一拥有者」。解析不出来的引用进 `problems` 并在构建时 warn，不再被丢弃。
+- **渲染正文自带路径说明**：安装后的树只有 `<name>.md` 摆在 base directory 里，没有 `references/` 这一层（catalog 除外）。`build-resources.mjs` 给每个带资源的技能在正文末尾追加一句说明讲清这个对应关系；改渲染逻辑时别把它当成可删的装饰。测试同时检查路径说明与引用文件是否随包安装。
+- **分支资源按需读**：默认仍内联。技能可在源文件 frontmatter 加 `resource-loading: on-demand`；构建照常收录引用，但 provider 只加载技能正文。多分支技能可用这一选项避免把整套规则交给每一轮；正文须保留每个分支的触发条件、必读项和归属技能。单一流程若每次都需要某份参考，可继续内联。
+- **大小上限是自家保护网**：`skill-provider.mjs` 的 512 KiB 上限并非 DSH 限制。超过 200 KiB 的注册内容会记录 `large but whole` 供审查；需要省上下文时优先精简正文、按分支加载。超上限时整份略过个别内联资源并逐个点名，文件仍可在 base directory 中读取。
 
 ## 每次发版的清单
 
-1. **版本**：改过哪个包就升哪个包的 `version`；`0.x` 阶段 `^0.1.0` 只接受 `0.1.x`，所以 `learn` 或 `math-common` 一旦跳 `0.2.0`，六个包里的依赖范围要同时改，否则接收方装不上。`math-board` 现在领跑到 `0.6.0`，`math-primary-low` 的 `^0.6.0` 跟着它走。
-   - **依赖范围的下限要跟着新版本走，不只是跨 minor 时才改。** `^0.1.0` 在语义上接受 `0.1.1`，但「接受」不等于「解析到」：pnpm 的 `minimumReleaseAge` 会把刚发布的 `0.1.1` 判定为太新，实际装出来是 `0.1.0`（2026-11-19 真实发生过：只装学科包 `baicai-edu-math-primary-low@0.1.1`，闭包里 `learn`/`math` 全是 `0.1.0`，新加的 locale 目录根本没被加载）。凡依赖方与被依赖方同批发布，依赖范围要写成新版本的下限（如 `^0.1.1`），因为 `0.x` 的 caret 拒绝 `0.1.0`，解析器没有回退空间。改完记得同步 `scripts/skill-contracts.test.mjs` 里的范围断言。
+1. **版本**：改过哪个包就升哪个包的 `version`；`0.x` 阶段 `^0.1.0` 只接受 `0.1.x`，所以 `learn` 或 `math-common` 一旦跳 `0.2.0`，六个包里的依赖范围要同时改，否则接收方装不上。`math-board` 现在领跑到 `0.6.1`，`math-primary-low` 的 `^0.6.1` 跟着它走（范围下限已抬到新版本，理由见下一小点）。
+   - **依赖范围的下限要跟着新版本走，不只是跨 minor 时才改。** `^0.1.0` 在语义上接受 `0.1.1`，但「接受」不等于「解析到」：pnpm 的 `minimumReleaseAge` 会把刚发布的 `0.1.1` 判定为太新，实际装出来是 `0.1.0`（2026-11-19 真实发生过：只装学科包 `baicai-edu-math-primary-low@0.1.1`，闭包里 `learn`/`math` 全是 `0.1.0`，新加的 locale 目录根本没被加载）。凡依赖方与被依赖方同批发布，依赖范围要写成新版本的下限（如 `^0.1.1`），因为 `0.x` 的 caret 拒绝 `0.1.0`，解析器没有回退空间。改完记得同步 `scripts/skill-contracts.test.mjs` 里的范围断言。`math-board` 0.6.1 同理：`math-primary-low` 已从 `^0.6.0` 抬到 `^0.6.1`，否则装出来的可能仍是带教师演示引导的 0.6.0。
 2. **文档**：README 里新增的普通过程说明放进 `<包>/docs/`（双语成对），并确认 `docs` 在该包 `files` 里——`check` 会因为链接目标没打进 tarball 直接报错。跨包与仓库根文档只能写绝对 URL（`https://github.com/gengyabc/baicai-edu/blob/main/…`），`../` 在 npm 页面上没有任何父目录。
 3. **变更记录**：七个包都维护 `CHANGELOG.md`，并在各自 `files` 里列出，随 tarball 一起发布；首次发布（0.1.0 / `math-board` 0.6.0）已记录，之后每次升级都要追加一节。未发布的工作写在 `Unreleased` 下，发版时再落到版本号标题。
 4. **DSH 兼容范围**：七个包都声明 `engines.dsh: ">=0.2.2-rc.1 <0.3.0"`，未满足时 DSH 会拒绝安装与激活（机制见 `dsh-app-boot` 的 `evaluatePluginCompatibility`，比较用 `semver.satisfies(..., { includePrerelease: true })`，所以 rc 版本正常参与区间判断）。下限是**本仓库集成测试实际启动过的版本**，不是推测版本；上调或放宽前必须在那个 DSH 版本上真装一次。0.3.0 被挡在外面是故意的：它一旦破坏 API，未验证的安装会在运行时坏掉，而静默坏掉比装不上更难排查。

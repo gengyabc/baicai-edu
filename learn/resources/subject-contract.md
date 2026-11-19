@@ -1,3 +1,7 @@
+---
+cited: learn-data/references/subject-contract.md
+---
+
 # Subject Contract
 
 The only agreement between the entry and a teaching implementation. First read `references/teaching-resolver.md` and resolve teaching with the real subject and current stage; all callers reuse that result. A specialist package uses the resolved actual core/session names (the naming convention below has band-specific exceptions); the general path uses the resolved core_skill/session_skill and must not change the subject to a general service name. Subject names, options, domains, labels, and initial levels all stay in the subject package. The selectable subject list is maintained only in the subject table of `/learn-start`.

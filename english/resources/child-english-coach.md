@@ -1,7 +1,8 @@
 ---
 name: child-english-coach
 description: English activity orchestration. Load when the student wants free English play, has no specified goal, or wants one activity that combines story, talk, tasks, and review; supplies cross-turn plans for the English mainline without creating its own learning record.
-resources: english-turn-arc.md
+resources: english-teaching-core.md english-input-adaptation.md english-scaffolding.md english-segment-fields.md english-turn-arc.md
+resource-loading: on-demand
 ---
 
 # English Activity Orchestration
@@ -12,7 +13,7 @@ Provides a cross-turn plan and method suggestions for one low-pressure English a
 
 Reuse the snapshot, `target_context`, materials, student message, and `context.turn_state` passed in by the entry; keep the current focus and pending question, and do not re-ask for age, grade, or interests already recorded. When information that truly affects the next action is missing, suggest only one short question and wait; do not redo a questionnaire or profile setup.
 
-Read through `english-core`:
+Use the matching reference below from `english-core`'s base directory; reuse what `english-session` already read.
 
 - Before designing an activity and suggesting methods, read the single method selection table (target type + current observation) in `references/english-teaching-core.md`; this skill does not maintain another table. Hand the main or auxiliary method suggestion to the session to decide; do not load method skills yourself.
 - When adjusting material difficulty, read `references/english-input-adaptation.md`, based on actual comprehension; do not infer English level from grade.
@@ -31,3 +32,5 @@ Read through `english-core`:
 Return the activity goal, current step, remaining plan, materials presented, the student's actual responses, support given, the latest pending question, and method suggestions. The session keeps the execution position with `context.turn_state.active_method` / `method_step` and the shared `pending_question`; presented material without a persistent reference is stored in `context.materials`. On resume, pick up the original question and do not re-invite the student to choose an activity. Evidence describes only what was actually observed; do not equate plans, teaching-assistant examples, or task completion with independent language mastery.
 
 This skill does not write student files or independently generate progress notes, reminders, or a saving flow. For news activities, only state the need and reason and let the session decide to use the news method; source verification and age-appropriate filtering are that method's responsibility. Encourage books, games, and real-person conversation; for early readers, letter-sound correspondence may be suggested, but phonics does not replace comprehension, and do not claim audio/image capabilities the environment does not provide.
+
+This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

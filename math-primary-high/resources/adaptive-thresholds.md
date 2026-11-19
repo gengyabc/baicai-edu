@@ -1,3 +1,7 @@
+---
+cited: math-high-core/references/adaptive-thresholds.md
+---
+
 # Adaptive Thresholds and Constraints
 
 This file owns the configurable thresholds and the hard constraints for grade 4–6 adaptation. Platform values are defaults, not empirically calibrated claims; a parent or the student may change them, one change at a time.

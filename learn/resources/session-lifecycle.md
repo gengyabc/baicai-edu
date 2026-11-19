@@ -4,7 +4,9 @@ cited: learn-data/references/session-lifecycle.md
 
 # Session Lifecycle
 
-Take the first matching row in a table from top to bottom. `STOP` only ends this turn, not the session. Finalize is a called sub-flow and is not run in sequence.
+Take the first matching row from top to bottom. `STOP` ends this turn, not the session. Finalize is a called sub-flow: before any save or replay read `learn-data`'s `references/finalize-session.md`, not an improvised commit.
+
+Read at point of use from the owner's skill base; reuse rules already read. Unqualified references belong to `learn-data`. Before reading/writing the log, apply the relevant `references/session-schema.md` section; before showing a process card, apply `references/ui-locale.md`.
 
 ## Invariants
 
@@ -94,7 +96,7 @@ Safety, explicit end, and pending saves take priority. After them, before the re
 
 Mode and action switches:
 
-- **Switch to Feynman**: load `learn-feynman`'s role rules, set `mode: feynman`, `context.activity: teaching`; keep focus, material, and entry_point, and clear the intent and turn_state used only for transfer. This is the only switch point, and the `/learn-feynman` entry executes this directly; afterward, student-posed questions / read-write transfer are no longer routed.
+- **Switch to Feynman**: load or reuse `learn-feynman`; read `learn-core`'s `references/feynman-mode.md` and `references/feynman-skill-whitelist.md` before applying its role rules. Set `mode: feynman`, `context.activity: teaching`; keep focus, material, and entry_point, and clear the intent and turn_state used only for transfer. This is the only switch point, and the `/learn-feynman` entry executes this directly; afterward, student-posed questions / read-write transfer are no longer routed.
 - **Switch back to ordinary learning**: set `mode: learn`, `context.activity: teaching`, and clear transfer progress.
 - **Start transfer**: set `mode: learn`, `context.activity: transfer`, and record the source domain and stage in turn_state; after transfer completes, activity returns to teaching.
 - When leaving a math micro-lesson for Feynman or another activity, remove only its local `active_act: micro_lesson` / `micro_lesson` markers and any unused `math_opening_hint`; preserve the original task and pending point unless the existing switch rule changes them. Pausing/chat first keeps the complete restore position. Ending or changing target uses the original save path.

@@ -8,7 +8,7 @@ Look at intent. If it can be determined, execute that row; if the same message h
 
 | Intent | Action |
 |---|---|
-| States or hints at self-harm, suicide, being hurt, being neglected, being bullied, being in danger, or not wanting to live | Stop teaching and respond per `references/llm-safety-boundaries.md`. Do not finalize; do not write details into the profile or log. |
+| States or hints at self-harm, suicide, being hurt, being neglected, being bullied, being in danger, or not wanting to live | Stop teaching; read `learn-core`'s `references/llm-safety-boundaries.md` before responding. Do not finalize; do not write details into the profile or log. |
 | Wants to end today's practice | Finalize directly. This message stops here: no further teaching and no fabricated segment. Even if the student casually mentions what to learn later, still treat it as an end. |
 | Wants to change learning content without specifying a target, asks what to learn, or doesn't know what to learn | Hand to the lifecycle recommendation gate, which loads `learn-recommend`; keep the current task until a choice is made, and do not finalize. |
 | Has specified another learning topic and today's practice continues | First end the current topic as `interrupted` per the lifecycle; after a successful save, parse the new topic. |

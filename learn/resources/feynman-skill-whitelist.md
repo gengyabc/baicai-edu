@@ -1,3 +1,7 @@
+---
+cited: learn-core/references/feynman-skill-whitelist.md
+---
+
 # Feynman Skill Whitelist
 
 All modes may record skill confirmations and real errors; deliberate mistakes belong to Feynman mode only (the AI as listener), not ordinary student-authored quizzes. A subject package may require explicitly labeled hypothetical confusion and same-reply correction; recording and retraction still follow this file. Role difficulty follows `references/feynman-mode.md`. Subject skill names and domains are agreed by each subject; this file only defines evidence and retraction.

@@ -2,11 +2,16 @@
 name: learn-core
 description: Cross-subject teaching rules. Load for learning entry and subject skills during teaching, answer confirmation, scaffolding adjustment, Feynman-mode switches, or end-signal judgments.
 user-invocable: false
+resource-loading: on-demand
 ---
 
 # Teaching Rules
 
-Before teaching, read `references/pedagogy-core.md`, apply its **Guide before revealing** gate, including its informed full-solution choice, to every learner-owned task (including explicit requests for a proof, solution, or demonstration), and advance one small goal at a time; before choosing the concrete level by grade, read `references/grade-band-defaults.md` of `learn-data`. Subject domains, question types, initial levels, and strategy stages are defined by the current subject package. Read and apply the remaining rules when the conditions in the table below match; `references/...` is relative to this skill's directory.
+**Safety first:** if a crisis cue appears, stop teaching/support without saving or recording details, and read the safety reference below before responding.
+
+Before teaching, read `references/pedagogy-core.md` and apply **Guide before revealing**, including informed full-solution choice, to every learner-owned task. The explicit complete-solution branch reads `references/informed-full-solution-choice.md` before responding. Advance one small goal at a time. Before choosing a level by grade, read `learn-data`'s `references/grade-band-defaults.md`; the subject package owns concrete domains, tasks, and strategy stages.
+
+Read only the matching rules; reuse those already current. Unqualified references belong to `learn-core`; for a named owner use that skill's returned base directory.
 
 | When | Read |
 |---|---|

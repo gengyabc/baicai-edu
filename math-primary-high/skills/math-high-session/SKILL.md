@@ -2,6 +2,7 @@
 name: math-high-session
 description: Upper-primary math teaching mainline (grades 4-6). Use when the learning entry routes to math, resumes an unfinished math focus, or returns to teaching after diagnosis/practice/student-made problems/modeling; supports learn and feynman modes.
 user-invocable: false
+resource-loading: on-demand
 ---
 
 # Upper Primary Math Teaching
@@ -10,7 +11,7 @@ Teach from the student's reasoning with the task-selected methods in `math-high-
 
 ## Start and Input
 
-Load `math-high-core` (or reuse it if already loaded this session) and follow its "Start and Input". Read each reference its condition table requires once per session. Delivery language, grade-band notes, and personalization boundaries come from `math-high-core`. Unqualified `references/...` paths in this file belong to `math-high-core`; an explicitly named skill or returned base directory overrides that default.
+Load or reuse `math-high-core`; follow its "Start and Input" and read the matching branch references before teaching. Read `references/...` paths from the core's returned base directory unless another owner is named; then use that owner's returned base directory. Reuse rules already read this session.
 
 ## Learning-Recommendation Gate
 
@@ -25,7 +26,7 @@ Check this gate before teaching, before resuming a leaf, and before a new-proble
 
 Feynman, support-only chat, save recovery, and unfinished prerequisite tasks keep lifecycle priority. The gate ends when the student is offered the choice: it produces no `session_segment`, does not modify `context.focus` or the long-term profile, and runs no leaf, teaching, board task boundary, or board clear.
 
-After the student chooses, follow the shared flow: persist `selected_id`, finalize an old different target when required, and enter this mainline only after the new context write succeeds. A failed write keeps the choice for retry; do not teach the new target or regenerate candidates. A recommendation card is not a new task, and starting the chosen task does not clear the board. The role file decides candidates and order; do not reuse the ordinary resume order.
+On selection, persist `selected_id`, finalize an old different target when required, and teach only after the new context write succeeds. On failure keep the choice for retry, with no new candidates or teaching. Selection and task entry do not clear the board. The role file ranks candidates, not the ordinary resume order.
 
 ## Central Dispatch Contract
 
@@ -37,7 +38,7 @@ For a confirmed missing tool, a nested gap, or a restored or overburdened learni
 
 ### Entry Events
 
-New problems, activities, topics, and leaf dispatches do not trigger board tools: no `math_board_clear` and no reading of an unsent student draft. This does not block `geometry_board_draw`; geometry teaching and geometry problems call it to put the figure on the Teacher demo tab, without clearing or writing the student draft. On a topic change, the lifecycle finalizes the old topic before the new one starts. Read `math-high-core`'s `references/board-task-boundary.md` only for an explicit student clear request or when reusing a submitted representation, and `references/batch-board-boundary.md` for multi-part answer attribution. A board attachment does not authorize clearing.
+New problems, activities, topics, and leaf dispatches do not trigger board tools: no `math_board_clear` and no reading of an unsent student draft. This does not block `geometry_board_draw`; for geometry teaching, problems or teacher-figure requests, read `math-common`'s `references/representation-contract.md` and `references/board-contract.md` before calling it for the Teacher demo tab. It does not clear or write the student draft. On a topic change, the lifecycle finalizes the old topic before the new one starts. Read `math-high-core`'s `references/board-task-boundary.md` only for an explicit student clear request or when reusing a submitted representation, and `references/batch-board-boundary.md` for multi-part answer attribution. A board attachment does not authorize clearing.
 
 ### Micro-Lesson in This Session
 

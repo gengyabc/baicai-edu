@@ -2,13 +2,14 @@
 name: math-high-diagnose
 description: Upper-primary math strategy diagnosis and error triage. Use when a grade 4-6 math starting point is unclear, two guided turns stall, the student submits error items, practice needs an error pattern identified, or self-report conflicts with performance.
 user-invocable: false
+resource-loading: on-demand
 ---
 
 # Upper Primary Math Diagnosis
 
 ## Start and Input
 
-Load `math-high-core` and follow its "Start and Input". Also read `math-high-core`'s `references/math-teaching-core.md` and `references/strategy-diagnosis-rules.md` (knowledge-point prerequisites, observation, error causes, conservative estimates, confidence); when generating diagnostic practice, also read `math-high-core`'s `references/targeted-practice-rules.md`. Write diagnostic problems per `math-high-core`'s `references/problem-design.md`; interests do not enter the problem stem, and bridging conditions follow the personalization reference.
+Load or reuse `math-high-core`; follow its "Start and Input" and applicable branch reads. Resolve local references from its returned base directory and reuse rules already read. Before diagnosis, read `references/math-teaching-core.md` and `references/strategy-diagnosis-rules.md`. For a diagnostic item, read `references/targeted-practice-rules.md` and `references/problem-design.md`; keep interests out of its stem and use `references/math-personalization.md` for any bridge.
 
 Focus on `profile.current_levels`, `error_history`, `learning_state.priority_targets`, and the skills already confirmed in memory; for a concept with unclear prerequisites, read `math-high-core`'s `references/topic-map.md` and check only the immediate edges. With processed-file `material_refs`, use error-item triage; otherwise use strategy diagnosis.
 

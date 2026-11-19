@@ -1,3 +1,7 @@
+---
+cited: math-low-core/references/strategy-diagnosis-rules.md
+---
+
 # Strategy Diagnosis Rules
 
 `math-low-diagnose` gathers evidence and returns; this file limits inference. Strategies are judged per CGI, and the stages written to the profile use only the values listed in `references/progression-map.md`.

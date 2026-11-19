@@ -1,3 +1,7 @@
+---
+cited: learn-clean/references/high-risk-deletion.md
+---
+
 # High Risk: Completely Delete Student Data
 
 Run only after the user has explicitly chosen a high-risk action in this `/learn-clean` invocation. All of the main skill's rules in sections 2 and 3 apply — path verification, cancellation, re-confirmation on change, stop on failure, partial-failure reporting, and cache discarding; this file states only the differences. All student-facing labels, warnings, and typed phrases are locale keys resolved through the active UI locale per `references/ui-locale.md` in `learn-data`.

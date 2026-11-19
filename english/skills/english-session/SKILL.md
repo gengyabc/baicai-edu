@@ -2,13 +2,14 @@
 name: english-session
 description: English teaching mainline. Use when the learning entry routes to English, resumes an unfinished English focus, or runs story, conversation, task, vocabulary review, and news-reading turns; supports learn and feynman modes.
 user-invocable: false
+resource-loading: on-demand
 ---
 
 # English Teaching
 
 ## Start and Input
 
-Load `english-core` (reuse it when this session already has it), follow its "Start and Input", and read only the references that have not been read yet in this session per its condition table. The entry has already checked the session, student, and snapshot; this skill does not recheck or reread them.
+Load `english-core` and follow its “Start and Input”. Read the owning skill's references only when reaching their step below; reuse any already read in this session. The entry has already checked the session, student, and snapshot; this skill does not recheck or reread them.
 
 - When `mode: feynman`, first follow the `learn-core` Feynman rules: the AI plays a same-age listener and the student does the explaining this turn; do not start a new news search or a new writing task.
 - `target_context` has already been classified by the entry per `english-target`; this skill does not reparse the material category, it only picks this turn's action.

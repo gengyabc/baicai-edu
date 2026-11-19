@@ -1,3 +1,7 @@
+---
+cited: math-high-core/references/batch-board-boundary.md
+---
+
 # Batch Sub-Questions and Optional Representations
 
 A batch is an exercise with several sub-questions under one prompt. Attribute evidence by sub-question whether the student uses words, equations, a paper image, one board, or separate boards. Clearing follows `references/board-task-boundary.md`: no automatic clearing in this package.

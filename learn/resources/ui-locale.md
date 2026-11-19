@@ -1,3 +1,7 @@
+---
+cited: learn-data/references/ui-locale.md
+---
+
 # UI Locale Resolution
 
 Process-branch student copy (`ask_user_question` labels, stage menus, confirmations, recommendation chrome) is **not** hard-coded in skill prose. Skills name stable keys; packages supply locale catalogs.

@@ -2,6 +2,7 @@
 name: chinese-core
 description: Chinese shared rules. Load before reading, writing, read-write transfer, task generation, feedback, or long-term training; when reading stalls because of missing life experience for emotion, imagery, or character situation, bridge via the internal action table.
 user-invocable: false
+resource-loading: on-demand
 ---
 
 # 语文规则
@@ -17,7 +18,7 @@ user-invocable: false
 
 ## 读取规则
 
-按条件读取，不一次全部读入，已读的不重复读。
+这里只列读取入口。查学科契约时只读所需角色；教学按下表读命中的分支，已读的复用。共用规则从归属技能返回的 base directory 读取；语文规则从本技能的 base directory 读取。
 
 所有语文教学子 skill 共用：
 

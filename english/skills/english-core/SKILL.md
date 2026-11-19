@@ -2,6 +2,7 @@
 name: english-core
 description: English shared rules. Load before English teaching, story and conversation activities, vocabulary/pattern review, news reading, or generating English learning records.
 user-invocable: false
+resource-loading: on-demand
 ---
 
 # English Rules
@@ -20,7 +21,7 @@ This skill provides rules only. It does not produce student-visible replies, `se
 
 ## Read on Condition
 
-Read the shared rules first; read the others before entering the matching branch, and each file only once per session — an already read reference is reused instead of read again. Each file is the single source for its rule.
+For a subject-contract lookup, read only the requested role. For teaching, read `references/english-teaching-core.md` and the matching rows before acting. Resolve local files from this skill's base directory and shared rules from their owning skill's base directory; reuse material already read.
 
 | Condition | Read |
 |---|---|

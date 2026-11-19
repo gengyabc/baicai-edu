@@ -1,6 +1,8 @@
 ---
 name: math-high-session
 description: Upper-primary math teaching mainline (grades 4-6). Use when the learning entry routes to math, resumes an unfinished math focus, or returns to teaching after diagnosis/practice/student-made problems/modeling; supports learn and feynman modes.
+resources: prerequisite-learning.md representation-contract.md board-contract.md board-task-boundary.md batch-board-boundary.md micro-lesson-contract.md target-parsing.md derivation-teaching.md proof-teaching.md scaffold-calibration.md adaptive-thresholds.md ui-locale.md math-grade-defaults.md math-teaching-core.md pedagogy-core.md word-problem-derivation.md mathematical-strategies.md learn-act-allocation.md math-segment-fields.md
+resource-loading: on-demand
 ---
 
 # Upper Primary Math Teaching
@@ -9,7 +11,7 @@ Teach from the student's reasoning with the task-selected methods in `math-high-
 
 ## Start and Input
 
-Load `math-high-core` (or reuse it if already loaded this session) and follow its "Start and Input". Read each reference its condition table requires once per session. Delivery language, grade-band notes, and personalization boundaries come from `math-high-core`. Unqualified `references/...` paths in this file belong to `math-high-core`; an explicitly named skill or returned base directory overrides that default.
+Load or reuse `math-high-core`; follow its "Start and Input" and read the matching branch references before teaching. Read `references/...` paths from the core's returned base directory unless another owner is named; then use that owner's returned base directory. Reuse rules already read this session.
 
 ## Learning-Recommendation Gate
 
@@ -24,7 +26,7 @@ Check this gate before teaching, before resuming a leaf, and before a new-proble
 
 Feynman, support-only chat, save recovery, and unfinished prerequisite tasks keep lifecycle priority. The gate ends when the student is offered the choice: it produces no `session_segment`, does not modify `context.focus` or the long-term profile, and runs no leaf, teaching, board task boundary, or board clear.
 
-After the student chooses, follow the shared flow: persist `selected_id`, finalize an old different target when required, and enter this mainline only after the new context write succeeds. A failed write keeps the choice for retry; do not teach the new target or regenerate candidates. A recommendation card is not a new task, and starting the chosen task does not clear the board. The role file decides candidates and order; do not reuse the ordinary resume order.
+On selection, persist `selected_id`, finalize an old different target when required, and teach only after the new context write succeeds. On failure keep the choice for retry, with no new candidates or teaching. Selection and task entry do not clear the board. The role file ranks candidates, not the ordinary resume order.
 
 ## Central Dispatch Contract
 
@@ -36,7 +38,7 @@ For a confirmed missing tool, a nested gap, or a restored or overburdened learni
 
 ### Entry Events
 
-New problems, activities, topics, and leaf dispatches do not trigger board tools: no `math_board_clear` and no reading of an unsent student draft. This does not block `geometry_board_draw`; geometry teaching and geometry problems call it to put the figure on the Teacher demo tab, without clearing or writing the student draft. On a topic change, the lifecycle finalizes the old topic before the new one starts. Read `math-high-core`'s `references/board-task-boundary.md` only for an explicit student clear request or when reusing a submitted representation, and `references/batch-board-boundary.md` for multi-part answer attribution. A board attachment does not authorize clearing.
+New problems, activities, topics, and leaf dispatches do not trigger board tools: no `math_board_clear` and no reading of an unsent student draft. This does not block `geometry_board_draw`; for geometry teaching, problems or teacher-figure requests, read `math-common`'s `references/representation-contract.md` and `references/board-contract.md` before calling it for the Teacher demo tab. It does not clear or write the student draft. On a topic change, the lifecycle finalizes the old topic before the new one starts. Read `math-high-core`'s `references/board-task-boundary.md` only for an explicit student clear request or when reusing a submitted representation, and `references/batch-board-boundary.md` for multi-part answer attribution. A board attachment does not authorize clearing.
 
 ### Micro-Lesson in This Session
 
@@ -155,3 +157,5 @@ When there is evidence about the relationship, summarize it in one sentence the 
 Read `references/math-segment-fields.md`. With no actual student mathematical performance this turn (teacher-only examples, recommendation or act choices, unanswered tasks), return `session_segment: null` and record continuation context. Otherwise return the single `session_segment`: `subject: math`, `mode` from the caller, `submode` by that reference's merge rules, `source` matching `target_context.source` (file sources normalized per the shared target protocol), and all leaf evidence merged into it. Modeling records its assumptions and validation in `strategy_summary`; it adds no required fields.
 
 Completion condition: all required fields present, with evidence for strategy, confirmation, difficulty, and the optional stage and diagnosis.
+
+This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

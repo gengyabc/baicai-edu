@@ -1,11 +1,12 @@
 ---
 name: learn-feynman
 description: Feynman learning. Use when the student wants to be the little teacher, explain to the AI, check whether their explanation is clear, or switch from ordinary learning to student-led talk; the AI plays a same-age listener.
+resource-loading: on-demand
 ---
 
 # Feynman Learning
 
-Load `learn-core` and `learn-data` (only the ones not yet loaded this session; reuse already loaded ones per `learn-core`'s "Load Once, Reuse After"). Before starting, read `references/feynman-mode.md` and `references/feynman-skill-whitelist.md` from `learn-core`, and apply the role, skill confirmation, and deliberate-mistake rules.
+Load or reuse `learn-core` and `learn-data` per "Load Once, Reuse After". Read named references from the returned base of their owner. On a crisis cue, apply `learn-core`'s `references/llm-safety-boundaries.md` first. Before starting, read `learn-core`'s `references/feynman-mode.md` and `references/feynman-skill-whitelist.md` for role, skill confirmation, and deliberate mistakes.
 
 Read and execute `references/session-lifecycle.md` from `learn-data`:
 

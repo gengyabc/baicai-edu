@@ -1,13 +1,15 @@
 ---
 name: math-high-application-modeling
 description: Upper-primary real-world math modeling. Use when a grade 4-6 student wants to solve a real situation (budget, journey, recipe, survey, packaging) by deciding assumptions, choosing a representation, calculating, and validating the result.
+resources: math-teaching-core.md problem-design.md fraction-relations.md derivation-teaching.md word-problem-derivation.md scaffold-calibration.md math-segment-fields.md
+resource-loading: on-demand
 ---
 
 # Upper Primary Application Modeling
 
 ## Start and Input
 
-Load `math-high-core` and follow its "Start and Input". Also read `math-high-core`'s `references/math-teaching-core.md`, `references/problem-design.md`, `references/fraction-relations.md` (for ratio, percent, and decimal load). The six-part cycle below contains the installed modeling steps.
+Load or reuse `math-high-core`; follow its "Start and Input" and applicable branch reads. Use its returned base directory for local references and reuse files already read. Read `references/math-teaching-core.md` before teaching, `references/problem-design.md` when choosing or adapting a task, and `references/fraction-relations.md` for ratio, percent, or decimal work.
 
 Use a real situation only: one the student supplies, one the extracted material actually contains, or one the student agrees to use after being asked. Do not invent data and present it as real; when a quantity must be assumed, label it as an assumption and say what would change the answer. Personalization may choose the setting of the situation only when the student explicitly asks for a real-life task; interests do not supply the numbers.
 
@@ -45,3 +47,5 @@ Read `math-high-core`'s `references/math-segment-fields.md` and return evidence 
 - `next_step_candidate` is the remaining part or a neighboring situation; `recommended_targets` may include a knowledge point the situation exposed.
 
 The student sees the situation, the current part, the question, and the relationships and results already established.
+
+This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

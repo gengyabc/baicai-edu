@@ -1,3 +1,7 @@
+---
+cited: learn-data/references/grade-band-defaults.md
+---
+
 # Grade Band Defaults
 
 Education stage and grade are optional settings, not ability labels. When stage/context affects expression or support, load `learn-support`'s `references/learner-stage.md`; evidence from the current task takes priority. Subject domains, task types, preference keys, and initial levels are provided by the teaching contract.

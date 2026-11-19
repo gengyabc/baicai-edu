@@ -1,6 +1,7 @@
 ---
 name: chinese-reading-session
 description: Reading teaching and diagnosis. Use when the student studies a passage or unanswered reading items, evaluates existing reading answers, or explains reading evidence in Feynman mode.
+resources: chinese-reading-core.md chinese-feedback-core.md chinese-writing-core.md chinese-error-labels.md pedagogy-core.md next-step.md
 ---
 
 # 阅读教学与诊断
@@ -75,3 +76,5 @@ description: Reading teaching and diagnosis. Use when the student studies a pass
 2. 对照学生已发生的表现核实证据，分别标明独立完成、提示后完成与教学助手示范；只有摘句和教学助手的解释时，仍保留关系待确认。
 3. 选择阻碍当前理解的最小缺口，生成一个学生能直接作答的任务。字面关系未清先澄清对象与事实；字面已清再连接关键词、情境与人物或作者意图。一次只推进一个关系，复用已明确的证据。
 4. 收到回答后重新判断缺口是否补齐。已有充分证据时直接交下一步选择；仍有缺口则按共享支架规则调整任务，避免重复索要同一个理由。
+
+This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

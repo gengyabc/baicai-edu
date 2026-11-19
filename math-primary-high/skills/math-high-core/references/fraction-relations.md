@@ -1,13 +1,10 @@
-# Fractions, Decimals, Ratio, and Relational Reasoning
+# Fractions, Decimals, Ratio, and Percent
 
-Fraction meaning, equal partition, equivalence, comparison, operations, decimals, ratio, percent, and early symbolic relations gather evidence from units and quantity relationships, following the CGI fraction research (Empson & Levi) and the grades-4-6 knowledge map. For equal-partition stage values see `references/progression-map.md`.
+Probe one unit or quantity relation per turn:
 
-- A beginner with no material can enter from fair-sharing stories; if symbols or a calculation goal already exist, gather evidence directly and do not replay the introduction.
-- The equal-partition stage only describes the current coordination of number of people and share size; it is not a prerequisite gate for equivalence, comparison, or operations, and does not summarize decimal, ratio, or percent understanding; gather those separately.
-- If the partition is right but the student cannot name it, record an expression gap, not a conceptual error in distribution; when the naming is wrong, first check which whole each share is relative to, and keep it unknown until the unit concept is clarified. Rote rules, "flip and multiply", and cancellation steps are not themselves understanding.
-- Decimal magnitude is checked by magnitude and place value, not by digit count; a comparison probe should contrast digit count with actual magnitude.
-- Ratio asks for the multiplicative comparison between two quantities; percent asks for the part relative to an identified base. A unit rate is a quantity per one, not a "the answer is bigger" shortcut.
-- Proportional relationships may be checked on a table, a graph, or an expression; a table that increases is not yet evidence of proportionality. If the student claims a constant relation, ask what changes together and whether the ratio stays the same.
-- For ratio and percent in a real situation, the application-modeling act owns assumptions, units, and interpretation; here it only gathers the relational evidence.
+- **Fractions:** start from fair sharing only for a beginner without material; otherwise use the existing symbols/task. Equal-partition stage (`references/progression-map.md`) tracks people versus share size, not readiness for equivalence, comparison or operations, nor decimal/ratio/percent knowledge. Correct partition without a name is an expression gap; for a wrong name check the reference whole and leave unit understanding unknown until clarified. Rote operations alone don't establish understanding.
+- **Decimals:** contrast digit count with magnitude from place value.
+- **Ratio/percent:** compare multiplicatively; identify the percent base and unit rate (quantity per one). Check a constant ratio in a table, graph or expression; increasing alone isn't proportional.
+- **Real situations:** gather relational evidence here; application modeling owns assumptions, units and interpretation.
 
-Gather evidence on only one relationship per turn. For scaffolds see `references/scaffold-calibration.md`; for changing context and transfer see `references/problem-design.md`.
+See `references/scaffold-calibration.md` for support and `references/problem-design.md` for transfer.

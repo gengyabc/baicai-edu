@@ -1,13 +1,15 @@
 ---
 name: math-high-diagnose
 description: Upper-primary math strategy diagnosis and error triage. Use when a grade 4-6 math starting point is unclear, two guided turns stall, the student submits error items, practice needs an error pattern identified, or self-report conflicts with performance.
+resources: math-teaching-core.md strategy-diagnosis-rules.md targeted-practice-rules.md problem-design.md math-personalization.md topic-map.md math-segment-fields.md
+resource-loading: on-demand
 ---
 
 # Upper Primary Math Diagnosis
 
 ## Start and Input
 
-Load `math-high-core` and follow its "Start and Input". Also read `math-high-core`'s `references/math-teaching-core.md` and `references/strategy-diagnosis-rules.md` (knowledge-point prerequisites, observation, error causes, conservative estimates, confidence); when generating diagnostic practice, also read `math-high-core`'s `references/targeted-practice-rules.md`. Write diagnostic problems per `math-high-core`'s `references/problem-design.md`; interests do not enter the problem stem, and bridging conditions follow the personalization reference.
+Load or reuse `math-high-core`; follow its "Start and Input" and applicable branch reads. Resolve local references from its returned base directory and reuse rules already read. Before diagnosis, read `references/math-teaching-core.md` and `references/strategy-diagnosis-rules.md`. For a diagnostic item, read `references/targeted-practice-rules.md` and `references/problem-design.md`; keep interests out of its stem and use `references/math-personalization.md` for any bridge.
 
 Focus on `profile.current_levels`, `error_history`, `learning_state.priority_targets`, and the skills already confirmed in memory; for a concept with unclear prerequisites, read `math-high-core`'s `references/topic-map.md` and check only the immediate edges. With processed-file `material_refs`, use error-item triage; otherwise use strategy diagnosis.
 
@@ -45,3 +47,5 @@ Dispatched only by `math-high-session`; per its "Central Dispatch Contract", ret
 Before merging, read `math-high-core`'s `references/math-segment-fields.md`: `next_target` → `next_step_candidate`; `confidence` is diagnosis metadata only.
 
 The student-visible wrap-up is one sentence on the core issue and one sentence on the next step.
+
+This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

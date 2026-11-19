@@ -1,3 +1,7 @@
+---
+cited: math-low-core/references/math-teaching-core.md
+---
+
 # Core Math Teaching Rules
 
 ## Method

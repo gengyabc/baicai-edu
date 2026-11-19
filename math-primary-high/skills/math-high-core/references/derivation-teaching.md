@@ -1,123 +1,73 @@
 # Derivation Teaching
 
-Use with `references/math-teaching-core.md` and `references/scaffold-calibration.md` for formulas/general rules or linked quantity relationships. Add `references/word-problem-derivation.md` for multi-stage quantities/intervals and `references/proof-teaching.md` for constructing, understanding, checking, repairing or organizing proofs. This file owns the planning-and-bridging loop, not a proof catalogue. **Backward planning is for the teacher; forward reasoning is for the student.** Adapt to actual student strategies, not a predetermined discovery. In Feynman mode keep the student as presenter.
+Use with `references/math-teaching-core.md` and `references/scaffold-calibration.md` for formulas, general rules or linked quantities. Add `references/word-problem-derivation.md` for multi-stage quantities/intervals, `references/proof-teaching.md` for proof work. **Backward planning is for the teacher; forward reasoning is for the student.** Follow actual strategies; in Feynman mode the student presents.
 
 ## 1. Establish the destination
 
-Retain the actual expression, claim, scope and requested depth. Resolve names from context; ask one clarification only if the answer changes the task. **Output boundary:** a conjecture suggests a pattern; a derivation establishes a relationship from assumptions; a proof justifies the claim throughout its scope. A derivation can also be a proof when warranted. Finite examples alone do not establish a universal claim.
+Retain the expression, scope and requested depth; clarify only what changes the task. **Output boundary:** a conjecture suggests; a derivation establishes a relationship from assumptions; a proof covers the claim's scope. A derivation can also be a proof; finite samples alone cannot prove a universal claim.
 
-Apply **Guide before revealing** and **Informed full-solution choice** in `learn-core`'s `references/pedagogy-core.md` to every learner-owned target. A concrete word problem can start one purposeful bridge without a discovery menu. The **Formula-goal gate** establishes the mathematical learning goal for formula/general-method learning, not routine use of a known relationship.
+Apply **Guide before revealing** and **Informed full-solution choice** in `learn-core`'s `references/pedagogy-core.md`. The **Formula-goal gate** identifies the mathematical learning goal for general methods, not routine application. Start a concrete word problem with a purposeful bridge, not a discovery menu.
 
-| Goal or request | Action and boundary |
-|---|---|
-| Agreed new learning of an unfamiliar method | Session may use `micro_lesson` through the shared contract loaded via `math-common`, without compulsory discovery. Teach supplied-rule understanding/application as that goal, not independent derivation |
-| New formula topic or a faster general method, depth unresolved | Withhold the target formula; offer relevant exploration or one decision-changing clarification |
-| A confirmation of expression or scope | It does not authorize formula delivery. Separate any teacher question that mixed scope and permission to reveal. Less repetitive calculation is an obstacle, not evidence of inability |
-| Self-derivation or how to think of a route | Use steps 2–6 with the smallest relevant hint; preserve the target formula, decisive inference and a meaningful student choice. “Teach” or an ambiguous request to explain or demonstrate does not override this goal |
-| Student explicitly requests the target formula or complete worked application/explanation/proof | Use the shared informed-choice path, including an explicit offer/assent under Informed full-solution choice; do not infer authorization or inability |
-| Existing or student-supplied formula used in an agreed application | Keep that goal; let the student carry its application without reopening discovery |
-| Reference-only lookup | Distinguish it from solving/deriving a learning target; a reply may end without a mandatory exercise or follow-up question |
-| Concrete tool gap | Use a recorded tool-learning child per `references/prerequisite-learning.md`, under the same reveal rules |
-| Formula already revealed prematurely | Acknowledge the mismatch, retire the unwanted application question, and resume the requested reasoning goal; later reconstruction is not independent discovery |
-
-Completion: the next action matches the agreed goal and reveal rules. Scope/method choice alone has not authorized a full solution; agreed derivation has not silently become formula verification.
+- Agreed new learning: use session `micro_lesson` via `math-common` if appropriate. Teach the supplied rule for understanding/application without compulsory discovery or independent-derivation credit.
+- Unresolved formula depth or a faster general method: withhold the target formula; offer exploration or clarify. A confirmation of expression or scope does not authorize formula delivery; separate questions that mixed scope and permission. Seeking less repetition is not evidence of inability.
+- Self-derivation or route finding: give the smallest relevant hint; protect the formula, decisive inference and student choice. An ambiguous request to explain or demonstrate does not override this goal.
+- If the student explicitly requests the target formula or a complete worked solution, explanation or proof, use the shared informed-choice path; await explicit same-task assent without requiring inability.
+- Known or student-supplied formula: support agreed application without reopening discovery. Reference-only lookup may end without a mandatory exercise or follow-up question.
+- Formula already revealed prematurely: acknowledge, retire the unwanted application question and resume the reasoning goal; reconstruction is not independent discovery.
 
 ## 2. Locate the student starting point
 
-Reuse the student's actual relationships, representation and partial solution. Separate tools as **demonstrated / self-reported / unknown**, retaining support conditions. A self-reported tool is provisionally available, unconfirmed; try it without awarding independent mastery. Reuse earlier evidence rather than retesting because a session is new.
-
-A prerequisite tool is a usable action, not a curriculum label. Distinguish **Execution:** performing it, from **Selection:** recognizing when and why it helps. Grade, unfamiliar terms, a statement of no ideas and a corrected teaching goal do not establish a gap. If the student reports basic calculation ability but seeks a general method, keep that report provisional and return to generalization rather than restarting arithmetic checks.
-
-Completion: an evidenced starting relationship and only route-relevant unknowns are identified. With no evidence, step 4's opening locates them; no exhaustive inventory is required.
+Reuse actual relationships, representations and partial work. Mark tools **demonstrated / self-reported / unknown**, with support conditions; a report is provisionally available, unconfirmed. A prerequisite tool is an action: **Execution:** can they do it? **Selection:** can they tell when and why it helps? Grade, terminology, a statement of no ideas or goal correction do not establish a gap. If basic calculation is reported and generalization is the goal, try it provisionally rather than restart arithmetic checks. With no evidence, use step 4, not an inventory.
 
 ## 3. Plan backward across candidate routes
 
-Privately solve and verify two or three plausible routes when available; work backward from each conclusion to the student's starting point. For each, identify:
+Privately solve and verify two or three plausible routes when available; work backward to the student's starting point. Mark prerequisite tools, critical choices (including teacher constructions), each student-visible clue, expected benefit/test, and the nearest uncertain bridge with a continue/change criterion. Prefer fewest unsupported choices, manageable load and visible progress over brevity. Keep one provisional route and useful alternatives private.
 
-- Prerequisite tools and critical choices, including teacher-supplied constructions.
-- A student-visible clue as the source for each choice, its expected benefit and a way to test it.
-- The link to demonstrated tools, nearest uncertain bridge, and response that would support continuing or revising.
-
-Prefer the fewest unsupported choices and a reachable next bridge over the shortest proof or smallest arithmetic. Consider representation/tool load and intelligible intermediate progress. Keep one provisional route and useful alternatives private.
-
-**Justify the exact choice.** Apply step 4's Candidate-source check without relying on the unknown conclusion. With no accessible source, keep the multiplier or construction open or choose another bridge.
-
-Completion: one verified route connects plausibly to the starting point, with a next bridge and an observable continue/change criterion; otherwise select one purposeful tool-building task rather than a hidden-answer sequence.
+**Justify the exact choice** without relying on the unknown conclusion (step 4). With no accessible clue, keep the multiplier or construction open, change bridges, or choose purposeful tool building rather than a hidden-answer sequence.
 
 ## 4. 先搭桥，再推导 — choose the student-owned decision
 
-For conception, connect **what I can already do → what could help with this unknown**. Choose one consequential route decision to leave student-owned: representation, conjecture, transformation, intermediate quantity, auxiliary object or route criterion. Keep it open in both the question and any teacher figure. Routine fluency needs no added planning stage; understanding a supplied method is not staged as discovery.
+Link a usable action to the unknown. Leave one consequential route decision (representation, conjecture, transformation, intermediate quantity, construction or criterion). Keep it open in both the question and any teacher figure.
 
-| Current evidence | First useful action |
-|---|---|
-| No overall relationship image | Invite one purposeful representation/action that establishes what must be represented or preserved before seeking a formula |
-| Tools usable but not linked to target | Put one evidenced tool and the unknown in view; leave a substantive connection choice, not method plus construction plus steps |
-| Necessary tool confirmed missing | Enter its recorded tool-learning child; “no ideas” alone leaves cause unknown |
-| The student already offers a viable route | Skip a route-finding probe; continue directly, checking only an unresolved necessary condition |
-| Attempt's value unclear | Identify what it established and what remains; leave a grounded continue/revise/switch decision when useful |
-
-A drawing, pointing gesture, trial or equation can show the connection without a verbal plan. Forming it is mathematical work; judging its usefulness is monitoring. Seek only decision-changing evidence, not a complete plan or fixed introspection interview. Supplied direction is supported conception even if remaining choices are the student's.
-
-Completion: one consequential decision remains student-owned, or a viable student route goes directly to derivation; the opening fits the evidenced starting point.
+- No relationship image → invite one representation/action that exposes what must be related or preserved.
+- Tools not linked to target → put one evidenced tool and unknown in view; leave their connection open.
+- The student already offers a viable route → Skip a route-finding probe; check only unresolved conditions. Routine fluency and supplied-method understanding need no staged discovery.
+- Attempt's value unclear → identify what the attempt established and what remains; leave a continue/revise/switch decision when useful. A drawing, gesture, trial or equation can show conception; judging usefulness shows monitoring. Attribute supplied direction.
 
 ### Step back: strategy → candidate → execution
 
-When a move has no accessible source or the student asks why it was chosen, step back to a reusable operation and its applicability. A **strategy** reduces the obstacle; a **candidate** is a particular expression, arrangement or object that may realize it; **execution** calculates/checks it. Supplying the candidate and asking for execution bypasses its generation and selection.
+If a move lacks a source or the student asks why, recover an understood operation: what changed, what simplified, under which condition? Strategy reduces the obstacle; a candidate realizes it; execution checks it. Formula recall alone does not establish usable knowledge. Leave generation or screening, not a fixed strategy menu or a bare strategy label.
 
-Anchor the bridge in an understood prior action or current visible relation. Formula recall alone does not establish knowledge of the operation. Extract what changed, what simplified and under which condition; leave a reachable generation or screening decision. A general strategy label alone supplies no actionable bridge. Offer only needed direction, not a fixed strategy menu or abstraction interview; follow a viable student route directly.
+**Clue-first pause:** after a correctly interpreted trial, connect the observed result to the goal, ask an open next-move question and wait. Leave the choice open, including the search dimension. Use a concrete observed clue plus a clear desired effect rather than asking which power of adjacent numbers to subtract. Narrow one dimension only if the student asks for help or shows a specific obstacle, not for a correct short response alone. Keep the existing branch for a chosen route, agreed instruction or authorized full solution.
 
-**Clue-first pause:** after a correctly interpreted trial, connect the observed result to the goal, ask an open next-move question and wait. Leave the choice open, including the search dimension; a concrete observed clue plus a clear desired effect can suffice without naming the next object or operation. Ask for that effect rather than asking which power of adjacent numbers to subtract: the latter supplies the object family and operation. Narrow one dimension only when the student asks for help or shows a specific obstacle; a correct short response alone is not a reason. An already-chosen route, agreed instruction or authorized full solution retains its branch.
+**Candidate-source check (teacher-private):** without knowing the target answer, use prior operations, present structure or an actual trial as the source for how to form/screen the candidate family; an expected benefit alone does not explain how to generate a candidate. Otherwise leave it open, narrow one choice, or teach genuinely new knowledge through a permitted, attributed demonstration.
 
-**Candidate-source check (teacher-private):** without knowing the target answer, do available clues explain which object family to examine and how to form/screen a candidate? Use prior operations, current structure or an actual trial as the source; an expected benefit alone does not explain how to generate a candidate. If absent, leave the candidate open, narrow one decision, or teach genuinely new knowledge only through permitted demonstration paths with attribution.
-
-Treat a heuristic as a test, not an inevitable deduction: state a useful outcome, then retain/revise/reject from what happened. A failure may constrain the next search, not mandate a predetermined formula. A separate example should expose a reusable operation and its applicability, not disguise the same concealed construction with new numbers. Reduce load by externalizing a relation or narrowing one selection decision, not turning the whole route into arithmetic blanks. Keep only the next necessary tool/representation active; unknown execution readiness is not a gap.
-
-Completion: the next trial has an accessible source, testable purpose and meaningful student generation/screening/monitoring when route finding is the goal; or permitted teacher construction is honestly being understood. These are conditional repairs, not extra stages for routine application, lookup or authorized full solutions. Record observable choices/help only, not the teacher-private candidate search.
+A heuristic is a test, not an inevitable deduction: name its desired outcome, then retain/revise/reject from evidence. A separate example exposes the reusable operation and its conditions, not the concealed construction with new numbers. Reduce load by externalizing a relation or narrowing one selection decision. These repairs are not extra stages for routine application, lookup or authorized solutions.
 
 ### Probe only the uncertain connection
 
-Use **pose → observe → interpret → bridge**. Probe only when its response would change the next teaching decision, preferably in the actual task. A short variant probe may isolate route-critical uncertainty; return once the link is usable. Keep preliminary probes few and purposeful; clarify only when the answer would materially change the route or support. Reuse evidence and prefer doing the derivation over an expanding entrance test.
+Use **pose → observe → interpret → bridge** only if the response would change the next teaching decision. Prefer actual work; use a short variant probe for a route-critical unknown. Keep preliminary probes few and purposeful; clarify only if it would materially change the route or support. Observe the chosen representation, comparison, transformation or usefulness judgment, not familiarity or unrelated arithmetic. Return once the link is usable; wait on unanswered tasks.
 
-Leave a real representation, transformation, comparison or usefulness judgment to the student. Choose conditions that make their strategy usable and reveal the needed relation; observe strategy, not only answer. Familiarity questions and unrelated arithmetic do not locate a bridge.
-
-**Next-step readiness:** use an evidenced tool or allow an uncertain but accessible attempt. Unknown is not missing. For a confirmed gap, preserve the task and enter the nearest child through session dispatch per `references/prerequisite-learning.md`, recursively resolving only evidenced dependencies. A ready child may teach one explicitly introduced tool with a reasoned example, student attempt and fresh independent use. Do not stack several unfamiliar tools into a comparison question or call an inline parent demonstration a repaired gap.
-
-Completion: the response supports continuing, teaching one tool or choosing an alternative. Unanswered tasks wait; do not invent evidence.
+**Next-step readiness:** try an evidenced or uncertain but accessible tool. For a confirmed gap use `references/prerequisite-learning.md`: preserve the parent, have session dispatch the nearest child, and reconnect after single-parent return. In a ready child, teach one explicitly introduced tool with a reasoned example, attempt and fresh independent use. Do not pack several unfamiliar tools into a comparison question or count an inline parent example as repair.
 
 ## 5. Teach forward with visible progress
 
-At the next decision connect **obstacle → useful structure → candidate move** from the student's reasoning. Identify the known relation, remaining difficulty and what the attempt could settle; leave a mathematical choice or inference open.
+Connect **obstacle → useful structure → candidate move** and leave a choice or inference. **Selection is not execution:** explain purpose before calculation; distinguish deduction, **Heuristic trial**, and **Supplied construction** and explain/attribute the latter two. Feedback names what was established or ruled out, even on failure.
 
-**Selection is not execution.** Explain the purpose before assigning a calculation. Distinguish deduction, exploratory **Heuristic trial** and teacher **Supplied construction**, explaining and attributing the latter two. A suggestion label alone is not its rationale.
-
-Feedback states what the attempt established, removed or ruled out. An unsuccessful trial can constrain search without being called success; visible progress is intelligible mathematical benefit, not guaranteed insight or empty praise.
-
-Pace by decisions, not lines: one coherent thinking task per turn and one pending question. Combine familiar mechanical manipulations serving that decision. Use the recorded child and single-parent return for a missing tool, then reconnect it to the original obstacle; do not complete all the strategic work and leave only arithmetic or a pattern label.
-
-Completion: an attempt, inference or tool step has a clear purpose and meaningful student action, ready for a response.
+**Pace by decisions, not lines:** one coherent thinking task per turn and one pending question. Combine familiar mechanical manipulations that serve it; do not complete all the strategic work and leave only arithmetic.
 
 ## 6. Update the route from the response
 
-| New evidence | Action |
-|---|---|
-| Strategy advances the goal | Build on it and fade help; verify and follow a valid student alternative |
-| Execution blocks progress | Locate the specific tool gap and smallest support; if execution is available but purpose unclear, repair selection rather than repeat calculations |
-| Student questions a move or sees no benefit | Pause the calculation and return to the selection point; check equivalent operations before correcting. If teacher rationale was unsupported, withdraw the unsupported move and replan from the last established relation |
-| Trial fails | Use what it excludes. When prompts stop changing the next decision, review the bridge, prerequisite, or route; this is not a hint quota, and it does not imply weak calculation or a default downgrade |
+- Progress or a valid student alternative → verify, follow and fade.
+- Execution blocked → locate the tool and smallest support. If the purpose is unclear, pause the calculation and return to the selection point; check equivalent moves, or withdraw the unsupported move and replan from the last established relation.
+- Failed trial → use what it excludes. If prompts stop changing decisions, review bridge, prerequisites or route, not a hint quota or automatic downgrade.
 
-Keep a pattern-based conjecture provisional until a reason covers the scope. Recognition in teacher-selected data and routine rearrangement alone are not proof. Lifecycle owns ending/topic change. Switch to verify-and-use only by agreement, stating when no derivation was done.
-
-Completion: the next action follows actual evidence, not the original script; save only necessary continuation state and keep unanswered questions pending.
+Keep a pattern-based conjecture provisional until a reason covers scope; neither teacher-selected patterns nor routine rearrangement suffice. Lifecycle owns ending/topic change. Switch to verify-and-use only by agreement; say when no derivation was done.
 
 ## 7. Completion and recording
 
-Judge the agreed goal, separating route selection from arithmetic accuracy; record each separately. A defensible student-found route is progress even with later calculation errors. One transfer success is not durable mastery; essential proof inferences remain required. For optional agreed transfer, omit method cues; a changed condition that makes the old method inconvenient may reveal a justified new direction or switch.
+Judge the agreed goal. Route choice and arithmetic can succeed separately; record each separately. For route finding seek why it was worth trying, the student-carried inference and nearby applicability; distinguish supported choices from unhinted ones. For agreed transfer omit method cues; making the old method inconvenient can reveal justified retention or change. One success is not durable mastery.
 
-| Goal | Evidence needed |
-|---|---|
-| Find a route | Why it was worth trying, a student-carried key inference and when the tool may help nearby; distinguish supported conception from fresh unhinted selection |
-| Multi-step word problem | Student-owned relationship selection, connection to the requested quantity and original-condition validation per `references/word-problem-derivation.md`; value alone is insufficient |
-| Understand supplied proof | Justified connections through its key step, not independent construction |
-| Independent proof construction | Apply `references/proof-teaching.md`; finite examples, recitation and guided completion do not establish route discovery |
+For word problems check student-owned relationship, target link and original conditions; for supplied proofs seek the key justification, not independent construction. For independent proof construction use `references/proof-teaching.md`.
 
-No new profile field is added. In existing `context.turn_state`, retain only provisional route, relevant tool evidence/support, current bridge/obstacle, supplied help and pending question; alternatives only if needed to resume, never full private deliberation. The segment separates student strategy, teacher proposals, supported work and unknowns. An unfinished proof is not by itself a student difficulty. Durable confirmation follows shared thresholds.
+No new profile field is added. Keep only provisional route (alternatives only if needed to resume), evidence/support, obstacle/bridge and pending question in `context.turn_state`. Record observable choices, teacher proposals and unknowns, not the teacher-private candidate search. An unfinished proof is not by itself a student difficulty; apply shared confirmation thresholds.

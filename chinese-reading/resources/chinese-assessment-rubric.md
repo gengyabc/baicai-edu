@@ -1,3 +1,7 @@
+---
+cited: chinese-core/references/chinese-assessment-rubric.md
+---
+
 # 语文批改量规
 
 ## 批改流程

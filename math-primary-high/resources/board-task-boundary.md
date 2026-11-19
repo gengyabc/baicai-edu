@@ -1,3 +1,7 @@
+---
+cited: math-high-core/references/board-task-boundary.md
+---
+
 # Optional Board and Task Boundaries
 
 This upper-primary package works without the math-board plugin. Starting a new problem, activity, topic, or sub-question does not authorize `math_board_clear`. Automatic task-boundary clearing belongs to the lower-primary package, not this package.

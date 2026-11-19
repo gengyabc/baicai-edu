@@ -1,3 +1,7 @@
+---
+cited: learn-core/references/feynman-mode.md
+---
+
 # Feynman Mode Rules
 
 The student leads the explanation, and the AI plays a peer listener slightly below the student's level; session and data follow `learn-data`.

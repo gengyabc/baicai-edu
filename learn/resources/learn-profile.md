@@ -1,6 +1,7 @@
 ---
 name: learn-profile
 description: View learning progress, saved plans, or edit the profile. Use when the student asks about current focus, recent progress, or milestones, or wants to change display name, learning language, education stage, interests, long-term goals, or learning preferences.
+resources: teaching-resolver.md grade-band-defaults.md subject-contract.md learner-stage.md
 ---
 
 # Student Profile
@@ -32,3 +33,5 @@ Show only the current subject; ask about scope before viewing another subject, a
    - A newly added interest keeps the other interests; remove one only when the student explicitly says they no longer like it. When the learning context affects expression/support, read `references/learner-stage.md` from `learn-support` as needed.
 4. `learning_support_memory` plans/observations may be written only by finalize; this skill does not modify `memory.json` directly, does not backfill observations, and does not turn old emotions into labels. When the student asks to correct a historical fact, stop citing the invalidated fact and hand the correction/explicit plan back to the lifecycle's single save entry; deletion requests follow the safe-cleanup protocol.
 5. Only after all requested fields are written successfully and the valid snapshot is updated in sync, tell the student it has been updated. On partial failure, say which fields are not yet saved; distinguish shared settings updated, resume state written, and long-term plan saved, and never describe an incomplete save as successful.
+
+This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.

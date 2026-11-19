@@ -2,11 +2,14 @@
 name: learn-support
 description: Learning support. Load when the student asks about usefulness, fears they cannot learn, resists or is required to learn, wants to talk first, leaves choices to the AI, wants to learn but methods are unclear or ineffective, seeks help with time/resource constraints, or needs start/persist/recover support; a single wrong answer, silence, or short reply does not trigger. Return method advice only to the current teaching owner.
 user-invocable: false
+resource-loading: on-demand
 ---
 
 # Learning Support Methods
 
-The current session still has exactly one teaching owner: a specialist session or general-task teaching. This skill provides advice; it does not route by itself, write profiles, or produce segments. First obey the lifecycle gates of `learn-core` and `learn-data`: an explicit end takes priority over support, and an unfinished save is recovered first.
+The session has exactly one teaching owner: the resolved specialist or general session. This skill advises that owner; it does not route by itself, write profiles, or produce segments. Apply the `learn-data` lifecycle gates first: an explicit end takes priority over support; recover unfinished saves before support. On crisis cues, stop and read `learn-core`'s `references/llm-safety-boundaries.md` before replying or recording.
+
+Read only the selected references. Local references use this skill's returned base; for a named owner use that owner's returned base.
 
 ## Input and Return
 
@@ -24,7 +27,7 @@ Return to the teaching owner:
 - `action`: one main method and, if needed, at most one auxiliary method; state the teaching owner's next action. With a task and a willing student, give one small step for the student to try personally; pure chat has no task forced on it. The advice is carried out by the current owner and does not open a separate teaching turn.
 - `observe`: observe self-report, participation, and task performance separately, stating the hint/demonstration conditions; keep it unknown when there is no observation.
 - `exit`: when this method returns to teaching, switches to foundational diagnosis, rest, or ending; more chatting or a promise is not completion.
-- `support_update`: a minimal update suggestion for `context.learning_support`, written by the lifecycle. State and plan saving follow only the [session structure](../learn-data/references/session-schema.md) and the [lifecycle](../learn-data/references/session-lifecycle.md) of `learn-data`; no separate storage structure is invented here.
+- `support_update`: a minimal update suggestion for `context.learning_support`, written by the lifecycle. The lifecycle reads its `learn-data` `references/session-schema.md` and `references/session-lifecycle.md` before applying the update or handling a save; no separate storage.
 
 ## Selection and Exit
 

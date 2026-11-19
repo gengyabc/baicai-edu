@@ -1,3 +1,7 @@
+---
+cited: english-core/references/english-scaffolding.md
+---
+
 # English Minimal Scaffolding and Fading
 
 Read when the student explicitly asks for help, makes a specific error, or gets stuck on a task. Triggers, non-response routing, and the maximum scaffold budget of 3 follow `learn-core` `references/guidance-non-response-handling.md`; this file is the single source for the English hint ladder, and no method sets its own ladder.

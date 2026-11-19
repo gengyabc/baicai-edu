@@ -1,3 +1,7 @@
+---
+cited: chinese-core/references/chinese-reading-core.md
+---
+
 # 语文阅读规则
 
 先证据后结论，区分字面事实与推断。赏析默认检查本义与语境义/表达效果；作用题绑定本文对象、情境、结构与主题，作者意图必须能回溯原文。

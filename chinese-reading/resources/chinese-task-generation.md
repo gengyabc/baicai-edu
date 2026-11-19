@@ -1,3 +1,7 @@
+---
+cited: chinese-core/references/chinese-task-generation.md
+---
+
 # 语文出题规则
 
 ## 训练目标对齐

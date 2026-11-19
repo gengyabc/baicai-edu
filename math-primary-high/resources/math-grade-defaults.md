@@ -1,3 +1,7 @@
+---
+cited: math-high-core/references/math-grade-defaults.md
+---
+
 # Upper Primary Math Grade Defaults
 
 Grade-to-band mapping and the specific level within a band follow `learn-data`'s `references/grade-band-defaults.md`. This file is the single source for math `active_domain`, initial levels, and domain scope in grades 4–6. Do not copy initial values from the shared schema's examples.

@@ -1,39 +1,23 @@
 # Math Scaffold Calibration
 
-Read before giving a hint, example, or support, including a planned opening example. Primary method selection belongs to `references/math-teaching-core.md`; this file calibrates help within it.
+Read before a hint, example or other support. `references/math-teaching-core.md` owns method selection.
 
-## Match Support to the Step
+## Match support to the obstacle
 
-Use **Guide before revealing** in `learn-core`'s `references/pedagogy-core.md` to select guided work, its agreed new-learning separate-example entry, or **Informed full-solution choice**. The shared gate owns eligibility and learner-owned task boundaries; a qualifying new-learning example needs no failed attempt. In guided work, build on the student's viable strategy and actual obstacle. After a permitted demonstration, offer one reachable completion step or a fresh unhinted item as appropriate. Record demonstrated-item work as supported and fade support; neither hints nor failed attempts are quotas.
+Use **Guide before revealing** and **Informed full-solution choice** in `learn-core`'s `references/pedagogy-core.md`. An agreed new-learning `micro_lesson` (via `math-common`) may open with a separate example before any failed attempt; it alone creates no prerequisite plan. A local explanation stays local; preserve the pending task for a separate analogy. After permitted demonstration, leave a reachable step or fresh unhinted item. Fade as the student can continue; neither hints nor failed attempts are quotas.
 
-For an agreed new-learning goal, session's `micro_lesson` act uses the shared contract loaded via `math-common`; an opening example is available before a failed attempt. Ordinary new learning alone creates no prerequisite plan. A local “explain this step” request stays at the obstacle; a requested separate analogy preserves the original pending task, while a complete original solution follows informed choice.
-
-A confirmed missing prerequisite tool first enters a recorded child task per `references/prerequisite-learning.md`; an inline worked example in the parent does not replace that entry. Inside the child, once its own tools are available, the normal example/explanation/fading options below remain available. Unknown readiness first calls for a purposeful probe, not automatic remediation.
-
-Choose one main cognitive goal with at most one pending question, then wait when needed. Keep the student's viable approach and withdraw support once they can continue. A request for explanation calls for support matched to the obstacle under the shared gate, not an automatic whole-task demonstration; do not enforce a mechanical hint ladder. Feynman mode preserves the student-presenter role under shared rules.
+For unknown readiness probe only if decision-changing. Confirmed gaps enter a recorded child via `references/prerequisite-learning.md`, not an inline parent example; teach/fade normally inside a ready child. Keep one mathematical goal and at most one pending question. In Feynman mode the student presents.
 
 ## Route Hints versus Execution Hints
 
-For conception tasks, apply **先搭桥，再推导**, including **Step back: strategy → candidate → execution** and its candidate-source check, in step 4 of `references/derivation-teaching.md` before choosing help. A **route hint** supports a strategy or a way to generate or screen candidates; specifying the particular intermediate quantity or construction supplies that choice. An **execution hint** helps carry out a route already selected. Calibrate and record them separately: independent arithmetic after a route hint does not show independent route selection. After a correctly interpreted trial, use that reference's **Clue-first pause** before narrowing the search dimension. If the student can execute but asks why this candidate was chosen, repair that selection bridge before assigning more execution.
+For conception use **先搭桥，再推导**, including **Step back: strategy → candidate → execution** and the candidate-source check in `references/derivation-teaching.md`. Route hints help generate/screen candidates; specifying the particular intermediate quantity or construction supplies that choice. Independent execution is separate: independent arithmetic after a route hint does not show independent selection. Use **Clue-first pause** before narrowing the search dimension. If execution is available but the choice is unclear, repair that selection bridge before assigning more execution. With a viable student route, support its next unresolved condition, not a route interview.
 
-Prefer an opening that connects usable knowledge to the unknown while preserving the consequential decision. State relevant constraints and a useful direction without specifying the construction and steps; splitting those choices into easy questions still supplies the route. If the student already has a workable route, support its execution or unresolved condition rather than adding a route-finding interview.
+When permitted, a **separate problem** models **visible clue → known tool → expected benefit → check** using available or explicitly taught tools. Protect the original answer and decisive construction; return with one substantive choice open. After exposure, credit supported reconstruction, not rediscovery.
 
-When the student cannot generate a direction and a demonstration is appropriate under the shared gate, use a **separate problem** to model **visible clue → known tool → expected benefit → check**, including why the choice is worth trying. Use tools already available or explicitly taught there; the example must not depend on the original task's still-unknown result or disclose its decisive construction. Return to the protected original and leave one substantive choice. If the original route was exposed, record later work as supported reconstruction, not rediscovery. Examples are an option, not a required response to every “no ideas”.
+## Options and evidence
 
-## Support Options (grades 4–6)
+Pick the smallest useful support: rephrase without adding conditions; focus one equality/unit/boundary/comparison; connect words, diagrams, tables, number lines, symbols or objects (board optional; no band change); give a partially completed analogy or verified worked example with the key reason. Fade and check fresh independent use, not assent.
 
-Choose the smallest useful option, not a required sequence:
+For a stalled attempt, `references/math-personalization.md` permits one interest bridge per problem; return to target. Repeated sticking goes to diagnosis; sustained non-response follows shared rules. Adjust one dimension per `references/adaptive-thresholds.md`; an error does not establish a confidence problem.
 
-1. Rephrase the same quantities and conditions without adding a solution.
-2. Focus attention on one equality, unit, boundary, or comparison.
-3. Connect a representation: words, a bar diagram, table, number line, symbols, or objects. The math board is optional; use it only if available and chosen. Tool use does not require switching to the lower-primary package.
-4. Give an analogous example with different numbers and a partially completed step.
-5. Give a verified worked example with a reason for the key step, followed on later turns by faded support and a fresh independent check.
-
-If a student has tried and has no way forward, one interest detail may restate the same relationship under all bridging conditions in `references/math-personalization.md` (at most once per problem); return to the target when they can continue. Repeated sticking goes to diagnosis and sustained non-response to shared rules.
-
-## Evidence
-
-Keep teacher-only examples and hints in context with `session_segment: null` when no student mathematics occurred. Record actual student work after examples, hints, or simpler cases with its support conditions. Agreement with an example is not independent understanding; only fresh independent application verifies it. Adjust one dimension at a time per `references/adaptive-thresholds.md`, without presuming a belief or confidence problem from an error.
-
-With a submitted edit history, use only observable changes in the current message to ask one question about the meaning of the representation. Counts and undos alone do not establish difficulty, and missing history does not justify asking for an unsent draft. The formative-assessment row of `references/math-teaching-core.md` supplies feedback and self-check moves, not another mandatory sequence.
+Attribute actual work and its support; teacher-only examples/hints use `session_segment: null`. For submitted edit history, use observable edits in the current message for one meaning question; counts/undos do not establish difficulty, and no history does not warrant asking for an unsent draft. Use the formative-feedback/self-check moves in `references/math-teaching-core.md` as needed.

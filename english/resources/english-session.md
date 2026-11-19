@@ -1,14 +1,15 @@
 ---
 name: english-session
 description: English teaching mainline. Use when the learning entry routes to English, resumes an unfinished English focus, or runs story, conversation, task, vocabulary review, and news-reading turns; supports learn and feynman modes.
-resources: ui-locale.md next-step.md english-grade-defaults.md english-teaching-core.md english-turn-arc.md english-input-adaptation.md english-segment-fields.md
+resources: ui-locale.md next-step.md english-grade-defaults.md english-teaching-core.md english-turn-arc.md english-input-adaptation.md english-scaffolding.md english-segment-fields.md
+resource-loading: on-demand
 ---
 
 # English Teaching
 
 ## Start and Input
 
-Load `english-core` (reuse it when this session already has it), follow its "Start and Input", and read only the references that have not been read yet in this session per its condition table. The entry has already checked the session, student, and snapshot; this skill does not recheck or reread them.
+Load `english-core` and follow its “Start and Input”. Read the owning skill's references only when reaching their step below; reuse any already read in this session. The entry has already checked the session, student, and snapshot; this skill does not recheck or reread them.
 
 - When `mode: feynman`, first follow the `learn-core` Feynman rules: the AI plays a same-age listener and the student does the explaining this turn; do not start a new news search or a new writing task.
 - `target_context` has already been classified by the entry per `english-target`; this skill does not reparse the material category, it only picks this turn's action.
@@ -69,3 +70,5 @@ When there is evidence of understanding or expression, summarize in one sentence
 Read `english-core` `references/english-segment-fields.md` and return the single `session_segment`: `subject: english`, `mode` inherited from the caller, `submode` as above, and `source` aligned to `target_context.source`. Method-skill evidence is merged into the same record, not logged as another turn. `diagnosis` uses only one main label; `current_levels` gives a partial update only when evidence is sufficient.
 
 Completion condition: required fields are complete, and understanding, expression, correction, or difficulty has evidence; optional fields without evidence are omitted.
+
+This skill's base directory holds every file it names: a `references/<name>.md` path below is the installed `<name>.md` beside that base directory, because an installed skill keeps no `references/` folder for prose. Locale catalogs do keep theirs, at `references/locales/<locale>.json`.
