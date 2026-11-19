@@ -1,6 +1,6 @@
 {
   "name": "baicai-edu-math",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "exports": {
     "./package.json": "./package.json"
@@ -34,7 +34,7 @@
     "dsh": ">=0.2.2-rc.1 <0.3.0"
   },
   "dependencies": {
-    "baicai-edu-learn": "^0.1.0"
+    "baicai-edu-learn": "^0.1.1"
   },
   "files": [
     "cordis.patch.yml",

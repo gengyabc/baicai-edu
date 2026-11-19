@@ -1560,9 +1560,9 @@ test('shared math contract is a rule source, never a teaching implementation', (
   }
   const manifest = JSON.parse(text('math-common/package.json'))
   assert.equal(manifest.name, 'baicai-edu-math')
-  assert.deepEqual(manifest.dependencies, { 'baicai-edu-learn': '^0.1.0' })
+  assert.deepEqual(manifest.dependencies, { 'baicai-edu-learn': '^0.1.1' })
   for (const band of ['math-primary-low', 'math-primary-high']) {
-    assert.equal(JSON.parse(text(`${band}/package.json`)).dependencies['baicai-edu-math'], '^0.1.0', band)
+    assert.equal(JSON.parse(text(`${band}/package.json`)).dependencies['baicai-edu-math'], '^0.1.1', band)
   }
 })
 
@@ -1771,7 +1771,16 @@ test('one provider serves every skill package, and each activation names its clo
       assert.ok(manifest.files.includes('skill-provider.mjs'), 'learn must ship the provider')
     } else {
       assert.ok(!existsSync(join(root, bundle, 'skill-provider.mjs')), `${bundle} ships a second provider`)
-      assert.equal(manifest.dependencies?.['baicai-edu-learn'], '^0.1.0', `${bundle} must depend on baicai-edu-learn`)
+      // The range has to accept the learn this repo ships, but the exact patch
+      // is not the point: a package that does not go out this round keeps its
+      // older range, and `^0.1.0` still resolves 0.1.1. Pin the floor, not the tag.
+      const learnRange = manifest.dependencies?.['baicai-edu-learn']
+      const learnVersion = JSON.parse(text('learn/package.json')).version
+      assert.match(String(learnRange), /^\^0\.1\./, `${bundle} must depend on baicai-edu-learn`)
+      assert.ok(
+        learnVersion.split('.').slice(0, 2).join('.') === String(learnRange).replace(/^\^/, '').split('.').slice(0, 2).join('.'),
+        `${bundle} range ${learnRange} must accept learn ${learnVersion}`,
+      )
     }
     assert.ok(manifest.files.includes('resources'), `${bundle} does not ship resources/`)
     assert.ok(manifest.files.includes('build.json'), `${bundle} does not ship build.json`)
@@ -1917,8 +1926,8 @@ test('high-grade methodology is kept as material and never registered as skills'
   assert.deepEqual(manifest.files, ['cordis.patch.yml', 'build.json', 'docs', 'resources', 'skills', 'README.md', 'LICENSE', 'CHANGELOG.md'])
   assert.ok(!manifest.files.includes('sources'))
   assert.deepEqual(manifest.dependencies, {
-    'baicai-edu-learn': '^0.1.0',
-    'baicai-edu-math': '^0.1.0',
+    'baicai-edu-learn': '^0.1.1',
+    'baicai-edu-math': '^0.1.1',
   })
   const installed = readdirSync(join(root, 'math-primary-high', 'skills')).sort()
   assert.deepEqual(installed, ['math-high-application-modeling', 'math-high-core', 'math-high-diagnose',
