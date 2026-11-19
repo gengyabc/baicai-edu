@@ -4,8 +4,8 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { PUBLISH_ORDER, approvesLive, npmVersionProblems, readmeLinkProblems, releaseProblems,
-  selectPackages, stagedId, uploads } from './publish.mjs';
+import { PUBLISH_ORDER, approvesLive, npmVersionProblems, packedEntry, readmeLinkProblems,
+  releaseProblems, selectPackages, stagedId, uploads } from './publish.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const read = path => readFileSync(join(root, path), 'utf8');
@@ -74,6 +74,16 @@ test('a README may only link to files it ships or to absolute URLs', () => {
     [`${label} links outside the package (../docs/installation.md); use an absolute URL`]);
   assert.deepEqual(readmeLinkProblems('[a](<../math-primary-low/README.md>)', packed, label),
     [`${label} links outside the package (../math-primary-low/README.md); use an absolute URL`]);
+});
+
+// `npm pack --json` answered with a one-entry array before npm 12 and with an
+// object keyed by package name after it. The release path reads `.files` from
+// the result, so an unhandled shape turns `check` into "reading 'files' of
+// undefined" on a newer npm.
+test('pack output is read from either npm shape', () => {
+  const entry = { name: 'baicai-edu-learn', files: [{ path: 'README.md' }] };
+  assert.equal(packedEntry([entry]), entry, 'npm 11 array answer');
+  assert.equal(packedEntry({ 'baicai-edu-learn': entry }), entry, 'npm 12 object answer');
 });
 
 // Some packages are already live at their current version, so a release of the

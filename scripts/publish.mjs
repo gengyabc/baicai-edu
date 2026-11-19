@@ -70,10 +70,17 @@ export const SKILL_PACKAGES = ['learn', 'math-common', 'math-primary-low',
  */
 const spec = directory => `./${directory}`;
 
+/**
+ * `npm pack --json` changed shape in npm 12: it answered with an array of one
+ * entry and now answers with an object keyed by package name. Parse both so the
+ * release path does not depend on which npm the maintainer upgraded to.
+ */
+export const packedEntry = json => Array.isArray(json) ? json[0] : Object.values(json)[0];
+
 const pack = directory => {
   const out = execFileSync('npm', ['pack', '--dry-run', '--json', spec(directory)],
     { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
-  return JSON.parse(out)[0];
+  return packedEntry(JSON.parse(out));
 };
 
 const manifest = directory => JSON.parse(readFileSync(join(root, directory, 'package.json'), 'utf8'));
