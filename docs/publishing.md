@@ -10,10 +10,13 @@
 node scripts/publish.mjs check          # 干跑：校验 7 个包可发布、resources/ 与源码一致、README 链接可解析
 node scripts/publish.mjs pack           # 只打包到临时目录，产出的就是要发的 tarball；从不上传
 node scripts/publish.mjs publish        # check → pack → 按依赖顺序逐个 npm stage publish（上暂存区，不上线）
+node scripts/publish.mjs publish learn math-primary-low   # 只发指定的包（目录名或 npm 包名都行）
 node scripts/publish.mjs approve <stage-id> [<stage-id> ...]   # 批准暂存版本，这一步才真正上线
 node scripts/publish.mjs publish --dry-run   # 只报告将上传什么
 node scripts/build-resources.mjs        # 由 skills/ 重建六个包的 resources/（改技能后必须跑）
 ```
+
+- **可以只发一部分包。** `check`/`pack`/`publish` 后面可以列包名（目录名 `math-common` 或 npm 名 `baicai-edu-math`），列谁就只处理谁，`check` 也只校验这几个包；顺序仍按依赖走，不按输入顺序。不列包名才是全部 7 个。**已经在线且版本号没动的包不要放进列表**——npm 会以 `E403` 拒绝同版本重发，脚本会停在那一个包、后面都没发；常见情形是某个包这轮只有 `CHANGELOG.md` 之类的非实质改动，决定不补发时直接不列它。包名拼错会以 `unknown package` 报错退出，不会悄悄变成「发全部」。
 
 - **发版是两步：`publish` 上暂存区，`approve` 才上线。** npm 自 2025 起要求新包名的首版走 `npm stage publish`，直发会报 `E_STAGE_REQUIRED`；同时 npm 在收紧「跳过 2FA 的 token」做直发（`gh.io/npm-gat-bypass2fa-deprecation`），所以脚本只保留暂存路径，不再调用 `npm publish`。
 - **只有 `publish` 会写暂存区，只有 `approve` 会让版本上线**，两者都要求不带 `--dry-run`。这条由 `scripts/publish.test.mjs` 钉住，因为早期版本的 `pack` 会直接走到 `npm publish`。
@@ -52,7 +55,7 @@ provider 由 `learn` 携带（`learn/skill-provider.mjs` + `learn/lib/skill-reso
 3. **变更记录**：七个包都维护 `CHANGELOG.md`，并在各自 `files` 里列出，随 tarball 一起发布；首次发布（0.1.0 / `math-board` 0.6.0）已记录，之后每次升级都要追加一节。未发布的工作写在 `Unreleased` 下，发版时再落到版本号标题。
 4. **DSH 兼容范围**：七个包都声明 `engines.dsh: ">=0.2.2-rc.1 <0.3.0"`，未满足时 DSH 会拒绝安装与激活（机制见 `dsh-app-boot` 的 `evaluatePluginCompatibility`，比较用 `semver.satisfies(..., { includePrerelease: true })`，所以 rc 版本正常参与区间判断）。下限是**本仓库集成测试实际启动过的版本**，不是推测版本；上调或放宽前必须在那个 DSH 版本上真装一次。0.3.0 被挡在外面是故意的：它一旦破坏 API，未验证的安装会在运行时坏掉，而静默坏掉比装不上更难排查。
 5. **checks**：`node scripts/publish.mjs check` 必须为绿，`node --test scripts/*.test.mjs` 全过；CI 与本地是同一条命令。
-6. **发布**：`node scripts/publish.mjs publish`（首次发布前先 `publish` 带 `--dry-run` 看一遍清单）；它把 7 个 tarball 逐个上暂存区并打印 stage id，此时**还没有任何版本上线**。
+6. **发布**：`node scripts/publish.mjs publish`（首次发布前先 `publish` 带 `--dry-run` 看一遍清单）；它把 7 个 tarball 逐个上暂存区并打印 stage id，此时**还没有任何版本上线**。只发了部分包时，把要发的包名列在命令后面（见上），不要指望脚本替你跳过已在线版本。
 7. **批准上线**：用 `NPM_OTP=<码> node scripts/publish.mjs approve <stage-id> …`，或到 npmjs.com 的 **Staged Packages** 页面勾选后批量 `Approve`（一次 2FA 覆盖全部）。批准完用 `npm view <包名> version` 确认拿到真实版本，`latest` 不再是 `0.0.0-stage`。
 8. **发布后同步**：根 [README](../README.md) 与[安装说明](installation.md) 里「尚未发布到 npm / 只能走 checkout」的说法要改掉，否则接收方仍会绕远路；再打 git tag `v0.1.0` 标记这次发布（首版 `2026-11-18` 已发布并打 tag）。
 

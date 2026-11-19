@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { PUBLISH_ORDER, approvesLive, npmVersionProblems, readmeLinkProblems, releaseProblems,
-  stagedId, uploads } from './publish.mjs';
+  selectPackages, stagedId, uploads } from './publish.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const read = path => readFileSync(join(root, path), 'utf8');
@@ -74,6 +74,29 @@ test('a README may only link to files it ships or to absolute URLs', () => {
     [`${label} links outside the package (../docs/installation.md); use an absolute URL`]);
   assert.deepEqual(readmeLinkProblems('[a](<../math-primary-low/README.md>)', packed, label),
     [`${label} links outside the package (../math-primary-low/README.md); use an absolute URL`]);
+});
+
+// Some packages are already live at their current version, so a release of the
+// changed ones alone is normal. The selection keeps publish order — a subject
+// must never upload before the shared package it depends on — and a name nobody
+// ships has to fail instead of silently dropping out of the set.
+test('a release may name the packages it ships, in dependency order', () => {
+  assert.deepEqual(selectPackages([]), PUBLISH_ORDER, 'no names means every package');
+  assert.deepEqual(selectPackages(['english', 'learn']), ['learn', 'english'],
+    'typed order does not override publish order');
+  assert.deepEqual(selectPackages(['learn', 'learn']), ['learn'], 'duplicates collapse');
+  // The npm name is what a release checklist quotes; it has to resolve too.
+  assert.deepEqual(selectPackages(['baicai-edu-math']), ['math-common']);
+  assert.deepEqual(selectPackages(['math-board', 'chinese-reading']), ['math-board', 'chinese-reading']);
+  assert.throws(() => selectPackages(['math']), /unknown package: math/);
+  assert.throws(() => selectPackages(['math-board', 'nope']), /unknown package: nope/);
+});
+
+// The set that ships is also the set that is checked: a partial release must not
+// be blocked by, or silently include, a package it does not upload.
+test('a partial release checks only the packages it ships', () => {
+  assert.deepEqual(releaseProblems(['learn']), []);
+  assert.deepEqual(releaseProblems(['math-board', 'chinese-reading']), []);
 });
 
 // Every package README is checked through the packed file list, so this also
