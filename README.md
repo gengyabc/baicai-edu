@@ -174,7 +174,7 @@ Entries stay at three user-only entries (`learn-start`, `learn`, `learn-clean`) 
 
 ### License
 
-This project is [GPL-3.0-or-later](./LICENSE). Each package directory carries the same `LICENSE` copy, and a published tarball includes it. If you distribute a modified version, the derivative work must also be GPL-3.0 licensed with source provided; to use it inside a proprietary product that is incompatible with the GPL, verify license compatibility first.
+This project is [AGPL-3.0-or-later](./LICENSE). Each package directory carries the same `LICENSE` copy, and a published tarball includes it. If you distribute a modified version, the derivative work must also be AGPL-3.0 licensed with source provided. The AGPL also covers running a modified version as a network service: users who interact with it over the network must be offered its Corresponding Source. To use it inside a proprietary product that is incompatible with the AGPL, verify license compatibility first.
 
 ### Development environment
 
@@ -351,7 +351,7 @@ node --test scripts/*.test.mjs
 
 ### 许可证
 
-本项目采用 [GPL-3.0-or-later](./LICENSE)。每个包目录下各有同一份 `LICENSE` 副本，发布的 tarball 会带上它。修改后分发时，衍生作品同样需以 GPL-3.0 授权并提供源码；若要在不兼容 GPL 的专有产品中使用，请先确认许可兼容性。
+本项目采用 [AGPL-3.0-or-later](./LICENSE)。每个包目录下各有同一份 `LICENSE` 副本，发布的 tarball 会带上它。修改后分发时，衍生作品同样需以 AGPL-3.0 授权并提供源码。AGPL 也覆盖以网络服务方式运行修改版的情形：通过网络与修改版交互的用户，必须能获得其对应源码。若要在不兼容 AGPL 的专有产品中使用，请先确认许可兼容性。
 
 ### 开发环境
 
