@@ -1,4 +1,10 @@
-# baicai-edu
+# baicai-edu 白菜教育
+
+![Knowledge grows from experience](docs/images/knowledge-tree.webp)
+
+> Knowledge grows from experience in practice. What grows is a tree, evergreen. What is poured in is a floor of leaves — gone with the wind.
+
+> 让知识在实践中从已有经验里自然生长出来。长出来的知识是一棵树，常绿常青。灌进去的知识是一地落叶，风过无痕。
 
 [English](#english) | [中文](#中文)
 
@@ -103,6 +109,8 @@ node scripts/install.mjs all --dry-run
 ```
 
 Either route needs Node.js 22 or newer plus a working DSH/pnpm. Both install the whole dependency closure as top-level profile bundles in one pass; do not hand-link a single subject package instead, because `link:` does not bring its dependencies. Re-installing keeps bundles you disabled by hand. After installing, restart if DSH says so and refresh the Web session, then type `/learn-start` to start. Dependencies, migration and failure handling in full: [installation guide](docs/installation.md).
+
+Model choice: for upper-primary math (grades 4–6) the tested providers rank GPT best and Kimi second; do not use DeepSeek for this band. Other models have not been tried yet. This is observed testing experience, not a guarantee — the other subjects and the lower band are not covered by it.
 
 ### Using it
 
@@ -281,6 +289,8 @@ node scripts/install.mjs all --dry-run
 ```
 
 两种方式都需要 Node.js 22 或更高版本与可用的 DSH/pnpm。两种方式都把整个依赖闭包作为 profile 顶层 bundle 一次安装；不要只手工 link 一个学科包，`link:` 不会带上它的依赖。重复安装保留此前手动禁用的 bundle。安装后按 DSH 输出决定是否重启并刷新 Web 会话，输入 `/learn-start` 开始。完整依赖、迁移与失败处理见[安装说明](docs/installation.md)。
+
+模型选择：高年级数学（4–6 年级）实测中 GPT 效果最好，Kimi 次之；该年级段不要用 DeepSeek。其他模型尚未试过。以上是测试经验，不是保证，也不覆盖其他学科和低年级段。
 
 ### 使用
 
