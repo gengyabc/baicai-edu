@@ -26,6 +26,7 @@
 - [ ] `math-board` 的 `latest` 仍是 `0.6.0`（未被误发新版本）。
 - [ ] 打 tag `v0.1.1`，并确认工作区干净。
 - [ ] 发布后仍做一次隔离 `DSH_HOME` 安装验收：`dsh plugin --profile web add baicai-edu-math-primary-low` 装到 0.1.1，闭包与技能数（低年级 20 个）不变。
+  - 2026-11-20 补：验收命令要写成 `add baicai-edu-learn baicai-edu-math baicai-edu-math-board baicai-edu-math-primary-low`。只写包名时 pnpm 会下载闭包，但 DSH 只启用被列出的那一个，注册不到 20 个技能。
 
 ## 边界
 

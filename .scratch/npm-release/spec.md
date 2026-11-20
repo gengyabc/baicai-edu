@@ -10,6 +10,7 @@
 - 作者字段 `gengyabc (https://github.com/gengyabc)`、maintainer 邮箱均为该账号。
 - 发布方式已从 `npm publish` 改为 `npm stage publish` + `approve`：npm 对新包名直发返回 `E_STAGE_REQUIRED`，且正在收回「跳过 2FA 的 token」的直发权限。脚本 `scripts/publish.mjs` 已按两步式改造（`publish` 暂存、`approve` 上线，npm < 11.15 直接拒绝）。
 - 发布后验收：隔离 `DSH_HOME` 中用 `dsh plugin --profile web add baicai-edu-math-primary-low` 真装成功，闭包 4 个包自动补齐，注册 20 个技能，技能资源引用全部解析。
+  （2026-11-20 更正：这条只证明 pnpm 下载了闭包。DSH 只启用命令行上列出的那个 bundle，所以该命令实际只注册 `math-low-*`；`learn-*` 与 `math-common` 要注册必须把四个包名写进同一条命令。以各包 README 的 Install 段为准，见 `math-primary-low/README.md`、`math-primary-high/README.md`。）
 - 文档已同步：根 `README.md`、`docs/installation.md` 不再说「尚未发布 / 只能走 checkout」；`docs/publishing.md` 记录了两步式流程、npm 版本下限、`0.0.0-stage` 占位语义、`//` 前缀的认证坑，以及「`dsh.profile.bundles` 只含命令行上那个包」这条实测结论。
 - git：`ca49106 release: publish the seven packages to npm at 0.1.0`，tag `v0.1.0`；随后 `24fdafb docs: give every package a changelog and ship it`。
 
