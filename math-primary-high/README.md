@@ -20,6 +20,16 @@ The resolver picks the band from a known grade (1–3 → low, 4–6 → high, n
 
 ### Install
 
+From the registry, name every bundle you want enabled: pnpm installs this package's declared dependencies, but DSH enables only the bundles the call selects. The board is optional here, so name it only when you want it.
+
+```bash
+dsh plugin --profile web add baicai-edu-learn baicai-edu-math baicai-edu-math-primary-high
+# with the optional board
+dsh plugin --profile web add baicai-edu-learn baicai-edu-math baicai-edu-math-board baicai-edu-math-primary-high
+```
+
+From a local checkout of the repository, the installer expands that same list for you:
+
 ```bash
 # from the repository root: installs learn, math-common and this band
 node scripts/install.mjs math-primary-high --profile web
@@ -28,6 +38,10 @@ node scripts/install.mjs math-primary-high math-board --profile web
 ```
 
 Restart if DSH says so, then refresh the Web session. When it worked, the model catalog lists the `math-high-*` skills, `/` shows no math command of its own, and choosing math in `/learn` enters the high band. Shared dependencies: `learn-core` owns teaching, roles and confirmation; `learn-data` owns snapshots, records and finalize; `learn-errors` owns dropped files. The installer fills dependencies in but does not re-enable a bundle you disabled by hand; do not replace a full install with a lone `link:` of a math package. Unified entry, re-install and manual-disable behavior: [installation guide](<https://github.com/gengyabc/baicai-edu/blob/main/docs/installation.md>).
+
+If the catalog lists `math-high-*` but has no `/learn-start` and no `learn-*` skills, the shared bundles were downloaded without being selected: re-run the registry command above. Reinstalling this package does not fix that state.
+
+Model choice: on this band the tested providers rank GPT best and Kimi second; do not use DeepSeek for upper-primary math. Other models have not been tried yet. This is testing experience, not a guarantee.
 
 ### What is irreversible
 
@@ -68,6 +82,16 @@ System state is in `outputs/students/`, user originals in `data/students/<studen
 
 ### 安装
 
+从 registry 装时请把要启用的 bundle 都写出来：pnpm 会装本包声明的依赖，但 DSH 只启用本次命令选中的 bundle。画板在本包是可选项，需要时才写出来。
+
+```bash
+dsh plugin --profile web add baicai-edu-learn baicai-edu-math baicai-edu-math-primary-high
+# 需要可选画板时
+dsh plugin --profile web add baicai-edu-learn baicai-edu-math baicai-edu-math-board baicai-edu-math-primary-high
+```
+
+在仓库里从源码安装时，安装器会替你展开同一份名单：
+
 ```bash
 # 在仓库根目录运行：安装 learn、math-common 与本年级段包
 node scripts/install.mjs math-primary-high --profile web
@@ -76,6 +100,10 @@ node scripts/install.mjs math-primary-high math-board --profile web
 ```
 
 按 DSH 输出决定是否重启，再刷新 Web 会话。装好后模型目录里有 `math-high-*` 技能，`/` 不新增数学命令，在 `/learn` 里选数学进入高年级带。共享依赖：`learn-core` 管教学、角色与确认；`learn-data` 管快照、记录与收尾保存；`learn-errors` 管投放文件。安装器补齐依赖，但不会重新启用此前手动禁用的技能包；不要用 `link:` 单独装数学包来替代完整安装。统一入口、重复安装与手动禁用见[统一安装说明](<https://github.com/gengyabc/baicai-edu/blob/main/docs/installation.md>)。
+
+如果模型技能目录里有 `math-high-*`，却没有 `/learn-start`、也没有 `learn-*` 技能，那是共享包被下载但没有被选中：重跑上面的 registry 命令即可，重装本包解决不了这种状态。
+
+模型选择：本年级段实测中 GPT 效果最好，Kimi 次之；高年级数学不要用 DeepSeek。其他模型尚未试过。以上是测试经验，不是保证。
 
 ### 不可逆的部分
 

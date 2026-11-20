@@ -19,7 +19,7 @@ dsh plugin --profile web add baicai-edu-learn baicai-edu-english
 pnpm 下载间接依赖不等于 DSH 启用对应 bundle。Electron 桌面端请在插件管理中安装并启用同一组包。
 
 - 按需加载：只装哪个学科，就只有那个学科的技能注册；学科包需要共享的 `baicai-edu-learn` 提供生命周期与数据协议，因此需要同时启用。
-- 高年级数学不依赖画板，要画板就**另外**装一次：`dsh plugin --profile web add baicai-edu-math-board`。低年级数学已在依赖里声明画板，会自动带上。
+- 高年级数学不依赖画板，要画板就**另外**装一次：`dsh plugin --profile web add baicai-edu-math-board`。低年级数学虽然在依赖里声明了画板，但那只是让 pnpm 下载它；直接调用 DSH 时画板包名仍要写进同一条命令，只有本仓安装器会替你展开闭包。
 - 已手动禁用的 bundle 不会被重装强行启用；要恢复它，先在 DSH 插件管理里明确启用。
 
 装完按 DSH 的提示重启或刷新 Web 页面即可，**不需要再配置模型**：插件不注册、不改写任何模型 provider，会话继续使用接收方 DSH 里已经选好的模型与凭据。插件本身也不发网络请求、不带 API key。要求 DSH 的模型路由已能在接收方机器上正常对话（这与插件无关）。

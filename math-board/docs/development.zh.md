@@ -35,7 +35,7 @@ npm --prefix math-board test
 # 视图测试共用 math-board/src/testing/test-harness.js 里的 React/浏览器替身
 node scripts/check-skills.mjs
 node math-board/preview.mjs /tmp/math-board-shapes.html   # 可选：在无头 Chrome 或浏览器里目视检查图案
-# 安装数学会自动配齐画板和共享学习包：
+# 本仓安装器会把画板和共享学习包随低年级数学一起装上：
 node scripts/install.mjs math-primary-low --profile web
 # 画板也可独立安装：
 node scripts/install.mjs math-board --profile web

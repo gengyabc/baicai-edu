@@ -35,7 +35,7 @@ npm --prefix math-board test
 # view tests share the React/browser test doubles in math-board/src/testing/test-harness.js
 node scripts/check-skills.mjs
 node math-board/preview.mjs /tmp/math-board-shapes.html   # optional: visually check patterns in headless Chrome or a browser
-# installing math automatically provisions the board and the shared learning packages:
+# this repository's installer provisions the board and the shared learning packages with low-band math:
 node scripts/install.mjs math-primary-low --profile web
 # the board can also be installed on its own:
 node scripts/install.mjs math-board --profile web

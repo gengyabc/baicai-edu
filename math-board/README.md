@@ -13,10 +13,12 @@ Open a DSH Web session and click the board button beside the model selector. For
 ### Install, and what success looks like
 
 ```bash
-node scripts/install.mjs math-primary-low --profile web   # installing math pulls the board in
+node scripts/install.mjs math-primary-low --profile web   # the repository installer adds the board to low-band math
 node scripts/install.mjs math-board --profile web         # or install the board alone
 dsh plugin --profile web add baicai-edu-math-board        # no teaching package, no model routing
 ```
+
+From the registry the low band declares the board as a dependency, so pnpm downloads it, but DSH enables only the bundles the call names — list `baicai-edu-math-board` in the same command.
 
 Restart if DSH says so, then refresh the Web session. When it worked, the toolbar shows a coloured board mark to the left of the model selector at 28 px (narrow windows show the mark only, and hover or a screen reader still reports the board name), and clicking it opens the workbench with the 算数 / 几何 / 教师演示 tabs. The board never calls a model itself, so no provider configuration is needed; a model is used only when the conversation needs a reply about what was submitted.
 
@@ -56,10 +58,12 @@ The teaching rules that own how the board is used live in the shared [board cont
 ### 安装与装好的表现
 
 ```bash
-node scripts/install.mjs math-primary-low --profile web   # 安装数学会自动配齐画板
+node scripts/install.mjs math-primary-low --profile web   # 仓库安装器会把画板随低年级数学一起装上
 node scripts/install.mjs math-board --profile web         # 也可只装画板
 dsh plugin --profile web add baicai-edu-math-board        # 没有教学包、也没有配置模型路由
 ```
+
+从 registry 装时，低年级数学包把画板声明为依赖，所以 pnpm 会下载它，但 DSH 只启用本次命令选中的 bundle——请在同一个命令里写出 `baicai-edu-math-board`。
 
 按 DSH 输出决定是否重启，再刷新 Web 会话。装好后，工具栏在模型选择按钮左侧显示彩色画板标志，高 28 px（窄窗口只显示标志，悬停或读屏仍报出「数学画板」），点开是含算数／几何／教师演示三个 tab 的工作台。画板从不自己调用大模型，所以不需要模型配置；只有对话需要就提交内容回应时才用当前会话已选的模型。
 

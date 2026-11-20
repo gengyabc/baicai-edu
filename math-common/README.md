@@ -12,7 +12,7 @@ None of its own. The bands load these files by name from the branch that needs t
 
 ### Install
 
-`math-primary-low` and `math-primary-high` each declare it as a dependency, so installing a band brings it in once. On its own it teaches nothing and is useful only when debugging the load chain:
+`math-primary-low` and `math-primary-high` each declare it as a dependency, so installing a band brings it in once. From the registry that download is not an activation: name `baicai-edu-math` in the same `dsh plugin --profile web add` call as the band. On its own it teaches nothing and is useful only when debugging the load chain:
 
 ```bash
 node scripts/install.mjs math-common --profile web
@@ -45,7 +45,7 @@ This package holds no state. Student data, records and finalize belong to `baica
 
 ### 安装
 
-`math-primary-low` 与 `math-primary-high` 都把本包声明为依赖，装任一年级段包都会把它一并装上。单独安装本包没有教学入口，只在调试加载链路时使用：
+`math-primary-low` 与 `math-primary-high` 都把本包声明为依赖，装任一年级段包都会把它一并装上。从 registry 装时，下载不等于启用：请在带年级段包的那条 `dsh plugin --profile web add` 里把 `baicai-edu-math` 一起写出来。单独安装本包没有教学入口，只在调试加载链路时使用：
 
 ```bash
 node scripts/install.mjs math-common --profile web

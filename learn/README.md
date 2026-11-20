@@ -120,7 +120,7 @@ dsh plugin --profile web add baicai-edu-learn
 ```bash
 # 只装共享能力（在仓库根目录运行）
 node scripts/install.mjs learn --profile web
-# 学科使用：自动补齐本包；低年级数学还会配齐画板
+# 学科使用：安装器自动补齐本包；低年级数学还会配齐画板
 node scripts/install.mjs math-primary-low --profile web
 node scripts/install.mjs math-primary-high --profile web
 ```
